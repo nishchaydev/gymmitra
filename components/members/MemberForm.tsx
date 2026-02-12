@@ -1,0 +1,195 @@
+"use client"
+
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+const memberFormSchema = z.object({
+    name: z.string().min(2, {
+        message: "Name must be at least 2 characters.",
+    }),
+    phone: z.string().min(10, {
+        message: "Phone number must be at least 10 digits.",
+    }),
+    email: z.string().email().optional(),
+    dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), {
+        message: "Invalid date",
+    }),
+    gymId: z.string().default("default-gym-id"), // In real app, from auth
+    emergencyName: z.string().optional(),
+    emergencyPhone: z.string().optional(),
+    emergencyRelation: z.string().optional(),
+})
+
+type MemberFormValues = z.infer<typeof memberFormSchema>
+
+export function MemberForm() {
+    const router = useRouter()
+    const [loading, setLoading] = useState(false)
+
+    const form = useForm<MemberFormValues>({
+        resolver: zodResolver(memberFormSchema) as any,
+        defaultValues: {
+            name: "",
+            phone: "",
+            email: "",
+            dateOfBirth: "",
+            gymId: "default-gym-id",
+        },
+    })
+
+    async function onSubmit(data: MemberFormValues) {
+        setLoading(true)
+        try {
+            const response = await fetch("/api/members", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            })
+
+            if (!response.ok) {
+                throw new Error("Failed to create member")
+            }
+
+            toast.success("Member created successfully")
+
+            router.push("/members")
+            router.refresh()
+        } catch (error) {
+            toast.error("Something went wrong", {
+                description: "Please try again."
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-2xl">
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl>
+                                <Input placeholder="John Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="9876543210" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="john@example.com" type="email" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <FormField
+                    control={form.control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Date of Birth</FormLabel>
+                            <FormControl>
+                                <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <div className="space-y-4 border p-4 rounded-md">
+                    <h3 className="font-medium text-sm text-gray-500">Emergency Contact</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="emergencyName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Jane Doe" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="emergencyPhone"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="9876543210" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="emergencyRelation"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Relation</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Spouse, Parent..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
+
+                <Button type="submit" disabled={loading}>
+                    {loading ? "Creating..." : "Create Member"}
+                </Button>
+            </form>
+        </Form>
+    )
+}
