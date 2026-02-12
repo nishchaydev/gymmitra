@@ -145,7 +145,7 @@ export default async function MemberDetailPage({
                         <CardContent>
                             {member.attendance.length > 0 ? (
                                 <div className="space-y-4">
-                                    {member.attendance.map(record => (
+                                    {member.attendance.map((record: any) => (
                                         <div key={record.id} className="flex justify-between items-center border-b pb-2 last:border-0 last:pb-0">
                                             <div>
                                                 <p className="font-medium">{new Date(record.date).toLocaleDateString()}</p>
@@ -173,7 +173,7 @@ export default async function MemberDetailPage({
                         <CardContent>
                             {member.invoices.length > 0 ? (
                                 <div className="space-y-4">
-                                    {member.invoices.map(invoice => (
+                                    {member.invoices.map((invoice: any) => (
                                         <div key={invoice.id} className="flex justify-between items-center border-b pb-2 last:border-0 last:pb-0">
                                             <div>
                                                 <p className="font-medium">{invoice.invoiceNumber}</p>

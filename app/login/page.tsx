@@ -1,16 +1,16 @@
-import { login, signup } from './actions'
+import { login, signup, demoLogin } from './actions'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dumbbell } from "lucide-react"
+import { Dumbbell, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-export default function LoginPage({
-    searchParams,
-}: {
-    searchParams: { [key: string]: string | string[] | undefined }
+export default async function LoginPage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+    const searchParams = await props.searchParams
     const defaultTab = searchParams.view === 'register' ? 'register' : 'login'
 
     return (
@@ -28,6 +28,15 @@ export default function LoginPage({
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {searchParams.message && (
+                        <Alert variant="destructive" className="mb-6">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>
+                                {searchParams.message}
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <Tabs defaultValue={defaultTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="login">Login</TabsTrigger>
@@ -43,7 +52,7 @@ export default function LoginPage({
                                     <Label htmlFor="password">Password</Label>
                                     <Input id="password" name="password" type="password" required />
                                 </div>
-                                <Button formAction={login} className="w-full">Log in</Button>
+                                <Button id="submit-login" formAction={login} className="w-full">Log in</Button>
                             </form>
                         </TabsContent>
                         <TabsContent value="register">
@@ -56,7 +65,11 @@ export default function LoginPage({
                                     <Label htmlFor="register-password">Password</Label>
                                     <Input id="register-password" name="password" type="password" required />
                                 </div>
-                                <Button formAction={signup} variant="secondary" className="w-full">Sign up</Button>
+                                <div className="space-y-2">
+                                    <Label htmlFor="license-key">License Key (Required)</Label>
+                                    <Input id="license-key" name="license_key" type="text" required placeholder="Enter your purchase code" />
+                                </div>
+                                <Button id="submit-signup" formAction={signup} variant="secondary" className="w-full">Sign up</Button>
                                 <p className="text-xs text-center text-muted-foreground mt-2">
                                     By clicking sign up, you verify that you are an authorized gym administrator.
                                 </p>
@@ -64,8 +77,15 @@ export default function LoginPage({
                         </TabsContent>
                     </Tabs>
                 </CardContent>
-                <CardFooter className="flex justify-center border-t p-4 text-xs text-muted-foreground">
-                    &copy; 2026 Gym Mitra ERP. All rights reserved.
+                <CardFooter className="flex flex-col space-y-4 border-t p-4">
+                    <form className="w-full">
+                        <Button variant="outline" className="w-full border-dashed border-primary/50 hover:bg-primary/5" formAction={demoLogin}>
+                            Try Demo Access (One Click)
+                        </Button>
+                    </form>
+                    <div className="text-center text-xs text-muted-foreground">
+                        &copy; {new Date().getFullYear()} Gym Mitra ERP. All rights reserved.
+                    </div>
                 </CardFooter>
             </Card>
         </div>

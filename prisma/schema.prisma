@@ -8,82 +8,67 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Gym Profile
 model GymProfile {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   name      String
   email     String
   phone     String
   address   String?
   logo      String?
   gst       String?
-  userId    String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  members  Member[]
-  products Product[]
-  plans    MembershipPlan[]
+  userId    String           @unique
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  members   Member[]
+  plans     MembershipPlan[]
+  products  Product[]
 }
 
-// Members
 model Member {
-  id                String       @id @default(cuid())
+  id                String               @id @default(cuid())
   name              String
   email             String?
-  phone             String       @unique
+  phone             String               @unique
   dateOfBirth       DateTime
   photo             String?
   address           String?
   emergencyName     String
   emergencyPhone    String
   emergencyRelation String
-  joiningDate       DateTime     @default(now())
-  status            MemberStatus @default(ACTIVE)
+  joiningDate       DateTime             @default(now())
+  status            MemberStatus         @default(ACTIVE)
   notes             String?
   gymId             String
-
-  gym           GymProfile           @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  subscriptions MemberSubscription[]
-  sales         Sale[]
-  invoices      Invoice[]
-  attendance    Attendance[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  attendance        Attendance[]
+  invoices          Invoice[]
+  gym               GymProfile           @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  subscriptions     MemberSubscription[]
+  sales             Sale[]
 
   @@index([gymId])
   @@index([phone])
   @@index([status])
 }
 
-enum MemberStatus {
-  ACTIVE
-  INACTIVE
-  EXPIRED
-}
-
-// Membership Plans
 model MembershipPlan {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  duration    Int // in days
-  price       Decimal  @db.Decimal(10, 2)
-  features    String[] // JSON array
-  isActive    Boolean  @default(true)
-  gymId       String
-
-  gym           GymProfile           @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  id            String               @id @default(cuid())
+  name          String
+  description   String?
+  duration      Int
+  price         Decimal              @db.Decimal(10, 2)
+  features      String[]
+  isActive      Boolean              @default(true)
+  gymId         String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
   subscriptions MemberSubscription[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  gym           GymProfile           @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@index([gymId])
 }
 
-// Member Subscriptions
 model MemberSubscription {
   id            String             @id @default(cuid())
   memberId      String
@@ -94,17 +79,130 @@ model MemberSubscription {
   status        SubscriptionStatus @default(ACTIVE)
   paymentStatus PaymentStatus      @default(PENDING)
   autoRenew     Boolean            @default(false)
-
-  member   Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  plan     MembershipPlan @relation(fields: [planId], references: [id])
-  invoices Invoice[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  invoices      Invoice[]
+  member        Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  plan          MembershipPlan     @relation(fields: [planId], references: [id])
 
   @@index([memberId])
   @@index([endDate])
   @@index([status])
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  name          String
+  category      ProductCategory
+  description   String?
+  price         Decimal         @db.Decimal(10, 2)
+  stock         Int
+  lowStockAlert Int             @default(10)
+  image         String?
+  isActive      Boolean         @default(true)
+  gymId         String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  gym           GymProfile      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  sales         Sale[]
+
+  @@index([gymId])
+  @@index([category])
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  memberId      String?
+  productId     String
+  quantity      Int
+  unitPrice     Decimal       @db.Decimal(10, 2)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  discount      Decimal?      @db.Decimal(10, 2)
+  finalAmount   Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  saleDate      DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  invoice       Invoice?
+  member        Member?       @relation(fields: [memberId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@index([memberId])
+  @@index([productId])
+  @@index([saleDate])
+}
+
+model Invoice {
+  id             String              @id @default(cuid())
+  invoiceNumber  String              @unique
+  type           InvoiceType
+  memberId       String?
+  subscriptionId String?
+  saleId         String?             @unique
+  subtotal       Decimal             @db.Decimal(10, 2)
+  tax            Decimal?            @db.Decimal(10, 2)
+  discount       Decimal?            @db.Decimal(10, 2)
+  total          Decimal             @db.Decimal(10, 2)
+  paymentStatus  PaymentStatus       @default(PENDING)
+  paymentMethod  PaymentMethod?
+  notes          String?
+  issueDate      DateTime            @default(now())
+  dueDate        DateTime?
+  createdAt      DateTime            @default(now())
+  member         Member?             @relation(fields: [memberId], references: [id])
+  sale           Sale?               @relation(fields: [saleId], references: [id])
+  subscription   MemberSubscription? @relation(fields: [subscriptionId], references: [id])
+  items          InvoiceItem[]
+
+  @@index([invoiceNumber])
+  @@index([memberId])
+  @@index([issueDate])
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(10, 2)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  userId    String
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model Attendance {
+  id           String    @id @default(cuid())
+  memberId     String
+  date         DateTime  @default(now())
+  checkInTime  DateTime  @default(now())
+  checkOutTime DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([date])
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
 }
 
 enum SubscriptionStatus {
@@ -120,58 +218,11 @@ enum PaymentStatus {
   PARTIAL
 }
 
-// Products
-model Product {
-  id            String          @id @default(cuid())
-  name          String
-  category      ProductCategory
-  description   String?
-  price         Decimal         @db.Decimal(10, 2)
-  stock         Int
-  lowStockAlert Int             @default(10)
-  image         String?
-  isActive      Boolean         @default(true)
-  gymId         String
-
-  gym   GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  sales Sale[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([gymId])
-  @@index([category])
-}
-
 enum ProductCategory {
   PROTEIN
   SUPPLEMENT
   MERCHANDISE
   OTHER
-}
-
-// Sales
-model Sale {
-  id            String        @id @default(cuid())
-  memberId      String? // Optional - for walk-in sales
-  productId     String
-  quantity      Int
-  unitPrice     Decimal       @db.Decimal(10, 2)
-  totalAmount   Decimal       @db.Decimal(10, 2)
-  discount      Decimal?      @db.Decimal(10, 2)
-  finalAmount   Decimal       @db.Decimal(10, 2)
-  paymentMethod PaymentMethod
-  saleDate      DateTime      @default(now())
-
-  member  Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
-  product Product  @relation(fields: [productId], references: [id])
-  invoice Invoice?
-
-  createdAt DateTime @default(now())
-
-  @@index([memberId])
-  @@index([productId])
-  @@index([saleDate])
 }
 
 enum PaymentMethod {
@@ -181,70 +232,10 @@ enum PaymentMethod {
   OTHER
 }
 
-// Invoices
-model Invoice {
-  id             String         @id @default(cuid())
-  invoiceNumber  String         @unique
-  type           InvoiceType
-  memberId       String?
-  subscriptionId String?
-  saleId         String?        @unique
-  subtotal       Decimal        @db.Decimal(10, 2)
-  tax            Decimal?       @db.Decimal(10, 2)
-  discount       Decimal?       @db.Decimal(10, 2)
-  total          Decimal        @db.Decimal(10, 2)
-  paymentStatus  PaymentStatus  @default(PENDING)
-  paymentMethod  PaymentMethod?
-  notes          String?
-  issueDate      DateTime       @default(now())
-  dueDate        DateTime?
-
-  member       Member?             @relation(fields: [memberId], references: [id], onDelete: SetNull)
-  subscription MemberSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  sale         Sale?               @relation(fields: [saleId], references: [id], onDelete: SetNull)
-  items        InvoiceItem[]
-
-  createdAt DateTime @default(now())
-
-  @@index([invoiceNumber])
-  @@index([memberId])
-  @@index([issueDate])
-}
-
 enum InvoiceType {
   MEMBERSHIP
   SALE
   RENEWAL
-}
-
-model InvoiceItem {
-  id          String  @id @default(cuid())
-  invoiceId   String
-  description String
-  quantity    Int
-  unitPrice   Decimal @db.Decimal(10, 2)
-  amount      Decimal @db.Decimal(10, 2)
-
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@index([invoiceId])
-}
-
-// Notifications
-model Notification {
-  id        String           @id @default(cuid())
-  type      NotificationType
-  title     String
-  message   String
-  userId    String
-  isRead    Boolean          @default(false)
-  metadata  Json? // Additional data (member ID, etc.)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
 }
 
 enum NotificationType {
@@ -254,21 +245,4 @@ enum NotificationType {
   LOW_STOCK
   NEW_MEMBER
   MONTHLY_SUMMARY
-}
-
-// Attendance
-model Attendance {
-  id          String    @id @default(cuid())
-  memberId    String
-  date        DateTime  @default(now()) // Only date part is significant usually, but DateTime handles it
-  checkInTime DateTime  @default(now())
-  checkOutTime DateTime?
-  
-  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([memberId])
-  @@index([date])
 }

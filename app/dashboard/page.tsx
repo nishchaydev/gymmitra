@@ -10,19 +10,94 @@ import { AttendanceWidget } from "@/components/dashboard/AttendanceWidget"
 import { Button } from "@/components/ui/button"
 import { Users, CreditCard, DollarSign, Activity, Dumbbell, UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
+import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
-    title: "Dashboard",
-    description: "Gym Mitra ERP Dashboard",
+    title: "Dashboard | Gym Mitra",
+    description: "Manage your gym's members, revenue, and attendance with ease.",
 }
 
-export default function DashboardPage() {
+import { SHOWCASE_STATS } from "@/lib/showcase-data"
+import { cookies } from "next/headers"
+
+export default async function DashboardPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+    const isDemo = cookieStore.get('mitra_demo_mode')?.value === 'true'
+
+    if (!user && !isDemo) {
+        redirect("/login")
+    }
+
+    // Get the gym profile for this user
+    const gym = isDemo ? { id: "demo-gym", name: "Showcase Gym (Demo)" } : await prisma.gymProfile.findUnique({
+        where: { userId: user?.id }
+    })
+
+    if (!gym && !isDemo) {
+        // This shouldn't happen with the new signup flow, but if it does:
+        return (
+            <div className="flex h-[80vh] items-center justify-center">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <CardTitle>Welcome to Gym Mitra!</CardTitle>
+                        <CardDescription>We're finishing setting up your profile.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p>It looks like your gym profile wasn't created yet.</p>
+                        <Link href="/settings">
+                            <Button className="w-full">Create Gym Profile</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    // Data fetching logic
+    let dashboardData;
+
+    if (isDemo) {
+        dashboardData = {
+            totalMembers: SHOWCASE_STATS.totalMembers,
+            activeMembers: SHOWCASE_STATS.activeMembers,
+            revenue: SHOWCASE_STATS.totalRevenue.toLocaleString('en-IN'),
+            productSalesCount: SHOWCASE_STATS.productSales
+        }
+    } else {
+        const [totalMembers, activeMembers, totalRevenue, productSalesCount] = await Promise.all([
+            prisma.member.count({ where: { gymId: gym!.id } }),
+            prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } }),
+            prisma.invoice.aggregate({
+                where: { paymentStatus: 'PAID', subscription: { member: { gymId: gym!.id } } },
+                _sum: { total: true }
+            }),
+            prisma.sale.count({ where: { product: { gymId: gym!.id } } })
+        ])
+        dashboardData = {
+            totalMembers,
+            activeMembers,
+            revenue: Number(totalRevenue._sum.total || 0).toLocaleString('en-IN'),
+            productSalesCount
+        }
+    }
+
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
+            {isDemo && (
+                <div className="bg-emerald-600 text-white p-2 text-center text-sm font-medium rounded-md shadow-sm mb-4">
+                    ✨ Running in Showcase Mode with Demo Data. Real database is bypassed.
+                </div>
+            )}
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                    <p className="text-muted-foreground">{gym?.name}</p>
+                </div>
                 <div className="flex items-center space-x-2">
-                    {/* <CalendarDateRangePicker /> */}
                     <Link href="/members/new">
                         <Button>
                             <UserPlus className="mr-2 h-4 w-4" /> Add Member
@@ -44,9 +119,6 @@ export default function DashboardPage() {
                     <TabsTrigger value="reports">
                         Reports
                     </TabsTrigger>
-                    <TabsTrigger value="notifications" disabled>
-                        Notifications
-                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -58,9 +130,9 @@ export default function DashboardPage() {
                                 <DollarSign className="h-4 w-4 text-emerald-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">₹45,231.89</div>
+                                <div className="text-2xl font-bold">₹{dashboardData.revenue}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    +20.1% from last month
+                                    Real-time payments
                                 </p>
                             </CardContent>
                         </Card>
@@ -72,21 +144,21 @@ export default function DashboardPage() {
                                 <Users className="h-4 w-4 text-blue-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">+2350</div>
+                                <div className="text-2xl font-bold">{dashboardData.activeMembers}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    +180.1% from last month
+                                    Out of {dashboardData.totalMembers} total
                                 </p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">product Sales</CardTitle>
+                                <CardTitle className="text-sm font-medium">Product Sales</CardTitle>
                                 <CreditCard className="h-4 w-4 text-indigo-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">+12,234</div>
+                                <div className="text-2xl font-bold">{dashboardData.productSalesCount}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    +19% from last month
+                                    Total items sold
                                 </p>
                             </CardContent>
                         </Card>
@@ -98,9 +170,9 @@ export default function DashboardPage() {
                                 <Dumbbell className="h-4 w-4 text-orange-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">+573</div>
+                                <div className="text-2xl font-bold">Calculated</div>
                                 <p className="text-xs text-muted-foreground">
-                                    +201 since last hour
+                                    Today's energy
                                 </p>
                             </CardContent>
                         </Card>

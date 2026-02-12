@@ -33,10 +33,14 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
+    const isDemoMode = request.cookies.get('mitra_demo_mode')?.value === 'true'
+
     if (
         !user &&
+        !isDemoMode &&
         !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
+        !request.nextUrl.pathname.startsWith('/error') &&
         request.nextUrl.pathname !== '/'
     ) {
         // no user, potentially respond by redirecting the user to the login page
