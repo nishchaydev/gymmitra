@@ -177,7 +177,6 @@ model Invoice {
 
   @@index([gymId])
   @@index([invoiceNumber])
-  @@index([shareToken])
   @@index([memberId])
   @@index([issueDate])
 }

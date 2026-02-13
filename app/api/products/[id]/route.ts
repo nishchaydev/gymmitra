@@ -46,7 +46,8 @@ export async function GET(
 
         return NextResponse.json(product)
     } catch (error) {
-        console.error(`Failed to fetch product ${params}:`, error)
+        const { id } = await (params as any) // Safe extraction for error logging
+        console.error(`Failed to fetch product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to fetch product' },
             { status: 500 }
@@ -92,7 +93,8 @@ export async function PUT(
                 { status: 400 }
             )
         }
-        console.error(`Failed to update product ${params}:`, error)
+        const { id } = await (params as any)
+        console.error(`Failed to update product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to update product' },
             { status: 500 }
@@ -110,22 +112,33 @@ export async function DELETE(
 
         const { id } = await params
 
-        // Soft delete - verify ownership
+        // Soft delete - verify ownership and ensure it's currently active
         const result = await prisma.product.updateMany({
             where: {
                 id,
-                gymId: gym.id
+                gymId: gym.id,
+                isActive: true
             },
             data: { isActive: false }
         })
 
         if (result.count === 0) {
-            return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 })
+            // Check if it exists but is already deleted (idempotency)
+            const exists = await prisma.product.findFirst({
+                where: { id, gymId: gym.id }
+            })
+
+            if (!exists) {
+                return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+            }
+
+            return NextResponse.json({ message: 'Product already deleted' }, { status: 200 })
         }
 
         return NextResponse.json({ message: 'Product deleted successfully' })
     } catch (error) {
-        console.error(`Failed to delete product ${params}:`, error)
+        const { id } = await (params as any)
+        console.error(`Failed to delete product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to delete product' },
             { status: 500 }

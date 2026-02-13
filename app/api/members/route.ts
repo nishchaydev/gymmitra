@@ -29,9 +29,17 @@ export async function GET(request: NextRequest) {
 
         // Rate limit: 100 requests per minute per user
         try {
-            await apiLimiter.check(100, user.id)
-        } catch (error) {
-            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            await apiLimiter.check(100, `${user.id}:members:get`)
+        } catch (error: any) {
+            if (error.retryAfter) {
+                return NextResponse.json(
+                    { error: 'Too many requests', retryAfter: error.retryAfter },
+                    { status: 429, headers: { 'Retry-After': String(error.retryAfter) } }
+                )
+            }
+            // Log real infrastructure errors but return 500
+            console.error('Rate limiter failed:', error)
+            return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
         }
 
         const gym = await prisma.gymProfile.findUnique({
@@ -74,9 +82,16 @@ export async function POST(request: NextRequest) {
 
         // Rate limit: 50 creations per minute per user
         try {
-            await apiLimiter.check(50, user.id)
-        } catch (error) {
-            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            await apiLimiter.check(50, `${user.id}:members:post`)
+        } catch (error: any) {
+            if (error.retryAfter) {
+                return NextResponse.json(
+                    { error: 'Too many requests', retryAfter: error.retryAfter },
+                    { status: 429, headers: { 'Retry-After': String(error.retryAfter) } }
+                )
+            }
+            console.error('Rate limiter failed:', error)
+            return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
         }
 
         const gym = await prisma.gymProfile.findUnique({

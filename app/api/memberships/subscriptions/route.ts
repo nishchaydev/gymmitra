@@ -3,25 +3,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
-import { Prisma, PaymentStatus as PrismaPaymentStatus } from '@prisma/client'
+import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus } from '@prisma/client'
 
 const subscriptionSchema = z.object({
     memberId: z.string(),
     planId: z.string(),
-    startDate: z.string().transform((str, ctx) => {
-        const date = new Date(str)
-        if (isNaN(date.getTime())) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Invalid date format"
-            })
-            return z.NEVER
-        }
-        return date
-    }),
-    price: z.number().optional(), // Allow override
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/, "ISO 8601 format required")
+        .transform((str) => new Date(str)),
+    price: z.number().optional(),
     paymentStatus: z.nativeEnum(PrismaPaymentStatus).default(PrismaPaymentStatus.PAID),
-    discountReason: z.string().optional(), // Why discounted?
+    discountReason: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {

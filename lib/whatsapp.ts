@@ -14,6 +14,18 @@ export const getWhatsAppLink = (phone: string, message: string) => {
     return `https://wa.me/${formattedPhone}?text=${encodedMessage}`
 }
 
+/**
+ * Format currency with Indian locale (₹)
+ */
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(amount)
+}
+
 export const templates = {
     renewalReminder: (name: string, daysLeft: number, gymName: string) => {
         return `Hello ${name}, this is a reminder from ${gymName}. Your membership expires in ${daysLeft} days. Kindly renew to continue your fitness journey! 💪`
@@ -22,7 +34,8 @@ export const templates = {
         return `Welcome to ${gymName}, ${name}! We're excited to have you with us. Your digital membership pass is ready.`
     },
     invoiceShare: (name: string, gymName: string, amount: number, url: string) => {
-        return `Hello ${name}! 👋\n\nThank you for your payment of ₹${amount} to ${gymName}.\n\nView your official invoice here:\n${url}\n\nThank you for choosing us! 💪`
+        const formattedAmount = formatCurrency(amount)
+        return `Hello ${name}! 👋\n\nThank you for your payment of ${formattedAmount} to ${gymName}.\n\nView your official invoice here:\n${url}\n\nThank you for choosing us! 💪`
     }
 }
 
@@ -33,7 +46,10 @@ export const getInvoiceWhatsAppLink = (
     amount: number,
     shareToken: string
 ) => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    // Normalize baseUrl: trim trailing slash to prevent double-slashes
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || ''
+    const baseUrl = siteUrl.replace(/\/$/, '')
+
     const url = `${baseUrl}/invoice/${shareToken}`
     const message = templates.invoiceShare(memberName, gymName, amount, url)
     return getWhatsAppLink(phone, message)

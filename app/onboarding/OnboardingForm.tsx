@@ -121,6 +121,7 @@ export default function OnboardingForm() {
                                                 value={formData.businessName}
                                                 onChange={handleInputChange}
                                                 placeholder="e.g. Gym Name"
+                                                autoComplete="organization"
                                                 required
                                             />
                                             <p className="text-xs text-muted-foreground">This name will appear on all your invoices.</p>
@@ -134,6 +135,7 @@ export default function OnboardingForm() {
                                                 value={formData.email}
                                                 onChange={handleInputChange}
                                                 placeholder="contact@gymname.com"
+                                                autoComplete="email"
                                                 required
                                             />
                                         </div>
@@ -150,6 +152,7 @@ export default function OnboardingForm() {
                                                 value={formData.address}
                                                 onChange={handleInputChange}
                                                 placeholder="Street Address, Area"
+                                                autoComplete="street-address"
                                                 required
                                             />
                                         </div>
@@ -162,6 +165,7 @@ export default function OnboardingForm() {
                                                     value={formData.city}
                                                     onChange={handleInputChange}
                                                     placeholder="City"
+                                                    autoComplete="address-level2"
                                                     required
                                                 />
                                             </div>
@@ -173,6 +177,7 @@ export default function OnboardingForm() {
                                                     value={formData.state}
                                                     onChange={handleInputChange}
                                                     placeholder="State"
+                                                    autoComplete="address-level1"
                                                     required
                                                 />
                                             </div>
@@ -185,6 +190,7 @@ export default function OnboardingForm() {
                                                 value={formData.pincode}
                                                 onChange={handleInputChange}
                                                 placeholder="000000"
+                                                autoComplete="postal-code"
                                                 required
                                                 type="text"
                                                 inputMode="numeric"
@@ -207,6 +213,7 @@ export default function OnboardingForm() {
                                                 value={formData.phone}
                                                 onChange={handleInputChange}
                                                 placeholder="9876543210"
+                                                autoComplete="tel"
                                                 required
                                                 type="tel"
                                                 inputMode="tel"
@@ -240,6 +247,7 @@ export default function OnboardingForm() {
                                                 onChange={handleInputChange}
                                                 placeholder="e.g. INV"
                                                 maxLength={5}
+                                                autoComplete="off"
                                                 required
                                             />
                                             <p className="text-xs text-muted-foreground">Invoices will look like TF-INV-0001</p>

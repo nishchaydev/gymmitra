@@ -53,7 +53,7 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
                     invoiceNumber,
                     type: "SALE",
                     gym: { connect: { id: gym.id } },
-                    memberId: validatedData.memberId ?? null,
+                    member: validatedData.memberId ? { connect: { id: validatedData.memberId } } : undefined,
                     subtotal: subtotalCents / 100,
                     discount: validatedData.discount,
                     total: totalCents / 100,
@@ -61,15 +61,18 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
                     paymentStatus: "PAID",
                     notes: validatedData.notes ?? null,
                     items: {
-                        create: validatedData.items.map(item => ({
-                            description: item.description,
-                            quantity: item.quantity,
-                            unitPrice: item.unitPrice,
-                            amount: (item.quantity * (item.unitPrice * 100)) / 100,
-                        }))
+                        create: validatedData.items.map(item => {
+                            const itemAmountCents = Math.round(item.quantity * (item.unitPrice * 100))
+                            return {
+                                description: item.description,
+                                quantity: item.quantity,
+                                unitPrice: item.unitPrice,
+                                amount: itemAmountCents / 100,
+                                gymId: gym.id // Crucial for multi-tenant isolation
+                            }
+                        })
                     }
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any
+                }
             })
         })
 

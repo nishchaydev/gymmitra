@@ -1,12 +1,35 @@
 import OnboardingForm from './OnboardingForm'
 import { Metadata } from 'next'
+import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 export const metadata: Metadata = {
     title: 'Gym Onboarding | Gym Mitra',
     description: 'Verify your gym and set up your business profile.',
 }
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+        const gymProfile = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (gymProfile) {
+            // Already onboarded, sync cookie and redirect
+            const cookieStore = await cookies()
+            cookieStore.set('gym_onboarded', 'true', {
+                maxAge: 30 * 24 * 60 * 60,
+                path: '/',
+            })
+            redirect('/dashboard')
+        }
+    }
+
     return (
         <div className="container mx-auto py-10">
             <div className="text-center mb-10">

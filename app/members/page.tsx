@@ -163,7 +163,12 @@ export default async function MembersPage({
                                                     {member.status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{new Date(member.joiningDate || member.createdAt).toLocaleDateString()}</TableCell>
+                                            <TableCell>
+                                                {(() => {
+                                                    const date = new Date(member.joiningDate || member.createdAt);
+                                                    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+                                                })()}
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <Link href={`/members/${member.id}`}>
                                                     <Button variant="ghost" size="sm">View</Button>

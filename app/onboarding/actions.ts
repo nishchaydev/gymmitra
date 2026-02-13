@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { z } from "zod"
 
 const onboardingSchema = z.object({
@@ -71,6 +72,15 @@ export async function completeOnboarding(formData: FormData) {
     revalidatePath("/dashboard")
     revalidatePath("/members")
     revalidatePath("/invoices")
+
+    // Set cookie for middleware optimization
+    const cookieStore = await cookies()
+    cookieStore.set('gym_onboarded', 'true', {
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    })
 
     redirect("/dashboard")
 }

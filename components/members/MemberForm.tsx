@@ -74,10 +74,12 @@ export function MemberForm() {
             })
 
             // Wait for animation to play
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 router.push("/members")
                 router.refresh()
             }, 2000)
+
+            return () => clearTimeout(timeoutId)
         } catch {
             toast.error("Something went wrong", {
                 description: "Please try again."

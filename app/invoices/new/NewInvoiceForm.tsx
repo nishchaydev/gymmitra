@@ -119,7 +119,7 @@ export default function NewInvoiceForm({ members, products }: { members: any[], 
                                             <Input
                                                 type="number"
                                                 value={item.quantity}
-                                                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+                                                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
                                                 className="bg-slate-900 border-slate-700 text-white h-11"
                                             />
                                         </div>
@@ -130,7 +130,7 @@ export default function NewInvoiceForm({ members, products }: { members: any[], 
                                                 <Input
                                                     type="number"
                                                     value={item.unitPrice}
-                                                    onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value))}
+                                                    onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                                                     className="bg-slate-900 border-slate-700 text-white pl-8 h-11"
                                                 />
                                             </div>
@@ -207,7 +207,7 @@ export default function NewInvoiceForm({ members, products }: { members: any[], 
                                         setIsSubmitting(true)
                                         try {
                                             const result = await createInvoice({
-                                                memberId: selectedMember || undefined,
+                                                memberId: selectedMember === 'WALK-IN' ? undefined : (selectedMember || undefined),
                                                 paymentMethod,
                                                 items,
                                                 discount

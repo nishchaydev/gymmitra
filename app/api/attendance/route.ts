@@ -3,11 +3,31 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { apiLimiter } from '@/lib/rate-limit'
-import { cookies } from 'next/headers'
+import { startOfDay, endOfDay } from 'date-fns'
 
 const checkInSchema = z.object({
     memberId: z.string().min(1, "Member ID is required"),
 })
+
+/**
+ * Shared rate limit helper for attendance routes
+ * Returns a NextResponse if limited, otherwise null
+ */
+async function checkAttendanceRateLimit(userId: string, limit: number = 100) {
+    try {
+        await apiLimiter.check(limit, `${userId}:attendance`)
+        return null
+    } catch (error: any) {
+        const retryAfter = error.retryAfter || 60
+        return NextResponse.json(
+            { error: 'Too many requests', retryAfter },
+            {
+                status: 429,
+                headers: { 'Retry-After': String(retryAfter) }
+            }
+        )
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,12 +38,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Rate limit: 100 check-ins per minute per user
-        try {
-            await apiLimiter.check(100, user.id)
-        } catch (error) {
-            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-        }
+        const rateLimitResponse = await checkAttendanceRateLimit(user.id)
+        if (rateLimitResponse) return rateLimitResponse
 
         const gym = await prisma.gymProfile.findUnique({
             where: { userId: user.id }
@@ -41,8 +57,7 @@ export async function POST(request: NextRequest) {
             where: {
                 id: memberId,
                 gymId: gym.id // Enforce ownership
-            },
-            include: { subscriptions: { where: { status: 'ACTIVE' } } }
+            }
         })
 
         if (!member) {
@@ -53,7 +68,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Member is not active' }, { status: 400 })
         }
 
-        const { startOfDay, endOfDay } = await import('date-fns')
         const now = new Date()
 
         const existingAttendance = await prisma.attendance.findFirst({
@@ -72,11 +86,11 @@ export async function POST(request: NextRequest) {
 
         const attendance = await prisma.attendance.create({
             data: {
-                memberId,
-                gymId: gym.id,
+                member: { connect: { id: memberId } },
+                gym: { connect: { id: gym.id } },
                 date: new Date(),
                 checkInTime: new Date(),
-            } as any
+            }
         })
 
         return NextResponse.json(attendance, { status: 201 })
@@ -98,12 +112,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Rate limit: 100 requests per minute per user
-        try {
-            await apiLimiter.check(100, user.id)
-        } catch (error) {
-            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-        }
+        const rateLimitResponse = await checkAttendanceRateLimit(user.id)
+        if (rateLimitResponse) return rateLimitResponse
 
         const gym = await prisma.gymProfile.findUnique({
             where: { userId: user.id }

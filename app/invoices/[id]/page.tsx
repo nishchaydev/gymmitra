@@ -109,7 +109,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
         if (!dbInvoice) notFound()
 
-        if ((dbInvoice as any).gym.userId !== user?.id && !isDemoMode) {
+        if ((dbInvoice as any).gym.userId !== user?.id) {
             redirect("/dashboard")
         }
 

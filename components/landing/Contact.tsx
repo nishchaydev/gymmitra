@@ -62,20 +62,51 @@ export function Contact() {
 
                     <MotionWrapper delay={0.4}>
                         <div className="bg-slate-50 p-8 md:p-10 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 relative">
-                            <form className="space-y-6 relative z-10">
+                            <form
+                                className="space-y-6 relative z-10"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.currentTarget);
+                                    const data = Object.fromEntries(formData.entries());
+                                    console.log('Contact form submission:', data);
+
+                                    import('sonner').then(({ toast }) => {
+                                        toast.success("Demo requested!", {
+                                            description: "We've received your request and will contact you soon."
+                                        });
+                                    });
+
+                                    (e.target as HTMLFormElement).reset();
+                                }}
+                            >
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="name" className="text-slate-900 font-semibold">Full Name</Label>
                                         <div className="relative">
                                             <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                                            <Input id="name" placeholder="John Doe" className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary" required />
+                                            <Input
+                                                id="name"
+                                                name="name"
+                                                placeholder="John Doe"
+                                                className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="phone" className="text-slate-900 font-semibold">Phone Number</Label>
                                         <div className="relative">
                                             <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                                            <Input id="phone" type="tel" placeholder="+91 98765 43210" className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary" required />
+                                            <Input
+                                                id="phone"
+                                                name="phone"
+                                                type="tel"
+                                                placeholder="+91 98765 43210"
+                                                pattern="^\+?[0-9\s\-]{10,}$"
+                                                title="Please enter a valid phone number"
+                                                className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -84,13 +115,24 @@ export function Contact() {
                                     <Label htmlFor="gym-name" className="text-slate-900 font-semibold">Gym / Studio Name</Label>
                                     <div className="relative">
                                         <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                                        <Input id="gym-name" placeholder="Your Gym Name" className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary" required />
+                                        <Input
+                                            id="gym-name"
+                                            name="gymName"
+                                            placeholder="Your Gym Name"
+                                            className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary"
+                                            required
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="message" className="text-slate-900 font-semibold">Message (Optional)</Label>
-                                    <Textarea id="message" placeholder="Tell us about your requirements..." className="min-h-[100px] bg-white border-slate-200 focus:border-primary focus:ring-primary" />
+                                    <Textarea
+                                        id="message"
+                                        name="message"
+                                        placeholder="Tell us about your requirements..."
+                                        className="min-h-[100px] bg-white border-slate-200 focus:border-primary focus:ring-primary"
+                                    />
                                 </div>
 
                                 <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">

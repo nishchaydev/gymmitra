@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay } from 'date-fns'
+import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMonthOfInterval } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -21,21 +21,20 @@ export async function GET(request: NextRequest) {
         const type = searchParams.get('type')
 
         if (type === 'expiring') {
-            // Get memberships expiring in the next 7 days
             const today = new Date()
             const nextWeek = new Date()
             nextWeek.setDate(today.getDate() + 7)
 
             const expiringSubscriptions = await prisma.memberSubscription.findMany({
                 where: {
-                    gymId: gym.id, // Security Check
-                    endDate: {
-                        gte: today,
-                        lte: nextWeek
-                    },
+                    gymId: gym.id,
+                    endDate: { gte: today, lte: nextWeek },
                     status: 'ACTIVE'
                 },
-                include: {
+                select: {
+                    id: true,
+                    endDate: true,
+                    status: true,
                     member: {
                         select: {
                             id: true,
@@ -50,56 +49,44 @@ export async function GET(request: NextRequest) {
                         }
                     }
                 },
-                orderBy: {
-                    endDate: 'asc'
-                }
+                orderBy: { endDate: 'asc' }
             })
             return NextResponse.json(expiringSubscriptions)
         }
 
         if (type === 'revenue') {
-            // Get revenue for the last 6 months using a single grouped query
-            const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5))
+            const startDate = startOfMonth(subMonths(new Date(), 5))
 
-            // Group by month (truncating date to month start)
-            // Note: Prisma doesn't support complex date grouping natively easily with SQLite/Postgres differences 
-            // without raw queries, but for now we'll fetch the range and group in memory 
-            // OR use groupBy if strictly on Postgres with appropriate date functions.
-            // Since we want to stick to Prisma standard features where possible or use raw for performance:
+            // Raw SQL for efficient monthly aggregation
+            const revenueResult = await prisma.$queryRaw`
+                SELECT 
+                    date_trunc('month', "issueDate") as month,
+                    SUM(total) as total
+                FROM "Invoice"
+                WHERE "gymId" = ${gym.id}
+                  AND "issueDate" >= ${startDate}
+                  AND "paymentStatus" = 'PAID'
+                GROUP BY 1
+                ORDER BY 1 ASC
+            ` as any[]
 
-            // Using findMany and aggregating in code is better than N+1, but typical efficient way:
-            const invoices = await prisma.invoice.groupBy({
-                by: ['issueDate'],
-                _sum: {
-                    total: true
-                },
-                where: {
-                    gymId: gym.id,
-                    issueDate: {
-                        gte: sixMonthsAgo
-                    },
-                    paymentStatus: 'PAID'
+            const interval = eachMonthOfInterval({
+                start: startDate,
+                end: new Date()
+            })
+
+            const revenueMap = new Map(
+                interval.map(date => [format(date, 'MMM yyyy'), 0])
+            )
+
+            revenueResult.forEach(row => {
+                const key = format(new Date(row.month), 'MMM yyyy')
+                if (revenueMap.has(key)) {
+                    revenueMap.set(key, Number(row.total || 0))
                 }
             })
 
-            // Post-process to group by month
-            const monthlyRevenue = new Map<string, number>()
-
-            // Initialize last 6 months with 0
-            for (let i = 5; i >= 0; i--) {
-                const date = subMonths(new Date(), i)
-                const monthKey = format(date, 'MMM')
-                monthlyRevenue.set(monthKey, 0)
-            }
-
-            invoices.forEach(inv => {
-                const month = format(inv.issueDate, 'MMM')
-                if (monthlyRevenue.has(month)) {
-                    monthlyRevenue.set(month, (monthlyRevenue.get(month) || 0) + (Number(inv._sum.total) || 0))
-                }
-            })
-
-            const revenueData = Array.from(monthlyRevenue.entries()).map(([name, total]) => ({
+            const revenueData = Array.from(revenueMap.entries()).map(([name, total]) => ({
                 name,
                 total
             }))
@@ -108,7 +95,6 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'attendance') {
-            // Get attendance counts for the last 7 days
             const attendanceData = []
             for (let i = 6; i >= 0; i--) {
                 const date = subDays(new Date(), i)
@@ -117,23 +103,19 @@ export async function GET(request: NextRequest) {
 
                 const count = await prisma.attendance.count({
                     where: {
-                        gymId: gym.id, // Security Check
-                        checkInTime: {
-                            gte: start,
-                            lte: end
-                        }
+                        gymId: gym.id,
+                        checkInTime: { gte: start, lte: end }
                     }
                 })
 
                 attendanceData.push({
-                    name: format(date, 'EEE'), // Mon, Tue, etc.
+                    name: format(date, 'EEE'),
                     total: count
                 })
             }
             return NextResponse.json(attendanceData)
         }
 
-        // Default: Dashboard Summary (if no type or type='summary')
         if (!type || type === 'summary') {
             const [
                 totalRevenue,
@@ -143,34 +125,23 @@ export async function GET(request: NextRequest) {
                 recentSales
             ] = await Promise.all([
                 prisma.invoice.aggregate({
-                    where: {
-                        gymId: gym.id,
-                        paymentStatus: 'PAID'
-                    },
+                    where: { gymId: gym.id, paymentStatus: 'PAID' },
                     _sum: { total: true }
                 }),
-                prisma.member.count({
-                    where: { gymId: gym.id }
-                }),
-                prisma.member.count({
-                    where: {
-                        gymId: gym.id,
-                        status: 'ACTIVE'
-                    }
-                }),
-                prisma.product.count({
-                    where: {
-                        gymId: gym.id,
-                        isActive: true
-                    }
-                }),
+                prisma.member.count({ where: { gymId: gym.id } }),
+                prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }),
+                prisma.product.count({ where: { gymId: gym.id, isActive: true } }),
                 prisma.sale.findMany({
                     where: { gymId: gym.id },
                     take: 10,
                     orderBy: { saleDate: 'desc' },
-                    include: {
-                        product: true,
-                        member: true
+                    select: {
+                        id: true,
+                        quantity: true,
+                        finalAmount: true,
+                        saleDate: true,
+                        product: { select: { name: true, category: true } },
+                        member: { select: { name: true } }
                     }
                 })
             ])
@@ -180,18 +151,19 @@ export async function GET(request: NextRequest) {
                 totalMembers,
                 activeMembers,
                 totalProducts,
-                recentSales
+                recentSales: recentSales.map(s => ({
+                    ...s,
+                    productName: s.product.name,
+                    category: s.product.category,
+                    memberName: s.member?.name || 'Walk-in'
+                }))
             })
         }
 
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 })
 
     } catch (error) {
-        console.error('Reports API Error:', {
-            error: error instanceof Error ? error.message : error,
-            stack: error instanceof Error ? error.stack : undefined, // Log stack for debugging
-            type: request.nextUrl.searchParams.get('type')
-        })
+        console.error('Reports API Error:', error)
         return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 })
     }
 }

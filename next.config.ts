@@ -15,7 +15,7 @@ export default withSentryConfig(nextConfig, {
   project: "gym-mitra-erp",
 
   // An auth token is required for uploading source maps.
-  // authToken: process.env.SENTRY_AUTH_TOKEN,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
 
   silent: true, // Suppresses all logs
 });
