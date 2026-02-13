@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { prisma } from "./prisma"
 
 /**
@@ -5,7 +6,7 @@ import { prisma } from "./prisma"
  * Format: {PREFIX}-INV-{COUNTER} (e.g., TF-INV-0001)
  * Supports optional transaction client.
  */
-export async function generateInvoiceNumber(gymId: string, tx?: any) {
+export async function generateInvoiceNumber(gymId: string, tx?: Prisma.TransactionClient) {
     const client = tx || prisma
 
     try {
@@ -20,13 +21,14 @@ export async function generateInvoiceNumber(gymId: string, tx?: any) {
 
         // Safety check for overflow (though unlikely with 4 digits for most gyms)
         if (gym.invoiceCounter > 9999) {
-            // Log warning or adjust logic if needed. For now, we allow it to grow beyond 4 digits.
+            console.warn(`[INVOICE_COUNTER_WARNING] Gym ${gymId} has exceeded 9999 invoices. Consider adjusting prefix or counter format.`)
         }
 
         return `${prefix}-INV-${counter}`
     } catch (error) {
         console.error(`Error generating invoice number for gym ${gymId}:`, error)
-        throw new Error("Failed to generate unique invoice number")
+        // Keep original error context when re-throwing
+        throw error instanceof Error ? error : new Error("Failed to generate unique invoice number")
     }
 }
 

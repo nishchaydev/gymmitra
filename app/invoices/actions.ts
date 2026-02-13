@@ -41,8 +41,12 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
     const invoice = await prisma.$transaction(async (tx) => {
         const invoiceNumber = await generateInvoiceNumber(gym.id, tx)
 
-        const subtotal = validatedData.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-        const total = Math.max(0, subtotal - (validatedData.discount || 0))
+        // Use integer arithmetic (cents) for precision
+        const subtotalCents = validatedData.items.reduce((acc, item) =>
+            acc + Math.round(item.quantity * (item.unitPrice * 100)), 0)
+
+        const discountCents = Math.round(validatedData.discount * 100)
+        const totalCents = Math.max(0, subtotalCents - discountCents)
 
         return await tx.invoice.create({
             data: {
@@ -50,9 +54,9 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
                 type: "SALE",
                 gym: { connect: { id: gym.id } },
                 memberId: validatedData.memberId,
-                subtotal,
+                subtotal: subtotalCents / 100,
                 discount: validatedData.discount,
-                total,
+                total: totalCents / 100,
                 paymentMethod: validatedData.paymentMethod,
                 paymentStatus: "PAID",
                 notes: validatedData.notes,
@@ -61,7 +65,7 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
                         description: item.description,
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
-                        amount: item.quantity * item.unitPrice,
+                        amount: (item.quantity * (item.unitPrice * 100)) / 100,
                     }))
                 }
             } as any

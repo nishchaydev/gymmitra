@@ -11,24 +11,37 @@ export function UpcomingBirthdays() {
     const birthdays = MOCKUP_DATA.birthdays
 
     const getDaysUntil = (dateStr: string) => {
-        const today = new Date()
-        const [day, monthName] = dateStr.split(' ')
         const months: Record<string, number> = {
             'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
             'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
         }
 
-        const birthday = new Date(today.getFullYear(), months[monthName], parseInt(day))
+        const parts = dateStr.split(' ')
+        if (parts.length < 2) return null
+
+        const [day, monthName] = parts
+        if (months[monthName] === undefined) return null
+
+        const dayInt = parseInt(day)
+        if (isNaN(dayInt)) return null
+
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        let birthday = new Date(today.getFullYear(), months[monthName], dayInt)
+        birthday.setHours(0, 0, 0, 0)
 
         // If birthday has already passed this year, look at next year
         if (birthday < today) {
             birthday.setFullYear(today.getFullYear() + 1)
         }
 
-        const diffTime = Math.abs(birthday.getTime() - today.getTime())
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffTime = birthday.getTime() - today.getTime()
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
 
-        return diffDays === 0 ? "Today!" : `In ${diffDays} days`
+        if (diffDays === 0) return "Today!"
+        if (diffDays === 1) return "Tomorrow"
+        return `In ${diffDays} days`
     }
 
     return (

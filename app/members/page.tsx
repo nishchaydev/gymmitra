@@ -66,7 +66,7 @@ export default async function MembersPage({
         whereClause.status = status as any
     }
 
-    let members = isDemo ? SHOWCASE_MEMBERS : await prisma.member.findMany({
+    let members = isDemo ? (SHOWCASE_MEMBERS as any[]) : await prisma.member.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' }
     })
@@ -74,14 +74,14 @@ export default async function MembersPage({
     if (isDemo) {
         if (query) {
             const lowQuery = query.toLowerCase()
-            members = (members as any[]).filter(m =>
-                m.name.toLowerCase().includes(lowQuery) ||
-                m.phone.toLowerCase().includes(lowQuery) ||
+            members = members.filter(m =>
+                (m.name?.toLowerCase().includes(lowQuery)) ||
+                (m.phone && m.phone.toLowerCase().includes(lowQuery)) ||
                 (m.email && m.email.toLowerCase().includes(lowQuery))
             )
         }
         if (status && status !== 'ALL') {
-            members = (members as any[]).filter(m => m.status === status)
+            members = members.filter(m => m.status === status)
         }
     }
 

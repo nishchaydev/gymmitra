@@ -41,8 +41,9 @@ export default async function MemberDetailPage({
         gymId = gym.id
     }
 
+    const MS_PER_DAY = 24 * 60 * 60 * 1000
     const now = new Date()
-    const yesterday = new Date(now.getTime() - 86400000)
+    const yesterday = new Date(now.getTime() - MS_PER_DAY)
 
     const member = isDemo ? {
         ...getShowcaseMember(id),
@@ -54,7 +55,7 @@ export default async function MemberDetailPage({
         }],
         invoices: [
             { id: "inv1", invoiceNumber: "INV001", issueDate: yesterday, total: 2500, paymentStatus: "PAID" },
-            { id: "inv2", invoiceNumber: "INV002", issueDate: new Date(yesterday.getTime() - 86400000 * 30), total: 2500, paymentStatus: "PAID" }
+            { id: "inv2", invoiceNumber: "INV002", issueDate: new Date(yesterday.getTime() - MS_PER_DAY * 30), total: 2500, paymentStatus: "PAID" }
         ],
         attendance: [
             { id: "att1", date: now, checkInTime: now },

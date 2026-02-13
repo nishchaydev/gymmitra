@@ -8,6 +8,7 @@ export const SHOWCASE_STATS = {
     productSales: 342,
     revenueGrowth: "+12.5% from last month",
     memberGrowth: "+48 this week",
+    expiringSoon: 12,
     recentInvoices: [
         { id: "inv1", member: { name: "Rahul Sharma" }, amount: 1500, status: "PAID", date: new Date().toISOString(), type: "Membership" },
         { id: "inv2", member: { name: "Anjali Gupta" }, amount: 3000, status: "PAID", date: new Date(Date.now() - 3600000).toISOString(), type: "Membership" },
@@ -98,9 +99,9 @@ export const SHOWCASE_PRODUCTS = [
 ]
 
 export const SHOWCASE_INVOICES = [
-    { id: "inv001", member: { name: "Rahul Sharma" }, amount: 2500, status: "PAID", date: new Date("2024-02-10"), type: "Product" },
-    { id: "inv002", member: { name: "Anjali Gupta" }, amount: 15000, status: "PAID", date: new Date("2024-02-08"), type: "Membership" },
-    { id: "inv003", member: { name: "Vikram Singh" }, amount: 4500, status: "PENDING", date: new Date("2024-02-05"), type: "Membership" },
+    { id: "inv001", member: { id: "m1", name: "Rahul Sharma" }, amount: 2500, status: "PAID", date: new Date("2024-02-10"), type: "PRODUCT" },
+    { id: "inv002", member: { id: "m2", name: "Anjali Gupta" }, amount: 15000, status: "PAID", date: new Date("2024-02-08"), type: "MEMBERSHIP" },
+    { id: "inv003", member: { id: "m3", name: "Vikram Singh" }, amount: 4500, status: "PENDING", date: new Date("2024-02-05"), type: "MEMBERSHIP" },
 ]
 
 export const getShowcaseMember = (id: string) => SHOWCASE_MEMBERS.find(m => m.id === id) || SHOWCASE_MEMBERS[0]

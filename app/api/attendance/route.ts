@@ -48,19 +48,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Member is not active' }, { status: 400 })
         }
 
-        // Check for existing check-in today
-        const startOfDay = new Date()
-        startOfDay.setHours(0, 0, 0, 0)
-
-        const endOfDay = new Date()
-        endOfDay.setHours(23, 59, 59, 999)
+        const { startOfDay, endOfDay } = await import('date-fns')
+        const now = new Date()
 
         const existingAttendance = await prisma.attendance.findFirst({
             where: {
                 memberId,
                 date: {
-                    gte: startOfDay,
-                    lte: endOfDay
+                    gte: startOfDay(now),
+                    lte: endOfDay(now)
                 }
             }
         })

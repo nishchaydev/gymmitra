@@ -60,22 +60,34 @@ export function LiveDemo() {
                                     <div className="h-8 w-8 bg-[#1e3a8a] rounded-lg" />
                                     GymMitra
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1" role="tablist" aria-label="Dashboard Preview Tabs">
                                     <button
+                                        id="tab-dashboard"
                                         onClick={() => setActiveTab('dashboard')}
                                         className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                        role="tab"
+                                        aria-selected={activeTab === 'dashboard'}
+                                        aria-controls="panel-dashboard"
                                     >
                                         Dashboard
                                     </button>
                                     <button
+                                        id="tab-members"
                                         onClick={() => setActiveTab('members')}
                                         className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'members' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                        role="tab"
+                                        aria-selected={activeTab === 'members'}
+                                        aria-controls="panel-members"
                                     >
                                         Members
                                     </button>
                                     <button
+                                        id="tab-billing"
                                         onClick={() => setActiveTab('billing')}
                                         className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                        role="tab"
+                                        aria-selected={activeTab === 'billing'}
+                                        aria-controls="panel-billing"
                                     >
                                         Billing
                                     </button>
@@ -85,12 +97,16 @@ export function LiveDemo() {
                             {/* Main Area */}
                             <div className="flex-1 overflow-y-auto">
                                 {/* Mobile Tab Switcher */}
-                                <div className="lg:hidden flex border-b bg-white sticky top-0 z-20">
+                                <div className="lg:hidden flex border-b bg-white sticky top-0 z-20" role="tablist" aria-label="Mobile Navigation">
                                     {(['dashboard', 'members', 'billing'] as const).map((tab) => (
                                         <button
                                             key={tab}
+                                            id={`mobile-tab-${tab}`}
                                             onClick={() => setActiveTab(tab)}
                                             className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400'}`}
+                                            role="tab"
+                                            aria-selected={activeTab === tab}
+                                            aria-controls={`panel-${tab}`}
                                         >
                                             {tab}
                                         </button>
@@ -99,7 +115,7 @@ export function LiveDemo() {
 
                                 <div className="p-4 md:p-8">
                                     {activeTab === 'dashboard' && (
-                                        <div className="space-y-6">
+                                        <div id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" className="space-y-6">
                                             <div className="flex justify-between items-center">
                                                 <h3 className="text-2xl font-bold text-slate-800">Overview</h3>
                                                 <div className="text-sm text-slate-500">Last updated: Just now</div>
@@ -132,7 +148,7 @@ export function LiveDemo() {
                                                 </div>
                                                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in fade-in zoom-in duration-500 delay-200">
                                                     <div className="text-sm font-medium text-slate-500 mb-1">Expiring Soon</div>
-                                                    <div className="text-2xl font-bold text-red-600">12</div>
+                                                    <div className="text-2xl font-bold text-red-600">{SHOWCASE_STATS.expiringSoon}</div>
                                                     <div className="text-xs text-slate-400 mt-2">Auto-reminders sent</div>
                                                 </div>
                                             </div>
@@ -181,9 +197,9 @@ export function LiveDemo() {
                                     )}
 
                                     {activeTab === 'members' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                        <div id="panel-members" role="tabpanel" aria-labelledby="tab-members" className="space-y-6 animate-in fade-in duration-300">
                                             <div className="flex justify-between items-center">
-                                                <h3 className="text-2xl font-bold text-slate-800">Members (342)</h3>
+                                                <h3 className="text-2xl font-bold text-slate-800">Members ({SHOWCASE_MEMBERS.length})</h3>
                                                 <Button size="sm" className="bg-[#1e3a8a]">Add Member</Button>
                                             </div>
                                             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

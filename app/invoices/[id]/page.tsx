@@ -15,7 +15,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
     if (!user && !isDemoMode) redirect("/login")
 
-    let invoice;
+    let invoice: any;
 
     if (id.startsWith("demo-")) {
         const demoId = id.replace("demo-", "")
@@ -59,21 +59,61 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             ]
         }
     } else {
-        invoice = await prisma.invoice.findUnique({
+        const dbInvoice = await prisma.invoice.findUnique({
             where: { id: id },
-            include: {
-                gym: true,
-                member: true,
-                items: true,
+            select: {
+                id: true,
+                invoiceNumber: true,
+                type: true,
+                paymentStatus: true,
+                paymentMethod: true,
+                subtotal: true,
+                discount: true,
+                total: true,
+                notes: true,
+                issueDate: true,
+                dueDate: true,
+                createdAt: true,
+                gym: {
+                    select: {
+                        userId: true,
+                        businessName: true,
+                        address: true,
+                        city: true,
+                        state: true,
+                        pincode: true,
+                        phone: true,
+                        email: true,
+                        upiId: true,
+                    }
+                },
+                member: {
+                    select: {
+                        name: true,
+                        phone: true,
+                        email: true,
+                    }
+                },
+                items: {
+                    select: {
+                        id: true,
+                        description: true,
+                        quantity: true,
+                        unitPrice: true,
+                        amount: true,
+                    }
+                }
             }
         })
 
-        if (!invoice) notFound()
+        if (!dbInvoice) notFound()
 
         // Security check: ensure invoice belongs to the gym owned by the user
-        if ((invoice as any).gym.userId !== user?.id) {
+        if (dbInvoice.gym.userId !== user?.id) {
             redirect("/dashboard")
         }
+
+        invoice = dbInvoice
     }
 
     return (

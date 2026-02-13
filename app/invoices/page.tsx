@@ -41,19 +41,21 @@ export default async function InvoicesPage() {
     }
 
     const invoices = isDemo ? SHOWCASE_INVOICES.map(i => ({
-        ...i,
+        id: i.id,
         invoiceNumber: i.id.toUpperCase(),
         issueDate: new Date(i.date),
         dueDate: new Date(i.date),
         total: i.amount,
-        paymentStatus: i.status as any,
+        paymentStatus: i.status as any, // Cast to any because the enums might not perfectly match local Prisma types yet
         type: i.type as any,
-        items: [],
+        notes: null,
+        subtotal: i.amount,
+        discount: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
         gymId: 'demo',
-        memberId: i.id,
-        member: { name: i.member.name }
+        memberId: i.member.id,
+        member: { name: i.member?.name || 'Walk-in' }
     })) : await prisma.invoice.findMany({
         where: {
             member: {

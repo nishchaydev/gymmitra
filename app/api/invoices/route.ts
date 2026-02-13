@@ -45,9 +45,15 @@ export async function GET(request: NextRequest) {
 
         // Validate status if provided
         const allowedStatuses = ["PAID", "PENDING", "OVERDUE", "PARTIAL"]
-        const validatedStatus = status && allowedStatuses.includes(status.toUpperCase())
-            ? status.toUpperCase() as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL"
-            : undefined
+
+        if (status && !allowedStatuses.includes(status.toUpperCase())) {
+            return NextResponse.json(
+                { error: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}` },
+                { status: 400 }
+            )
+        }
+
+        const validatedStatus = status ? (status.toUpperCase() as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL") : undefined
 
         const invoices = await prisma.invoice.findMany({
             where: {
