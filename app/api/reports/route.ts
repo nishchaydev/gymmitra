@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay } from 'date-fns'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
+async function getAuthenticatedGym() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+    return await prisma.gymProfile.findUnique({ where: { userId: user.id } })
+}
+
 export async function GET(request: NextRequest) {
     try {
+        const gym = await getAuthenticatedGym()
+        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const searchParams = request.nextUrl.searchParams
         const type = searchParams.get('type')
 
@@ -17,6 +28,7 @@ export async function GET(request: NextRequest) {
 
             const expiringSubscriptions = await prisma.memberSubscription.findMany({
                 where: {
+                    gymId: gym.id, // Security Check
                     endDate: {
                         gte: today,
                         lte: nextWeek
@@ -59,6 +71,7 @@ export async function GET(request: NextRequest) {
                         total: true
                     },
                     where: {
+                        gymId: gym.id, // Security Check
                         issueDate: {
                             gte: start,
                             lt: nextMonth
@@ -69,7 +82,7 @@ export async function GET(request: NextRequest) {
 
                 revenueData.push({
                     name: format(date, 'MMM'),
-                    total: result._sum.total || 0
+                    total: Number(result._sum.total || 0)
                 })
             }
             return NextResponse.json(revenueData)
@@ -85,6 +98,7 @@ export async function GET(request: NextRequest) {
 
                 const count = await prisma.attendance.count({
                     where: {
+                        gymId: gym.id, // Security Check
                         checkInTime: {
                             gte: start,
                             lte: end

@@ -11,6 +11,9 @@ import { MobilePreview } from "@/components/landing/MobilePreview"
 import { Pricing } from "@/components/landing/Pricing"
 import { FAQ } from "@/components/landing/FAQ"
 import { FinalCTA } from "@/components/landing/FinalCTA"
+import { AboutEMitra } from "@/components/landing/AboutEMitra"
+import { MobileStickyCTA } from "@/components/landing/MobileStickyCTA"
+import { ShieldCheck, Zap, Award, Building2 } from "lucide-react"
 
 export default function Home() {
   return (
@@ -47,62 +50,89 @@ export default function Home() {
         {/* 10. Risk Reversal - FAQ */}
         <FAQ />
 
-        {/* 11. Final Push - CTA */}
+        {/* 11. Ecosystem - eMitra Technologies */}
+        <AboutEMitra />
+
+        {/* 12. Final Push - CTA */}
         <FinalCTA />
       </main>
 
       {/* Footer */}
-      <footer className="py-20 bg-drift-900 text-slate-400 border-t border-slate-800">
-        <div className="container px-4 mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16 text-left">
-            <div className="col-span-1 md:col-span-1">
-              <div className="font-bold text-2xl text-white mb-6">
-                Gym<span className="text-primary">Mitra</span>
+      <footer className="relative bg-[#020617] text-slate-400 py-24 overflow-hidden border-t border-slate-900">
+        {/* Subtle glow effect */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
+        <div className="container px-4 md:px-6 mx-auto relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-16 mb-20">
+            {/* Branding Column */}
+            <div className="md:col-span-4 space-y-8">
+              <div>
+                <Link href="/" className="inline-block">
+                  <div className="font-extrabold text-3xl tracking-tight text-white flex items-center gap-1">
+                    Gym<span className="text-primary-400">Mitra</span>
+                  </div>
+                </Link>
+                <p className="mt-6 text-slate-400 leading-relaxed max-w-sm">
+                  The most advanced ERP solution for modern gyms in India.
+                  Streamlining operations and accelerating growth for 50+ fitness businesses.
+                </p>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                The most advanced ERP solution for modern gyms in India.
-                Built by eMitra Technologies.
-              </p>
+
+              <div className="pt-6 border-t border-slate-900/50">
+                <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-4 inline-flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">A product of</span>
+                    <span className="block text-sm font-bold text-slate-200">eMitra Technologies</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-xs">Product</h4>
-              <ul className="space-y-4 text-sm font-medium">
-                <li><Link href="#features" className="hover:text-primary transition-colors">Features</Link></li>
-                <li><Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-                <li><Link href="/login?view=register" className="hover:text-primary transition-colors">Request Demo</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-xs">Resources</h4>
-              <ul className="space-y-4 text-sm font-medium">
-                <li><Link href="#" className="hover:text-primary transition-colors">Support Center</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">API Docs</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">Community</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-xs">Company</h4>
-              <ul className="space-y-4 text-sm font-medium">
-                <li><Link href="#" className="hover:text-primary transition-colors">About Us</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-              </ul>
+
+            {/* Links Columns */}
+            <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-8">
+              <div className="space-y-6">
+                <h4 className="text-sm font-bold text-white uppercase tracking-[0.2em]">Product</h4>
+                <ul className="space-y-4">
+                  <li><Link href="#features" className="text-sm hover:text-primary transition-colors duration-200">Features</Link></li>
+                  <li><Link href="#pricing" className="text-sm hover:text-primary transition-colors duration-200">Pricing</Link></li>
+                  <li><Link href="/login?view=register" className="text-sm hover:text-primary transition-colors duration-200">Request Demo</Link></li>
+                  <li><Link href="/login?view=register" className="text-sm hover:text-primary transition-colors duration-200">Live Kiosk</Link></li>
+                </ul>
+              </div>
+              <div className="space-y-6">
+                <h4 className="text-sm font-bold text-white uppercase tracking-[0.2em]">Resources</h4>
+                <ul className="space-y-4">
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Support Center</Link></li>
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">API Documentation</Link></li>
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Community Forum</Link></li>
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Video Tutorials</Link></li>
+                </ul>
+              </div>
+              <div className="space-y-6 col-span-2 sm:col-span-1">
+                <h4 className="text-sm font-bold text-white uppercase tracking-[0.2em]">Legal</h4>
+                <ul className="space-y-4">
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Privacy Policy</Link></li>
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Terms of Service</Link></li>
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Cookie Policy</Link></li>
+                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Security Details</Link></li>
+                </ul>
+              </div>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-sm font-medium opacity-60">
+          {/* Bottom Bar */}
+          <div className="pt-10 border-t border-slate-900/80 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-xs font-semibold text-slate-500 tracking-wide text-center md:text-left">
               &copy; {new Date().getFullYear()} eMitra Technologies. All rights reserved.
-            </div>
-            <div className="flex items-center gap-6">
-              {/* Social links placeholder */}
-              <div className="h-8 w-8 rounded-full bg-slate-800/50 hover:bg-primary/20 transition-colors" />
-              <div className="h-8 w-8 rounded-full bg-slate-800/50 hover:bg-primary/20 transition-colors" />
-              <div className="h-8 w-8 rounded-full bg-slate-800/50 hover:bg-primary/20 transition-colors" />
+              <span className="block sm:inline ml-0 sm:ml-2">Crafted with precision in India.</span>
             </div>
           </div>
         </div>
       </footer>
+      <MobileStickyCTA />
     </div>
   )
 }

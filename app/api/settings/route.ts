@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -8,13 +9,21 @@ const settingsSchema = z.object({
     phone: z.string().min(10, "Phone number is required"),
     address: z.string().optional(),
     gst: z.string().optional(),
+    invoicePrefix: z.string().min(1).max(5).optional(),
 })
 
 export async function GET() {
     try {
-        // For now, fetch the "default" gym profile
-        // In future, this will come from session/auth
-        const gymProfile = await prisma.gymProfile.findFirst()
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gymProfile = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
 
         if (!gymProfile) {
             return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
@@ -28,21 +37,23 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const body = await request.json()
         const data = settingsSchema.parse(body)
 
-        // For now, update the "default" gym profile
-        // We know it exists because of seeding, or we create it if missing
-        const existingProfile = await prisma.gymProfile.findFirst()
-
         const gymProfile = await prisma.gymProfile.upsert({
-            where: { id: existingProfile?.id || 'default-gym-id' },
+            where: { userId: user.id },
+            update: data,
             create: {
                 ...data,
-                id: 'default-gym-id',
-                userId: 'default_user', // reliable default for now
+                userId: user.id,
             },
-            update: data,
         })
 
         return NextResponse.json(gymProfile)

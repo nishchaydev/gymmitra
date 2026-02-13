@@ -38,9 +38,9 @@ export async function completeOnboarding(formData: FormData) {
         invoicePrefix: formData.get("invoicePrefix")?.toString().toUpperCase(),
     }
 
-    const validatedData = onboardingSchema.parse(rawData)
-
     try {
+        const validatedData = onboardingSchema.parse(rawData)
+
         await prisma.gymProfile.upsert({
             where: { userId: user.id },
             update: {
@@ -58,8 +58,12 @@ export async function completeOnboarding(formData: FormData) {
             }
         })
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            console.error("Onboarding validation failed:", error.flatten())
+            throw new Error(`Validation Error: ${error.issues[0].message}`)
+        }
         console.error("Onboarding logic failed:", error)
-        throw new Error("Failed to save your profile. Please try again.")
+        throw new Error("Failed to save your profile. Please check all fields and try again.")
     }
 
     revalidatePath("/dashboard")

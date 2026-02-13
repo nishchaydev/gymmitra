@@ -130,7 +130,8 @@ export async function POST(request: NextRequest) {
                         description: item.description,
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
-                        amount: item.quantity * item.unitPrice
+                        amount: item.quantity * item.unitPrice,
+                        gymId: gym.id, // Mandatory for multi-tenancy
                     }))
                 }
             },

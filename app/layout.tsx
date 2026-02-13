@@ -9,8 +9,24 @@ const fontSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Gym Mitra | Powerful Gym Management ERP",
-  description: "The modern ERP for fitness entrepreneurs. Manage billing, members, and attendance seamlessly.",
+  title: "Gym Mitra | #1 Gym Management Software in India | WhatsApp Automation",
+  description: "Automate your gym with Gym Mitra. India's top ERP for fitness businesses. Automated WhatsApp reminders, member app, biometric access, and GST invoicing. Save 20+ hours every month.",
+  keywords: "gym management software, fitness erp india, whatsapp gym automation, gym membership app, gym billing software gst",
+  openGraph: {
+    title: "Gym Mitra - Run Your Gym on Autopilot",
+    description: "Save 20 hours/month with India's most advanced gym management platform.",
+    url: "https://gymmitra.vercel.app",
+    siteName: "Gym Mitra",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
 };
 
 import { Toaster } from "@/components/ui/sonner"

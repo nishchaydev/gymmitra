@@ -1,9 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRight, CheckCircle2, PlayCircle } from "lucide-react"
+import { ArrowRight, CheckCircle2, PlayCircle, Star } from "lucide-react"
 import Link from "next/link"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
+import { AnimatedNumber } from "@/components/landing/ui/AnimatedNumber"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 
@@ -32,8 +33,8 @@ export function Hero() {
                 <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-16">
 
                     <MotionWrapper delay={0.1}>
-                        <div className="inline-flex items-center rounded-full border border-drift-200 bg-white px-3 py-1 text-sm font-medium text-slate-600 shadow-sm mb-6">
-                            <span className="flex h-2 w-2 rounded-full bg-primary-500 mr-2 animate-pulse"></span>
+                        <div className="inline-flex items-center rounded-full border border-primary-100 bg-primary-50/50 px-3 py-1 text-sm font-semibold text-primary-700 shadow-sm mb-6">
+                            <Star className="h-3.5 w-3.5 mr-2 text-primary-500 fill-primary-500" />
                             The #1 ERP for Modern Indian Gyms
                         </div>
                     </MotionWrapper>
@@ -52,30 +53,27 @@ export function Hero() {
                         </p>
                     </MotionWrapper>
 
-                    <MotionWrapper delay={0.4} className="flex flex-col sm:flex-row gap-4 justify-center w-full items-center mb-12">
-                        <Link href="/login?view=register">
-                            <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary-600 text-white shadow-xl shadow-primary/20 font-bold transition-all hover:-translate-y-1 w-full sm:w-auto">
-                                Start Free Trial
-                                <ArrowRight className="ml-2 h-5 w-5" />
+                    <MotionWrapper delay={0.4} className="flex flex-col sm:flex-row gap-6 justify-center w-full items-center mb-12">
+                        <Link href="/login?view=register" className="w-full sm:w-auto">
+                            <Button size="lg" className="h-16 px-10 text-xl rounded-2xl bg-primary hover:bg-primary-600 text-white shadow-2xl shadow-primary/30 font-extrabold transition-all hover:-translate-y-1 hover:scale-105 active:scale-95 w-full">
+                                Start 14-Day Free Trial
+                                <ArrowRight className="ml-2 h-6 w-6" />
                             </Button>
                         </Link>
 
                         <Link href="/dashboard" className="w-full sm:w-auto">
-                            <button className="group relative flex items-center gap-3 px-6 py-3 rounded-full text-slate-600 font-medium hover:bg-drift-50 transition-colors w-full sm:w-auto">
-                                <div className="relative">
-                                    <PlayCircle className="w-10 h-10 text-primary fill-primary-50" />
-                                    <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
-                                </div>
-                                <span className="group-hover:text-primary transition-colors">Watch 2-min Demo</span>
+                            <button className="group relative flex items-center gap-3 px-6 py-3 rounded-full text-slate-500 font-semibold hover:text-primary transition-all w-full justify-center">
+                                <PlayCircle className="w-7 h-7 text-primary/80 group-hover:text-primary transition-colors" />
+                                <span>Watch 2-min Demo</span>
                             </button>
                         </Link>
                     </MotionWrapper>
 
                     {/* Stats Counters */}
                     <MotionWrapper delay={0.5} className="grid grid-cols-3 gap-4 md:gap-12 max-w-2xl mx-auto border-t border-slate-100 pt-8 w-full">
-                        <StatCounter end={50} suffix="+" label="Gyms Trust Us" duration={2} />
-                        <StatCounter end={12000} suffix="+" label="Members Managed" duration={2.5} />
-                        <StatCounter end={99.9} suffix="%" label="Uptime Reliability" duration={2} />
+                        <StatCounter value={50} suffix="+" label="Gyms Trust Us" />
+                        <StatCounter value={12000} suffix="+" label="Members Managed" />
+                        <StatCounter value={99} suffix="%" label="Uptime Reliability" />
                     </MotionWrapper>
 
                 </div>
@@ -84,35 +82,13 @@ export function Hero() {
     )
 }
 
-function StatCounter({ end, suffix, label, duration }: { end: number, suffix: string, label: string, duration: number }) {
-    const [count, setCount] = useState(0)
-
-    useEffect(() => {
-        let startTime: number | null = null
-        let animationFrame: number
-
-        const animate = (timestamp: number) => {
-            if (!startTime) startTime = timestamp
-            const progress = (timestamp - startTime) / (duration * 1000)
-
-            if (progress < 1) {
-                setCount(Math.floor(end * progress))
-                animationFrame = requestAnimationFrame(animate)
-            } else {
-                setCount(end)
-            }
-        }
-
-        animationFrame = requestAnimationFrame(animate)
-        return () => cancelAnimationFrame(animationFrame)
-    }, [end, duration])
-
+function StatCounter({ value, suffix, label }: { value: number, suffix: string, label: string }) {
     return (
         <div className="text-center">
             <div className="text-2xl md:text-4xl font-extrabold text-slate-900 mb-1">
-                {end % 1 === 0 ? count : (count + (end - Math.floor(end)) * (count / Math.floor(end) || 0)).toFixed(1)}{suffix}
+                <AnimatedNumber value={value} />{suffix}
             </div>
-            <div className="text-xs md:text-sm font-medium text-slate-500 uppercase tracking-wide">
+            <div className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
                 {label}
             </div>
         </div>

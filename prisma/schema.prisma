@@ -4,8 +4,6 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model GymProfile {
@@ -86,6 +84,7 @@ model MemberSubscription {
   id            String             @id @default(cuid())
   memberId      String
   planId        String
+  gymId         String             @default("temp-gym-id") // Direct gymId for multi-tenant isolation
   startDate     DateTime
   endDate       DateTime
   price         Decimal            @db.Decimal(10, 2)
@@ -94,10 +93,11 @@ model MemberSubscription {
   autoRenew     Boolean            @default(false)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
-  invoices      Invoice[]
   member        Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
   plan          MembershipPlan     @relation(fields: [planId], references: [id])
+  invoices      Invoice[]
 
+  @@index([gymId])
   @@index([memberId])
   @@index([endDate])
   @@index([status])
@@ -180,12 +180,14 @@ model Invoice {
 model InvoiceItem {
   id          String  @id @default(cuid())
   invoiceId   String
+  gymId       String  @default("temp-gym-id") // Direct gymId for multi-tenant isolation
   description String
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
   amount      Decimal @db.Decimal(10, 2)
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  @@index([gymId])
   @@index([invoiceId])
 }
 
@@ -195,10 +197,12 @@ model Notification {
   title     String
   message   String
   userId    String
+  gymId     String?          // Associated gym if applicable
   isRead    Boolean          @default(false)
   metadata  Json?
   createdAt DateTime         @default(now())
 
+  @@index([gymId])
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])

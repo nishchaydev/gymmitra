@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dumbbell, AlertCircle } from "lucide-react"
+import { Dumbbell, AlertCircle, Building2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default async function LoginPage(props: {
@@ -95,8 +95,13 @@ export default async function LoginPage(props: {
                             Try Demo Access (One Click)
                         </Button>
                     </form>
-                    <div className="text-center text-xs text-muted-foreground">
-                        &copy; {new Date().getFullYear()} Gym Mitra ERP. All rights reserved.
+                    <div className="flex items-center justify-center gap-4 text-center text-xs text-muted-foreground">
+                        <span>&copy; {new Date().getFullYear()} Gym Mitra ERP</span>
+                        <span className="h-3 w-px bg-slate-200" />
+                        <div className="flex items-center gap-1.5 font-bold text-slate-400">
+                            <Building2 className="h-3 w-3" />
+                            <span>Powered by eMitra Technologies</span>
+                        </div>
                     </div>
                 </CardFooter>
             </Card>

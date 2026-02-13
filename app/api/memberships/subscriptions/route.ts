@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
             data: {
                 memberId: validatedData.memberId,
                 planId: validatedData.planId,
+                gymId: gym.id, // Direct gymId for multi-tenant isolation
                 startDate,
                 endDate,
                 price,

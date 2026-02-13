@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 const planSchema = z.object({
     name: z.string().min(2),
@@ -8,13 +9,25 @@ const planSchema = z.object({
     duration: z.number().min(1), // days
     price: z.number().min(0),
     features: z.array(z.string()).optional(),
-    gymId: z.string().min(1),
 })
+
+async function getAuthenticatedGym() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+    return await prisma.gymProfile.findUnique({ where: { userId: user.id } })
+}
 
 export async function GET(request: NextRequest) {
     try {
+        const gym = await getAuthenticatedGym()
+        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const plans = await prisma.membershipPlan.findMany({
-            where: { isActive: true },
+            where: {
+                isActive: true,
+                gymId: gym.id
+            },
             orderBy: { price: 'asc' }
         })
         return NextResponse.json(plans)
@@ -28,11 +41,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const gym = await getAuthenticatedGym()
+        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const body = await request.json()
         const validatedData = planSchema.parse(body)
 
         const plan = await prisma.membershipPlan.create({
-            data: validatedData
+            data: {
+                ...validatedData,
+                gymId: gym.id
+            } as any
         })
 
         return NextResponse.json(plan, { status: 201 })

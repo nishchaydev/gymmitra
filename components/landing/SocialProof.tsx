@@ -1,6 +1,7 @@
 "use client"
 
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
+import { AnimatedNumber } from "@/components/landing/ui/AnimatedNumber"
 
 export function SocialProof() {
     return (
@@ -8,7 +9,7 @@ export function SocialProof() {
             <div className="container px-4 md:px-6 mx-auto">
                 <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-center md:text-left">
                     <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap">
-                        Trusted by 50+ Gyms
+                        Trusted by <AnimatedNumber value={50} className="text-primary-600" />+ Gyms
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
                         {/* Logo Placeholders */}
