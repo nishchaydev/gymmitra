@@ -45,12 +45,14 @@ export async function completeOnboarding(formData: FormData) {
             where: { userId: user.id },
             update: {
                 ...validatedData,
+                name: validatedData.businessName,
                 isVerified: true,
                 onboardingStep: 4,
             },
             create: {
                 userId: user.id,
                 ...validatedData,
+                name: validatedData.businessName,
                 isVerified: true,
                 onboardingStep: 4,
             }
