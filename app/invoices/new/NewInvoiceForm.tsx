@@ -11,7 +11,7 @@ import { createInvoice } from '../actions'
 
 export default function NewInvoiceForm({ members, products }: { members: any[], products: any[] }) {
     const [selectedMember, setSelectedMember] = useState<string>('')
-    const [items, setItems] = useState([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
+    const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
     const [discount, setDiscount] = useState(0)
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH')
     const [isSubmitting, setIsSubmitting] = useState(false)
