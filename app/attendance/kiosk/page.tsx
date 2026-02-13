@@ -79,7 +79,7 @@ export default function KioskPage() {
                                 <div className="aspect-square bg-black rounded-lg overflow-hidden border-2 border-slate-800">
                                     <Scanner
                                         onScan={(result) => result[0]?.rawValue && handleCheckIn(result[0].rawValue)}
-                                        onError={(error) => console.log(error?.message)}
+                                        onError={(error: any) => console.log(error?.message || error)}
                                     />
                                 </div>
                                 <Button
