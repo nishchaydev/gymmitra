@@ -116,7 +116,7 @@ export default async function AttendancePage() {
                                         <div className="space-y-1">
                                             <p className="font-medium leading-none">{record.member.name}</p>
                                             <p className="text-xs text-gray-500">
-                                                {isDemo ? record.member.phone.substring(0, 5) + "*****" : record.member.phone}
+                                                {isDemo ? (record.member.phone || "").substring(0, 5) + "*****" : record.member.phone}
                                             </p>
                                         </div>
                                     </div>

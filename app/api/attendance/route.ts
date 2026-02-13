@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
         })
 
         if (!member) {
-            return NextResponse.json({ error: 'Member not found or access denied' }, { status: 403 })
+            return NextResponse.json({ error: 'Member not found or access denied' }, { status: 404 })
         }
 
         const attendance = await prisma.attendance.findMany({

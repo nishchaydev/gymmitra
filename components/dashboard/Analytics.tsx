@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MOCKUP_DATA } from "@/lib/showcase-data"
 
 export function Analytics({ isDemo = false }: { isDemo?: boolean }) {
-    const memberGrowthData = MOCKUP_DATA.analytics.memberGrowth
-    const attendanceData = MOCKUP_DATA.analytics.attendance
+    const memberGrowthData = isDemo ? MOCKUP_DATA.analytics.memberGrowth : []
+    const attendanceData = isDemo ? MOCKUP_DATA.analytics.attendance : []
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">

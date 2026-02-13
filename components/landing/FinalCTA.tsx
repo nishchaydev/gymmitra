@@ -34,12 +34,12 @@ export function FinalCTA() {
                 </MotionWrapper>
 
                 <MotionWrapper delay={0.3} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <Link href="/login?view=register" className="w-full sm:w-auto">
-                        <Button size="lg" className="h-16 px-10 text-xl w-full rounded-full bg-white text-primary-900 hover:bg-primary-50 font-bold hover:shadow-2xl hover:shadow-primary-900/50 hover:scale-105 transition-all duration-300">
+                    <Button asChild size="lg" className="h-16 px-10 text-xl w-full rounded-full bg-white text-primary-900 hover:bg-primary-50 font-bold hover:shadow-2xl hover:shadow-primary-900/50 hover:scale-105 transition-all duration-300">
+                        <Link href="/login?view=register">
                             Start Free Trial
                             <ArrowRight className="ml-2 h-6 w-6" />
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <p className="text-sm text-primary-200 mt-4 sm:mt-0 sm:absolute sm:-bottom-12">
                         Includes full feature access
                     </p>

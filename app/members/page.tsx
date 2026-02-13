@@ -66,10 +66,24 @@ export default async function MembersPage({
         whereClause.status = status as any
     }
 
-    const members = isDemo ? SHOWCASE_MEMBERS : await prisma.member.findMany({
+    let members = isDemo ? SHOWCASE_MEMBERS : await prisma.member.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' }
     })
+
+    if (isDemo) {
+        if (query) {
+            const lowQuery = query.toLowerCase()
+            members = (members as any[]).filter(m =>
+                m.name.toLowerCase().includes(lowQuery) ||
+                m.phone.toLowerCase().includes(lowQuery) ||
+                (m.email && m.email.toLowerCase().includes(lowQuery))
+            )
+        }
+        if (status && status !== 'ALL') {
+            members = (members as any[]).filter(m => m.status === status)
+        }
+    }
 
     return (
         <div className="container mx-auto p-8 space-y-6">

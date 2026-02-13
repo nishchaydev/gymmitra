@@ -8,7 +8,9 @@ const memberCreateSchema = z.object({
     name: z.string().min(2, "Name is required"),
     phone: z.string().min(10, "Phone number is required"),
     email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.string().transform(str => new Date(str)),
+    dateOfBirth: z.string()
+        .refine(val => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .transform(str => new Date(str)),
     gymId: z.string().min(1, "Gym ID is required").optional(), // Optional since we get it from auth
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),

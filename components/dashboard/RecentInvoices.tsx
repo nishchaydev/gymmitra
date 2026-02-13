@@ -23,6 +23,7 @@ export async function RecentInvoices({ isDemo }: { isDemo?: boolean }) {
         invoices = SHOWCASE_STATS.recentInvoices.map((inv, idx) => ({
             ...inv,
             id: `demo-${inv.id}`,
+            invoiceNumber: `DEMO-INV-${String(idx + 1).padStart(4, '0')}`,
             total: inv.amount,
             paymentStatus: inv.status,
             createdAt: new Date(inv.date)

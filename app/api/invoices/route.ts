@@ -43,11 +43,17 @@ export async function GET(request: NextRequest) {
         const memberId = searchParams.get('memberId')
         const status = searchParams.get('status')
 
+        // Validate status if provided
+        const allowedStatuses = ["PAID", "PENDING", "OVERDUE", "PARTIAL"]
+        const validatedStatus = status && allowedStatuses.includes(status.toUpperCase())
+            ? status.toUpperCase() as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL"
+            : undefined
+
         const invoices = await prisma.invoice.findMany({
             where: {
                 gymId: gym.id,
                 ...(memberId ? { memberId } : {}),
-                ...(status ? { paymentStatus: status as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL" } : {}),
+                ...(validatedStatus ? { paymentStatus: validatedStatus } : {}),
             },
             include: {
                 member: {

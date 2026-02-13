@@ -60,13 +60,15 @@ export function Hero() {
                             </Button>
                         </Link>
 
-                        <button className="group relative flex items-center gap-3 px-6 py-3 rounded-full text-slate-600 font-medium hover:bg-drift-50 transition-colors">
-                            <div className="relative">
-                                <PlayCircle className="w-10 h-10 text-primary fill-primary-50" />
-                                <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
-                            </div>
-                            <span className="group-hover:text-primary transition-colors">Watch 2-min Demo</span>
-                        </button>
+                        <Link href="/dashboard" className="w-full sm:w-auto">
+                            <button className="group relative flex items-center gap-3 px-6 py-3 rounded-full text-slate-600 font-medium hover:bg-drift-50 transition-colors w-full sm:w-auto">
+                                <div className="relative">
+                                    <PlayCircle className="w-10 h-10 text-primary fill-primary-50" />
+                                    <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+                                </div>
+                                <span className="group-hover:text-primary transition-colors">Watch 2-min Demo</span>
+                            </button>
+                        </Link>
                     </MotionWrapper>
 
                     {/* Stats Counters */}
@@ -86,20 +88,29 @@ function StatCounter({ end, suffix, label, duration }: { end: number, suffix: st
     const [count, setCount] = useState(0)
 
     useEffect(() => {
-        let start = 0
-        const stepTime = Math.abs(Math.floor(duration * 1000 / end))
-        const timer = setInterval(() => {
-            start += 1
-            setCount(start)
-            if (start === end) clearInterval(timer)
-        }, stepTime)
-        return () => clearInterval(timer)
+        let startTime: number | null = null
+        let animationFrame: number
+
+        const animate = (timestamp: number) => {
+            if (!startTime) startTime = timestamp
+            const progress = (timestamp - startTime) / (duration * 1000)
+
+            if (progress < 1) {
+                setCount(Math.floor(end * progress))
+                animationFrame = requestAnimationFrame(animate)
+            } else {
+                setCount(end)
+            }
+        }
+
+        animationFrame = requestAnimationFrame(animate)
+        return () => cancelAnimationFrame(animationFrame)
     }, [end, duration])
 
     return (
         <div className="text-center">
             <div className="text-2xl md:text-4xl font-extrabold text-slate-900 mb-1">
-                {count}{suffix}
+                {end % 1 === 0 ? count : (count + (end - Math.floor(end)) * (count / Math.floor(end) || 0)).toFixed(1)}{suffix}
             </div>
             <div className="text-xs md:text-sm font-medium text-slate-500 uppercase tracking-wide">
                 {label}

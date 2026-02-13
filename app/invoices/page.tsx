@@ -46,12 +46,14 @@ export default async function InvoicesPage() {
         issueDate: new Date(i.date),
         dueDate: new Date(i.date),
         total: i.amount,
-        paymentStatus: i.status === 'PAID' ? 'PAID' : 'PENDING', // Ensure explicit type match
+        paymentStatus: i.status as any,
+        type: i.type as any,
         items: [],
         createdAt: new Date(),
         updatedAt: new Date(),
         gymId: 'demo',
-        memberId: i.id
+        memberId: i.id,
+        member: { name: i.member.name }
     })) : await prisma.invoice.findMany({
         where: {
             member: {
@@ -127,7 +129,9 @@ export default async function InvoicesPage() {
                                             ₹{parseFloat(invoice.total.toString()).toFixed(2)}
                                         </TableCell>
                                         <TableCell>
-                                            <Button variant="ghost" size="sm">View</Button>
+                                            <Link href={`/invoices/${isDemo ? "demo-" + invoice.id : invoice.id}`}>
+                                                <Button variant="ghost" size="sm">View</Button>
+                                            </Link>
                                         </TableCell>
                                     </TableRow>
                                 ))

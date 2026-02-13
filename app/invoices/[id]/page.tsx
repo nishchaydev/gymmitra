@@ -5,7 +5,8 @@ import { redirect, notFound } from "next/navigation"
 import { SHOWCASE_STATS } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
 
-export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -16,15 +17,15 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
 
     let invoice;
 
-    if (params.id.startsWith("demo-")) {
-        const demoId = params.id.replace("demo-", "")
+    if (id.startsWith("demo-")) {
+        const demoId = id.replace("demo-", "")
         const mockInv = SHOWCASE_STATS.recentInvoices.find(inv => inv.id === demoId)
 
         if (!mockInv) notFound()
 
         // Construct a full invoice object for the template
         invoice = {
-            id: params.id,
+            id: id,
             invoiceNumber: `GM-INV-${String(SHOWCASE_STATS.recentInvoices.indexOf(mockInv) + 1).padStart(4, '0')}`,
             createdAt: new Date(mockInv.date),
             paymentStatus: mockInv.status as any,
@@ -45,7 +46,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
             member: {
                 name: mockInv.member.name,
                 phone: "9998887776",
-                email: `${mockInv.member.name.toLowerCase().replace(' ', '.')}@example.com`
+                email: `${mockInv.member.name.toLowerCase().replace(/\s+/g, '.')}@example.com`
             },
             items: [
                 {
@@ -59,7 +60,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
         }
     } else {
         invoice = await prisma.invoice.findUnique({
-            where: { id: params.id },
+            where: { id: id },
             include: {
                 gym: true,
                 member: true,
@@ -70,7 +71,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
         if (!invoice) notFound()
 
         // Security check: ensure invoice belongs to the gym owned by the user
-        if (invoice.gym.userId !== user?.id) {
+        if ((invoice as any).gym.userId !== user?.id) {
             redirect("/dashboard")
         }
     }

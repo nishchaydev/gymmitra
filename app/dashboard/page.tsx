@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Users, CreditCard, DollarSign, Dumbbell, UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import { startOfToday, endOfToday } from "date-fns"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { SHOWCASE_STATS } from "@/lib/showcase-data"
@@ -72,23 +73,34 @@ export default async function DashboardPage() {
             totalMembers: SHOWCASE_STATS.totalMembers,
             activeMembers: SHOWCASE_STATS.activeMembers,
             revenue: SHOWCASE_STATS.totalRevenue.toLocaleString('en-IN'),
-            productSalesCount: SHOWCASE_STATS.productSales
+            productSalesCount: SHOWCASE_STATS.productSales,
+            dailyCheckins: 12 // Mock value for demo
         }
     } else {
-        const [totalMembers, activeMembers, totalRevenue, productSalesCount] = await Promise.all([
+        const [totalMembers, activeMembers, totalRevenue, productSalesCount, dailyCheckins] = await Promise.all([
             prisma.member.count({ where: { gymId: gym!.id } as any }),
             prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }),
             prisma.invoice.aggregate({
                 where: { paymentStatus: 'PAID', gymId: gym!.id } as any,
                 _sum: { total: true }
             }),
-            prisma.sale.count({ where: { product: { gymId: gym!.id } } as any })
+            prisma.sale.count({ where: { product: { gymId: gym!.id } } as any }),
+            prisma.attendance.count({
+                where: {
+                    gymId: gym!.id,
+                    date: {
+                        gte: startOfToday(),
+                        lte: endOfToday()
+                    }
+                } as any
+            })
         ])
         dashboardData = {
             totalMembers,
             activeMembers,
             revenue: Number((totalRevenue as any)._sum.total || 0).toLocaleString('en-IN'),
-            productSalesCount
+            productSalesCount,
+            dailyCheckins
         }
     }
 
@@ -194,7 +206,7 @@ export default async function DashboardPage() {
                                     <div className="text-3xl font-bold">{dashboardData.productSalesCount}</div>
                                     <div className="flex items-center text-sm">
                                         <span className="text-slate-600 font-medium">Items sold</span>
-                                        <span className="text-slate-500 ml-1">• This month</span>
+                                        <span className="text-slate-500 ml-1">• All-time</span>
                                     </div>
                                 </div>
                             </CardContent>
@@ -210,7 +222,7 @@ export default async function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-2">
-                                    <div className="text-3xl font-bold">Calculated</div>
+                                    <div className="text-3xl font-bold">{dashboardData.dailyCheckins}</div>
                                     <div className="flex items-center text-sm">
                                         <span className="text-slate-600 font-medium">Today's energy</span>
                                         <span className="text-slate-500 ml-1">• Live tracking</span>

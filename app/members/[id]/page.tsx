@@ -49,12 +49,12 @@ export default async function MemberDetailPage({
         subscriptions: [{
             plan: { name: "Gold Annual" },
             status: "ACTIVE",
-            startDate: new Date("2023-10-12"),
-            endDate: new Date("2024-10-12")
+            startDate: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+            endDate: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
         }],
         invoices: [
-            { id: "inv1", invoiceNumber: "INV001", issueDate: new Date("2024-02-10"), total: 2500, paymentStatus: "PAID" },
-            { id: "inv2", invoiceNumber: "INV002", issueDate: new Date("2024-01-10"), total: 2500, paymentStatus: "PAID" }
+            { id: "inv1", invoiceNumber: "INV001", issueDate: yesterday, total: 2500, paymentStatus: "PAID" },
+            { id: "inv2", invoiceNumber: "INV002", issueDate: new Date(yesterday.getTime() - 86400000 * 30), total: 2500, paymentStatus: "PAID" }
         ],
         attendance: [
             { id: "att1", date: now, checkInTime: now },

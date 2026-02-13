@@ -187,7 +187,9 @@ function ExpiringMembershipsReport() {
                                 <div className="flex items-center gap-4">
                                     <Avatar>
                                         <AvatarImage src={sub.member.photo || undefined} />
-                                        <AvatarFallback>{sub.member.name[0]}</AvatarFallback>
+                                        <AvatarFallback>
+                                            {(sub.member?.name || "?")[0]}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <p className="font-medium">{sub.member.name}</p>

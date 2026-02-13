@@ -10,6 +10,27 @@ import { MOCKUP_DATA } from "@/lib/showcase-data"
 export function UpcomingBirthdays() {
     const birthdays = MOCKUP_DATA.birthdays
 
+    const getDaysUntil = (dateStr: string) => {
+        const today = new Date()
+        const [day, monthName] = dateStr.split(' ')
+        const months: Record<string, number> = {
+            'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+            'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+        }
+
+        const birthday = new Date(today.getFullYear(), months[monthName], parseInt(day))
+
+        // If birthday has already passed this year, look at next year
+        if (birthday < today) {
+            birthday.setFullYear(today.getFullYear() + 1)
+        }
+
+        const diffTime = Math.abs(birthday.getTime() - today.getTime())
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+        return diffDays === 0 ? "Today!" : `In ${diffDays} days`
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -32,7 +53,9 @@ export function UpcomingBirthdays() {
                                     Member • {birthday.date}
                                 </p>
                             </div>
-                            <div className="ml-auto font-medium text-primary">---</div>
+                            <div className="ml-auto font-medium text-primary text-xs">
+                                {getDaysUntil(birthday.date)}
+                            </div>
                         </div>
                     ))}
                 </div>

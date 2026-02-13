@@ -19,10 +19,13 @@ const createInvoiceSchema = z.object({
     paymentMethod: z.enum(["CASH", "UPI"]),
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),
-    discount: z.number().default(0),
+    discount: z.number().min(0).default(0),
 })
 
 export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
+    // 1. Runtime Validation
+    const validatedData = createInvoiceSchema.parse(data)
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -34,32 +37,35 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
 
     if (!gym) throw new Error("Gym not found")
 
-    const invoiceNumber = await generateInvoiceNumber(gym.id)
+    // 2. Transactional creation to prevent number collisions
+    const invoice = await prisma.$transaction(async (tx) => {
+        const invoiceNumber = await generateInvoiceNumber(gym.id, tx)
 
-    const subtotal = data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-    const total = Math.max(0, subtotal - (data.discount || 0))
+        const subtotal = validatedData.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
+        const total = Math.max(0, subtotal - (validatedData.discount || 0))
 
-    const invoice = await prisma.invoice.create({
-        data: {
-            invoiceNumber,
-            type: "SALE", // Default type
-            gymId: gym.id,
-            memberId: data.memberId,
-            subtotal,
-            discount: data.discount,
-            total,
-            paymentMethod: data.paymentMethod,
-            paymentStatus: "PAID", // Since this is a manual generation, assume paid
-            notes: data.notes,
-            items: {
-                create: data.items.map(item => ({
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    amount: item.quantity * item.unitPrice,
-                }))
+        return await tx.invoice.create({
+            data: {
+                invoiceNumber,
+                type: "SALE",
+                gymId: gym.id,
+                memberId: validatedData.memberId,
+                subtotal,
+                discount: validatedData.discount,
+                total,
+                paymentMethod: validatedData.paymentMethod,
+                paymentStatus: "PAID",
+                notes: validatedData.notes,
+                items: {
+                    create: validatedData.items.map(item => ({
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        amount: item.quantity * item.unitPrice,
+                    }))
+                }
             }
-        }
+        })
     })
 
     revalidatePath("/dashboard")

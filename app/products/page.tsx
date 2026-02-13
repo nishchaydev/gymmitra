@@ -81,6 +81,18 @@ export default async function ProductsPage({
         orderBy: { name: 'asc' }
     })
 
+    if (isDemo) {
+        if (query) {
+            const lowQuery = query.toLowerCase()
+            products = products.filter(p => p.name.toLowerCase().includes(lowQuery))
+        }
+        if (category && category !== 'ALL') {
+            products = products.filter(p => p.category === category)
+        }
+        // Always sort by name for demo
+        products.sort((a, b) => a.name.localeCompare(b.name))
+    }
+
     // Filter for low stock in memory if requested
     if (showLowStock) {
         products = products.filter(p => p.stock <= p.lowStockAlert)
