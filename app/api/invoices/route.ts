@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         const invoices = await prisma.invoice.findMany({
             where: {
                 ...(memberId ? { memberId } : {}),
-                ...(status ? { paymentStatus: status as any } : {}),
+                ...(status ? { paymentStatus: status as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL" } : {}),
             },
             include: {
                 member: {
@@ -69,10 +69,10 @@ export async function POST(request: NextRequest) {
         const invoice = await prisma.invoice.create({
             data: {
                 invoiceNumber,
-                type: validatedData.type as any,
+                type: validatedData.type,
                 memberId: validatedData.memberId,
-                paymentStatus: validatedData.paymentStatus as any,
-                paymentMethod: validatedData.paymentMethod as any,
+                paymentStatus: validatedData.paymentStatus,
+                paymentMethod: validatedData.paymentMethod,
                 notes: validatedData.notes,
                 dueDate: validatedData.dueDate,
                 subtotal: subtotal,

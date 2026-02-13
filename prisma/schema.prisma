@@ -9,19 +9,32 @@ datasource db {
 }
 
 model GymProfile {
-  id        String           @id @default(cuid())
-  name      String
-  email     String
-  phone     String
-  address   String?
-  logo      String?
-  gst       String?
-  userId    String           @unique
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  members   Member[]
-  plans     MembershipPlan[]
-  products  Product[]
+  id             String           @id @default(cuid())
+  name           String
+  email          String
+  phone          String
+  address        String?
+  logo           String?
+  gst            String?
+  userId         String           @unique
+  businessName   String?
+  city           String?
+  state          String?
+  pincode        String?
+  upiId          String?
+  logoUrl        String?
+  invoicePrefix  String           @default("GM")
+  invoiceCounter Int              @default(0)
+  isVerified     Boolean          @default(false)
+  onboardingStep Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  members        Member[]
+  plans          MembershipPlan[]
+  products       Product[]
+  invoices       Invoice[]
+  sales          Sale[]
+  attendance     Attendance[]
 }
 
 model Member {
@@ -114,6 +127,7 @@ model Sale {
   id            String        @id @default(cuid())
   memberId      String?
   productId     String
+  gymId         String        // Direct gymId for multi-tenant isolation
   quantity      Int
   unitPrice     Decimal       @db.Decimal(10, 2)
   totalAmount   Decimal       @db.Decimal(10, 2)
@@ -125,7 +139,9 @@ model Sale {
   invoice       Invoice?
   member        Member?       @relation(fields: [memberId], references: [id])
   product       Product       @relation(fields: [productId], references: [id])
+  gym           GymProfile    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
+  @@index([gymId])
   @@index([memberId])
   @@index([productId])
   @@index([saleDate])
@@ -135,6 +151,7 @@ model Invoice {
   id             String              @id @default(cuid())
   invoiceNumber  String              @unique
   type           InvoiceType
+  gymId          String
   memberId       String?
   subscriptionId String?
   saleId         String?             @unique
@@ -148,11 +165,13 @@ model Invoice {
   issueDate      DateTime            @default(now())
   dueDate        DateTime?
   createdAt      DateTime            @default(now())
+  gym            GymProfile          @relation(fields: [gymId], references: [id], onDelete: Cascade)
   member         Member?             @relation(fields: [memberId], references: [id])
   sale           Sale?               @relation(fields: [saleId], references: [id])
   subscription   MemberSubscription? @relation(fields: [subscriptionId], references: [id])
   items          InvoiceItem[]
 
+  @@index([gymId])
   @@index([invoiceNumber])
   @@index([memberId])
   @@index([issueDate])
@@ -188,13 +207,16 @@ model Notification {
 model Attendance {
   id           String    @id @default(cuid())
   memberId     String
+  gymId        String    // Direct gymId for multi-tenant isolation
   date         DateTime  @default(now())
   checkInTime  DateTime  @default(now())
   checkOutTime DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gym          GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
+  @@index([gymId])
   @@index([memberId])
   @@index([date])
 }

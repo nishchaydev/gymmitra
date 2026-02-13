@@ -1,7 +1,9 @@
+import { Prisma } from '@prisma/client'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
     Table,
@@ -11,7 +13,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +29,30 @@ export default async function MembersPage({
     const query = params.q || ''
     const status = params.status
 
-    const whereClause: any = {}
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+
+    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+
+    if (!user && !isDemo) {
+        redirect("/login")
+    }
+
+    let gymId = 'demo'
+    if (user && !isDemo) {
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+        if (!gym) {
+            return <div className="p-8">Gym profile not found. Please contact support.</div>
+        }
+        gymId = gym.id
+    }
+
+    const whereClause: Prisma.MemberWhereInput = {
+        gymId: gymId
+    }
 
     if (query) {
         whereClause.OR = [
@@ -35,10 +63,10 @@ export default async function MembersPage({
     }
 
     if (status && status !== 'ALL') {
-        whereClause.status = status
+        whereClause.status = status as any
     }
 
-    const members = await prisma.member.findMany({
+    const members = isDemo ? SHOWCASE_MEMBERS : await prisma.member.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' }
     })
@@ -58,20 +86,8 @@ export default async function MembersPage({
             </div>
 
             <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
-                <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search by name, phone, or email..."
-                        defaultValue={query}
-                        className="pl-8 w-full max-w-sm"
-                    />
-                </div>
-                {/* Placeholder filter buttons - in real app, these would be interactive filters */}
-                <div className="flex gap-2">
-                    <Button variant={!status || status === 'ALL' ? 'default' : 'outline'} size="sm">All</Button>
-                    <Button variant={status === 'ACTIVE' ? 'default' : 'outline'} size="sm">Active</Button>
-                    <Button variant={status === 'EXPIRED' ? 'default' : 'outline'} size="sm">Expired</Button>
-                </div>
+                <MemberSearch />
+                <MemberFilters />
             </div>
 
             <div className="rounded-md border bg-white">

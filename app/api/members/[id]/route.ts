@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 const memberUpdateSchema = z.object({
     name: z.string().min(2).optional(),
@@ -14,14 +15,27 @@ const memberUpdateSchema = z.object({
     notes: z.string().optional(),
 })
 
+async function getAuthenticatedGym() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+    return await prisma.gymProfile.findUnique({ where: { userId: user.id } })
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const gym = await getAuthenticatedGym()
+        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const { id } = await params
-        const member = await prisma.member.findUnique({
-            where: { id },
+        const member = await prisma.member.findFirst({
+            where: {
+                id,
+                gymId: gym.id // Security Check
+            },
             include: {
                 subscriptions: {
                     include: { plan: true },
@@ -56,9 +70,16 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const gym = await getAuthenticatedGym()
+        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const { id } = await params
         const body = await request.json()
         const validatedData = memberUpdateSchema.parse(body)
+
+        // Ensure member belongs to gym before updating
+        const count = await prisma.member.count({ where: { id, gymId: gym.id } })
+        if (count === 0) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
 
         const member = await prisma.member.update({
             where: { id },
@@ -85,10 +106,23 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const gym = await getAuthenticatedGym()
+        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const { id } = await params
-        await prisma.member.delete({
-            where: { id }
+
+        // Use deleteMany to verify ownership implicitly (deleteMany returns count)
+        // actually delete via correct where clause
+        const result = await prisma.member.deleteMany({
+            where: {
+                id,
+                gymId: gym.id
+            }
         })
+
+        if (result.count === 0) {
+            return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
+        }
 
         return NextResponse.json({ success: true })
     } catch (error) {

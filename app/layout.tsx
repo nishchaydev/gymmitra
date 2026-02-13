@@ -24,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-[#10b981]/20 selection:text-[#065f46]`}
+        className={`${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-primary-100 selection:text-primary-900`}
       >
         <Navbar />
         <main className="flex-1 bg-gray-50/50">

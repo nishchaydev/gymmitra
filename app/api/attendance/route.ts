@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 
 const checkInSchema = z.object({
     memberId: z.string().min(1, "Member ID is required"),
@@ -8,12 +10,33 @@ const checkInSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        // Allow Demo Mode bypass if needed, or strictly enforce gym?
+        // For API, we should strictly enforce gym for data integrity unless specifically designed for demo.
+        // Assuming API is for real data primarily.
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const body = await request.json()
         const { memberId } = checkInSchema.parse(body)
 
-        // Check if member exists
-        const member = await prisma.member.findUnique({
-            where: { id: memberId },
+        // Check if member exists AND belongs to gym
+        const member = await prisma.member.findFirst({
+            where: {
+                id: memberId,
+                gymId: gym.id // Enforce ownership
+            },
             include: { subscriptions: { where: { status: 'ACTIVE' } } }
         })
 
@@ -67,11 +90,35 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')
 
         if (!memberId) {
             return NextResponse.json({ error: 'Member ID is required' }, { status: 400 })
+        }
+
+        // Verify member belongs to this gym
+        const member = await prisma.member.findFirst({
+            where: { id: memberId, gymId: gym.id }
+        })
+
+        if (!member) {
+            return NextResponse.json({ error: 'Member not found or access denied' }, { status: 403 })
         }
 
         const attendance = await prisma.attendance.findMany({

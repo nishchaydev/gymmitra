@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma'
+import { cookies } from 'next/headers'
+import { getShowcaseMember } from '@/lib/showcase-data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,14 +12,62 @@ import { MemberQR } from '@/components/members/MemberQR'
 
 export const dynamic = 'force-dynamic'
 
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+
+// ...
+
 export default async function MemberDetailPage({
     params,
 }: {
     params: Promise<{ id: string }>
 }) {
     const { id } = await params
-    const member = await prisma.member.findUnique({
-        where: { id },
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+
+    if (!user && !isDemo) {
+        redirect("/login")
+    }
+
+    let gymId = 'demo'
+    if (user && !isDemo) {
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+        if (!gym) return <div className="p-8">Gym profile not found.</div>
+        gymId = gym.id
+    }
+
+    const now = new Date()
+    const yesterday = new Date(now.getTime() - 86400000)
+
+    const member = isDemo ? {
+        ...getShowcaseMember(id),
+        subscriptions: [{
+            plan: { name: "Gold Annual" },
+            status: "ACTIVE",
+            startDate: new Date("2023-10-12"),
+            endDate: new Date("2024-10-12")
+        }],
+        invoices: [
+            { id: "inv1", invoiceNumber: "INV001", issueDate: new Date("2024-02-10"), total: 2500, paymentStatus: "PAID" },
+            { id: "inv2", invoiceNumber: "INV002", issueDate: new Date("2024-01-10"), total: 2500, paymentStatus: "PAID" }
+        ],
+        attendance: [
+            { id: "att1", date: now, checkInTime: now },
+            { id: "att2", date: yesterday, checkInTime: yesterday }
+        ],
+        emergencyName: "Rajesh Kumar",
+        emergencyRelation: "Father",
+        emergencyPhone: "9876500000"
+    } as any : await prisma.member.findFirst({
+        where: {
+            id,
+            gymId: gymId // Enforce ownership
+        },
         include: {
             subscriptions: {
                 include: { plan: true },

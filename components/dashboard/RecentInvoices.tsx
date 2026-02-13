@@ -8,81 +8,100 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { FileText } from "lucide-react"
+import { FileText, ArrowUpRight } from "lucide-react"
+import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
+import Link from "next/link"
+import { Button } from "../ui/button"
 
-const invoices = [
-    {
-        invoice: "INV001",
-        paymentStatus: "Paid",
-        totalAmount: "₹2,500.00",
-        paymentMethod: "Credit Card",
-        member: "Olivia Martin",
-    },
-    {
-        invoice: "INV002",
-        paymentStatus: "Pending",
-        totalAmount: "₹1,500.00",
-        paymentMethod: "UPI",
-        member: "Jackson Lee",
-    },
-    {
-        invoice: "INV003",
-        paymentStatus: "Unpaid",
-        totalAmount: "₹3,500.00",
-        paymentMethod: "Bank Transfer",
-        member: "Isabella Nguyen",
-    },
-    {
-        invoice: "INV004",
-        paymentStatus: "Paid",
-        totalAmount: "₹4,500.00",
-        paymentMethod: "Credit Card",
-        member: "William Kim",
-    },
-    {
-        invoice: "INV005",
-        paymentStatus: "Paid",
-        totalAmount: "₹5,500.00",
-        paymentMethod: "UPI",
-        member: "Sofia Davis",
-    },
-]
+import { SHOWCASE_STATS } from "@/lib/showcase-data"
 
-export function RecentInvoices() {
+export async function RecentInvoices({ isDemo }: { isDemo?: boolean }) {
+    let invoices = []
+
+    if (isDemo) {
+        invoices = SHOWCASE_STATS.recentInvoices.map((inv, idx) => ({
+            ...inv,
+            id: `demo-${inv.id}`,
+            total: inv.amount,
+            paymentStatus: inv.status,
+            createdAt: new Date(inv.date)
+        }))
+    } else {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) return null
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) return null
+
+        invoices = await prisma.invoice.findMany({
+            where: { gymId: gym.id } as any,
+            include: { member: true } as any,
+            orderBy: { createdAt: 'desc' } as any,
+            take: 5
+        }) as any
+    }
+
     return (
         <Card className="col-span-4">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-500" />
-                    Recent Invoices
-                </CardTitle>
-                <CardDescription>Latest generated invoices for memberships and products.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        Recent Invoices
+                    </CardTitle>
+                    <CardDescription>Latest generated invoices for memberships and products.</CardDescription>
+                </div>
+                <Link href="/invoices/new">
+                    <Button variant="ghost" size="sm" className="h-8 gap-1">
+                        New Invoice <ArrowUpRight className="h-3 w-3" />
+                    </Button>
+                </Link>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[100px]">Invoice</TableHead>
+                            <TableHead className="w-[120px]">Invoice</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Method</TableHead>
                             <TableHead>Member</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {invoices.map((invoice) => (
-                            <TableRow key={invoice.invoice}>
-                                <TableCell className="font-medium">{invoice.invoice}</TableCell>
-                                <TableCell>
-                                    <Badge variant={invoice.paymentStatus === 'Paid' ? 'default' : invoice.paymentStatus === 'Pending' ? 'secondary' : 'destructive'}>
-                                        {invoice.paymentStatus}
-                                    </Badge>
+                        {invoices.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    No invoices generated yet.
                                 </TableCell>
-                                <TableCell>{invoice.paymentMethod}</TableCell>
-                                <TableCell>{invoice.member}</TableCell>
-                                <TableCell className="text-right">{invoice.totalAmount}</TableCell>
                             </TableRow>
-                        ))}
+                        ) : (
+                            invoices.map((invoice: any) => (
+                                <TableRow key={invoice.id}>
+                                    <TableCell className="font-semibold text-primary">
+                                        <Link href={`/invoices/${invoice.id}`} className="hover:underline">
+                                            {invoice.invoiceNumber}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={invoice.paymentStatus === 'PAID' ? 'default' : 'secondary'}>
+                                            {invoice.paymentStatus}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="max-w-[150px] truncate">
+                                        {invoice.member?.name || 'Walk-in'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold tracking-tight">
+                                        ₹{Number(invoice.total).toLocaleString('en-IN')}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>

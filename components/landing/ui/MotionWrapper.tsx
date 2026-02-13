@@ -40,7 +40,7 @@ export function MotionWrapper({
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            variants={variants}
+            variants={variants as any}
             className={cn(className)}
         >
             {children}

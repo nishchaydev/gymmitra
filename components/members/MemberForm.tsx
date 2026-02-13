@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -71,7 +70,7 @@ export function MemberForm() {
 
             router.push("/members")
             router.refresh()
-        } catch (error) {
+        } catch {
             toast.error("Something went wrong", {
                 description: "Please try again."
             })

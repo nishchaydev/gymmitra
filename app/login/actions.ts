@@ -21,6 +21,10 @@ export async function login(formData: FormData) {
         redirect(`/login?message=${encodeURIComponent(error.message)}`)
     }
 
+    // Clear demo mode cookie if it exists
+    const cookieStore = await cookies()
+    cookieStore.delete('mitra_demo_mode')
+
     revalidatePath('/', 'layout')
     redirect('/dashboard')
 }
@@ -67,6 +71,10 @@ export async function signup(formData: FormData) {
         // This usually means email confirmation is required
         redirect(`/login?message=${encodeURIComponent("Please check your email to confirm your account before logging in.")}`)
     }
+
+    // Clear demo mode cookie if it exists
+    const cookieStore = await cookies()
+    cookieStore.delete('mitra_demo_mode')
 
     revalidatePath('/', 'layout')
     redirect('/dashboard')

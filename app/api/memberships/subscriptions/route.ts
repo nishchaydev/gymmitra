@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
                 startDate,
                 endDate,
                 price,
-                paymentStatus: validatedData.paymentStatus as any, // zod enum vs prisma enum matching
+                paymentStatus: validatedData.paymentStatus, // zod enum vs prisma enum matching
                 status: 'ACTIVE'
             }
         })

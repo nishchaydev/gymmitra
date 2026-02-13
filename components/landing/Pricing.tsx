@@ -72,7 +72,7 @@ export function Pricing() {
             <div className="container px-4 md:px-6 mx-auto">
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <MotionWrapper delay={0.1}>
-                        <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl mb-4">
+                        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4">
                             Simple, Transparent Pricing
                         </h2>
                     </MotionWrapper>
@@ -91,21 +91,21 @@ export function Pricing() {
                             className={`
                 relative flex flex-col p-8 rounded-3xl border transition-all duration-300 group
                 ${plan.isPopular
-                                    ? "border-[#10b981] shadow-2xl shadow-emerald-900/10 scale-105 z-10 bg-white ring-1 ring-[#10b981]/10"
-                                    : "border-slate-100 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/50 bg-white"
+                                    ? "border-primary shadow-2xl shadow-primary-900/10 scale-105 z-10 bg-white ring-1 ring-primary/10"
+                                    : "border-drift-200 hover:border-drift-300 hover:shadow-xl hover:shadow-drift-200/50 bg-white"
                                 }
               `}
                         >
                             {plan.isPopular && (
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#10b981] text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-lg shadow-emerald-500/20">
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-lg shadow-primary/20">
                                     Most Popular
                                 </div>
                             )}
 
                             <div className="mb-8">
-                                <h3 className={`text-xl font-bold mb-2 ${plan.isPopular ? "text-[#10b981]" : "text-[#0f172a]"}`}>{plan.name}</h3>
+                                <h3 className={`text-xl font-bold mb-2 ${plan.isPopular ? "text-primary-600" : "text-slate-900"}`}>{plan.name}</h3>
                                 <div className="flex items-baseline gap-1 mb-2">
-                                    <span className="text-3xl font-extrabold text-[#0f172a] tracking-tight">{plan.price}</span>
+                                    <span className="text-3xl font-extrabold text-slate-900 tracking-tight">{plan.price}</span>
                                     <span className="text-sm text-slate-500 font-medium">{plan.price !== "Custom" ? "/year" : ""}</span>
                                 </div>
                                 <p className="text-sm text-slate-500 leading-relaxed">{plan.description}</p>
@@ -114,7 +114,7 @@ export function Pricing() {
                             <ul className="space-y-4 mb-8 flex-1">
                                 {plan.features.map((feature, idx) => (
                                     <li key={idx} className="flex items-start text-sm text-slate-600">
-                                        <div className={`mt-0.5 shrink-0 rounded-full p-0.5 mr-3 ${plan.isPopular ? "bg-[#10b981]/10 text-[#10b981]" : "bg-slate-100 text-slate-500 group-hover:bg-[#1e3a8a]/10 group-hover:text-[#1e3a8a] transition-colors"}`}>
+                                        <div className={`mt-0.5 shrink-0 rounded-full p-0.5 mr-3 ${plan.isPopular ? "bg-primary-50 text-primary-600" : "bg-drift-50 text-slate-500 group-hover:bg-primary-50 group-hover:text-primary-600 transition-colors"}`}>
                                             <Check className="h-3 w-3" />
                                         </div>
                                         <span>{feature}</span>
@@ -125,8 +125,8 @@ export function Pricing() {
                             <Button
                                 variant={plan.isPopular ? "default" : "outline"}
                                 className={`w-full font-bold rounded-xl h-12 transition-all duration-300 ${plan.isPopular
-                                        ? "bg-[#10b981] hover:bg-[#059669] text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-1"
-                                        : "border-slate-200 text-slate-600 hover:text-[#1e3a8a] hover:border-[#1e3a8a] hover:bg-[#1e3a8a]/5 bg-white"
+                                    ? "bg-primary hover:bg-primary-600 text-white shadow-lg shadow-primary/30 hover:-translate-y-1"
+                                    : "border-drift-200 text-slate-600 hover:text-primary hover:border-primary hover:bg-primary-50 bg-white"
                                     }`}
                                 onClick={() => window.location.href = plan.price === "Custom" ? "mailto:sales@emitra.com" : "/login?view=register"}
                             >

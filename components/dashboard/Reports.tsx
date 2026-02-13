@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, TrendingUp, Users, CalendarDays, AlertTriangle } from "lucide-react"
+import { Loader2, AlertTriangle } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -11,12 +11,39 @@ import { Button } from "@/components/ui/button"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 import { MessageSquare } from "lucide-react"
 
-export function Reports() {
-    const [activeTab, setActiveTab] = useState("revenue")
+interface ReportsProps {
+    isDemo?: boolean
+}
+
+interface RevenueData {
+    name: string
+    total: number
+}
+
+interface AttendanceData {
+    name: string
+    total: number
+}
+
+interface ExpiringMembership {
+    id: string
+    endDate: string
+    member: {
+        name: string
+        photo: string | null
+        phone: string
+    }
+    plan: {
+        name: string
+    }
+}
+
+export function Reports({ isDemo = false }: ReportsProps) {
+    // const [activeTab, setActiveTab] = useState("revenue") // removed unused state
 
     return (
         <div className="space-y-4">
-            <Tabs defaultValue="revenue" className="space-y-4" onValueChange={setActiveTab}>
+            <Tabs defaultValue="revenue" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="revenue">Revenue</TabsTrigger>
                     <TabsTrigger value="attendance">Attendance</TabsTrigger>
@@ -40,7 +67,7 @@ export function Reports() {
 }
 
 function RevenueReport() {
-    const [data, setData] = useState<any[]>([])
+    const [data, setData] = useState<RevenueData[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -67,13 +94,13 @@ function RevenueReport() {
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={data}>
-                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                        <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
                         <Tooltip
                             formatter={(value: any) => [`₹${value}`, 'Revenue']}
                             cursor={{ fill: 'transparent' }}
                         />
-                        <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="total" fill="#4FC3F7" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
@@ -82,7 +109,7 @@ function RevenueReport() {
 }
 
 function AttendanceReport() {
-    const [data, setData] = useState<any[]>([])
+    const [data, setData] = useState<AttendanceData[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -109,10 +136,10 @@ function AttendanceReport() {
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={data}>
-                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip cursor={{ fill: 'transparent' }} />
-                        <Bar dataKey="total" fill="#f97316" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="total" fill="#4FC3F7" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
@@ -121,7 +148,7 @@ function AttendanceReport() {
 }
 
 function ExpiringMembershipsReport() {
-    const [data, setData] = useState<any[]>([])
+    const [data, setData] = useState<ExpiringMembership[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -159,7 +186,7 @@ function ExpiringMembershipsReport() {
                             <div key={sub.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                                 <div className="flex items-center gap-4">
                                     <Avatar>
-                                        <AvatarImage src={sub.member.photo} />
+                                        <AvatarImage src={sub.member.photo || undefined} />
                                         <AvatarFallback>{sub.member.name[0]}</AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -179,7 +206,7 @@ function ExpiringMembershipsReport() {
                                     <Button
                                         size="icon"
                                         variant="ghost"
-                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                        className="text-brand-primary hover:text-emerald-700 hover:bg-emerald-50"
                                         onClick={() => {
                                             const daysLeft = Math.ceil((new Date(sub.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
                                             const link = getWhatsAppLink(

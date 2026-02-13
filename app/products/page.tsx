@@ -1,4 +1,7 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma, ProductCategory } from '@prisma/client'
+import { cookies } from 'next/headers'
+import { SHOWCASE_PRODUCTS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -11,9 +14,14 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import Link from 'next/link'
-import { Plus, Search, Filter, AlertTriangle } from 'lucide-react'
+import { Plus, Search, AlertTriangle } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
+
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+
+// ...
 
 export default async function ProductsPage({
     searchParams,
@@ -25,17 +33,50 @@ export default async function ProductsPage({
     const category = params.category
     const showLowStock = params.lowStock === 'true'
 
-    const whereClause: any = { isActive: true }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+
+    // Secure Demo Logic
+    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+
+    if (!user && !isDemo) {
+        redirect("/login")
+    }
+
+    let gymId = 'demo'
+    if (user && !isDemo) {
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+        if (!gym) return <div className="p-8">Gym profile not found.</div>
+        gymId = gym.id
+    }
+
+    const whereClause: Prisma.ProductWhereInput = {
+        isActive: true,
+        gymId: gymId // Enforce data isolation
+    }
 
     if (query) {
         whereClause.name = { contains: query, mode: 'insensitive' }
     }
 
     if (category && category !== 'ALL') {
-        whereClause.category = category
+        whereClause.category = category as any
     }
 
-    let products = await prisma.product.findMany({
+    let products = isDemo ? SHOWCASE_PRODUCTS.map((p: any) => ({
+        ...p,
+        isActive: true,
+        lowStockAlert: 10,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        gymId: 'demo',
+        price: new Prisma.Decimal(p.price),
+        image: null,
+        description: null
+    })) : await prisma.product.findMany({
         where: whereClause,
         orderBy: { name: 'asc' }
     })

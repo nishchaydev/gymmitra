@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
+import { SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { format } from "date-fns"
 import {
     Table,
@@ -14,8 +16,48 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+
 export default async function InvoicesPage() {
-    const invoices = await prisma.invoice.findMany({
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+
+    // Secure Demo Logic
+    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+
+    if (!user && !isDemo) {
+        redirect("/login")
+    }
+
+    let gymId = 'demo'
+    if (user && !isDemo) {
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+        if (!gym) return <div className="p-8">Gym profile not found.</div>
+        gymId = gym.id
+    }
+
+    const invoices = isDemo ? SHOWCASE_INVOICES.map(i => ({
+        ...i,
+        invoiceNumber: i.id.toUpperCase(),
+        issueDate: new Date(i.date),
+        dueDate: new Date(i.date),
+        total: i.amount,
+        paymentStatus: i.status === 'PAID' ? 'PAID' : 'PENDING', // Ensure explicit type match
+        items: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        gymId: 'demo',
+        memberId: i.id
+    })) : await prisma.invoice.findMany({
+        where: {
+            member: {
+                gymId: gymId // Enforce data isolation via relation
+            }
+        },
         orderBy: { issueDate: 'desc' },
         include: {
             member: {

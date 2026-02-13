@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 // Schema for member creation
 const memberCreateSchema = z.object({
@@ -8,7 +9,7 @@ const memberCreateSchema = z.object({
     phone: z.string().min(10, "Phone number is required"),
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string().transform(str => new Date(str)),
-    gymId: z.string().min(1, "Gym ID is required"), // In real app, this comes from auth context
+    gymId: z.string().min(1, "Gym ID is required").optional(), // Optional since we get it from auth
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
@@ -16,12 +17,27 @@ const memberCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const { searchParams } = new URL(request.url)
         const status = searchParams.get('status')
 
-        // In a real app, we would filter by gymId from the authenticated user
         const members = await prisma.member.findMany({
             where: {
+                gymId: gym.id,
                 ...(status ? { status: status as any } : {}),
             },
             orderBy: { createdAt: 'desc' }
@@ -39,6 +55,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const body = await request.json()
 
         // Validate input
@@ -51,11 +82,11 @@ export async function POST(request: NextRequest) {
                 phone: validatedData.phone,
                 email: validatedData.email || null,
                 dateOfBirth: validatedData.dateOfBirth,
-                gymId: validatedData.gymId,
+                gymId: gym.id, // Securely use the gymId from auth
                 emergencyName: validatedData.emergencyName || '',
                 emergencyPhone: validatedData.emergencyPhone || '',
                 emergencyRelation: validatedData.emergencyRelation || '',
-            }
+            } as any
         })
 
         return NextResponse.json(member, { status: 201 })
@@ -69,7 +100,7 @@ export async function POST(request: NextRequest) {
 
         console.error('Error creating member:', error)
         // Check for unique constraint violation
-        if ((error as any).code === 'P2002') {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
             return NextResponse.json(
                 { error: 'Member with this phone number already exists' },
                 { status: 409 }

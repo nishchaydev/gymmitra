@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 const productSchema = z.object({
     name: z.string().min(2),
@@ -10,16 +11,34 @@ const productSchema = z.object({
     stock: z.number().int().min(0),
     lowStockAlert: z.number().int().min(0).default(10),
     image: z.string().optional(),
-    gymId: z.string().min(1),
+    gymId: z.string().min(1).optional(), // Optional since we get it from auth
 })
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const { searchParams } = new URL(request.url)
         const category = searchParams.get('category')
         const lowStock = searchParams.get('lowStock') === 'true'
 
-        const whereClause: any = { isActive: true }
+        const whereClause: { isActive: boolean; category?: any; gymId: string } = {
+            isActive: true,
+            gymId: gym.id
+        }
 
         if (category) {
             whereClause.category = category
@@ -38,6 +57,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(products)
     } catch (error) {
+        console.error('Error fetching products:', error)
         return NextResponse.json(
             { error: 'Failed to fetch products' },
             { status: 500 }
@@ -47,11 +67,29 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const body = await request.json()
         const validatedData = productSchema.parse(body)
 
         const product = await prisma.product.create({
-            data: validatedData
+            data: {
+                ...validatedData,
+                gymId: gym.id // Securely use the gymId from auth
+            } as any
         })
 
         return NextResponse.json(product, { status: 201 })
@@ -62,6 +100,7 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
+        console.error('Error creating product:', error)
         return NextResponse.json(
             { error: 'Failed to create product' },
             { status: 500 }

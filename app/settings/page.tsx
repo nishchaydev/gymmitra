@@ -59,7 +59,7 @@ export default function SettingsPage() {
                         gst: data.gst || "",
                     })
                 }
-            } catch (error) {
+            } catch {
                 toast.error("Failed to load settings")
             } finally {
                 setLoading(false)

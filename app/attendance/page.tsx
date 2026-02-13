@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock, MonitorPlay, Users } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-
-export const dynamic = 'force-dynamic'
+import { SHOWCASE_MEMBERS } from "@/lib/showcase-data"
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export default async function AttendancePage() {
     const today = new Date()
@@ -14,8 +16,38 @@ export default async function AttendancePage() {
     const endOfDay = new Date()
     endOfDay.setHours(23, 59, 59, 999)
 
-    const todaysAttendance = await prisma.attendance.findMany({
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+
+    // Secure Demo Logic
+    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+
+    if (!user && !isDemo) {
+        redirect("/login")
+    }
+
+    let gymId = 'demo'
+    if (user && !isDemo) {
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+        if (!gym) return <div className="p-8">Gym profile not found.</div>
+        gymId = gym.id
+    }
+
+    // Stable timestamps for demo mode
+    const now = new Date()
+    const thirtyMinsAgo = new Date(now.getTime() - 1800000)
+    const oneHourAgo = new Date(now.getTime() - 3600000)
+
+    const todaysAttendance = isDemo ? [
+        { id: "att1", checkInTime: now, member: { name: SHOWCASE_MEMBERS[0].name, phone: SHOWCASE_MEMBERS[0].phone } },
+        { id: "att2", checkInTime: thirtyMinsAgo, member: { name: SHOWCASE_MEMBERS[1].name, phone: SHOWCASE_MEMBERS[1].phone } },
+        { id: "att3", checkInTime: oneHourAgo, member: { name: SHOWCASE_MEMBERS[2].name, phone: SHOWCASE_MEMBERS[2].phone } },
+    ] : await prisma.attendance.findMany({
         where: {
+            member: { gymId: gymId }, // Enforce data isolation
             date: {
                 gte: today,
                 lte: endOfDay
@@ -83,7 +115,9 @@ export default async function AttendancePage() {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="font-medium leading-none">{record.member.name}</p>
-                                            <p className="text-xs text-gray-500">{record.member.phone}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {isDemo ? record.member.phone.substring(0, 5) + "*****" : record.member.phone}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">

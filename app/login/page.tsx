@@ -1,5 +1,6 @@
 import { login, signup, demoLogin } from './actions'
 import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/auth/SubmitButton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -12,6 +13,17 @@ export default async function LoginPage(props: {
 }) {
     const searchParams = await props.searchParams
     const defaultTab = searchParams.view === 'register' ? 'register' : 'login'
+
+    const getErrorMessage = (msg: string | string[] | undefined) => {
+        if (!msg) return null
+        const message = Array.isArray(msg) ? msg[0] : msg
+        if (message.includes("security purposes")) {
+            return "Too many attempts. Please wait a minute before trying again."
+        }
+        return message
+    }
+
+    const errorMessage = getErrorMessage(searchParams.message)
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
@@ -28,12 +40,12 @@ export default async function LoginPage(props: {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {searchParams.message && (
+                    {errorMessage && (
                         <Alert variant="destructive" className="mb-6">
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Error</AlertTitle>
                             <AlertDescription>
-                                {searchParams.message}
+                                {errorMessage}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -52,7 +64,7 @@ export default async function LoginPage(props: {
                                     <Label htmlFor="password">Password</Label>
                                     <Input id="password" name="password" type="password" required />
                                 </div>
-                                <Button id="submit-login" formAction={login} className="w-full">Log in</Button>
+                                <SubmitButton formAction={login} className="w-full" text="Log in" loadingText="Logging in..." />
                             </form>
                         </TabsContent>
                         <TabsContent value="register">
@@ -69,7 +81,7 @@ export default async function LoginPage(props: {
                                     <Label htmlFor="license-key">License Key (Required)</Label>
                                     <Input id="license-key" name="license_key" type="text" required placeholder="Enter your purchase code" />
                                 </div>
-                                <Button id="submit-signup" formAction={signup} variant="secondary" className="w-full">Sign up</Button>
+                                <SubmitButton formAction={signup} variant="secondary" className="w-full" text="Sign up" loadingText="Creating account..." />
                                 <p className="text-xs text-center text-muted-foreground mt-2">
                                     By clicking sign up, you verify that you are an authorized gym administrator.
                                 </p>

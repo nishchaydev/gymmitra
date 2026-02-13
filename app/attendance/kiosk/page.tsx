@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { CheckCircle2, Loader2, UserCheck, Search } from "lucide-react"
+import { CheckCircle2, Loader2, UserCheck } from "lucide-react"
 
 export default function KioskPage() {
     const [memberId, setMemberId] = useState("")
@@ -34,8 +34,8 @@ export default function KioskPage() {
             setMemberId("")
             setShowScanner(false)
             setTimeout(() => setLastCheckIn(null), 5000)
-        } catch (error: any) {
-            toast.error(error.message)
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : "An unexpected error occurred")
         } finally {
             setLoading(false)
         }
@@ -79,7 +79,7 @@ export default function KioskPage() {
                                 <div className="aspect-square bg-black rounded-lg overflow-hidden border-2 border-slate-800">
                                     <Scanner
                                         onScan={(result) => result[0]?.rawValue && handleCheckIn(result[0].rawValue)}
-                                        onError={(error: any) => console.log(error?.message || error)}
+                                        onError={(error: unknown) => console.error(error instanceof Error ? error.message : "Scanner error")}
                                     />
                                 </div>
                                 <Button

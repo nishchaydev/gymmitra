@@ -14,12 +14,18 @@ export function Navbar() {
     const router = useRouter()
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
+    const [isDemo, setIsDemo] = useState(false)
     const supabase = createClient()
 
     useEffect(() => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             setUser(user)
+
+            // Check for demo mode cookie
+            const demoCookie = document.cookie.split('; ').find(row => row.startsWith('mitra_demo_mode='))
+            setIsDemo(!user && demoCookie?.split('=')[1] === 'true')
+
             setLoading(false)
         }
         getUser()
@@ -37,13 +43,21 @@ export function Navbar() {
         router.refresh()
     }
 
-    // Hide App Navbar on public landing/auth pages IF NOT logged in
-    // or always hide on specific public pages if preferred.
+    // Hide App Navbar on public landing/auth pages to prevent overlap
+    // Landing page has its own custom navbar
     const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/error"
 
-    if (isPublicPage && !user) {
+    // If we're on the landing page, we usually hide the main app navbar
+    // But if we're in demo mode on login/error, we might want it? 
+    // Actually, the user says "nav bar is not there in demomode". 
+    // Demo mode usually starts at /dashboard.
+
+    if (isPublicPage && !isDemo) {
         return null
     }
+
+    // Always hide on the actual landing page hero area to avoid double nav
+    if (pathname === "/") return null
 
     const routes = [
         {
@@ -81,20 +95,20 @@ export function Navbar() {
     return (
         <nav className="border-b bg-white shadow-sm sticky top-0 z-50">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
-                <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-emerald-600">
+                <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary">
                     <Building2 className="h-6 w-6" />
                     <span className="hidden md:inline">GymMitra</span>
                 </Link>
 
                 <div className="flex items-center space-x-4 lg:space-x-6 flex-1">
-                    {user && routes.map((route) => (
+                    {(user || isDemo) && routes.map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "text-sm font-medium transition-colors hover:text-emerald-600",
+                                "text-sm font-medium transition-colors hover:text-primary",
                                 route.active
-                                    ? "text-emerald-700"
+                                    ? "text-primary font-semibold"
                                     : "text-muted-foreground"
                             )}
                         >
@@ -104,11 +118,15 @@ export function Navbar() {
                 </div>
 
                 <div className="ml-auto flex items-center space-x-4">
-                    {user ? (
+                    {user || isDemo ? (
                         <div className="flex items-center gap-4">
                             <div className="hidden lg:flex flex-col items-end">
-                                <span className="text-xs font-semibold text-slate-900">{user.email}</span>
-                                <span className="text-[10px] text-emerald-600 uppercase tracking-wider font-bold">Administrator</span>
+                                <span className="text-xs font-semibold text-slate-900">
+                                    {user?.email || "showcase@gym-mitra.com"}
+                                </span>
+                                <span className="text-[10px] text-primary uppercase tracking-wider font-bold">
+                                    {isDemo ? "Showcase Mode" : "Administrator"}
+                                </span>
                             </div>
                             <Button
                                 variant="ghost"
@@ -121,7 +139,7 @@ export function Navbar() {
                         </div>
                     ) : (
                         <Link href="/login">
-                            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700">
+                            <Button variant="default" className="bg-primary hover:bg-primary-600">
                                 Sign In
                             </Button>
                         </Link>

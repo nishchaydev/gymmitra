@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Clock, UserCheck, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { MOCKUP_DATA } from "@/lib/showcase-data"
 
 export function AttendanceWidget() {
+    const avatars = (MOCKUP_DATA as any).birthdays.map((b: any) => b.img)
+
     return (
         <Card>
             <CardHeader className="pb-3">
@@ -29,21 +32,14 @@ export function AttendanceWidget() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-8">
-                    {/* Mock Data - Will be replaced with real data fetch */}
                     <div className="flex items-center">
                         <div className="flex -space-x-3">
-                            <Avatar className="border-2 border-background">
-                                <AvatarImage src="/avatars/01.png" />
-                                <AvatarFallback>JD</AvatarFallback>
-                            </Avatar>
-                            <Avatar className="border-2 border-background">
-                                <AvatarImage src="/avatars/02.png" />
-                                <AvatarFallback>SD</AvatarFallback>
-                            </Avatar>
-                            <Avatar className="border-2 border-background">
-                                <AvatarImage src="/avatars/03.png" />
-                                <AvatarFallback>MJ</AvatarFallback>
-                            </Avatar>
+                            {avatars.map((img: string, i: number) => (
+                                <Avatar key={i} className="border-2 border-background">
+                                    <AvatarImage src={img} />
+                                    <AvatarFallback>U{i}</AvatarFallback>
+                                </Avatar>
+                            ))}
                             <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium">
                                 +12
                             </div>

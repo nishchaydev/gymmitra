@@ -6,7 +6,9 @@ import Link from "next/link"
 import { AlertCircle } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
-export default function ErrorPage() {
+import { Suspense } from "react"
+
+function ErrorContent() {
     const searchParams = useSearchParams()
     const message = searchParams.get('message') || "Something went wrong during the authentication process."
 
@@ -30,5 +32,13 @@ export default function ErrorPage() {
                 </CardFooter>
             </Card>
         </div>
+    )
+}
+
+export default function ErrorPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div></div>}>
+            <ErrorContent />
+        </Suspense>
     )
 }
