@@ -48,7 +48,7 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
             data: {
                 invoiceNumber,
                 type: "SALE",
-                gymId: gym.id,
+                gym: { connect: { id: gym.id } },
                 memberId: validatedData.memberId,
                 subtotal,
                 discount: validatedData.discount,
@@ -64,7 +64,7 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
                         amount: item.quantity * item.unitPrice,
                     }))
                 }
-            }
+            } as any
         })
     })
 
