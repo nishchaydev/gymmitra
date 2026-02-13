@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 // Validations
 const invoiceItemSchema = z.object({
@@ -23,12 +24,28 @@ const invoiceCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')
         const status = searchParams.get('status')
 
         const invoices = await prisma.invoice.findMany({
             where: {
+                gymId: gym.id,
                 ...(memberId ? { memberId } : {}),
                 ...(status ? { paymentStatus: status as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL" } : {}),
             },
@@ -53,6 +70,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const body = await request.json()
         const validatedData = invoiceCreateSchema.parse(body)
 
@@ -63,13 +95,15 @@ export async function POST(request: NextRequest) {
 
         const total = subtotal + validatedData.tax - validatedData.discount
 
-        // Generate Invoice Number (Simple format: INV-TIMESTAMP-RANDOM)
-        const invoiceNumber = `INV-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`
+        // Generate Invoice Number
+        const { generateInvoiceNumber } = await import("@/lib/invoice-utils")
+        const invoiceNumber = await generateInvoiceNumber(gym.id)
 
         const invoice = await prisma.invoice.create({
             data: {
                 invoiceNumber,
                 type: validatedData.type,
+                gymId: gym.id,
                 memberId: validatedData.memberId,
                 paymentStatus: validatedData.paymentStatus,
                 paymentMethod: validatedData.paymentMethod,

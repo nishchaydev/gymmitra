@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
+import { createClient } from '@/lib/supabase/server'
 
 const subscriptionSchema = z.object({
     memberId: z.string(),
@@ -13,17 +14,41 @@ const subscriptionSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const gym = await prisma.gymProfile.findUnique({
+            where: { userId: user.id }
+        })
+
+        if (!gym) {
+            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
+        }
+
         const body = await request.json()
         const validatedData = subscriptionSchema.parse(body)
 
+        // Verify member belongs to this gym
+        const member = await prisma.member.findFirst({
+            where: { id: validatedData.memberId, gymId: gym.id }
+        })
+
+        if (!member) {
+            return NextResponse.json({ error: 'Member not found or access denied' }, { status: 403 })
+        }
+
         // Get plan details to calculate end date and price if not provided
-        const plan = await prisma.membershipPlan.findUnique({
-            where: { id: validatedData.planId }
+        const plan = await prisma.membershipPlan.findFirst({
+            where: { id: validatedData.planId, gymId: gym.id }
         })
 
         if (!plan) {
             return NextResponse.json(
-                { error: 'Plan not found' },
+                { error: 'Plan not found or access denied' },
                 { status: 404 }
             )
         }
@@ -40,7 +65,7 @@ export async function POST(request: NextRequest) {
                 startDate,
                 endDate,
                 price,
-                paymentStatus: validatedData.paymentStatus, // zod enum vs prisma enum matching
+                paymentStatus: validatedData.paymentStatus as any, // Cast to any to bypass stale types
                 status: 'ACTIVE'
             }
         })
@@ -53,6 +78,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(subscription, { status: 201 })
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+        }
         console.error('Subscription creation error:', error)
         return NextResponse.json(
             { error: 'Failed to create subscription' },

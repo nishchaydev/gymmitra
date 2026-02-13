@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         const attendance = await prisma.attendance.create({
             data: {
                 memberId,
+                gymId: gym.id,
                 date: new Date(),
                 checkInTime: new Date(),
             }
