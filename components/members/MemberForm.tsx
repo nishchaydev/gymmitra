@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import { SuccessCheckmark } from "@/components/ui/success-animation"
 
 const memberFormSchema = z.object({
     name: z.string().min(2, {
@@ -39,6 +40,7 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 export function MemberForm() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
 
     const form = useForm<MemberFormValues>({
         resolver: zodResolver(memberFormSchema) as any,
@@ -66,17 +68,32 @@ export function MemberForm() {
                 throw new Error("Failed to create member")
             }
 
-            toast.success("Member created successfully")
+            setSuccess(true)
+            toast.success("Member created successfully", {
+                description: `${data.name} has been added to your gym.`,
+            })
 
-            router.push("/members")
-            router.refresh()
+            // Wait for animation to play
+            setTimeout(() => {
+                router.push("/members")
+                router.refresh()
+            }, 2000)
         } catch {
             toast.error("Something went wrong", {
                 description: "Please try again."
             })
-        } finally {
             setLoading(false)
         }
+    }
+
+    if (success) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in duration-500">
+                <SuccessCheckmark />
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Member Added!</h2>
+                <p className="text-slate-500">Redirecting you to the members list...</p>
+            </div>
+        )
     }
 
     return (

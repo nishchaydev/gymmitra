@@ -8,7 +8,7 @@ import { UpcomingBirthdays } from "@/components/dashboard/UpcomingBirthdays"
 import { RecentInvoices } from "@/components/dashboard/RecentInvoices"
 import { AttendanceWidget } from "@/components/dashboard/AttendanceWidget"
 import { Button } from "@/components/ui/button"
-import { Users, CreditCard, DollarSign, Dumbbell, UserPlus, ShoppingBag } from "lucide-react"
+import { Users, CreditCard, DollarSign, Dumbbell, UserPlus, ShoppingBag, ReceiptText } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { startOfToday, endOfToday } from "date-fns"
@@ -107,19 +107,25 @@ export default async function DashboardPage() {
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
             {isDemo && (
-                <div className="bg-primary text-white p-2 text-center text-sm font-medium rounded-md shadow-sm mb-4 flex items-center justify-center gap-4">
-                    <span>✨ Running in Showcase Mode with Demo Data. Real database is bypassed.</span>
+                <div className="bg-slate-900 border-b border-primary/20 text-white px-4 py-3 text-sm font-medium shadow-sm mb-6 -mx-8 -mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 relative z-10">
+                    <div className="flex items-center gap-2 text-primary-400">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                        </span>
+                        <span>Running in <span className="font-bold text-white">Showcase Mode</span> with Demo Data. Real database is bypassed.</span>
+                    </div>
                     <form action={exitDemo}>
-                        <Button variant="secondary" size="sm" className="h-7 text-xs bg-white text-primary hover:bg-primary/5 border-0">
+                        <Button variant="secondary" size="sm" className="h-7 text-xs bg-white text-slate-900 hover:bg-slate-100 border-0 font-bold px-4">
                             Exit Demo
                         </Button>
                     </form>
                 </div>
             )}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h2 className="text-4xl font-extrabold tracking-tight text-slate-900">{gym?.name}</h2>
+                        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">{gym?.name}</h2>
                         {isDemo && (
                             <div className="px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center gap-1.5 animate-in fade-in zoom-in duration-500">
                                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
@@ -127,18 +133,18 @@ export default async function DashboardPage() {
                             </div>
                         )}
                     </div>
-                    <p className="text-slate-500 mt-1 font-medium flex items-center gap-2">
+                    <p className="text-slate-500 mt-1 font-medium flex items-center gap-2 text-sm md:text-base">
                         Welcome back! Here&apos;s your gym overview.
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">
                     <Link href="/members/new">
-                        <Button className="bg-primary hover:bg-primary-600 shadow-md">
+                        <Button className="bg-primary hover:bg-primary-600 shadow-md w-full md:w-auto">
                             <UserPlus className="mr-2 h-4 w-4" /> Add Member
                         </Button>
                     </Link>
                     <Link href="/products/new">
-                        <Button variant="secondary" className="shadow-sm">
+                        <Button variant="secondary" className="shadow-sm w-full md:w-auto">
                             <ShoppingBag className="mr-2 h-4 w-4" /> New Product
                         </Button>
                     </Link>
@@ -154,120 +160,126 @@ export default async function DashboardPage() {
                         Reports
                     </TabsTrigger>
                 </TabsList>
-                <TabsContent value="overview" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                <TabsContent value="overview" className="space-y-6">
+                    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-slate-600">
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
                                     Total Revenue
                                 </CardTitle>
-                                <div className="p-2 bg-primary-50 rounded-lg group-hover:bg-primary-100 transition-colors">
+                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
                                     <DollarSign className="h-5 w-5 text-primary" />
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2">
-                                    <div className="text-3xl font-bold">₹{dashboardData.revenue}</div>
-                                    <div className="flex items-center text-sm">
-                                        <span className="text-emerald-600 font-medium">Real-time</span>
-                                        <span className="text-slate-500 ml-1">• All payments</span>
+                                <div className="space-y-1">
+                                    <div className="text-3xl font-bold tracking-tight text-slate-900">₹{dashboardData.revenue}</div>
+                                    <div className="flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2">
+                                        <div className="h-1 w-1 rounded-full bg-emerald-600 mr-1.5 animate-pulse" />
+                                        LIVE
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-slate-600">
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
                                     Active Members
                                 </CardTitle>
-                                <div className="p-2 bg-primary-50 rounded-lg group-hover:bg-primary-100 transition-colors">
+                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
                                     <Users className="h-5 w-5 text-primary" />
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2">
-                                    <div className="text-3xl font-bold">{dashboardData.activeMembers}</div>
-                                    <div className="flex items-center text-sm">
-                                        <span className="text-slate-600 font-medium">{dashboardData.totalMembers} total</span>
-                                        <span className="text-slate-500 ml-1">• {dashboardData.totalMembers > 0 ? Math.round((dashboardData.activeMembers / dashboardData.totalMembers) * 100) : 0}% active</span>
+                                <div className="space-y-1">
+                                    <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.activeMembers}</div>
+                                    <div className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest flex items-center gap-1.5">
+                                        {dashboardData.totalMembers} Total
+                                        <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                        {dashboardData.totalMembers > 0 ? Math.round((dashboardData.activeMembers / dashboardData.totalMembers) * 100) : 0}% Active
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-slate-600">Product Sales</CardTitle>
-                                <div className="p-2 bg-primary-50 rounded-lg group-hover:bg-primary-100 transition-colors">
-                                    <CreditCard className="h-5 w-5 text-primary" />
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Product Sales</CardTitle>
+                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
+                                    <ShoppingBag className="h-5 w-5 text-primary" />
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2">
-                                    <div className="text-3xl font-bold">{dashboardData.productSalesCount}</div>
-                                    <div className="flex items-center text-sm">
-                                        <span className="text-slate-600 font-medium">Items sold</span>
-                                        <span className="text-slate-500 ml-1">• All-time</span>
+                                <div className="space-y-1">
+                                    <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.productSalesCount}</div>
+                                    <div className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest uppercase tracking-widest">
+                                        All-time items
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-slate-600">
-                                    Daily Check-ins
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                                    Today's Attendance
                                 </CardTitle>
-                                <div className="p-2 bg-primary-50 rounded-lg group-hover:bg-primary-100 transition-colors">
+                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
                                     <Dumbbell className="h-5 w-5 text-primary" />
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2">
-                                    <div className="text-3xl font-bold">{dashboardData.dailyCheckins}</div>
-                                    <div className="flex items-center text-sm">
-                                        <span className="text-slate-600 font-medium">Today's energy</span>
-                                        <span className="text-slate-500 ml-1">• Live tracking</span>
+                                <div className="space-y-1">
+                                    <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.dailyCheckins}</div>
+                                    <div className="text-xs font-bold text-[#4FC3F7] mt-2 uppercase tracking-widest flex items-center gap-1.5">
+                                        <div className="h-1 w-1 rounded-full bg-[#4FC3F7] mr-1.5 animate-bounce" />
+                                        REAL-TIME LOG
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                        <Card className="col-span-4">
+
+                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
+                        <Card className="lg:col-span-4 border-slate-200 shadow-sm">
                             <CardHeader>
-                                <CardTitle>Revenue Overview</CardTitle>
+                                <CardTitle className="text-lg font-bold">Revenue Insights</CardTitle>
                                 <CardDescription>
-                                    Monthly revenue breakdown from memberships and product sales.
+                                    Monthly revenue breakdown and trends.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="pl-2">
-                                <Overview />
+                            <CardContent className="pl-0 sm:pl-2">
+                                <div className="h-[300px] sm:h-[350px]">
+                                    <Overview />
+                                </div>
                             </CardContent>
                         </Card>
-                        <div className="col-span-3 space-y-4">
+                        <div className="lg:col-span-3 space-y-6">
                             <AttendanceWidget />
                             <UpcomingBirthdays />
                         </div>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                        <RecentInvoices isDemo={isDemo} />
-                        <Card className="col-span-3">
+
+                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
+                        <div className="lg:col-span-4 overflow-hidden rounded-xl">
+                            <RecentInvoices isDemo={isDemo} />
+                        </div>
+                        <Card className="lg:col-span-3 border-slate-200 shadow-sm">
                             <CardHeader>
-                                <CardTitle>Quick Actions</CardTitle>
-                                <CardDescription>Common tasks</CardDescription>
+                                <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
+                                <CardDescription>Most frequent operations</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-2">
+                            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                                 <Link href="/members/new" className="w-full">
-                                    <Button className="w-full justify-start" variant="outline">
-                                        <UserPlus className="mr-2 h-4 w-4" /> Add New Member
+                                    <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
+                                        <UserPlus className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add New Member
                                     </Button>
                                 </Link>
                                 <Link href="/products/new" className="w-full">
-                                    <Button className="w-full justify-start" variant="outline">
-                                        <ShoppingBag className="mr-2 h-4 w-4" /> Add Inventory
+                                    <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
+                                        <ShoppingBag className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add Inventory
                                     </Button>
                                 </Link>
-                                <Button className="w-full justify-start" variant="outline" disabled>
-                                    <CreditCard className="mr-2 h-4 w-4" /> Generate Report
+                                <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline" disabled>
+                                    <ReceiptText className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Generate Report
                                 </Button>
                             </CardContent>
                         </Card>

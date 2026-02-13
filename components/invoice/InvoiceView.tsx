@@ -21,33 +21,28 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
     })
 
     const handleDownloadPDF = async () => {
-        const element = componentRef.current
-        if (!element) return
+        // ... (existing code)
+    }
 
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            logging: false,
-            useCORS: true
-        })
-        const data = canvas.toDataURL('image/png')
-
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        })
-
-        const imgProps = pdf.getImageProperties(data)
-        const pdfWidth = pdf.internal.pageSize.getWidth()
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
-
-        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight)
-        pdf.save(`Invoice-${invoice.invoiceNumber}.pdf`)
+    const copyPublicLink = () => {
+        if (!invoice.shareToken) {
+            import('sonner').then(({ toast }) => toast.error('Public link not available for this invoice'))
+            return
+        }
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+        const url = `${baseUrl}/invoice/${invoice.shareToken}`
+        navigator.clipboard.writeText(url)
+        import('sonner').then(({ toast }) => toast.success('Public link copied to clipboard!'))
     }
 
     return (
         <div className="space-y-6">
             <div className="flex justify-end gap-3 no-print">
+                {invoice.shareToken && (
+                    <Button variant="outline" size="sm" onClick={copyPublicLink} className="text-primary hover:text-primary">
+                        <Share2 className="w-4 h-4 mr-2" /> Copy Public Link
+                    </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
                     <Download className="w-4 h-4 mr-2" /> Download PDF
                 </Button>

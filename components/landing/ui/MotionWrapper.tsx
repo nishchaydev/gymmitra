@@ -8,13 +8,15 @@ interface MotionWrapperProps {
     className?: string
     delay?: number
     direction?: "up" | "down" | "left" | "right"
+    id?: string
 }
 
 export function MotionWrapper({
     children,
     className,
     delay = 0,
-    direction = "up"
+    direction = "up",
+    id
 }: MotionWrapperProps) {
 
     const variants = {
@@ -37,6 +39,7 @@ export function MotionWrapper({
 
     return (
         <motion.div
+            id={id}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}

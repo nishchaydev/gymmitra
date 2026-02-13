@@ -14,7 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Plus, FileText } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -83,63 +84,75 @@ export default async function InvoicesPage() {
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>All Invoices</CardTitle>
-                    <CardDescription>
-                        Manage and view all generated invoices.
-                    </CardDescription>
+            <Card className="border-slate-200">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>All Invoices</CardTitle>
+                            <CardDescription>
+                                Manage and view all generated invoices.
+                            </CardDescription>
+                        </div>
+                        <div className="text-xs text-slate-400 font-medium sm:hidden block italic">
+                            Scroll horizontally ↔
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Invoice #</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Member</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Total Amount</TableHead>
-                                <TableHead></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {invoices.length === 0 ? (
+                    <div className="overflow-x-auto -mx-6 sm:mx-0 px-6 sm:px-0">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center">
-                                        No invoices found.
-                                    </TableCell>
+                                    <TableHead>Invoice</TableHead>
+                                    <TableHead>Member</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
+                                    <TableHead></TableHead>
                                 </TableRow>
-                            ) : (
-                                invoices.map((invoice) => (
-                                    <TableRow key={invoice.id}>
-                                        <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                                        <TableCell>{format(new Date(invoice.issueDate), 'MMM d, yyyy')}</TableCell>
-                                        <TableCell>{invoice.member?.name || 'Walk-in Customer'}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">{invoice.type}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={
-                                                invoice.paymentStatus === 'PAID' ? 'default' :
-                                                    invoice.paymentStatus === 'PENDING' ? 'secondary' : 'destructive'
-                                            }>
-                                                {invoice.paymentStatus}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            ₹{parseFloat(invoice.total.toString()).toFixed(2)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Link href={`/invoices/${isDemo ? "demo-" + invoice.id : invoice.id}`}>
-                                                <Button variant="ghost" size="sm">View</Button>
-                                            </Link>
+                            </TableHeader>
+                            <TableBody>
+                                {invoices.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-auto p-0 border-0">
+                                            <EmptyState
+                                                icon={FileText}
+                                                title="No invoices yet"
+                                                description="Generate your first invoice for a membership or product sale."
+                                                actionLabel="Add First Invoice"
+                                                actionHref="/invoices/new"
+                                                className="border-0 bg-transparent rounded-none"
+                                            />
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    invoices.map((invoice: any) => (
+                                        <TableRow key={invoice.id}>
+                                            <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                                            <TableCell>{invoice.member?.name || 'Walk-in Customer'}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={
+                                                    invoice.paymentStatus === 'PAID' ? 'default' :
+                                                        invoice.paymentStatus === 'PENDING' ? 'secondary' : 'destructive'
+                                                }>
+                                                    {invoice.paymentStatus}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{format(new Date(invoice.issueDate), 'MMM d, yyyy')}</TableCell>
+                                            <TableCell className="text-right font-bold">
+                                                ₹{parseFloat(invoice.total.toLocaleString()).toLocaleString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Link href={`/invoices/${isDemo ? "demo-" + invoice.id : invoice.id}`}>
+                                                    <Button variant="ghost" size="sm">View</Button>
+                                                </Link>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

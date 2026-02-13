@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Button } from "../ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 
 import { SHOWCASE_STATS } from "@/lib/showcase-data"
 
@@ -65,46 +66,55 @@ export async function RecentInvoices({ isDemo }: { isDemo?: boolean }) {
                 </Link>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[120px]">Invoice</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Member</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {invoices.length === 0 ? (
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                    No invoices generated yet.
-                                </TableCell>
+                                <TableHead className="w-[120px]">Invoice</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Member</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
                             </TableRow>
-                        ) : (
-                            invoices.map((invoice: any) => (
-                                <TableRow key={invoice.id}>
-                                    <TableCell className="font-semibold text-primary">
-                                        <Link href={`/invoices/${invoice.id}`} className="hover:underline">
-                                            {invoice.invoiceNumber}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={invoice.paymentStatus === 'PAID' ? 'default' : 'secondary'}>
-                                            {invoice.paymentStatus}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="max-w-[150px] truncate">
-                                        {invoice.member?.name || 'Walk-in'}
-                                    </TableCell>
-                                    <TableCell className="text-right font-bold tracking-tight">
-                                        ₹{Number(invoice.total).toLocaleString('en-IN')}
+                        </TableHeader>
+                        <TableBody>
+                            {invoices.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-auto p-0 border-0">
+                                        <EmptyState
+                                            icon={FileText}
+                                            title="No recent invoices"
+                                            description="Start billing members to see history here."
+                                            actionLabel="Create Invoice"
+                                            actionHref="/invoices/new"
+                                            className="border-0 bg-transparent rounded-none py-8 p-4 shrink-0"
+                                        />
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                            ) : (
+                                invoices.map((invoice: any) => (
+                                    <TableRow key={invoice.id}>
+                                        <TableCell className="font-semibold text-primary">
+                                            <Link href={`/invoices/${invoice.id}`} className="hover:underline">
+                                                {invoice.invoiceNumber}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={invoice.paymentStatus === 'PAID' ? 'default' : 'secondary'}>
+                                                {invoice.paymentStatus}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="max-w-[150px] truncate">
+                                            {invoice.member?.name || 'Walk-in'}
+                                        </TableCell>
+                                        <TableCell className="text-right font-bold tracking-tight">
+                                            ₹{Number(invoice.total).toLocaleString('en-IN')}
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
     )

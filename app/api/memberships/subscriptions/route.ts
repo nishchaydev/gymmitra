@@ -3,13 +3,25 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
+import { Prisma, PaymentStatus as PrismaPaymentStatus } from '@prisma/client'
 
 const subscriptionSchema = z.object({
     memberId: z.string(),
     planId: z.string(),
-    startDate: z.string().transform(str => new Date(str)),
+    startDate: z.string().transform((str, ctx) => {
+        const date = new Date(str)
+        if (isNaN(date.getTime())) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Invalid date format"
+            })
+            return z.NEVER
+        }
+        return date
+    }),
     price: z.number().optional(), // Allow override
-    paymentStatus: z.enum(['PAID', 'PENDING', 'PARTIAL']).default('PAID'),
+    paymentStatus: z.nativeEnum(PrismaPaymentStatus).default(PrismaPaymentStatus.PAID),
+    discountReason: z.string().optional(), // Why discounted?
 })
 
 export async function POST(request: NextRequest) {
@@ -57,6 +69,11 @@ export async function POST(request: NextRequest) {
         const endDate = addDays(startDate, plan.duration)
         const price = validatedData.price ?? Number(plan.price)
 
+        // Validate override isn't suspiciously low (e.g., < 50% of plan price)
+        if (validatedData.price !== undefined && validatedData.price < Number(plan.price) * 0.5) {
+            console.warn(`Large discount applied for gym ${gym.id}: ${plan.price} → ${validatedData.price}. Reason: ${validatedData.discountReason || 'None'}`)
+        }
+
         // Create subscription
         const subscription = await prisma.memberSubscription.create({
             data: {
@@ -66,9 +83,10 @@ export async function POST(request: NextRequest) {
                 startDate,
                 endDate,
                 price,
-                paymentStatus: validatedData.paymentStatus as any, // Cast to any to bypass stale types
-                status: 'ACTIVE'
-            }
+                paymentStatus: validatedData.paymentStatus,
+                status: 'ACTIVE',
+                notes: validatedData.discountReason ? `Discount: ${validatedData.discountReason}` : null
+            } as any
         })
 
         // Update member status to ACTIVE

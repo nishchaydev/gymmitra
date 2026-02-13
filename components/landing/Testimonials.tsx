@@ -27,19 +27,19 @@ export function Testimonials() {
                 <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     <TestimonialCard
                         name="Rajesh Kumar"
-                        gym="FitZone Gym, Mumbai"
+                        gym="City Fitness, Mumbai"
                         quote="Saved 2 hours every day. Invoice generation is instant! Best decision for my gym."
                         delay={0.2}
                     />
                     <TestimonialCard
                         name="Anita Singh"
-                        gym="Iron Paradise, Delhi"
+                        gym="Power House Gym, Delhi"
                         quote="My members love the WhatsApp reminders. Revenue increased by 20% in just 2 months."
                         delay={0.3}
                     />
                     <TestimonialCard
                         name="Vikram Mehta"
-                        gym="CrossFit Pro, Bangalore"
+                        gym="Urban Crossfit, Bangalore"
                         quote="The biometric integration is seamless. No more unauthorized entries. Highly recommended!"
                         delay={0.4}
                     />

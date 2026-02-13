@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { Prisma } from '@prisma/client'
 
 const planSchema = z.object({
     name: z.string().min(2),
@@ -44,14 +45,24 @@ export async function POST(request: NextRequest) {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const body = await request.json()
+        let body;
+        try {
+            body = await request.json()
+        } catch (e) {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+        }
+
         const validatedData = planSchema.parse(body)
 
+        const createData: Prisma.MembershipPlanCreateInput = {
+            ...validatedData,
+            gym: {
+                connect: { id: gym.id }
+            }
+        }
+
         const plan = await prisma.membershipPlan.create({
-            data: {
-                ...validatedData,
-                gymId: gym.id
-            } as any
+            data: createData
         })
 
         return NextResponse.json(plan, { status: 201 })

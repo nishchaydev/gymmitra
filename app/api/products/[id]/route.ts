@@ -32,7 +32,8 @@ export async function GET(
         const product = await prisma.product.findFirst({
             where: {
                 id,
-                gymId: gym.id // Security Check
+                gymId: gym.id, // Security Check
+                isActive: true // Filter out soft-deleted products
             }
         })
 
@@ -45,6 +46,7 @@ export async function GET(
 
         return NextResponse.json(product)
     } catch (error) {
+        console.error(`Failed to fetch product ${params}:`, error)
         return NextResponse.json(
             { error: 'Failed to fetch product' },
             { status: 500 }
@@ -64,18 +66,22 @@ export async function PUT(
         const body = await request.json()
         const validatedData = productUpdateSchema.parse(body)
 
-        // Ensure product belongs to gym
-        const existingProduct = await prisma.product.findFirst({
-            where: { id, gymId: gym.id }
+        // Atomic update to avoid TOCTOU and respect ownership/active status
+        const updateResult = await prisma.product.updateMany({
+            where: {
+                id,
+                gymId: gym.id,
+                isActive: true
+            },
+            data: validatedData
         })
 
-        if (!existingProduct) {
-            return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+        if (updateResult.count === 0) {
+            return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 })
         }
 
-        const product = await prisma.product.update({
-            where: { id },
-            data: validatedData
+        const product = await prisma.product.findUnique({
+            where: { id }
         })
 
         return NextResponse.json(product)
@@ -86,6 +92,7 @@ export async function PUT(
                 { status: 400 }
             )
         }
+        console.error(`Failed to update product ${params}:`, error)
         return NextResponse.json(
             { error: 'Failed to update product' },
             { status: 500 }
@@ -118,6 +125,7 @@ export async function DELETE(
 
         return NextResponse.json({ message: 'Product deleted successfully' })
     } catch (error) {
+        console.error(`Failed to delete product ${params}:`, error)
         return NextResponse.json(
             { error: 'Failed to delete product' },
             { status: 500 }

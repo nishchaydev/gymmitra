@@ -8,17 +8,22 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, ReceiptText, User, ShoppingBag, CreditCard } from 'lucide-react'
 import { createInvoice } from '../actions'
+import { SuccessCheckmark } from '@/components/ui/success-animation'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 export default function NewInvoiceForm({ members, products }: { members: any[], products: any[] }) {
+    const router = useRouter()
     const [selectedMember, setSelectedMember] = useState<string>('')
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
     const [discount, setDiscount] = useState(0)
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH')
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [success, setSuccess] = useState(false)
 
     const addItem = () => setItems([...items, { description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
-    const updateItem = (index: number, field: string, value: any) => {
+    const updateItem = (index: number, field: string, value: string | number) => {
         const newItems = [...items]
         newItems[index] = { ...newItems[index], [field]: value }
         setItems(newItems)
@@ -27,152 +32,214 @@ export default function NewInvoiceForm({ members, products }: { members: any[], 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const total = Math.max(0, subtotal - discount)
 
-    return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ReceiptText className="w-5 h-5 text-primary" />
-                            Invoice Items
-                        </CardTitle>
-                        <CardDescription>Add memberships or products to this invoice.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Select Member</Label>
-                            <Select onValueChange={setSelectedMember}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a member..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {members.map(member => (
-                                        <SelectItem key={member.id} value={member.id}>
-                                            {member.name} ({member.phone})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-4 pt-4">
-                            {items.map((item, idx) => (
-                                <div key={idx} className="flex gap-4 items-end border-b pb-4">
-                                    <div className="flex-1 space-y-2">
-                                        <Label>Description</Label>
-                                        <Input
-                                            value={item.description}
-                                            onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                                            placeholder="e.g. Monthly Membership"
-                                        />
-                                    </div>
-                                    <div className="w-24 space-y-2">
-                                        <Label>Qty</Label>
-                                        <Input
-                                            type="number"
-                                            value={item.quantity}
-                                            onChange={(e) => updateItem(idx, 'quantity', parseInt(e.target.value))}
-                                        />
-                                    </div>
-                                    <div className="w-32 space-y-2">
-                                        <Label>Price (₹)</Label>
-                                        <Input
-                                            type="number"
-                                            value={item.unitPrice}
-                                            onChange={(e) => updateItem(idx, 'unitPrice', parseFloat(e.target.value))}
-                                        />
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        onClick={() => removeItem(idx)}
-                                        disabled={items.length === 1}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                            <Button variant="outline" size="sm" onClick={addItem} className="w-full dashed">
-                                <Plus className="w-4 h-4 mr-2" /> Add Item
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+    if (success) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+                <SuccessCheckmark />
+                <h2 className="text-2xl font-bold">Invoice Generated!</h2>
+                <p className="text-slate-400">Redirecting to view invoice...</p>
             </div>
+        )
+    }
 
-            <div className="space-y-6">
-                <Card className="bg-slate-900 text-white">
-                    <CardHeader>
-                        <CardTitle>Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-slate-400">
-                                <span>Subtotal</span>
-                                <span>₹{subtotal.toLocaleString('en-IN')}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-slate-400">Discount</span>
-                                <div className="w-24">
-                                    <Input
-                                        type="number"
-                                        value={discount}
-                                        onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                                        className="bg-slate-800 border-slate-700 text-right h-8 text-xs"
-                                    />
+    return (
+        <div className="container mx-auto py-8 px-4 h-full relative">
+            <div className="max-w-4xl mx-auto space-y-8">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#4FC3F7]/10 flex items-center justify-center text-[#4FC3F7]">
+                            <ReceiptText className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black text-white">Create New Invoice</h1>
+                            <p className="text-slate-400 text-sm font-medium">Generate professional invoices for members and products</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2 space-y-8">
+                        {/* Member Selection */}
+                        <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-white">
+                                    <User className="w-5 h-5 text-[#4FC3F7]" />
+                                    Member (Optional)
+                                </CardTitle>
+                                <CardDescription className="text-slate-400">Select a member to associate this invoice with</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Select value={selectedMember} onValueChange={setSelectedMember}>
+                                    <SelectTrigger className="bg-slate-950 border-slate-700 text-white h-12">
+                                        <SelectValue placeholder="Walk-in Customer" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                        <SelectItem value="WALK-IN">Walk-in Customer</SelectItem>
+                                        {members.map(member => (
+                                            <SelectItem key={member.id} value={member.id}>{member.name} ({member.memberId})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </CardContent>
+                        </Card>
+
+                        {/* Items Section */}
+                        <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+                            <CardHeader className="flex flex-row items-center justify-between pb-4">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2 text-white">
+                                        <ShoppingBag className="w-5 h-5 text-[#4FC3F7]" />
+                                        Invoice Items
+                                    </CardTitle>
+                                    <CardDescription className="text-slate-400">Add memberships, products or other items</CardDescription>
                                 </div>
-                            </div>
-                            <div className="flex justify-between text-xl font-bold pt-4 border-t border-slate-800">
-                                <span>Total</span>
-                                <span className="text-primary">₹{total.toLocaleString('en-IN')}</span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 pt-6 border-t border-slate-800">
-                            <Label className="text-slate-400">Payment Method</Label>
-                            <div className="grid grid-cols-2 gap-2">
                                 <Button
-                                    variant={paymentMethod === 'CASH' ? 'default' : 'outline'}
-                                    className={paymentMethod === 'CASH' ? 'bg-primary' : 'border-slate-700 hover:bg-slate-800'}
-                                    onClick={() => setPaymentMethod('CASH')}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addItem}
+                                    className="border-[#4FC3F7] text-[#4FC3F7] hover:bg-[#4FC3F7] hover:text-slate-900 font-bold"
                                 >
-                                    Cash
+                                    <Plus className="w-4 h-4 mr-1" /> Add Item
                                 </Button>
-                                <Button
-                                    variant={paymentMethod === 'UPI' ? 'default' : 'outline'}
-                                    className={paymentMethod === 'UPI' ? 'bg-primary' : 'border-slate-700 hover:bg-slate-800'}
-                                    onClick={() => setPaymentMethod('UPI')}
-                                >
-                                    UPI
-                                </Button>
-                            </div>
-                        </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {items.map((item, index) => (
+                                    <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 bg-slate-950/50 rounded-2xl border border-slate-800/50 group">
+                                        <div className="col-span-12 md:col-span-5 space-y-1.5">
+                                            <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Description</Label>
+                                            <Input
+                                                placeholder="e.g., Monthly Membership"
+                                                value={item.description}
+                                                onChange={(e) => updateItem(index, 'description', e.target.value)}
+                                                className="bg-slate-900 border-slate-700 text-white h-11"
+                                            />
+                                        </div>
+                                        <div className="col-span-4 md:col-span-2 space-y-1.5">
+                                            <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Qty</Label>
+                                            <Input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+                                                className="bg-slate-900 border-slate-700 text-white h-11"
+                                            />
+                                        </div>
+                                        <div className="col-span-5 md:col-span-3 space-y-1.5">
+                                            <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Unit Price</Label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                                                <Input
+                                                    type="number"
+                                                    value={item.unitPrice}
+                                                    onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value))}
+                                                    className="bg-slate-900 border-slate-700 text-white pl-8 h-11"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-span-3 md:col-span-2 flex justify-end">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeItem(index)}
+                                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-11 w-11 rounded-xl"
+                                                disabled={items.length === 1}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                        <Button
-                            className="w-full bg-primary hover:bg-primary-600 font-bold"
-                            disabled={isSubmitting || total <= 0}
-                            onClick={async () => {
-                                setIsSubmitting(true)
-                                try {
-                                    await createInvoice({
-                                        memberId: selectedMember || undefined,
-                                        paymentMethod,
-                                        items,
-                                        discount
-                                    })
-                                } catch (error) {
-                                    console.error(error)
-                                    alert("Error creating invoice")
-                                } finally {
-                                    setIsSubmitting(false)
-                                }
-                            }}
-                        >
-                            {isSubmitting ? 'Generating...' : 'Generate & Print Invoice'}
-                        </Button>
-                    </CardContent>
-                </Card>
+                    <div className="space-y-8">
+                        <Card className="bg-slate-900 border-slate-800 shadow-2xl sticky top-24">
+                            <CardHeader>
+                                <CardTitle className="text-white">Summary</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between text-slate-400 font-medium">
+                                        <span>Subtotal</span>
+                                        <span>₹{subtotal.toLocaleString()}</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs text-slate-500 uppercase font-bold">Discount (₹)</Label>
+                                        <Input
+                                            type="number"
+                                            value={discount}
+                                            onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                            className="bg-slate-950 border-slate-700 text-white h-10"
+                                        />
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
+                                        <span className="text-lg font-bold text-white">Total Amount</span>
+                                        <span className="text-2xl font-black text-[#4FC3F7]">₹{total.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase">Payment Method</Label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Button
+                                            type="button"
+                                            variant={paymentMethod === 'CASH' ? 'default' : 'outline'}
+                                            className={paymentMethod === 'CASH' ? 'bg-[#4FC3F7] text-slate-900 hover:bg-[#4FC3F7]/90' : 'border-slate-700 hover:bg-slate-800 text-white'}
+                                            onClick={() => setPaymentMethod('CASH')}
+                                        >
+                                            Cash
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant={paymentMethod === 'UPI' ? 'default' : 'outline'}
+                                            className={paymentMethod === 'UPI' ? 'bg-[#4FC3F7] text-slate-900 hover:bg-[#4FC3F7]/90' : 'border-slate-700 hover:bg-slate-800 text-white'}
+                                            onClick={() => setPaymentMethod('UPI')}
+                                        >
+                                            UPI
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    className="w-full bg-[#4FC3F7] hover:bg-[#4FC3F7]/90 text-slate-900 font-bold h-12 text-lg"
+                                    disabled={isSubmitting || total <= 0}
+                                    onClick={async () => {
+                                        setIsSubmitting(true)
+                                        try {
+                                            const result = await createInvoice({
+                                                memberId: selectedMember || undefined,
+                                                paymentMethod,
+                                                items,
+                                                discount
+                                            }) as { success: boolean, id?: string, error?: string }
+
+                                            if (result?.error) {
+                                                toast.error(result.error)
+                                                return
+                                            }
+
+                                            if (result?.success && result.id) {
+                                                setSuccess(true)
+                                                toast.success("Invoice generated successfully")
+                                                setTimeout(() => {
+                                                    router.push(`/invoices/${result.id}`)
+                                                }, 2000)
+                                            }
+
+                                        } catch (error) {
+                                            console.error(error)
+                                            toast.error("Error creating invoice")
+                                        } finally {
+                                            setIsSubmitting(false)
+                                        }
+                                    }}
+                                >
+                                    {isSubmitting ? 'Generating...' : 'Generate & Print Invoice'}
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             </div>
         </div>
     )

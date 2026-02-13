@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 import { Building2, MapPin, Contact, CreditCard, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
 import { completeOnboarding } from './actions'
 
@@ -36,7 +37,12 @@ export default function OnboardingForm() {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
-    const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
+    const nextStep = () => {
+        const form = document.querySelector('form')
+        if (form && form.reportValidity()) {
+            setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
+        }
+    }
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0))
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -58,7 +64,7 @@ export default function OnboardingForm() {
             await completeOnboarding(submissionData)
         } catch (error) {
             console.error("Onboarding failed:", error)
-            alert(error instanceof Error ? error.message : "Something went wrong. Please check your inputs.")
+            toast.error(error instanceof Error ? error.message : "Something went wrong. Please check your inputs.")
         } finally {
             setIsSubmitting(false)
         }
@@ -114,7 +120,7 @@ export default function OnboardingForm() {
                                                 name="businessName"
                                                 value={formData.businessName}
                                                 onChange={handleInputChange}
-                                                placeholder="e.g. Tri-Star Fitness"
+                                                placeholder="e.g. Gym Name"
                                                 required
                                             />
                                             <p className="text-xs text-muted-foreground">This name will appear on all your invoices.</p>
@@ -143,7 +149,7 @@ export default function OnboardingForm() {
                                                 name="address"
                                                 value={formData.address}
                                                 onChange={handleInputChange}
-                                                placeholder="Tower Square, Sapna Sangeeta Rd"
+                                                placeholder="Street Address, Area"
                                                 required
                                             />
                                         </div>
@@ -155,7 +161,7 @@ export default function OnboardingForm() {
                                                     name="city"
                                                     value={formData.city}
                                                     onChange={handleInputChange}
-                                                    placeholder="Indore"
+                                                    placeholder="City"
                                                     required
                                                 />
                                             </div>
@@ -166,7 +172,7 @@ export default function OnboardingForm() {
                                                     name="state"
                                                     value={formData.state}
                                                     onChange={handleInputChange}
-                                                    placeholder="Madhya Pradesh"
+                                                    placeholder="State"
                                                     required
                                                 />
                                             </div>
@@ -178,8 +184,14 @@ export default function OnboardingForm() {
                                                 name="pincode"
                                                 value={formData.pincode}
                                                 onChange={handleInputChange}
-                                                placeholder="452001"
+                                                placeholder="000000"
                                                 required
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="^[0-9]{6}$"
+                                                maxLength={6}
+                                                title="Please enter a valid 6-digit Indian PIN code"
+                                                aria-invalid={!/^[0-9]{6}$/.test(formData.pincode) && formData.pincode.length > 0}
                                             />
                                         </div>
                                     </div>
@@ -194,8 +206,12 @@ export default function OnboardingForm() {
                                                 name="phone"
                                                 value={formData.phone}
                                                 onChange={handleInputChange}
-                                                placeholder="076930 06065"
+                                                placeholder="9876543210"
                                                 required
+                                                type="tel"
+                                                inputMode="tel"
+                                                pattern="^[0-9]{10}$"
+                                                title="Please enter a valid 10-digit phone number"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -205,7 +221,7 @@ export default function OnboardingForm() {
                                                 name="upiId"
                                                 value={formData.upiId}
                                                 onChange={handleInputChange}
-                                                placeholder="gym@upi"
+                                                placeholder="username@upi"
                                                 required
                                             />
                                             <p className="text-xs text-muted-foreground">Used to generate QR codes on invoices.</p>
@@ -222,7 +238,7 @@ export default function OnboardingForm() {
                                                 name="invoicePrefix"
                                                 value={formData.invoicePrefix}
                                                 onChange={handleInputChange}
-                                                placeholder="e.g. TF"
+                                                placeholder="e.g. INV"
                                                 maxLength={5}
                                                 required
                                             />

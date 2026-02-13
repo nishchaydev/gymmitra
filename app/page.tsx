@@ -11,6 +11,7 @@ import { MobilePreview } from "@/components/landing/MobilePreview"
 import { Pricing } from "@/components/landing/Pricing"
 import { FAQ } from "@/components/landing/FAQ"
 import { FinalCTA } from "@/components/landing/FinalCTA"
+import { Contact } from "@/components/landing/Contact"
 import { AboutEMitra } from "@/components/landing/AboutEMitra"
 import { MobileStickyCTA } from "@/components/landing/MobileStickyCTA"
 import { ShieldCheck, Zap, Award, Building2 } from "lucide-react"
@@ -53,7 +54,10 @@ export default function Home() {
         {/* 11. Ecosystem - eMitra Technologies */}
         <AboutEMitra />
 
-        {/* 12. Final Push - CTA */}
+        {/* 12. Contact Form */}
+        <Contact />
+
+        {/* 13. Final Push - CTA */}
         <FinalCTA />
       </main>
 
@@ -112,12 +116,13 @@ export default function Home() {
                 </ul>
               </div>
               <div className="space-y-6 col-span-2 sm:col-span-1">
+                {/* TODO: Create real legal pages before production launch */}
                 <h4 className="text-sm font-bold text-white uppercase tracking-[0.2em]">Legal</h4>
                 <ul className="space-y-4">
-                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Privacy Policy</Link></li>
-                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Terms of Service</Link></li>
-                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Cookie Policy</Link></li>
-                  <li><Link href="#" className="text-sm hover:text-primary transition-colors duration-200">Security Details</Link></li>
+                  <li><Link href="/privacy" className="text-sm hover:text-primary transition-colors duration-200">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="text-sm hover:text-primary transition-colors duration-200">Terms of Service</Link></li>
+                  <li><Link href="/cookies" className="text-sm hover:text-primary transition-colors duration-200">Cookie Policy</Link></li>
+                  <li><Link href="/security" className="text-sm hover:text-primary transition-colors duration-200">Security Details</Link></li>
                 </ul>
               </div>
             </div>

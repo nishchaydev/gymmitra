@@ -11,12 +11,14 @@ const onboardingSchema = z.object({
     address: z.string().min(5, "Address is required"),
     city: z.string().min(2, "City is required"),
     state: z.string().min(2, "State is required"),
-    pincode: z.string().min(6, "Valid 6-digit pincode is required"),
-    phone: z.string().min(10, "Valid phone number is required"),
+    pincode: z.string().regex(/^\d{6}$/, "Pincode must be exactly 6 digits"),
+    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
     email: z.string().email("Valid email is required"),
     upiId: z.string().min(3, "UPI ID is required"),
     invoicePrefix: z.string().min(2, "Prefix is required").max(5, "Max 5 characters"),
 })
+
+const ONBOARDING_COMPLETE_STEP = 4
 
 export async function completeOnboarding(formData: FormData) {
     const supabase = await createClient()
@@ -47,14 +49,14 @@ export async function completeOnboarding(formData: FormData) {
                 ...validatedData,
                 name: validatedData.businessName,
                 isVerified: true,
-                onboardingStep: 4,
+                onboardingStep: ONBOARDING_COMPLETE_STEP,
             },
             create: {
                 userId: user.id,
                 ...validatedData,
                 name: validatedData.businessName,
                 isVerified: true,
-                onboardingStep: 4,
+                onboardingStep: ONBOARDING_COMPLETE_STEP,
             }
         })
     } catch (error) {

@@ -14,7 +14,10 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import Link from 'next/link'
-import { Plus, Search, AlertTriangle } from 'lucide-react'
+import { Plus, Search, AlertTriangle, ShoppingBag } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 export const dynamic = 'force-dynamic'
 
@@ -138,53 +141,74 @@ export default async function ProductsPage({
                 </div>
             </div>
 
-            <div className="rounded-md border bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Price</TableHead>
-                            <TableHead>Stock</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {products.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
-                                    No products found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            products.map((product) => (
-                                <TableRow key={product.id}>
-                                    <TableCell className="font-medium">
-                                        {product.name}
-                                        {product.stock <= product.lowStockAlert && (
-                                            <span className="ml-2 text-xs text-red-500 font-semibold inline-flex items-center">
-                                                <AlertTriangle className="h-3 w-3 mr-1" /> Low Stock
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">{product.category}</Badge>
-                                    </TableCell>
-                                    <TableCell>₹{Number(product.price).toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        <span className={product.stock <= product.lowStockAlert ? 'text-red-600 font-bold' : ''}>
-                                            {product.stock}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">Edit</Button>
-                                    </TableCell>
+            <Card className="border-slate-200">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Catalog</CardTitle>
+                            <CardDescription>Manage your gym memberships and products.</CardDescription>
+                        </div>
+                        <div className="text-xs text-slate-400 font-medium sm:hidden block italic font-normal">
+                            Scroll horizontally ↔
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto -mx-6 sm:mx-0 px-6 sm:px-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Category</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="text-right">Stock</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {products.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-auto p-0 border-0">
+                                            <EmptyState
+                                                icon={ShoppingBag}
+                                                title="No products yet"
+                                                description="Add memberships or retail items to start selling."
+                                                actionLabel="Add Product"
+                                                actionHref="/products/new"
+                                                className="border-0 bg-transparent rounded-none"
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    products.map((product) => (
+                                        <TableRow key={product.id}>
+                                            <TableCell className="font-medium">{product.name}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline">{product.category}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">₹{Number(product.price).toLocaleString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                {product.stock === null ? (
+                                                    <span className="text-slate-400">∞</span>
+                                                ) : (
+                                                    <span className={cn(
+                                                        product.stock < 5 ? "text-red-600 font-bold" : "text-slate-600"
+                                                    )}>
+                                                        {product.stock}
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="sm">Edit</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     )
 }

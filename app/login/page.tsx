@@ -97,8 +97,8 @@ export default async function LoginPage(props: {
                     </form>
                     <div className="flex items-center justify-center gap-4 text-center text-xs text-muted-foreground">
                         <span>&copy; {new Date().getFullYear()} Gym Mitra ERP</span>
-                        <span className="h-3 w-px bg-slate-200" />
-                        <div className="flex items-center gap-1.5 font-bold text-slate-400">
+                        <span className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
+                        <div className="flex items-center gap-1.5 font-bold text-slate-400 dark:text-slate-300">
                             <Building2 className="h-3 w-3" />
                             <span>Powered by eMitra Technologies</span>
                         </div>

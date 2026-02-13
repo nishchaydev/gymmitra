@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { apiLimiter } from '@/lib/rate-limit'
 import { cookies } from 'next/headers'
 
 const checkInSchema = z.object({
@@ -17,13 +18,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Rate limit: 100 check-ins per minute per user
+        try {
+            await apiLimiter.check(100, user.id)
+        } catch (error) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+        }
+
         const gym = await prisma.gymProfile.findUnique({
             where: { userId: user.id }
         })
 
-        // Allow Demo Mode bypass if needed, or strictly enforce gym?
-        // For API, we should strictly enforce gym for data integrity unless specifically designed for demo.
-        // Assuming API is for real data primarily.
         if (!gym) {
             return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
         }
@@ -91,6 +96,13 @@ export async function GET(request: NextRequest) {
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Rate limit: 100 requests per minute per user
+        try {
+            await apiLimiter.check(100, user.id)
+        } catch (error) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
         }
 
         const gym = await prisma.gymProfile.findUnique({

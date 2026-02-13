@@ -31,6 +31,7 @@ export async function GET() {
 
         return NextResponse.json(gymProfile)
     } catch (error) {
+        console.error('Failed to fetch settings:', error)
         return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
     }
 }
@@ -44,7 +45,13 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const body = await request.json()
+        let body;
+        try {
+            body = await request.json()
+        } catch (e) {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+        }
+
         const data = settingsSchema.parse(body)
 
         const gymProfile = await prisma.gymProfile.upsert({
@@ -53,14 +60,17 @@ export async function PUT(request: NextRequest) {
             create: {
                 ...data,
                 userId: user.id,
+                name: data.name // Provide required name if creating new
             },
         })
 
         return NextResponse.json(gymProfile)
     } catch (error) {
         if (error instanceof z.ZodError) {
+            console.error('Settings validation failed:', error.flatten())
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
         }
+        console.error('Failed to update settings:', error)
         return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 })
     }
 }

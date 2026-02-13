@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -54,6 +55,28 @@ export async function updateSession(request: NextRequest) {
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
+    }
+
+    // PRIORITY 1: Enforce onboarding completion
+    if (user && !isDemoMode &&
+        !request.nextUrl.pathname.startsWith('/onboarding') &&
+        !request.nextUrl.pathname.startsWith('/api') &&
+        !request.nextUrl.pathname.startsWith('/auth') &&
+        request.nextUrl.pathname !== '/'
+    ) {
+        try {
+            const gymProfile = await prisma.gymProfile.findUnique({
+                where: { userId: user.id }
+            })
+
+            if (!gymProfile) {
+                const url = request.nextUrl.clone()
+                url.pathname = '/onboarding'
+                return NextResponse.redirect(url)
+            }
+        } catch (error) {
+            console.error('Middleware error checking gym profile:', error)
+        }
     }
 
     return supabaseResponse

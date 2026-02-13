@@ -4,6 +4,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model GymProfile {
@@ -91,6 +93,7 @@ model MemberSubscription {
   status        SubscriptionStatus @default(ACTIVE)
   paymentStatus PaymentStatus      @default(PENDING)
   autoRenew     Boolean            @default(false)
+  notes         String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   member        Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -159,6 +162,7 @@ model Invoice {
   tax            Decimal?            @db.Decimal(10, 2)
   discount       Decimal?            @db.Decimal(10, 2)
   total          Decimal             @db.Decimal(10, 2)
+  shareToken     String?             @unique @default(cuid())
   paymentStatus  PaymentStatus       @default(PENDING)
   paymentMethod  PaymentMethod?
   notes          String?
@@ -173,6 +177,7 @@ model Invoice {
 
   @@index([gymId])
   @@index([invoiceNumber])
+  @@index([shareToken])
   @@index([memberId])
   @@index([issueDate])
 }

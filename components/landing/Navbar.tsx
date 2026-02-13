@@ -51,12 +51,12 @@ export function Navbar() {
                         <Dumbbell className="h-5 w-5 text-[#4FC3F7]" />
                     </div>
                     <div className="flex flex-col leading-none">
-                        <span className="font-bold text-xl text-slate-900 tracking-tight">Gym<span className="text-brand-primary">Mitra</span></span>
-                        <span className="text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-0.5">Technologies</span>
+                        <span className="font-bold text-xl text-slate-900 tracking-tight">Gym<span className="text-[#4FC3F7]">Mitra</span></span>
+                        <span className="text-[9px] font-black text-slate-500 tracking-[0.2em] uppercase mt-0.5">Technologies</span>
                     </div>
                 </Link>
 
-                <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+                <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-700">
                     <Link href="#products" className="hover:text-[#4FC3F7] transition-colors relative group">
                         Products
                         <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4FC3F7] transition-all group-hover:w-full rounded-full" />
@@ -86,11 +86,11 @@ export function Navbar() {
                     ) : (
                         <>
                             <Link href="/login" className="hidden md:block">
-                                <Button variant="ghost" className="text-slate-600 hover:text-[#4FC3F7] font-medium hover:bg-drift-50">
+                                <Button variant="ghost" className="text-slate-700 hover:text-[#4FC3F7] font-bold hover:bg-drift-50">
                                     Login
                                 </Button>
                             </Link>
-                            <Link href="/login?view=register">
+                            <Link href="#contact">
                                 <Button className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 rounded-full shadow-lg shadow-slate-900/20 hover:shadow-slate-900/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
                                     Request a Demo
                                 </Button>

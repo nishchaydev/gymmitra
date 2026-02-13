@@ -13,10 +13,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Plus } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,53 +106,77 @@ export default async function MembersPage({
                 <MemberFilters />
             </div>
 
-            <div className="rounded-md border bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Phone</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Joined Date</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {members.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
-                                    No members found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            members.map((member) => (
-                                <TableRow key={member.id}>
-                                    <TableCell className="font-medium">
-                                        <Link href={`/members/${member.id}`} className="hover:underline">
-                                            {member.name}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>{member.phone}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={
-                                            member.status === 'ACTIVE' ? 'default' :
-                                                member.status === 'EXPIRED' ? 'destructive' : 'secondary'
-                                        }>
-                                            {member.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{new Date(member.joiningDate).toLocaleDateString()}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Link href={`/members/${member.id}`}>
-                                            <Button variant="ghost" size="sm">View</Button>
-                                        </Link>
-                                    </TableCell>
+            <Card className="border-slate-200">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Gym Members</CardTitle>
+                            <CardDescription>
+                                A list of all members in your gym.
+                            </CardDescription>
+                        </div>
+                        <div className="text-xs text-slate-400 font-medium sm:hidden block italic">
+                            Scroll horizontally ↔
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto -mx-6 sm:mx-0 px-6 sm:px-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Member</TableHead>
+                                    <TableHead>Phone</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Joined Date</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {members.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-auto p-0 border-0">
+                                            <EmptyState
+                                                icon={Users}
+                                                title="No members yet"
+                                                description="Start building your community by adding your first gym member."
+                                                actionLabel="Add First Member"
+                                                actionHref="/members/new"
+                                                className="border-0 bg-transparent rounded-none"
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    members.map((member: any) => (
+                                        <TableRow key={member.id}>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/members/${member.id}`} className="hover:underline">
+                                                    {member.name}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell>{member.phone}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={
+                                                    member.status === 'ACTIVE' ? 'default' :
+                                                        member.status === 'EXPIRED' ? 'destructive' : 'secondary'
+                                                }>
+                                                    {member.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{new Date(member.joiningDate || member.createdAt).toLocaleDateString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Link href={`/members/${member.id}`}>
+                                                    <Button variant="ghost" size="sm">View</Button>
+                                                </Link>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     )
 }

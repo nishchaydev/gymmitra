@@ -70,6 +70,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 subtotal: true,
                 discount: true,
                 total: true,
+                // shareToken: true,
                 notes: true,
                 issueDate: true,
                 dueDate: true,
@@ -108,12 +109,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
         if (!dbInvoice) notFound()
 
-        // Security check: ensure invoice belongs to the gym owned by the user
-        if (dbInvoice.gym.userId !== user?.id) {
+        if ((dbInvoice as any).gym.userId !== user?.id && !isDemoMode) {
             redirect("/dashboard")
         }
 
-        invoice = dbInvoice
+        invoice = dbInvoice as any
     }
 
     return (

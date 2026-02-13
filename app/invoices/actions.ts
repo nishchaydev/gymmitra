@@ -37,43 +37,48 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
 
     if (!gym) throw new Error("Gym not found")
 
-    // 2. Transactional creation to prevent number collisions
-    const invoice = await prisma.$transaction(async (tx) => {
-        const invoiceNumber = await generateInvoiceNumber(gym.id, tx)
+    try {
+        const invoice = await prisma.$transaction(async (tx) => {
+            const invoiceNumber = await generateInvoiceNumber(gym.id, tx)
 
-        // Use integer arithmetic (cents) for precision
-        const subtotalCents = validatedData.items.reduce((acc, item) =>
-            acc + Math.round(item.quantity * (item.unitPrice * 100)), 0)
+            // Use integer arithmetic (cents) for precision
+            const subtotalCents = validatedData.items.reduce((acc, item) =>
+                acc + Math.round(item.quantity * (item.unitPrice * 100)), 0)
 
-        const discountCents = Math.round(validatedData.discount * 100)
-        const totalCents = Math.max(0, subtotalCents - discountCents)
+            const discountCents = Math.round(validatedData.discount * 100)
+            const totalCents = Math.max(0, subtotalCents - discountCents)
 
-        return await tx.invoice.create({
-            data: {
-                invoiceNumber,
-                type: "SALE",
-                gym: { connect: { id: gym.id } },
-                memberId: validatedData.memberId,
-                subtotal: subtotalCents / 100,
-                discount: validatedData.discount,
-                total: totalCents / 100,
-                paymentMethod: validatedData.paymentMethod,
-                paymentStatus: "PAID",
-                notes: validatedData.notes,
-                items: {
-                    create: validatedData.items.map(item => ({
-                        description: item.description,
-                        quantity: item.quantity,
-                        unitPrice: item.unitPrice,
-                        amount: (item.quantity * (item.unitPrice * 100)) / 100,
-                    }))
-                }
-            } as any
+            return await tx.invoice.create({
+                data: {
+                    invoiceNumber,
+                    type: "SALE",
+                    gym: { connect: { id: gym.id } },
+                    memberId: validatedData.memberId ?? null,
+                    subtotal: subtotalCents / 100,
+                    discount: validatedData.discount,
+                    total: totalCents / 100,
+                    paymentMethod: validatedData.paymentMethod,
+                    paymentStatus: "PAID",
+                    notes: validatedData.notes ?? null,
+                    items: {
+                        create: validatedData.items.map(item => ({
+                            description: item.description,
+                            quantity: item.quantity,
+                            unitPrice: item.unitPrice,
+                            amount: (item.quantity * (item.unitPrice * 100)) / 100,
+                        }))
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any
+            })
         })
-    })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/invoices")
+        revalidatePath("/dashboard")
+        revalidatePath("/invoices")
 
-    redirect(`/invoices/${invoice.id}`)
+        return { success: true, id: invoice.id }
+    } catch (error) {
+        console.error("Invoice Action Error:", error)
+        return { error: error instanceof Error ? error.message : "Failed to create invoice" }
+    }
 }

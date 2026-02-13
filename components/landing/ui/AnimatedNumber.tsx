@@ -5,11 +5,10 @@ import { useInView, useMotionValue, useSpring } from "framer-motion"
 
 interface AnimatedNumberProps {
     value: number
-    duration?: number
     className?: string
 }
 
-export function AnimatedNumber({ value, duration = 2, className }: AnimatedNumberProps) {
+export function AnimatedNumber({ value, className }: AnimatedNumberProps) {
     const ref = useRef<HTMLSpanElement>(null)
     const motionValue = useMotionValue(0)
     const springValue = useSpring(motionValue, {

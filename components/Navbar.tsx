@@ -61,7 +61,9 @@ export function Navbar() {
 
     // Hide App Navbar on public landing/auth pages to prevent overlap
     // Landing page has its own custom navbar
-    const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/error"
+    if (pathname === "/login") return null
+
+    const isPublicPage = pathname === "/" || pathname === "/error"
 
     // If we're on the landing page, we usually hide the main app navbar
     if (isPublicPage && !isDemo) {
@@ -107,7 +109,7 @@ export function Navbar() {
     const closeMenu = () => setIsMobileMenuOpen(false)
 
     return (
-        <nav className="border-b bg-white shadow-sm sticky top-0 z-50">
+        <nav className="border-b bg-white shadow-sm sticky top-0 z-[100]">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
                 <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary">
                     <Building2 className="h-6 w-6" />

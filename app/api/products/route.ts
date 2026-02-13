@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { apiLimiter } from '@/lib/rate-limit'
 
 const productSchema = z.object({
     name: z.string().min(2),
@@ -21,6 +22,13 @@ export async function GET(request: NextRequest) {
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Rate limit: 100 requests per minute per user
+        try {
+            await apiLimiter.check(100, user.id)
+        } catch (error) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
         }
 
         const gym = await prisma.gymProfile.findUnique({
@@ -72,6 +80,13 @@ export async function POST(request: NextRequest) {
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Rate limit: 50 creations per minute per user
+        try {
+            await apiLimiter.check(50, user.id)
+        } catch (error) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
         }
 
         const gym = await prisma.gymProfile.findUnique({
