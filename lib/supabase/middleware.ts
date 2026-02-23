@@ -69,20 +69,17 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    // 3. ONBOARDING ENFORCEMENT (Optimized with cookies)
-    // Only check onboarding for internal dashboard/members/api routes
+    // 3. ONBOARDING ENFORCEMENT
     const isProtectedRoute =
         pathname.startsWith('/dashboard') ||
         pathname.startsWith('/members') ||
         pathname.startsWith('/invoices') ||
         pathname.startsWith('/products') ||
         pathname.startsWith('/attendance') ||
-        pathname.startsWith('/settings')
+        pathname.startsWith('/settings') ||
+        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth'))
 
     if (user && !isDemoMode && isProtectedRoute && !isOnboarded) {
-        // We don't perform Prisma checks here to remain Edge-compatible.
-        // Instead, we redirect to onboarding if the cookie is missing.
-        // The /onboarding page will verify the profile and set the cookie if it exists.
         const url = request.nextUrl.clone()
         url.pathname = '/onboarding'
         return NextResponse.redirect(url)

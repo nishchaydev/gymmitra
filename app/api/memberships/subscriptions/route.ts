@@ -6,11 +6,11 @@ import { createClient } from '@/lib/supabase/server'
 import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus } from '@prisma/client'
 
 const subscriptionSchema = z.object({
-    memberId: z.string(),
-    planId: z.string(),
+    memberId: z.string().min(1, "Member ID is required"),
+    planId: z.string().min(1, "Plan ID is required"),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/, "ISO 8601 format required")
         .transform((str) => new Date(str)),
-    price: z.number().optional(),
+    price: z.number().min(0, "Price cannot be negative").optional(),
     paymentStatus: z.nativeEnum(PrismaPaymentStatus).default(PrismaPaymentStatus.PAID),
     discountReason: z.string().optional(),
 })
@@ -65,25 +65,28 @@ export async function POST(request: NextRequest) {
             console.warn(`Large discount applied for gym ${gym.id}: ${plan.price} → ${validatedData.price}. Reason: ${validatedData.discountReason || 'None'}`)
         }
 
-        // Create subscription
-        const subscription = await prisma.memberSubscription.create({
-            data: {
-                memberId: validatedData.memberId,
-                planId: validatedData.planId,
-                gymId: gym.id, // Direct gymId for multi-tenant isolation
-                startDate,
-                endDate,
-                price,
-                paymentStatus: validatedData.paymentStatus,
-                status: 'ACTIVE',
-                notes: validatedData.discountReason ? `Discount: ${validatedData.discountReason}` : null
-            } as any
-        })
+        // Atomic transaction: Create subscription AND update member status
+        const [subscription] = await prisma.$transaction(async (tx) => {
+            const sub = await tx.memberSubscription.create({
+                data: {
+                    memberId: validatedData.memberId,
+                    planId: validatedData.planId,
+                    gymId: gym.id,
+                    startDate,
+                    endDate,
+                    price,
+                    paymentStatus: validatedData.paymentStatus,
+                    status: SubscriptionStatus.ACTIVE,
+                    notes: validatedData.discountReason ? `Discount: ${validatedData.discountReason}` : null
+                }
+            })
 
-        // Update member status to ACTIVE
-        await prisma.member.update({
-            where: { id: validatedData.memberId },
-            data: { status: 'ACTIVE' }
+            await tx.member.update({
+                where: { id: validatedData.memberId },
+                data: { status: 'ACTIVE' }
+            })
+
+            return [sub]
         })
 
         return NextResponse.json(subscription, { status: 201 })

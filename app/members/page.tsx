@@ -43,13 +43,30 @@ export default async function MembersPage({
 
     let gymId = 'demo'
     if (user && !isDemo) {
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-        if (!gym) {
-            return <div className="p-8">Gym profile not found. Please contact support.</div>
+        try {
+            const gym = await prisma.gymProfile.findUnique({
+                where: { userId: user.id }
+            })
+            if (!gym) {
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 text-center p-8">
+                        <div className="text-destructive font-bold text-xl">Gym Profile Not Found</div>
+                        <p className="text-muted-foreground">Please complete your onboarding to access members.</p>
+                        <Link href="/onboarding">
+                            <Button>Go to Onboarding</Button>
+                        </Link>
+                    </div>
+                )
+            }
+            gymId = gym.id
+        } catch (error) {
+            console.error("Failed to load gym profile for members:", error)
+            return (
+                <div className="p-8 text-center text-destructive">
+                    System error loading profile. Please try refreshing.
+                </div>
+            )
         }
-        gymId = gym.id
     }
 
     const whereClause: Prisma.MemberWhereInput = {

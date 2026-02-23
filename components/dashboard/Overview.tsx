@@ -24,13 +24,13 @@ export function Overview({ data = SHOWCASE_STATS.overviewData }: { data?: any[] 
                     />
                     <Tooltip
                         formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                        cursor={{ fill: 'rgba(79, 195, 247, 0.1)' }}
-                        contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        cursor={{ fill: 'rgba(79, 195, 247, 0.05)' }}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
                     />
                     <Bar
                         dataKey="total"
                         fill="#4FC3F7"
-                        radius={[4, 4, 0, 0]}
+                        radius={[6, 6, 0, 0]}
                         className="fill-primary"
                     />
                 </BarChart>

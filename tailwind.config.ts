@@ -9,48 +9,59 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                // Primary - Ion Blue
+                // Primary Brand Colors
                 primary: {
-                    DEFAULT: '#4FC3F7',
-                    50: '#E3F7FE',
-                    100: '#C7EFFD',
-                    200: '#90DFFB',
-                    300: '#58CFF9',
-                    400: '#4FC3F7',  // Main
-                    500: '#1FB5F5',
-                    600: '#0A9FE0',
-                    700: '#0880B8',
-                    800: '#066090',
-                    900: '#044068',
+                    DEFAULT: '#0066FF', // Ion Blue
+                    50: '#E6F0FF',
+                    100: '#CCE0FF',
+                    200: '#99C1FF',
+                    300: '#66A3FF',
+                    400: '#3384FF',
+                    500: '#0066FF',
+                    600: '#0052CC',
+                    700: '#003D99',
+                    800: '#002966',
+                    900: '#001433',
                 },
-
-                // Neutral - Drift Silver
+                midnight: {
+                    DEFAULT: '#1E3A8A', // Midnight Navy
+                    50: '#E8EBF3',
+                    100: '#D1D8E7',
+                    200: '#A3B1CF',
+                    300: '#758AB7',
+                    400: '#47639F',
+                    500: '#1E3A8A',
+                    600: '#182E6E',
+                    700: '#122252',
+                    800: '#0C1637',
+                    900: '#060B1B',
+                },
+                ocean: {
+                    DEFAULT: '#0D9488', // Ocean Teal
+                    50: '#E7F4F3',
+                    100: '#CFE9E7',
+                    200: '#9FD3CF',
+                    300: '#6FBDB7',
+                    400: '#3FA79F',
+                    500: '#0D9488',
+                    600: '#0A766D',
+                    700: '#085951',
+                    800: '#053B36',
+                    900: '#031E1B',
+                },
+                // Base Colors
+                slate: {
+                    DEFAULT: '#0F172A', // Deep Slate
+                    950: '#020617',
+                },
                 drift: {
-                    DEFAULT: '#DDE3EA',
-                    50: '#F7F9FB',
-                    100: '#EFF2F6',
-                    200: '#DDE3EA',  // Main
-                    300: '#CBD4DE',
-                    400: '#B9C5D2',
-                    500: '#A7B6C6',
-                    600: '#8899AD',
-                    700: '#6A7C94',
-                    800: '#4C5F7B',
-                    900: '#2E4262',
+                    DEFAULT: '#E2E8F0', // Drift Silver
                 },
-
-                // Brand aliases for backward compatibility (optional, but good for transition)
-                brand: {
-                    primary: '#4FC3F7',
-                    secondary: '#DDE3EA',
-                },
-
-                // Accent colors (complementary) - As per request
-                accent: {
-                    green: '#00E676',    // Success/Active
-                    orange: '#FF9100',   // Warning/Expiring
-                    red: '#FF1744',      // Error/Overdue
-                }
+                white: '#FFFFFF',
+            },
+            fontFamily: {
+                display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+                sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
             }
         }
     },

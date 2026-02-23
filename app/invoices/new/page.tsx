@@ -15,10 +15,7 @@ export default async function NewInvoicePage() {
 
     if (!gym) redirect("/onboarding")
 
-    const [members, products] = await Promise.all([
-        prisma.member.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } }),
-        prisma.product.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } })
-    ])
+    const members = await prisma.member.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } })
 
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
@@ -28,7 +25,7 @@ export default async function NewInvoicePage() {
                     <p className="text-slate-500 mt-1">Generate a professional invoice for memberships or products.</p>
                 </div>
             </div>
-            <NewInvoiceForm members={members} products={products} />
+            <NewInvoiceForm members={members} />
         </div>
     )
 }

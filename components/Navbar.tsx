@@ -111,7 +111,7 @@ export function Navbar() {
     return (
         <nav className="border-b bg-white shadow-sm sticky top-0 z-[100]">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
-                <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary">
+                <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary font-display">
                     <Building2 className="h-6 w-6" />
                     <span>GymMitra</span>
                 </Link>

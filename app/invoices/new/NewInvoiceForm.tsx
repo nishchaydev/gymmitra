@@ -12,7 +12,7 @@ import { SuccessCheckmark } from '@/components/ui/success-animation'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
-export default function NewInvoiceForm({ members, products }: { members: any[], products: any[] }) {
+export default function NewInvoiceForm({ members }: { members: any[] }) {
     const router = useRouter()
     const [selectedMember, setSelectedMember] = useState<string>('')
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
@@ -31,6 +31,13 @@ export default function NewInvoiceForm({ members, products }: { members: any[], 
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const total = Math.max(0, subtotal - discount)
+
+    // Client-side validation
+    const isValid = items.length > 0 && items.every(item =>
+        item.description.trim().length > 0 &&
+        item.quantity > 0 &&
+        item.unitPrice >= 0
+    )
 
     if (success) {
         return (
@@ -201,8 +208,8 @@ export default function NewInvoiceForm({ members, products }: { members: any[], 
                                 </div>
 
                                 <Button
-                                    className="w-full bg-[#4FC3F7] hover:bg-[#4FC3F7]/90 text-slate-900 font-bold h-12 text-lg"
-                                    disabled={isSubmitting || total <= 0}
+                                    className="w-full bg-[#4FC3F7] hover:bg-[#4FC3F7]/90 text-slate-900 font-bold h-12 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isSubmitting || !isValid}
                                     onClick={async () => {
                                         setIsSubmitting(true)
                                         try {

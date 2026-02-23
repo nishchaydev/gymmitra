@@ -11,6 +11,9 @@ interface PublicInvoicePageProps {
     }>
 }
 
+// Minimal length for CUID (~25) or UUID (36) to prevent brute-force on short strings
+const MIN_TOKEN_LENGTH = 25
+
 /**
  * Dynamic metadata for public invoice sharing
  */
@@ -18,11 +21,11 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
     const { token } = await params
 
     // Quick validation before DB hit
-    if (!token || token.length < 10) {
+    if (!token || token.length < MIN_TOKEN_LENGTH) {
         return { title: 'Invalid Invoice | Gym Mitra' }
     }
 
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await prisma.invoice.findFirst({
         where: { shareToken: token } as any,
         select: {
             invoiceNumber: true,
@@ -41,13 +44,12 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
 export default async function PublicInvoicePage({ params }: PublicInvoicePageProps) {
     const { token } = await params
 
-    // Basic token validation (CUID or UUID-like length)
-    if (!token || token.length < 10) {
+    // Basic token validation
+    if (!token || token.length < MIN_TOKEN_LENGTH) {
         notFound()
     }
 
     // No auth required - public access via random token
-    // Using findFirst instead of findUnique to simplify where clause typing
     const dbInvoice = await prisma.invoice.findFirst({
         where: { shareToken: token } as any,
         include: {
@@ -79,7 +81,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
 
                 {/* Invoice Container */}
                 <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <InvoiceView invoice={dbInvoice as any} />
+                    <InvoiceView invoice={dbInvoice} />
                 </div>
 
                 {/* Footer */}

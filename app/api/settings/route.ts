@@ -61,7 +61,6 @@ export async function PUT(request: NextRequest) {
             create: {
                 ...data,
                 userId: user.id,
-                name: data.name // Provide required name if creating new
             },
         })
 

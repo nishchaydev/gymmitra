@@ -36,10 +36,15 @@ export default async function DashboardPage() {
     }
 
     // Get the gym profile for this user
-    // @ts-ignore - Temporary bypass until Prisma client is regenerated
-    const gym = isDemo ? { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true } : await prisma.gymProfile.findUnique({
-        where: { userId: user?.id }
-    })
+    let gym = null
+    try {
+        gym = isDemo ? { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true } : await prisma.gymProfile.findUnique({
+            where: { userId: user?.id }
+        })
+    } catch (error) {
+        console.error("Failed to load gym profile:", error)
+        // Fallback to empty state which prompts initialization/retry
+    }
 
     if (!isDemo && gym && !(gym as any).isVerified) {
         redirect("/onboarding")
@@ -55,7 +60,7 @@ export default async function DashboardPage() {
                         <CardDescription>We&apos;re finishing setting up your profile.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p>It looks like your gym profile wasn&apos;t created yet.</p>
+                        <p>It looks like your gym profile wasn&apos;t created yet, or we&apos;re having trouble loading it.</p>
                         <Link href="/onboarding">
                             <Button className="w-full">Initialize Gym Profile</Button>
                         </Link>
@@ -107,16 +112,16 @@ export default async function DashboardPage() {
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
             {isDemo && (
-                <div className="bg-slate-900 border-b border-primary/20 text-white px-4 py-3 text-sm font-medium shadow-sm mb-6 -mx-8 -mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 relative z-10">
-                    <div className="flex items-center gap-2 text-primary-400">
+                <div className="bg-[#1a365d] border-b border-[#4FC3F7]/20 text-white px-4 py-3 text-sm font-medium shadow-sm mb-6 -mx-8 -mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 relative z-10">
+                    <div className="flex items-center gap-2 text-[#4FC3F7]">
                         <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4FC3F7] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4FC3F7]"></span>
                         </span>
-                        <span>Running in <span className="font-bold text-white">Showcase Mode</span> with Demo Data. Real database is bypassed.</span>
+                        <span>Running in <span className="font-bold text-white uppercase tracking-tight">Showcase Mode</span> with demo data. Real database is bypassed.</span>
                     </div>
                     <form action={exitDemo}>
-                        <Button variant="secondary" size="sm" className="h-7 text-xs bg-white text-slate-900 hover:bg-slate-100 border-0 font-bold px-4">
+                        <Button variant="secondary" size="sm" className="h-7 text-xs bg-[#4FC3F7] text-[#1a365d] hover:bg-white border-0 font-bold px-4 transition-colors">
                             Exit Demo
                         </Button>
                     </form>
@@ -127,14 +132,14 @@ export default async function DashboardPage() {
                     <div className="flex items-center gap-3">
                         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">{gym?.name}</h2>
                         {isDemo && (
-                            <div className="px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center gap-1.5 animate-in fade-in zoom-in duration-500">
-                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Showcase Mode</span>
+                            <div className="px-2.5 py-1 rounded-full bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 flex items-center gap-1.5 animate-in fade-in zoom-in duration-500">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#4FC3F7] animate-pulse" />
+                                <span className="text-[10px] font-bold text-[#1a365d] uppercase tracking-wider">Showcase</span>
                             </div>
                         )}
                     </div>
                     <p className="text-slate-500 mt-1 font-medium flex items-center gap-2 text-sm md:text-base">
-                        Welcome back! Here&apos;s your gym overview.
+                        Manage your gym operations in one place.
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">

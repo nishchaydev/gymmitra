@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { toast } from "sonner"
 import { SuccessCheckmark } from "@/components/ui/success-animation"
 
@@ -37,24 +37,50 @@ const memberFormSchema = z.object({
 
 type MemberFormValues = z.infer<typeof memberFormSchema>
 
-export function MemberForm() {
+// Define MemberFormProps type
+interface MemberFormProps {
+    member?: MemberFormValues; // Optional prop for editing existing members
+}
+
+export default function MemberForm({ member }: MemberFormProps) {
     const router = useRouter()
-    const [loading, setLoading] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
+    const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    useEffect(() => {
+        return () => {
+            if (submitTimeoutRef.current) {
+                clearTimeout(submitTimeoutRef.current)
+            }
+        }
+    }, [])
 
     const form = useForm<MemberFormValues>({
         resolver: zodResolver(memberFormSchema) as any,
-        defaultValues: {
+        defaultValues: member ? {
+            name: member.name,
+            phone: member.phone,
+            email: member.email,
+            dateOfBirth: member.dateOfBirth,
+            gymId: member.gymId,
+            emergencyName: member.emergencyName,
+            emergencyPhone: member.emergencyPhone,
+            emergencyRelation: member.emergencyRelation,
+        } : {
             name: "",
             phone: "",
             email: "",
             dateOfBirth: "",
             gymId: "default-gym-id",
+            emergencyName: "",
+            emergencyPhone: "",
+            emergencyRelation: "",
         },
     })
 
     async function onSubmit(data: MemberFormValues) {
-        setLoading(true)
+        setIsSubmitting(true)
         try {
             const response = await fetch("/api/members", {
                 method: "POST",
@@ -74,17 +100,15 @@ export function MemberForm() {
             })
 
             // Wait for animation to play
-            const timeoutId = setTimeout(() => {
+            submitTimeoutRef.current = setTimeout(() => {
                 router.push("/members")
                 router.refresh()
             }, 2000)
-
-            return () => clearTimeout(timeoutId)
         } catch {
             toast.error("Something went wrong", {
                 description: "Please try again."
             })
-            setLoading(false)
+            setIsSubmitting(false)
         }
     }
 
@@ -204,8 +228,8 @@ export function MemberForm() {
                     </div>
                 </div>
 
-                <Button type="submit" disabled={loading}>
-                    {loading ? "Creating..." : "Create Member"}
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating..." : "Create Member"}
                 </Button>
             </form>
         </Form>

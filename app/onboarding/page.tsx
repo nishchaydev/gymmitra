@@ -25,6 +25,9 @@ export default async function OnboardingPage() {
             cookieStore.set('gym_onboarded', 'true', {
                 maxAge: 30 * 24 * 60 * 60,
                 path: '/',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
             })
             redirect('/dashboard')
         }

@@ -22,13 +22,14 @@ async function getAuthenticatedGym() {
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params
+    const id = params.id
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { id } = await params
         const product = await prisma.product.findFirst({
             where: {
                 id,
@@ -46,7 +47,6 @@ export async function GET(
 
         return NextResponse.json(product)
     } catch (error) {
-        const { id } = await (params as any) // Safe extraction for error logging
         console.error(`Failed to fetch product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to fetch product' },
@@ -57,13 +57,14 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params
+    const id = params.id
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { id } = await params
         const body = await request.json()
         const validatedData = productUpdateSchema.parse(body)
 
@@ -93,7 +94,6 @@ export async function PUT(
                 { status: 400 }
             )
         }
-        const { id } = await (params as any)
         console.error(`Failed to update product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to update product' },
@@ -104,13 +104,13 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params
+    const id = params.id
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const { id } = await params
 
         // Soft delete - verify ownership and ensure it's currently active
         const result = await prisma.product.updateMany({
@@ -137,7 +137,6 @@ export async function DELETE(
 
         return NextResponse.json({ message: 'Product deleted successfully' })
     } catch (error) {
-        const { id } = await (params as any)
         console.error(`Failed to delete product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to delete product' },

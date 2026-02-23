@@ -18,19 +18,26 @@ async function checkAttendanceRateLimit(userId: string, limit: number = 100) {
         await apiLimiter.check(limit, `${userId}:attendance`)
         return null
     } catch (error: any) {
-        const retryAfter = error.retryAfter || 60
-        return NextResponse.json(
-            { error: 'Too many requests', retryAfter },
-            {
-                status: 429,
-                headers: { 'Retry-After': String(retryAfter) }
-            }
-        )
+        // Distinguish between RateLimitError (if we had one) or generic error with retryAfter
+        if (error.retryAfter) {
+            return NextResponse.json(
+                { error: 'Too many requests', retryAfter: error.retryAfter },
+                {
+                    status: 429,
+                    headers: { 'Retry-After': String(error.retryAfter) }
+                }
+            )
+        }
+        console.error('Rate limit check failed:', error)
+        // Fail open if rate limit check fails systemically, or return 500?
+        // Usually safer to fail open for attendance unless strict, but here we return 500 to be safe.
+        return NextResponse.json({ error: 'System busy, please try again' }, { status: 500 })
     }
 }
 
 export async function POST(request: NextRequest) {
     try {
+        const now = new Date() // Unified timestamp for consistency
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
 
@@ -68,8 +75,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Member is not active' }, { status: 400 })
         }
 
-        const now = new Date()
-
         const existingAttendance = await prisma.attendance.findFirst({
             where: {
                 memberId,
@@ -88,8 +93,8 @@ export async function POST(request: NextRequest) {
             data: {
                 member: { connect: { id: memberId } },
                 gym: { connect: { id: gym.id } },
-                date: new Date(),
-                checkInTime: new Date(),
+                date: now,
+                checkInTime: now,
             }
         })
 

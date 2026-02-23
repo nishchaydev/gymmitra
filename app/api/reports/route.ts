@@ -12,6 +12,17 @@ async function getAuthenticatedGym() {
     return await prisma.gymProfile.findUnique({ where: { userId: user.id } })
 }
 
+// Types for Raw SQL Results
+interface RevenueRow {
+    month: string
+    total: number
+}
+
+interface AttendanceRow {
+    day: string
+    count: bigint
+}
+
 export async function GET(request: NextRequest) {
     try {
         const gym = await getAuthenticatedGym()
@@ -58,7 +69,7 @@ export async function GET(request: NextRequest) {
             const startDate = startOfMonth(subMonths(new Date(), 5))
 
             // Raw SQL for efficient monthly aggregation
-            const revenueResult = await prisma.$queryRaw`
+            const revenueResult = await prisma.$queryRaw<RevenueRow[]>`
                 SELECT 
                     date_trunc('month', "issueDate") as month,
                     SUM(total) as total
@@ -68,7 +79,7 @@ export async function GET(request: NextRequest) {
                   AND "paymentStatus" = 'PAID'
                 GROUP BY 1
                 ORDER BY 1 ASC
-            ` as any[]
+            `
 
             const interval = eachMonthOfInterval({
                 start: startDate,
@@ -95,22 +106,34 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'attendance') {
+            const today = endOfDay(new Date())
+            const lastWeek = startOfDay(subDays(new Date(), 6))
+
+            // Optimized single-query aggregation
+            const attendanceResult = await prisma.$queryRaw<AttendanceRow[]>`
+                SELECT
+                    date_trunc('day', "checkInTime") as day,
+                    COUNT(*) as count
+                FROM "Attendance"
+                WHERE "gymId" = ${gym.id}
+                  AND "checkInTime" >= ${lastWeek}
+                  AND "checkInTime" <= ${today}
+                GROUP BY 1
+                ORDER BY 1 ASC
+            `
+
+            const attendanceMap = new Map<string, number>()
+            attendanceResult.forEach(row => {
+                attendanceMap.set(format(new Date(row.day), 'EEE'), Number(row.count))
+            })
+
             const attendanceData = []
             for (let i = 6; i >= 0; i--) {
                 const date = subDays(new Date(), i)
-                const start = startOfDay(date)
-                const end = endOfDay(date)
-
-                const count = await prisma.attendance.count({
-                    where: {
-                        gymId: gym.id,
-                        checkInTime: { gte: start, lte: end }
-                    }
-                })
-
+                const key = format(date, 'EEE')
                 attendanceData.push({
-                    name: format(date, 'EEE'),
-                    total: count
+                    name: key,
+                    total: attendanceMap.get(key) || 0
                 })
             }
             return NextResponse.json(attendanceData)
@@ -153,8 +176,8 @@ export async function GET(request: NextRequest) {
                 totalProducts,
                 recentSales: recentSales.map(s => ({
                     ...s,
-                    productName: s.product.name,
-                    category: s.product.category,
+                    productName: s.product?.name || 'Unknown',
+                    category: s.product?.category || 'Uncategorized',
                     memberName: s.member?.name || 'Walk-in'
                 }))
             })

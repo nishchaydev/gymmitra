@@ -23,16 +23,18 @@ export function Advantage() {
     ]
 
     return (
-        <section className="py-24 bg-white">
-            <div className="container px-4 md:px-6 mx-auto">
-                <div className="text-center max-w-3xl mx-auto mb-16">
+        <section className="py-24 bg-white relative overflow-hidden">
+            <div className="absolute inset-0 circuit-bg opacity-30" />
+
+            <div className="container px-4 md:px-6 mx-auto relative z-10">
+                <div className="text-center max-w-3xl mx-auto mb-20">
                     <MotionWrapper>
-                        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4">
+                        <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-4 font-display">
                             Is your gym leaking money?
                         </h2>
                     </MotionWrapper>
                     <MotionWrapper delay={0.1}>
-                        <p className="text-lg text-slate-500">
+                        <p className="text-xl text-slate-600 font-medium leading-relaxed">
                             Running a gym manually isn't just hard work. It's expensive.
                         </p>
                     </MotionWrapper>
@@ -41,12 +43,12 @@ export function Advantage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {pains.map((pain, i) => (
                         <MotionWrapper key={i} delay={0.2 * i}>
-                            <div className="bg-white border border-drift-200 rounded-3xl p-8 hover:shadow-lg hover:shadow-drift-200/50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200">
-                                <div className="h-12 w-12 bg-drift-50 rounded-2xl flex items-center justify-center mb-6 text-primary-600">
-                                    <pain.icon className="h-6 w-6" />
+                            <div className="group relative bg-white border border-drift-silver rounded-[2.5rem] p-10 transition-all duration-500 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-2">
+                                <div className="h-16 w-16 bg-primary/5 rounded-2xl flex items-center justify-center mb-8 text-primary shadow-inner group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                                    <pain.icon className="h-8 w-8" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">{pain.title}</h3>
-                                <p className="text-slate-600 leading-relaxed">
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 font-display">{pain.title}</h3>
+                                <p className="text-slate-600 font-medium leading-relaxed">
                                     {pain.desc}
                                 </p>
                             </div>
