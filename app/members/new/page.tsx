@@ -1,4 +1,4 @@
-import { MemberForm } from "@/components/members/MemberForm"
+import MemberForm from "@/components/members/MemberForm"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"

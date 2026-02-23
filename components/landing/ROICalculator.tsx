@@ -5,10 +5,8 @@ import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { ArrowRight, Calculator } from "lucide-react"
-import Link from "next/link"
 
 export function ROICalculator() {
-    const [members, setMembers] = useState([100])
     const [adminHours, setAdminHours] = useState([3])
 
     // Calculation Logic
@@ -58,27 +56,6 @@ export function ROICalculator() {
                     <MotionWrapper delay={0.2}>
                         <div className="bg-white text-slate-900 rounded-3xl p-8 shadow-2xl shadow-primary/10 border border-drift-silver">
                             <div className="space-y-8 mb-12">
-                                {/* Slider 1 */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <label className="font-black text-slate-800 uppercase tracking-widest text-xs">Number of Members</label>
-                                        <span className="bg-primary/5 text-primary px-4 py-1.5 rounded-xl font-black font-display text-lg">
-                                            {members[0]}
-                                        </span>
-                                    </div>
-                                    <Slider
-                                        value={members}
-                                        onValueChange={setMembers}
-                                        min={10}
-                                        max={1000}
-                                        step={10}
-                                        className="py-4 cursor-pointer"
-                                    />
-                                    <div className="flex justify-between text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">
-                                        <span>10</span>
-                                        <span>1000</span>
-                                    </div>
-                                </div>
 
                                 {/* Slider 2 */}
                                 <div>

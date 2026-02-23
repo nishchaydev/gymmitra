@@ -42,8 +42,6 @@ interface ExpiringMembership {
 }
 
 export function Reports({ isDemo = false }: ReportsProps) {
-    // const [activeTab, setActiveTab] = useState("revenue") // removed unused state
-
     return (
         <div className="space-y-4">
             <Tabs defaultValue="revenue" className="space-y-4">
@@ -104,7 +102,7 @@ function RevenueReport() {
                             cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
                             contentStyle={tooltipStyle}
                         />
-                        <Bar dataKey="total" fill="var(--color-primary, #0066FF)" radius={[6, 6, 0, 0]} className="fill-primary" />
+                        <Bar dataKey="total" radius={[6, 6, 0, 0]} className="fill-primary" />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
@@ -146,7 +144,7 @@ function AttendanceReport() {
                             cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
                             contentStyle={tooltipStyle}
                         />
-                        <Bar dataKey="total" fill="var(--color-primary, #0066FF)" radius={[6, 6, 0, 0]} className="fill-primary" />
+                        <Bar dataKey="total" radius={[6, 6, 0, 0]} className="fill-primary" />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>

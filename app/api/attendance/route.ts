@@ -75,12 +75,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Member is not active' }, { status: 400 })
         }
 
+        const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+        const endOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+
         const existingAttendance = await prisma.attendance.findFirst({
             where: {
                 memberId,
                 date: {
-                    gte: startOfDay(now),
-                    lte: endOfDay(now)
+                    gte: startOfTodayUTC,
+                    lte: endOfTodayUTC
                 }
             }
         })
@@ -135,6 +138,11 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Member ID is required' }, { status: 400 })
         }
 
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const limitParam = parseInt(searchParams.get('limit') || '10', 10)
+        const limit = Math.min(Math.max(limitParam, 1), 50)
+        const skip = (page - 1) * limit
+
         // Verify member belongs to this gym
         const member = await prisma.member.findFirst({
             where: { id: memberId, gymId: gym.id }
@@ -147,7 +155,8 @@ export async function GET(request: NextRequest) {
         const attendance = await prisma.attendance.findMany({
             where: { memberId },
             orderBy: { date: 'desc' },
-            take: 10 // Last 10 records
+            skip,
+            take: limit
         })
 
         return NextResponse.json(attendance)

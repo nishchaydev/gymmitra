@@ -30,10 +30,15 @@ export function Contact() {
             if (!response.ok) {
                 let errorMessage = 'Failed to send message';
                 try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || errorMessage;
+                    const text = await response.text();
+                    try {
+                        const errorData = JSON.parse(text);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = response.statusText || text || errorMessage;
+                    }
                 } catch (e) {
-                    errorMessage = response.statusText || await response.text() || errorMessage;
+                    errorMessage = response.statusText || errorMessage;
                 }
                 throw new Error(errorMessage);
             }

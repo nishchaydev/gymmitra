@@ -29,8 +29,8 @@ export function rateLimit(options: RateLimitOptions) {
                 let limiter = limiterCache.get(limit)
                 if (!limiter) {
                     limiter = new Ratelimit({
-                        redis: redis!,
-                        limiter: Ratelimit.slidingWindow(limit, `${options.interval / 1000} s`),
+                        redis: redis,
+                        limiter: Ratelimit.slidingWindow(limit, `${Math.floor(options.interval / 1000)} s`),
                         analytics: true,
                         prefix: "@gym-mitra/rate-limit",
                     })

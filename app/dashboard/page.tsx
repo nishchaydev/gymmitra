@@ -58,9 +58,7 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p>We could not load your profile at this time. Please check back in a few minutes.</p>
-                        <a href="/dashboard">
-                            <Button className="w-full">Reload Dashboard</Button>
-                        </a>
+                        <Button className="w-full" onClick={() => window.location.assign('/dashboard')}>Reload Dashboard</Button>
                     </CardContent>
                 </Card>
             </div>

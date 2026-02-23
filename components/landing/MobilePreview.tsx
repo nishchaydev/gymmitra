@@ -5,9 +5,9 @@ import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { Check, Smartphone } from "lucide-react"
 import Image from "next/image"
 
-export function MobilePreview() {
-    const STORE_BUTTON_CLASS = "h-14 px-8 rounded-2xl bg-midnight text-white hover:bg-slate-900 font-black uppercase tracking-widest text-xs"
+const STORE_BUTTON_CLASS = "h-14 px-8 rounded-2xl bg-midnight text-white hover:bg-slate-900 font-black uppercase tracking-widest text-xs"
 
+export function MobilePreview() {
     return (
         <section className="py-24 bg-white overflow-hidden relative">
             <div className="absolute inset-0 circuit-bg opacity-30" />

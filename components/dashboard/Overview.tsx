@@ -32,7 +32,6 @@ export function Overview({ data = SHOWCASE_STATS.overviewData }: { data?: any[] 
                     />
                     <Bar
                         dataKey="total"
-                        fill="var(--color-primary, #0066FF)"
                         radius={[6, 6, 0, 0]}
                         className="fill-primary"
                     />
