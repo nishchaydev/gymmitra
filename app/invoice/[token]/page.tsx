@@ -26,12 +26,12 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
     }
 
     const invoice = await prisma.invoice.findFirst({
-        where: { shareToken: token } as any,
+        where: { shareToken: token },
         select: {
             invoiceNumber: true,
             gym: { select: { businessName: true } }
         }
-    }) as any
+    })
 
     if (!invoice) return { title: 'Invoice Not Found | Gym Mitra' }
 
@@ -51,13 +51,13 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
 
     // No auth required - public access via random token
     const dbInvoice = await prisma.invoice.findFirst({
-        where: { shareToken: token } as any,
+        where: { shareToken: token },
         include: {
             gym: true,
             member: true,
             items: true
         }
-    }) as any
+    })
 
     if (!dbInvoice) {
         notFound()

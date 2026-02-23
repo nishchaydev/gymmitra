@@ -17,7 +17,8 @@ export function BentoGrid() {
             icon: Zap,
             className: "md:col-span-2",
             color: "text-primary",
-            bg: "bg-primary/10"
+            bg: "bg-primary/10",
+            href: "#contact"
         },
         {
             title: "Secure Payments",
@@ -25,7 +26,8 @@ export function BentoGrid() {
             icon: ShieldCheck,
             className: "md:col-span-1",
             color: "text-ocean",
-            bg: "bg-ocean/10"
+            bg: "bg-ocean/10",
+            href: "#contact"
         },
         {
             title: "Member Insights",
@@ -33,7 +35,8 @@ export function BentoGrid() {
             icon: BarChart3,
             className: "md:col-span-1",
             color: "text-indigo-400",
-            bg: "bg-indigo-500/10"
+            bg: "bg-indigo-500/10",
+            href: "#contact"
         },
         {
             title: "Staff Management",
@@ -41,7 +44,8 @@ export function BentoGrid() {
             icon: Users,
             className: "md:col-span-2",
             color: "text-emerald-400",
-            bg: "bg-emerald-500/10"
+            bg: "bg-emerald-500/10",
+            href: "#contact"
         },
     ]
 
@@ -51,8 +55,8 @@ export function BentoGrid() {
 
             <div className="container px-4 md:px-6 mx-auto relative z-10">
                 <div className="text-center max-w-2xl mx-auto mb-16">
-                    <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-4 font-display">
-                        Everything you need <br /> to run your gym.
+                    <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-4 font-display break-words leading-tight max-w-lg mx-auto">
+                        Everything you need to run your gym.
                     </h2>
                     <p className="text-lg text-slate-600 font-medium">
                         Powerful features packaged in a simple, intuitive interface designed for gym owners.
@@ -81,9 +85,9 @@ export function BentoGrid() {
                                     <p className="text-slate-600 font-medium leading-relaxed">{feature.description}</p>
                                 </div>
 
-                                <div className="flex items-center text-xs font-black text-slate-400 group-hover:text-primary transition-colors uppercase tracking-widest">
+                                <a href={feature.href} className="flex items-center text-xs font-black text-slate-400 group-hover:text-primary transition-colors uppercase tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5 -ml-1">
                                     Learn more <CheckCircle2 className="ml-2 h-4 w-4" />
-                                </div>
+                                </a>
                             </div>
                         </div>
                     ))}

@@ -7,6 +7,7 @@ export class RateLimitError extends Error {
 
     constructor(message: string, retryAfter: number) {
         super(message)
+        Object.setPrototypeOf(this, RateLimitError.prototype)
         this.name = 'RateLimitError'
         this.retryAfter = retryAfter
     }
@@ -22,19 +23,24 @@ export function rateLimit(options: RateLimitOptions) {
     const redis = isRedisConfigured ? Redis.fromEnv() : null
 
     if (redis) {
+        const limiterCache = new Map<number, Ratelimit>()
         return {
             check: async (limit: number, token: string) => {
-                const limiter = new Ratelimit({
-                    redis: redis!,
-                    limiter: Ratelimit.slidingWindow(limit, `${options.interval / 1000} s`),
-                    analytics: true,
-                    prefix: "@gym-mitra/rate-limit",
-                })
+                let limiter = limiterCache.get(limit)
+                if (!limiter) {
+                    limiter = new Ratelimit({
+                        redis: redis!,
+                        limiter: Ratelimit.slidingWindow(limit, `${options.interval / 1000} s`),
+                        analytics: true,
+                        prefix: "@gym-mitra/rate-limit",
+                    })
+                    limiterCache.set(limit, limiter)
+                }
 
                 const { success, reset } = await limiter.limit(token)
 
                 if (!success) {
-                    const retryAfter = Math.floor((reset - Date.now()) / 1000)
+                    const retryAfter = Math.max(1, Math.floor((reset - Date.now()) / 1000))
                     throw new RateLimitError('Rate limit exceeded', retryAfter)
                 }
                 return
@@ -60,7 +66,8 @@ export function rateLimit(options: RateLimitOptions) {
                 const isRateLimited = currentUsage > limit
 
                 if (isRateLimited) {
-                    const error = new RateLimitError('Rate limit exceeded', 60)
+                    const fallbackRetry = Math.max(1, Math.floor(options.interval / 1000))
+                    const error = new RateLimitError('Rate limit exceeded', fallbackRetry)
                     return reject(error)
                 }
                 return resolve()

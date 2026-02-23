@@ -6,6 +6,8 @@ import { Check, Smartphone } from "lucide-react"
 import Image from "next/image"
 
 export function MobilePreview() {
+    const STORE_BUTTON_CLASS = "h-14 px-8 rounded-2xl bg-midnight text-white hover:bg-slate-900 font-black uppercase tracking-widest text-xs"
+
     return (
         <section className="py-24 bg-white overflow-hidden relative">
             <div className="absolute inset-0 circuit-bg opacity-30" />
@@ -34,10 +36,10 @@ export function MobilePreview() {
                         </ul>
 
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Button className="h-14 px-8 rounded-2xl bg-midnight text-white hover:bg-slate-900 font-black uppercase tracking-widest text-xs" disabled>
+                            <Button className={STORE_BUTTON_CLASS} disabled>
                                 App Store (Soon)
                             </Button>
-                            <Button className="h-14 px-8 rounded-2xl bg-midnight text-white hover:bg-slate-900 font-black uppercase tracking-widest text-xs" disabled>
+                            <Button className={STORE_BUTTON_CLASS} disabled>
                                 Play Store (Soon)
                             </Button>
                         </div>
@@ -113,7 +115,7 @@ export function MobilePreview() {
                         </div>
 
                         {/* Floating Notification */}
-                        <div className="absolute top-32 -right-8 bg-primary p-4 rounded-2xl shadow-2xl shadow-primary/30 border border-primary/50 flex items-center gap-3 animate-bounce duration-[2000ms]">
+                        <div className="absolute top-32 -right-8 bg-primary p-4 rounded-2xl shadow-2xl shadow-primary/30 border border-primary/50 flex items-center gap-3 animate-bounce-slow">
                             <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md">
                                 <Check className="h-5 w-5" />
                             </div>

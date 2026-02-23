@@ -11,7 +11,7 @@ export function AboutEMitra() {
                 <div className="max-w-4xl mx-auto">
                     <MotionWrapper delay={0.1}>
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-drift-silver mb-8 shadow-sm">
-                            <Building2 className="w-4 h-4 text-primary" />
+                            <Building2 className="w-4 h-4 text-primary" aria-hidden="true" />
                             <span className="text-sm font-black text-slate-800 uppercase tracking-widest">
                                 Built by eMitra Technologies
                             </span>
@@ -53,7 +53,7 @@ export function AboutEMitra() {
                         <MotionWrapper delay={0.5} className="h-full">
                             <div className="bg-white/60 rounded-3xl p-8 border border-drift-silver shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 h-full flex flex-col group opacity-70 hover:opacity-100 backdrop-blur-sm">
                                 <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 grayscale group-hover:grayscale-0 group-hover:bg-primary/5 transition-all">
-                                    <GraduationCap className="h-7 w-7 text-slate-400 group-hover:text-primary transition-colors" />
+                                    <GraduationCap className="h-7 w-7 text-slate-400 group-hover:text-primary transition-colors" aria-hidden="true" />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-500 group-hover:text-midnight transition-colors mb-3 font-display">SchoolMitra</h3>
                                 <p className="text-slate-500 group-hover:text-slate-600 transition-colors mb-6 flex-1 font-medium leading-relaxed">
@@ -69,7 +69,7 @@ export function AboutEMitra() {
                         <MotionWrapper delay={0.6} className="h-full">
                             <div className="bg-white/60 rounded-3xl p-8 border border-drift-silver shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 h-full flex flex-col group opacity-70 hover:opacity-100 backdrop-blur-sm">
                                 <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 grayscale group-hover:grayscale-0 group-hover:bg-primary/5 transition-all">
-                                    <Hospital className="h-7 w-7 text-slate-400 group-hover:text-primary transition-colors" />
+                                    <Hospital className="h-7 w-7 text-slate-400 group-hover:text-primary transition-colors" aria-hidden="true" />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-500 group-hover:text-midnight transition-colors mb-3 font-display">ClinicMitra</h3>
                                 <p className="text-slate-500 group-hover:text-slate-600 transition-colors mb-6 flex-1 font-medium leading-relaxed">
@@ -87,7 +87,7 @@ export function AboutEMitra() {
                             Learn more about our mission at
                             <a href="https://emitra.tech" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-midnight hover:underline font-black inline-flex items-center transition-colors">
                                 emitra.tech
-                                <ArrowRight className="h-3 w-3 ml-1" />
+                                <ArrowRight className="h-3 w-3 ml-1" aria-hidden="true" />
                             </a>
                         </p>
                     </MotionWrapper>

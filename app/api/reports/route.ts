@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
             // Raw SQL for efficient monthly aggregation
             const revenueResult = await prisma.$queryRaw<RevenueRow[]>`
                 SELECT 
-                    date_trunc('month', "issueDate") as month,
+                    to_char(date_trunc('month', "issueDate"), 'YYYY-MM-DD') as month,
                     SUM(total) as total
                 FROM "Invoice"
                 WHERE "gymId" = ${gym.id}
@@ -87,20 +87,17 @@ export async function GET(request: NextRequest) {
             })
 
             const revenueMap = new Map(
-                interval.map(date => [format(date, 'MMM yyyy'), 0])
+                interval.map(date => [format(date, 'yyyy-MM-01'), { name: format(date, 'MMM yyyy'), total: 0 }])
             )
 
             revenueResult.forEach(row => {
-                const key = format(new Date(row.month), 'MMM yyyy')
+                const key = row.month
                 if (revenueMap.has(key)) {
-                    revenueMap.set(key, Number(row.total || 0))
+                    revenueMap.get(key)!.total = Number(row.total || 0)
                 }
             })
 
-            const revenueData = Array.from(revenueMap.entries()).map(([name, total]) => ({
-                name,
-                total
-            }))
+            const revenueData = Array.from(revenueMap.values())
 
             return NextResponse.json(revenueData)
         }
@@ -112,7 +109,7 @@ export async function GET(request: NextRequest) {
             // Optimized single-query aggregation
             const attendanceResult = await prisma.$queryRaw<AttendanceRow[]>`
                 SELECT
-                    date_trunc('day', "checkInTime") as day,
+                    to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day,
                     COUNT(*) as count
                 FROM "Attendance"
                 WHERE "gymId" = ${gym.id}
@@ -124,15 +121,15 @@ export async function GET(request: NextRequest) {
 
             const attendanceMap = new Map<string, number>()
             attendanceResult.forEach(row => {
-                attendanceMap.set(format(new Date(row.day), 'EEE'), Number(row.count))
+                attendanceMap.set(row.day, Number(row.count))
             })
 
             const attendanceData = []
             for (let i = 6; i >= 0; i--) {
                 const date = subDays(new Date(), i)
-                const key = format(date, 'EEE')
+                const key = format(date, 'yyyy-MM-dd')
                 attendanceData.push({
-                    name: key,
+                    name: format(date, 'EEE'),
                     total: attendanceMap.get(key) || 0
                 })
             }

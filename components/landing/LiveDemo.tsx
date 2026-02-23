@@ -124,14 +124,14 @@ export function LiveDemo() {
                                             {/* Top Interactive CTA - Highly Visible */}
                                             <div className="mb-8">
                                                 <Link href="https://gym.emitra.dev" className="block group">
-                                                    <Button className="w-full h-14 bg-slate-100/50 hover:bg-white text-slate-700 font-bold border-2 border-slate-200/50 hover:border-primary/30 transition-all rounded-2xl group-hover:shadow-[0_0_40px_-10px_rgba(0,102,255,0.3)]">
+                                                    <div className="w-full h-auto py-6 px-4 bg-slate-100/50 hover:bg-white text-slate-700 font-bold border-2 border-slate-200/50 hover:border-primary/30 transition-all rounded-2xl group-hover:shadow-[0_0_40px_-10px_rgba(0,102,255,0.3)] flex flex-col items-center justify-center text-center">
                                                         <p className="text-primary/60 text-[10px] font-black mb-1 uppercase tracking-[0.2em] italic">Experience the Full Power</p>
                                                         <h4 className="text-lg font-black mb-4 font-display">Wanna see how it feels to use our product?</h4>
-                                                        <div className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-black shadow-sm text-sm group-hover:bg-primary-600 transition-colors uppercase tracking-widest">
+                                                        <span className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-black shadow-sm text-sm group-hover:bg-primary-600 transition-colors uppercase tracking-widest">
                                                             Tap here and try!
                                                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                                        </div>
-                                                    </Button>
+                                                        </span>
+                                                    </div>
                                                 </Link>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

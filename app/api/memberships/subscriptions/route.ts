@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
-import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus } from '@prisma/client'
+import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus, MemberStatus } from '@prisma/client'
 
 const subscriptionSchema = z.object({
     memberId: z.string().min(1, "Member ID is required"),
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
             await tx.member.update({
                 where: { id: validatedData.memberId },
-                data: { status: 'ACTIVE' }
+                data: { status: MemberStatus.ACTIVE }
             })
 
             return [sub]

@@ -22,10 +22,10 @@ export function Analytics({ isDemo = false }: { isDemo?: boolean }) {
                             <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
                             <Tooltip
-                                cursor={{ fill: 'rgba(79, 195, 247, 0.05)' }}
-                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                                cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
+                                contentStyle={tooltipStyle}
                             />
-                            <Bar dataKey="members" fill="#4FC3F7" radius={[6, 6, 0, 0]} className="fill-primary" />
+                            <Bar dataKey="members" fill="var(--color-primary, #0066FF)" radius={[6, 6, 0, 0]} className="fill-primary" />
                         </BarChart>
                     </ResponsiveContainer>
                 </CardContent>
@@ -42,10 +42,10 @@ export function Analytics({ isDemo = false }: { isDemo?: boolean }) {
                         <LineChart data={attendanceData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                             <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }} />
+                            <Tooltip contentStyle={tooltipStyle} />
                             <Legend />
-                            <Line type="monotone" dataKey="morning" stroke="#4FC3F7" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8, fill: '#4FC3F7' }} name="Morning" />
-                            <Line type="monotone" dataKey="evening" stroke="#1a365d" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8, fill: '#1a365d' }} name="Evening" />
+                            <Line type="monotone" dataKey="morning" stroke="var(--color-primary, #0066FF)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8, fill: 'var(--color-primary, #0066FF)' }} name="Morning" />
+                            <Line type="monotone" dataKey="evening" stroke="var(--color-midnight, #1E3A8A)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8, fill: 'var(--color-midnight, #1E3A8A)' }} name="Evening" />
                         </LineChart>
                     </ResponsiveContainer>
                 </CardContent>

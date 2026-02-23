@@ -78,18 +78,18 @@ export function Navbar() {
 
                 <div className="flex items-center gap-4">
                     {user ? (
-                        <Link href="https://gym.emitra.dev">
-                            <Button variant="ghost" className="font-bold relative group overflow-hidden primary-600 text-white font-semibold px-6 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                        <a href="https://gym.emitra.dev" target="_blank" rel="noopener noreferrer">
+                            <Button className="bg-primary hover:bg-primary-600 text-white font-bold px-6 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
                                 Go to Dashboard
                             </Button>
-                        </Link>
+                        </a>
                     ) : (
                         <>
-                            <Link href="https://gym.emitra.dev/login" className="hidden md:block">
+                            <a href="https://gym.emitra.dev/login" className="hidden md:block" target="_blank" rel="noopener noreferrer">
                                 <Button className="font-black bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all uppercase tracking-widest text-xs px-6">
                                     Login
                                 </Button>
-                            </Link>
+                            </a>
                             <Link href="#contact">
                                 <Button className="bg-midnight hover:bg-midnight-600 text-white font-semibold px-6 rounded-full shadow-lg shadow-midnight/20 hover:shadow-midnight/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
                                     Request a Demo

@@ -17,7 +17,7 @@ export function AttendanceWidget() {
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
-                        <UserCheck className="h-5 w-5 text-[#4FC3F7]" />
+                        <UserCheck className="h-5 w-5 text-primary" />
                         Today&apos;s Attendance
                     </CardTitle>
                     <Link href="/attendance">
@@ -40,7 +40,7 @@ export function AttendanceWidget() {
                                     <AvatarFallback className="bg-slate-100 text-[10px] font-bold">U{i}</AvatarFallback>
                                 </Avatar>
                             ))}
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#4FC3F7]/10 text-[#1a365d] text-xs font-bold shadow-sm">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-primary/10 text-midnight text-xs font-bold shadow-sm">
                                 +12
                             </div>
                         </div>
@@ -52,7 +52,7 @@ export function AttendanceWidget() {
                         </div>
                         <div className="ml-auto">
                             <Link href="/attendance/kiosk">
-                                <Button size="sm" className="bg-[#1a365d] hover:bg-slate-900 shadow-md">
+                                <Button size="sm" className="bg-midnight hover:bg-slate-900 shadow-md">
                                     <Clock className="mr-2 h-4 w-4" /> Kiosk Mode
                                 </Button>
                             </Link>

@@ -171,17 +171,17 @@ export function Hero() {
                                         </span>
                                         <span>•</span>
                                         <span className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-75" />
+                                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" style={{ animationDelay: '75ms' }} />
                                             FitZone collected <span className="text-slate-900">₹45k fees</span> today
                                         </span>
                                         <span>•</span>
                                         <span className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse delay-150" />
+                                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" style={{ animationDelay: '150ms' }} />
                                             Urban Fitness sent <span className="text-slate-900">150+ WhatsApp alerts</span>
                                         </span>
                                         <span>•</span>
                                         <span className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse delay-300" />
+                                            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '300ms' }} />
                                             Spartan Gym is now <span className="text-slate-900">Live</span>
                                         </span>
                                         <span>•</span>

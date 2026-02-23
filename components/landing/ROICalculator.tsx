@@ -12,16 +12,18 @@ export function ROICalculator() {
     const [adminHours, setAdminHours] = useState([3])
 
     // Calculation Logic
-    // Assumption: Gym Mitra saves 90% of admin time
-    // Average admin hourly rate value: ₹500 (placeholder)
-    const hoursSavedPerMonth = adminHours[0] * 30 * 0.9
-    const moneySavedPerMonth = hoursSavedPerMonth * 500
+    const DAYS_IN_MONTH = 30
+    const ADMIN_EFFICIENCY = 0.9
+    const ADMIN_HOURLY_RATE = 500
+
+    const hoursSavedPerMonth = adminHours[0] * DAYS_IN_MONTH * ADMIN_EFFICIENCY
+    const moneySavedPerMonth = hoursSavedPerMonth * ADMIN_HOURLY_RATE
 
     return (
         <section className="py-24 bg-midnight text-white relative overflow-hidden">
             {/* Background Pattern */}
             <div className="absolute inset-0 bg-midnight-900 opacity-30"
-                style={{ backgroundImage: 'radial-gradient(#0066FF 1px, transparent 1px)', backgroundSize: '32px 32px' }}
+                style={{ backgroundImage: 'radial-gradient(var(--color-primary, #0066FF) 1px, transparent 1px)', backgroundSize: '32px 32px' }}
             />
 
             <div className="container px-4 md:px-6 mx-auto relative z-10">
@@ -74,7 +76,7 @@ export function ROICalculator() {
                                     />
                                     <div className="flex justify-between text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">
                                         <span>10</span>
-                                        <span>1000+</span>
+                                        <span>1000</span>
                                     </div>
                                 </div>
 
@@ -120,12 +122,12 @@ export function ROICalculator() {
                                 </div>
                             </div>
 
-                            <Link href="https://gym.emitra.dev/login?view=register" className="block">
+                            <a href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'}/login?view=register`} className="block" target="_blank" rel="noopener noreferrer" aria-label="Open registration page">
                                 <Button className="w-full h-16 text-lg font-black rounded-xl bg-primary hover:bg-primary-600 shadow-xl shadow-primary/20 uppercase tracking-widest transition-all hover:-translate-y-1">
                                     Start Saving Now
                                     <ArrowRight className="ml-2 h-6 w-6" />
                                 </Button>
-                            </Link>
+                            </a>
                             <p className="text-center text-[10px] font-bold text-slate-400 mt-6 uppercase tracking-wider">
                                 *Estimated savings based on typical admin efficiency gains.
                             </p>

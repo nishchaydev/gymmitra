@@ -37,13 +37,34 @@ export default async function DashboardPage() {
 
     // Get the gym profile for this user
     let gym = null
+    let dbError = false
     try {
         gym = isDemo ? { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true } : await prisma.gymProfile.findUnique({
             where: { userId: user?.id }
         })
     } catch (error) {
         console.error("Failed to load gym profile:", error)
-        // Fallback to empty state which prompts initialization/retry
+        dbError = true
+        // Fallback to error UI if db is down
+    }
+
+    if (dbError) {
+        return (
+            <div className="flex h-[80vh] items-center justify-center">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <CardTitle>System Maintenance</CardTitle>
+                        <CardDescription>We're experiencing temporary database issues.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p>We could not load your profile at this time. Please check back in a few minutes.</p>
+                        <a href="/dashboard">
+                            <Button className="w-full">Reload Dashboard</Button>
+                        </a>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     if (!isDemo && gym && !(gym as any).isVerified) {

@@ -102,17 +102,17 @@ export default function Home() {
                 <ul className="space-y-4">
                   <li><Link href="#features" className="text-sm hover:text-ocean transition-colors duration-200">Features</Link></li>
                   <li><Link href="#pricing" className="text-sm hover:text-ocean transition-colors duration-200">Pricing</Link></li>
-                  <li><Link href="https://gym.emitra.dev/login?view=register" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</Link></li>
-                  <li><Link href="https://gym.emitra.dev/login?view=register" className="text-sm hover:text-ocean transition-colors duration-200">Live Kiosk</Link></li>
+                  <li><a href="https://gym.emitra.dev/login?view=register" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</a></li>
+                  <li><a href="https://gym.emitra.dev/attendance/kiosk" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-ocean transition-colors duration-200">Live Kiosk</a></li>
                 </ul>
               </div>
               <div className="space-y-6">
                 <h4 className="text-sm font-black text-white uppercase tracking-[0.2em] font-display">Resources</h4>
                 <ul className="space-y-4">
-                  <li><Link href="#" className="text-sm hover:text-ocean transition-colors duration-200">Support Center</Link></li>
-                  <li><Link href="#" className="text-sm hover:text-ocean transition-colors duration-200">API Documentation</Link></li>
-                  <li><Link href="#" className="text-sm hover:text-ocean transition-colors duration-200">Community Forum</Link></li>
-                  <li><Link href="#" className="text-sm hover:text-ocean transition-colors duration-200">Video Tutorials</Link></li>
+                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">Support Center <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
+                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">API Documentation <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
+                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">Community Forum <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
+                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">Video Tutorials <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
                 </ul>
               </div>
               <div className="space-y-6 col-span-2 sm:col-span-1">

@@ -79,6 +79,21 @@ export default function MemberForm({ member }: MemberFormProps) {
         },
     })
 
+    useEffect(() => {
+        if (member) {
+            form.reset({
+                name: member.name,
+                phone: member.phone,
+                email: member.email || "",
+                dateOfBirth: member.dateOfBirth,
+                gymId: member.gymId,
+                emergencyName: member.emergencyName || "",
+                emergencyPhone: member.emergencyPhone || "",
+                emergencyRelation: member.emergencyRelation || "",
+            })
+        }
+    }, [member, form])
+
     async function onSubmit(data: MemberFormValues) {
         setIsSubmitting(true)
         try {
@@ -229,7 +244,9 @@ export default function MemberForm({ member }: MemberFormProps) {
                 </div>
 
                 <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Member"}
+                    {isSubmitting
+                        ? (member ? "Updating..." : "Creating...")
+                        : (member ? "Update Member" : "Create Member")}
                 </Button>
             </form>
         </Form>

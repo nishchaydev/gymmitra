@@ -10,13 +10,13 @@ const getTracesSampleRate = () => {
 
 if (SENTRY_DSN) {
     Sentry.init({
-        dsn: SENTRY_DSN,
-
         // Performance Monitoring
+        dsn: SENTRY_DSN,
         tracesSampleRate: getTracesSampleRate(),
-
         // Environment and Release
         environment: process.env.NODE_ENV || 'development',
         release: process.env.SENTRY_RELEASE,
     });
+} else {
+    console.debug("Sentry initialization skipped: SENTRY_DSN not provided.");
 }

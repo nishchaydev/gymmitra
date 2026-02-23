@@ -15,6 +15,9 @@ interface ReportsProps {
     isDemo?: boolean
 }
 
+const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
+
+
 interface RevenueData {
     name: string
     total: number
@@ -98,10 +101,10 @@ function RevenueReport() {
                         <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
                         <Tooltip
                             formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                            cursor={{ fill: 'rgba(79, 195, 247, 0.05)' }}
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                            cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
+                            contentStyle={tooltipStyle}
                         />
-                        <Bar dataKey="total" fill="#4FC3F7" radius={[6, 6, 0, 0]} className="fill-primary" />
+                        <Bar dataKey="total" fill="var(--color-primary, #0066FF)" radius={[6, 6, 0, 0]} className="fill-primary" />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
@@ -140,10 +143,10 @@ function AttendanceReport() {
                         <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip
-                            cursor={{ fill: 'rgba(79, 195, 247, 0.05)' }}
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                            cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
+                            contentStyle={tooltipStyle}
                         />
-                        <Bar dataKey="total" fill="#4FC3F7" radius={[6, 6, 0, 0]} className="fill-primary" />
+                        <Bar dataKey="total" fill="var(--color-primary, #0066FF)" radius={[6, 6, 0, 0]} className="fill-primary" />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>

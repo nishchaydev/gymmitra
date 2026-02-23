@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { useState } from "react"
-import { ArrowRight, User, Phone, Zap, MessageSquare, Mail } from "lucide-react"
+import { ArrowRight, User, Phone, Zap, MessageSquare, Mail, Loader2 } from "lucide-react"
 
 export function Contact() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,8 +28,14 @@ export function Contact() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to send message');
+                let errorMessage = 'Failed to send message';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    errorMessage = response.statusText || await response.text() || errorMessage;
+                }
+                throw new Error(errorMessage);
             }
 
             toast.success("Message sent!", {
@@ -37,10 +43,10 @@ export function Contact() {
             });
 
             (e.target as HTMLFormElement).reset();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Contact form error:', error);
             toast.error("Submission failed", {
-                description: error.message || "Failed to send message. Please try again."
+                description: error instanceof Error ? error.message : "Failed to send message. Please try again."
             });
         } finally {
             setIsSubmitting(false);
@@ -164,7 +170,7 @@ export function Contact() {
                                 >
                                     {isSubmitting ? (
                                         <span className="flex items-center gap-2">
-                                            <Zap className="h-5 w-5 animate-pulse text-white" /> Sending...
+                                            <Loader2 className="h-5 w-5 animate-spin text-white" /> Sending...
                                         </span>
                                     ) : (
                                         <span className="flex items-center gap-2">

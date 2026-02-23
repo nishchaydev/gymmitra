@@ -17,9 +17,9 @@ async function checkAttendanceRateLimit(userId: string, limit: number = 100) {
     try {
         await apiLimiter.check(limit, `${userId}:attendance`)
         return null
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Distinguish between RateLimitError (if we had one) or generic error with retryAfter
-        if (error.retryAfter) {
+        if (error && typeof error === 'object' && 'retryAfter' in error && typeof error.retryAfter === 'number') {
             return NextResponse.json(
                 { error: 'Too many requests', retryAfter: error.retryAfter },
                 {
