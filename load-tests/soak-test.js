@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check, sleep, fail } from 'k6';
 import { Trend } from 'k6/metrics';
 
 /**
@@ -8,11 +8,10 @@ import { Trend } from 'k6/metrics';
  * Goal: Detect memory leaks, DB connection exhaustion, and slow degradation.
  * Watch: response times should NOT increase over 4 hours.
  *
- * Requires: LOAD_TEST_EMAIL + LOAD_TEST_PASSWORD env vars (same test account
- * used in gym-owner-flow.js).
+ * Requires: LOAD_TEST_EMAIL + LOAD_TEST_PASSWORD env vars.
  *
- * Target prod:   k6 run -e BASE_URL=https://gym.emitra.dev -e LOAD_TEST_EMAIL=... -e LOAD_TEST_PASSWORD=... load-tests/soak-test.js
- * Target staging: k6 run -e BASE_URL=https://staging.gym.emitra.dev load-tests/soak-test.js
+ * Target prod:    k6 run -e BASE_URL=https://gym.emitra.dev -e LOAD_TEST_EMAIL=... -e LOAD_TEST_PASSWORD=... load-tests/soak-test.js
+ * Target staging: k6 run -e BASE_URL=https://staging.gym.emitra.dev -e LOAD_TEST_EMAIL=... -e LOAD_TEST_PASSWORD=... load-tests/soak-test.js
  *
  * Default BASE_URL is localhost so running with no args won't hit prod.
  */
@@ -40,45 +39,53 @@ export const options = {
     ],
     thresholds: {
         http_req_duration: ['p(95)<1500'],
-        http_req_failed: ['rate<0.02'],
-        // Per-endpoint thresholds to catch degradation on specific routes
+        // Single unified http_req_failed with abortOnFail — no duplicate keys
+        http_req_failed: [{ threshold: 'rate<0.02', abortOnFail: true, delayAbortEval: '30m' }],
+        // Per-endpoint thresholds — alerts when a specific route degrades
         soak_duration_members: ['p(95)<1500', 'p(99)<3000'],
+        soak_duration_invoices: ['p(95)<1500', 'p(99)<3000'],
+        soak_duration_dashboard: ['p(95)<3000', 'p(99)<5000'],
         soak_duration_reports: ['p(95)<4000', 'p(99)<6000'],
-        soak_duration_dashboard: ['p(95)<3000'],
-        // If any threshold is violated after 30 min warm-up, abort the 4h run
-        'http_req_failed': [{ threshold: 'rate<0.02', abortOnFail: true, delayAbortEval: '30m' }],
+        soak_duration_products: ['p(95)<1000', 'p(99)<2000'],
     },
 };
 
 export function setup() {
     if (!TEST_EMAIL || !TEST_PASSWORD) {
         throw new Error(
-            'Missing LOAD_TEST_EMAIL / LOAD_TEST_PASSWORD env vars for soak auth.'
+            'Missing LOAD_TEST_EMAIL / LOAD_TEST_PASSWORD env vars for soak auth.\n' +
+            '  k6 run -e LOAD_TEST_EMAIL=... -e LOAD_TEST_PASSWORD=... load-tests/soak-test.js'
         );
     }
 
-    // Authenticate once and return the cookie so all VUs can reuse it
     const loginRes = http.post(
         `${BASE_URL}/api/auth/signin`,
         JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD }),
         { headers: { 'Content-Type': 'application/json' }, redirects: 5 }
     );
 
+    // Fail fast — do not start the 4-hour soak with broken auth
+    if (loginRes.status !== 200) {
+        fail(
+            `Soak auth failed: HTTP ${loginRes.status}\n` +
+            `Body: ${loginRes.body}\n` +
+            `Error: ${loginRes.error || 'none'}`
+        );
+    }
+
     const cookies = loginRes.cookies;
     const cookieHeader = Object.keys(cookies)
         .map((key) => `${key}=${cookies[key][0].value}`)
         .join('; ');
 
-    console.log(`🧪 Soak test auth: ${loginRes.status === 200 ? 'OK' : 'FAILED'}`);
-    return { cookie: cookieHeader, startTime: Date.now() };
+    console.log(`✅ Soak auth OK — starting 4-hour run against ${BASE_URL}`);
+    return { cookie: cookieHeader };
 }
 
 export default function (data) {
-    const authHeaders = {
-        headers: { Cookie: data.cookie, 'Content-Type': 'application/json' },
-    };
+    // GET-only requests — no Content-Type header needed
+    const authHeaders = { headers: { Cookie: data.cookie } };
 
-    // Randomised usage pattern — realistic mix across all endpoints
     const rand = Math.random();
 
     if (rand < 0.40) {

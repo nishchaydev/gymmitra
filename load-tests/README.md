@@ -18,6 +18,7 @@ k6 version
 ```bash
 brew install k6
 k6 version
+```
 
 **Linux (Debian/Ubuntu):**
 ```bash
@@ -103,6 +104,13 @@ k6 run \
 
 ### Phase 3 — Spike Test (~5 min)
 
+**Windows:**
+```powershell
+# Defaults to localhost — set BASE_URL to target production
+k6 run -e BASE_URL=https://gym.emitra.dev load-tests/spike-test.js
+```
+
+**macOS / Linux:**
 ```bash
 # Defaults to localhost — set BASE_URL to target production
 k6 run -e BASE_URL=https://gym.emitra.dev load-tests/spike-test.js
@@ -169,17 +177,27 @@ LOAD_TEST_RATE_LIMIT_MEMBERS_GET=500
 
 # Increase POST /api/members limit (default: 50)
 LOAD_TEST_RATE_LIMIT_MEMBERS_POST=200
+
+# Increase POST /api/invoices limit (default: 20)
+LOAD_TEST_RATE_LIMIT_INVOICES_POST=100
 ```
 
-Then update the call in `app/api/members/route.ts`:
+Then update the relevant routes to use `getRateLimit`:
 ```typescript
 import { getRateLimit } from '@/lib/rate-limit'
 
-// Was: await apiLimiter.check(100, ...)
+// In app/api/members/route.ts GET handler:
 await apiLimiter.check(getRateLimit(100, 'MEMBERS_GET'), `${user.id}:members:get`)
+
+// In app/api/members/route.ts POST handler:
+await apiLimiter.check(getRateLimit(50, 'MEMBERS_POST'), `${user.id}:members:post`)
+
+// In app/api/invoices/route.ts POST handler:
+await apiLimiter.check(getRateLimit(20, 'INVOICES_POST'), user.id)
 ```
 
-> **Important:** Remove or reset `.env.local` overrides before deploying to production.
+> **Important:** Overrides are automatically ignored in production (`NODE_ENV=production`)
+> with a console warning. Safe to leave in `.env.local` during dev.
 
 ---
 
@@ -253,6 +271,6 @@ Run this in the Supabase SQL Editor after testing:
 ```sql
 -- Remove load test invoices first (foreign key constraint)
 DELETE FROM "Invoice" WHERE notes = 'k6-load-test';
--- Then members
-DELETE FROM "Member" WHERE "emergencyName" = 'Load Test Emergency';
+-- Then members (also tagged via notes field)
+DELETE FROM "Member"  WHERE notes = 'k6-load-test';
 ```

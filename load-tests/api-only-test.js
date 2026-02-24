@@ -8,13 +8,24 @@ import { check } from 'k6';
  * All endpoints return 401 (unauthenticated) — that is EXPECTED and correct.
  * We're validating: does the server respond at all without crashing?
  *
- * Run:
- *   k6 run load-tests/api-only-test.js
+ * IMPORTANT: Always pass BASE_URL explicitly — no production default.
+ *
+ * Run (staging):
  *   k6 run -e BASE_URL=https://staging.gym.emitra.dev load-tests/api-only-test.js
+ *
+ * Run (production):
+ *   k6 run -e BASE_URL=https://gym.emitra.dev load-tests/api-only-test.js
  */
 
-// --- Target (env-configurable; defaults to production) ---
-const BASE_URL = __ENV.BASE_URL || 'https://gym.emitra.dev';
+// --- Target (REQUIRED — no default to avoid accidental prod hits) ---
+if (!__ENV.BASE_URL) {
+    throw new Error(
+        'BASE_URL env var is required.\n' +
+        '  k6 run -e BASE_URL=https://staging.gym.emitra.dev load-tests/api-only-test.js\n' +
+        '  k6 run -e BASE_URL=https://gym.emitra.dev load-tests/api-only-test.js'
+    );
+}
+const BASE_URL = __ENV.BASE_URL;
 
 // Mark 401 and 429 as non-failing — both are expected for unauthenticated requests
 // This prevents k6 from counting them in http_req_failed
@@ -44,14 +55,14 @@ const ENDPOINTS = [
 ];
 
 export default function () {
-    // (__VU - 1) ensures zero-based index for correct distribution across all VU counts
-    const endpoint = ENDPOINTS[(__VU - 1) % ENDPOINTS.length];
+    // Use __ITER for per-iteration rotation so each loop cycles through endpoints
+    // rather than each VU always hitting the same one
+    const endpoint = ENDPOINTS[__ITER % ENDPOINTS.length];
 
     const res = http.get(endpoint.url, { tags: { name: endpoint.tag } });
 
     check(res, {
-        // Single assertion: the server responded with any valid status (200/401/429)
-        // A 5xx or timeout will fail this check AND increment http_req_failed
-        'valid response (no 5xx or timeout)': (r) => r.status < 500,
+        // Status 0 = network error / timeout — also a failure
+        'valid response (no 5xx or timeout)': (r) => r.status > 0 && r.status < 500,
     });
 }

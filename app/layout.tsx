@@ -75,6 +75,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
   return (
     <html lang="en" className="scroll-smooth">
       <body
@@ -85,9 +86,7 @@ export default function RootLayout({
           {children}
         </main>
         <Toaster />
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
+        {gaId && <GoogleAnalytics gaId={gaId} />}
         <Analytics />
       </body>
     </html>

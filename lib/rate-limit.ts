@@ -85,6 +85,9 @@ export const whatsappLimiter = rateLimit({
     uniqueTokenPerInterval: 100,
 })
 
+/** Maximum value accepted from any LOAD_TEST_RATE_LIMIT_* override. */
+const MAX_RATE_LIMIT = 10_000
+
 /**
  * Returns the effective rate limit for a given key, respecting LOAD_TEST_*
  * environment variable overrides for load testing without code changes.
@@ -92,13 +95,35 @@ export const whatsappLimiter = rateLimit({
  * Example: set LOAD_TEST_RATE_LIMIT_MEMBERS_GET=500 in .env.local to
  * increase the member list rate limit during a load test run.
  *
+ * In production the override is always ignored (with a warning) to prevent
+ * accidentally relaxed rate limits reaching live traffic.
+ *
  * @param defaultLimit - the default limit to use if no env override is set
  * @param envKey       - the LOAD_TEST_* env var key (e.g. "MEMBERS_GET")
  */
 export function getRateLimit(defaultLimit: number, envKey: string): number {
-    const envValue = process.env[`LOAD_TEST_RATE_LIMIT_${envKey}`]
+    const fullKey = `LOAD_TEST_RATE_LIMIT_${envKey}`
+    const envValue = process.env[fullKey]
     if (!envValue) return defaultLimit
-    const parsed = parseInt(envValue, 10)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultLimit
+
+    // Block overrides in production to prevent accidental rate-limit relaxation
+    if (process.env.NODE_ENV === 'production') {
+        console.warn(
+            `[rate-limit] IGNORING ${fullKey}=${envValue} — ` +
+            `LOAD_TEST_RATE_LIMIT_* overrides are disabled in production.`
+        )
+        return defaultLimit
+    }
+
+    // Strict parse: Number() rejects partial strings like "100abc"
+    const parsed = Number(envValue)
+    if (!Number.isInteger(parsed) || parsed <= 0 || parsed > MAX_RATE_LIMIT) {
+        console.warn(
+            `[rate-limit] Invalid ${fullKey}="${envValue}" — ` +
+            `must be a positive integer ≤ ${MAX_RATE_LIMIT}. Using default ${defaultLimit}.`
+        )
+        return defaultLimit
+    }
+    return parsed
 }
 

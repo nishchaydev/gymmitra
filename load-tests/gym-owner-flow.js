@@ -68,7 +68,7 @@ export default function () {
     );
 
     const authed = check(loginRes, {
-        'auth: status 200 or 302': (r) =>
+        'auth: status 200, 302, or 303': (r) =>
             r.status === 200 || r.status === 302 || r.status === 303,
     });
 
@@ -271,6 +271,6 @@ export function teardown(data) {
     //   DELETE FROM "Member" WHERE notes = 'k6-load-test';
     //   DELETE FROM "Invoice" WHERE notes = 'k6-load-test';
     console.log('📌 Cleanup reminder: run in Supabase SQL Editor:');
-    console.log('   DELETE FROM "Member" WHERE "emergencyName" = \'Load Test Emergency\';');
     console.log('   DELETE FROM "Invoice" WHERE notes = \'k6-load-test\';');
+    console.log('   DELETE FROM "Member"  WHERE notes = \'k6-load-test\';');
 }
