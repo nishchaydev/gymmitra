@@ -7,6 +7,17 @@ const errorRate = new Rate('custom_errors');
 const memberCreationTime = new Trend('member_creation_duration');
 const invoiceCreationTime = new Trend('invoice_creation_duration');
 
+// --- Target Environment ---
+// Override via: k6 run -e BASE_URL=https://staging.gym.emitra.dev ...
+const BASE_URL = __ENV.BASE_URL || 'https://gym.emitra.dev';
+
+// --- Auth (REQUIRED — no defaults) ---
+// Set before running:
+//   $env:LOAD_TEST_EMAIL    = "loadtest@yourgym.com"
+//   $env:LOAD_TEST_PASSWORD = "YourSecurePassword123!"
+const TEST_EMAIL = __ENV.LOAD_TEST_EMAIL;
+const TEST_PASSWORD = __ENV.LOAD_TEST_PASSWORD;
+
 // --- Load Profile: Gradual ramp to 1000 concurrent users ---
 export const options = {
     stages: [
@@ -18,10 +29,9 @@ export const options = {
         { duration: '5m', target: 1000 },  // Hold: 1000 (peak)
         { duration: '2m', target: 0 },     // Ramp-down
     ],
-    // Success criteria — test FAILS if any threshold is breached
     thresholds: {
-        http_req_duration: ['p(95)<2000', 'p(99)<4000'], // 95% under 2s, 99% under 4s
-        http_req_failed: ['rate<0.05'],                  // Less than 5% HTTP errors
+        http_req_duration: ['p(95)<2000', 'p(99)<4000'],
+        http_req_failed: ['rate<0.05'],
         'http_req_duration{name:Dashboard}': ['p(95)<3000'],
         'http_req_duration{name:MembersList}': ['p(95)<1500'],
         'http_req_duration{name:ReportSummary}': ['p(95)<4000'],
@@ -29,42 +39,25 @@ export const options = {
     },
 };
 
-const BASE_URL = 'https://gym.emitra.dev';
-
-// --- Test Credentials ---
-// IMPORTANT: These are REAL test accounts that must exist in Supabase.
-// Create one test account per VU group or use a shared account.
-// Using a shared account is simpler; the session is per-VU anyway.
-const TEST_EMAIL = __ENV.LOAD_TEST_EMAIL || 'loadtest@emitra.dev';
-const TEST_PASSWORD = __ENV.LOAD_TEST_PASSWORD || 'LoadTest123!@#';
-
 export function setup() {
-    console.log('╔════════════════════════════════════════╗');
-    console.log('║   Gym Mitra Load Test — Starting...    ║');
-    console.log(`║   Target: ${BASE_URL}    ║`);
-    console.log('║   Peak Load: 1000 concurrent users     ║');
-    console.log('╚════════════════════════════════════════╝');
+    // Fail fast if credentials are missing — do not run with empty auth
+    if (!TEST_EMAIL || !TEST_PASSWORD) {
+        throw new Error(
+            'Missing required env vars.\n' +
+            '  $env:LOAD_TEST_EMAIL    = "loadtest@yourgym.com"\n' +
+            '  $env:LOAD_TEST_PASSWORD = "YourSecurePassword123!"\n' +
+            'Create the account at gym.emitra.dev/onboarding first.'
+        );
+    }
+    console.log(`🚀 Gym Mitra Load Test | Target: ${BASE_URL}`);
     return { startTime: Date.now() };
 }
 
 export default function () {
     // ─────────────────────────────────────────────────
-    // STEP 1: Authenticate (Supabase cookie-based auth)
-    // The app uses Supabase Auth → session stored in cookies.
-    // k6 automatically carries cookies across redirects within a session.
+    // STEP 1: Authenticate via Supabase (cookie-based)
     // ─────────────────────────────────────────────────
     const loginRes = http.post(
-        `${BASE_URL}/api/auth/callback`,
-        JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD }),
-        {
-            headers: { 'Content-Type': 'application/json' },
-            tags: { name: 'Login' },
-        }
-    );
-
-    // Supabase login via the Next.js app action
-    // Try the standard Supabase API if the above doesn't apply
-    const supabaseLoginRes = http.post(
         `${BASE_URL}/api/auth/signin`,
         JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD }),
         {
@@ -74,15 +67,18 @@ export default function () {
         }
     );
 
-    const authed = check(supabaseLoginRes, {
-        'auth: status 200 or 302': (r) => r.status === 200 || r.status === 302 || r.status === 303,
+    const authed = check(loginRes, {
+        'auth: status 200 or 302': (r) =>
+            r.status === 200 || r.status === 302 || r.status === 303,
     });
 
     if (!authed) {
-        // Try a direct page visit — Supabase may set cookies on page load
-        const homeRes = http.get(`${BASE_URL}/`, { tags: { name: 'Home' } });
-        check(homeRes, { 'homepage: status 200': (r) => r.status === 200 });
+        errorRate.add(1);
+        return; // Stop this VU iteration — no point hitting auth-protected routes
     }
+
+    // k6 carries session cookies automatically per VU cookie jar
+    const sessionHeaders = { headers: { 'Content-Type': 'application/json' } };
 
     sleep(1);
 
@@ -94,14 +90,16 @@ export default function () {
     });
 
     check(dashboardRes, {
-        'dashboard: status 200 or 302': (r) => r.status === 200 || r.status === 302,
+        'dashboard: status 200 or 302': (r) =>
+            r.status === 200 || r.status === 302,
         'dashboard: loads within 3s': (r) => r.timings.duration < 3000,
     });
 
-    sleep(2); // User reads dashboard
+    sleep(2);
 
     // ─────────────────────────────────────────────────
-    // STEP 3: Members List (paginated DB query)
+    // STEP 3: Members List — functional check only
+    // Timing is enforced by per-tag threshold above
     // Rate limit: 100 req/min per user
     // ─────────────────────────────────────────────────
     const membersRes = http.get(`${BASE_URL}/api/members`, {
@@ -110,13 +108,14 @@ export default function () {
 
     const membersOk = check(membersRes, {
         'members: status 200': (r) => r.status === 200,
-        'members: loads within 1.5s': (r) => r.timings.duration < 1500,
         'members: returns array': (r) => {
             try { return Array.isArray(JSON.parse(r.body)); }
             catch (e) { return false; }
         },
     });
 
+    // Only count as an error when the response is functionally wrong
+    // (not a rate-limit 429 — that's expected at peak load)
     if (!membersOk && membersRes.status !== 429) {
         errorRate.add(1);
     }
@@ -124,8 +123,7 @@ export default function () {
     sleep(1);
 
     // ─────────────────────────────────────────────────
-    // STEP 4: View Invoices List
-    // Rate limit: 100 req/min per user
+    // STEP 4: Invoices List
     // ─────────────────────────────────────────────────
     const invoicesRes = http.get(`${BASE_URL}/api/invoices`, {
         tags: { name: 'InvoicesList' },
@@ -133,37 +131,39 @@ export default function () {
 
     check(invoicesRes, {
         'invoices: status 200': (r) => r.status === 200,
-        'invoices: loads within 1.5s': (r) => r.timings.duration < 1500,
     });
 
     sleep(1);
 
     // ─────────────────────────────────────────────────
     // STEP 5: Create New Member (write operation)
-    // Rate limit: 50 creations/min per user
-    // Uses unique phone number per VU+iteration to avoid P2002 conflicts
+    // 10-digit unique phone: '9' + 5-digit VU + 4-digit ITER
+    // Email uses separator to guarantee uniqueness
+    // Tag records for teardown cleanup
     // ─────────────────────────────────────────────────
-    const uniquePhone = `9${String(__VU).padStart(4, '0')}${String(__ITER).padStart(4, '0')}`;
+    const uniquePhone = `9${String(__VU).padStart(5, '0')}${String(__ITER).padStart(4, '0')}`;
     const newMember = {
         name: `Load Test Member ${__VU}-${__ITER}`,
         phone: uniquePhone,
-        email: `lt${__VU}${__ITER}@loadtest.dev`,
+        email: `lt${__VU}-${__ITER}@loadtest.dev`,
         dateOfBirth: '1995-06-15',
-        emergencyName: 'Emergency Contact',
+        emergencyName: 'Load Test Emergency',
         emergencyPhone: '9000000000',
         emergencyRelation: 'SPOUSE',
+        // Tag so teardown can identify and delete all k6-generated records
+        notes: 'k6-load-test',
     };
 
     const addMemberRes = http.post(
         `${BASE_URL}/api/members`,
         JSON.stringify(newMember),
-        {
-            headers: { 'Content-Type': 'application/json' },
-            tags: { name: 'AddMember' },
-        }
+        { ...sessionHeaders, tags: { name: 'AddMember' } }
     );
 
-    memberCreationTime.add(addMemberRes.timings.duration);
+    // Only record timing when the request was actually processed (not rate-limited)
+    if (addMemberRes.status !== 429) {
+        memberCreationTime.add(addMemberRes.timings.duration);
+    }
 
     const memberCreated = check(addMemberRes, {
         'add member: status 201': (r) => r.status === 201,
@@ -181,9 +181,8 @@ export default function () {
     sleep(2);
 
     // ─────────────────────────────────────────────────
-    // STEP 6: Create Invoice (complex write — rate limit 20/min)
-    // NOTE: Rate limit of 20/min means heavy users will see 429s.
-    // At 1000 VUs this is expected. We allow 429 as non-error.
+    // STEP 6: Create Invoice (rate limit: 20/min)
+    // 429s are expected at 1000 VUs — not counted as errors
     // ─────────────────────────────────────────────────
     let newMemberId = null;
     if (memberCreated && addMemberRes.body) {
@@ -194,29 +193,23 @@ export default function () {
         type: 'MEMBERSHIP',
         paymentStatus: 'PAID',
         paymentMethod: 'UPI',
-        items: [
-            {
-                description: 'Monthly Membership — Load Test',
-                quantity: 1,
-                unitPrice: 2000,
-            },
-        ],
+        items: [{ description: 'Monthly Membership — k6-load-test', quantity: 1, unitPrice: 2000 }],
         tax: 0,
         discount: 0,
-        notes: 'k6 load test invoice',
+        notes: 'k6-load-test',
         ...(newMemberId ? { memberId: newMemberId } : {}),
     };
 
     const invoiceRes = http.post(
         `${BASE_URL}/api/invoices`,
         JSON.stringify(invoicePayload),
-        {
-            headers: { 'Content-Type': 'application/json' },
-            tags: { name: 'CreateInvoice' },
-        }
+        { ...sessionHeaders, tags: { name: 'CreateInvoice' } }
     );
 
-    invoiceCreationTime.add(invoiceRes.timings.duration);
+    // Only record timing for actually-processed requests (not rate-limited 429s)
+    if (invoiceRes.status !== 429) {
+        invoiceCreationTime.add(invoiceRes.timings.duration);
+    }
 
     check(invoiceRes, {
         'invoice: status 201 or 429': (r) => r.status === 201 || r.status === 429,
@@ -227,8 +220,7 @@ export default function () {
     sleep(2);
 
     // ─────────────────────────────────────────────────
-    // STEP 7: Reports — Summary (5 parallel DB queries)
-    // This is the heaviest endpoint
+    // STEP 7: Report Summary (5 parallel DB queries — heaviest endpoint)
     // ─────────────────────────────────────────────────
     const reportRes = http.get(`${BASE_URL}/api/reports?type=summary`, {
         tags: { name: 'ReportSummary' },
@@ -242,7 +234,7 @@ export default function () {
     sleep(1);
 
     // ─────────────────────────────────────────────────
-    // STEP 8: Reports — Revenue (raw SQL aggregation)
+    // STEP 8: Report Revenue (raw SQL aggregation)
     // ─────────────────────────────────────────────────
     const revenueRes = http.get(`${BASE_URL}/api/reports?type=revenue`, {
         tags: { name: 'ReportRevenue' },
@@ -255,7 +247,7 @@ export default function () {
     sleep(1);
 
     // ─────────────────────────────────────────────────
-    // STEP 9: Products List (simple read)
+    // STEP 9: Products List
     // ─────────────────────────────────────────────────
     const productsRes = http.get(`${BASE_URL}/api/products`, {
         tags: { name: 'ProductsList' },
@@ -265,14 +257,20 @@ export default function () {
         'products: status 200': (r) => r.status === 200,
     });
 
-    sleep(3); // Realistic think time between iterations
+    sleep(3);
 }
 
 export function teardown(data) {
     const totalSeconds = ((Date.now() - data.startTime) / 1000).toFixed(1);
-    console.log('╔════════════════════════════════════════╗');
-    console.log('║   Load Test Complete ✅                 ║');
-    console.log(`║   Total duration: ${totalSeconds}s              ║`);
-    console.log('║   Check Vercel + Supabase dashboards   ║');
-    console.log('╚════════════════════════════════════════╝');
+    console.log(`✅ Load test complete. Duration: ${totalSeconds}s`);
+
+    // Clean up test data — delete records tagged 'k6-load-test'
+    // Note: This requires a DELETE endpoint for bulk operations.
+    // For now, log the cleanup SQL for a developer to run manually.
+    // To auto-clean, run this in Supabase SQL Editor after the test:
+    //   DELETE FROM "Member" WHERE notes = 'k6-load-test';
+    //   DELETE FROM "Invoice" WHERE notes = 'k6-load-test';
+    console.log('📌 Cleanup reminder: run in Supabase SQL Editor:');
+    console.log('   DELETE FROM "Member" WHERE "emergencyName" = \'Load Test Emergency\';');
+    console.log('   DELETE FROM "Invoice" WHERE notes = \'k6-load-test\';');
 }

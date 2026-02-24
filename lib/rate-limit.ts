@@ -84,3 +84,21 @@ export const whatsappLimiter = rateLimit({
     interval: 60 * 1000, // 1 minute
     uniqueTokenPerInterval: 100,
 })
+
+/**
+ * Returns the effective rate limit for a given key, respecting LOAD_TEST_*
+ * environment variable overrides for load testing without code changes.
+ *
+ * Example: set LOAD_TEST_RATE_LIMIT_MEMBERS_GET=500 in .env.local to
+ * increase the member list rate limit during a load test run.
+ *
+ * @param defaultLimit - the default limit to use if no env override is set
+ * @param envKey       - the LOAD_TEST_* env var key (e.g. "MEMBERS_GET")
+ */
+export function getRateLimit(defaultLimit: number, envKey: string): number {
+    const envValue = process.env[`LOAD_TEST_RATE_LIMIT_${envKey}`]
+    if (!envValue) return defaultLimit
+    const parsed = parseInt(envValue, 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultLimit
+}
+

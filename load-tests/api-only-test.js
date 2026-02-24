@@ -4,51 +4,54 @@ import { check } from 'k6';
 /**
  * API-Only Benchmark — Fast, No Auth
  *
- * Purpose: Quick baseline test for API response times WITHOUT the overhead
- * of authentication. Useful for measuring the raw API throughput and
- * confirming rate limits are triggered at the right threshold.
+ * Tests raw API server throughput at 1000 VUs for 1 minute.
+ * All endpoints return 401 (unauthenticated) — that is EXPECTED and correct.
+ * We're validating: does the server respond at all without crashing?
  *
- * Note: All authenticated endpoints will return 401. That's expected here.
- * We're testing the server's ability to respond (any response) at high load.
- *
- * Run time: 1 minute. Use as a quick pre-test sanity check.
- *
- * Usage:
+ * Run:
  *   k6 run load-tests/api-only-test.js
+ *   k6 run -e BASE_URL=https://staging.gym.emitra.dev load-tests/api-only-test.js
  */
+
+// --- Target (env-configurable; defaults to production) ---
+const BASE_URL = __ENV.BASE_URL || 'https://gym.emitra.dev';
+
+// Mark 401 and 429 as non-failing — both are expected for unauthenticated requests
+// This prevents k6 from counting them in http_req_failed
+http.setResponseCallback(http.expectedStatuses(
+    { min: 200, max: 399 },
+    401,
+    429
+));
+
 export const options = {
     vus: 1000,
     duration: '1m',
     thresholds: {
-        http_req_duration: ['p(95)<800'],    // Unauthenticated 401 should be fast
-        http_req_failed: ['rate<0.01'],       // No network failures allowed
+        // 401/429 are now non-failing, so only real errors (5xx, timeouts) count
+        http_req_failed: ['rate<0.01'],
+        // p(95) across all API endpoints should be under 800ms
+        http_req_duration: ['p(95)<800'],
     },
 };
 
-const BASE_URL = 'https://gym.emitra.dev';
-
-// Round-robin through endpoints to distribute load
+// JSON API endpoints only — no frontend routes
 const ENDPOINTS = [
     { url: `${BASE_URL}/api/members`, tag: 'API_Members' },
     { url: `${BASE_URL}/api/invoices`, tag: 'API_Invoices' },
     { url: `${BASE_URL}/api/products`, tag: 'API_Products' },
     { url: `${BASE_URL}/api/reports?type=summary`, tag: 'API_Reports' },
-    { url: `${BASE_URL}/dashboard`, tag: 'API_Dashboard' },
 ];
 
 export default function () {
-    // Pick an endpoint based on VU ID for even distribution
-    const endpoint = ENDPOINTS[__VU % ENDPOINTS.length];
+    // (__VU - 1) ensures zero-based index for correct distribution across all VU counts
+    const endpoint = ENDPOINTS[(__VU - 1) % ENDPOINTS.length];
 
-    const res = http.get(endpoint.url, {
-        tags: { name: endpoint.tag },
-    });
+    const res = http.get(endpoint.url, { tags: { name: endpoint.tag } });
 
     check(res, {
-        // All of these are valid: server responded (not timed out / crashed)
-        'server responded': (r) =>
-            r.status === 200 || r.status === 401 || r.status === 429,
-        'no 500 errors': (r) => r.status < 500,
-        'response under 800ms': (r) => r.timings.duration < 800,
+        // Single assertion: the server responded with any valid status (200/401/429)
+        // A 5xx or timeout will fail this check AND increment http_req_failed
+        'valid response (no 5xx or timeout)': (r) => r.status < 500,
     });
 }

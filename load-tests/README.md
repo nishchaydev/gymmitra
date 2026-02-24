@@ -8,24 +8,45 @@ Professional load testing for **gym.emitra.dev** targeting up to **1000 concurre
 
 ### 1. Install k6
 
+**Windows (PowerShell — run as Administrator):**
 ```powershell
-# Windows (Chocolatey)
 choco install k6
-
-# Verify
 k6 version
 ```
 
-### 2. Create a Test Account in Supabase
+**macOS (Homebrew):**
+```bash
+brew install k6
+k6 version
 
-The main flow test requires a real Supabase account with a gym profile set up.
+**Linux (Debian/Ubuntu):**
+```bash
+sudo gpg --no-default-keyring \
+  --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+  --keyserver hkp://keyserver.ubuntu.com:80 \
+  --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] \
+  https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update && sudo apt-get install k6
+k6 version
+```
 
-1. Go to `gym.emitra.dev/onboarding` and create a dedicated test account
-2. Set env vars before running:
+### 2. Create a Test Account
 
+Create a dedicated Supabase account with a gym profile at `gym.emitra.dev/onboarding`.
+
+Set credentials before running:
+
+**Windows (PowerShell):**
 ```powershell
-$env:LOAD_TEST_EMAIL = "loadtest@yourgym.com"
+$env:LOAD_TEST_EMAIL    = "loadtest@yourgym.com"
 $env:LOAD_TEST_PASSWORD = "YourSecurePassword123!"
+```
+
+**macOS / Linux (bash):**
+```bash
+export LOAD_TEST_EMAIL="loadtest@yourgym.com"
+export LOAD_TEST_PASSWORD="YourSecurePassword123!"
 ```
 
 ---
@@ -43,92 +64,122 @@ $env:LOAD_TEST_PASSWORD = "YourSecurePassword123!"
 
 ## Quick Start (Follow This Order)
 
-### Phase 1 — Baseline (Start Here!)
+### Phase 1 — Baseline (No auth required)
 
+**Windows:**
 ```powershell
-# Warm-up: 10 users for 30 seconds (safe, quick sanity check)
+# Sanity check — 10 users, 30 seconds
 k6 run --vus 10 --duration 30s load-tests/api-only-test.js
 
-# If that's green, try 100 users
+# Scale up
 k6 run --vus 100 --duration 1m load-tests/api-only-test.js
 ```
 
-### Phase 2 — Full Flow Test
+**macOS / Linux:**
+```bash
+k6 run --vus 10 --duration 30s load-tests/api-only-test.js
+k6 run --vus 100 --duration 1m load-tests/api-only-test.js
+```
 
+### Phase 2 — Full Flow Test (~23 min)
+
+**Windows:**
 ```powershell
-# Gradual ramp: 0 → 100 → 500 → 1000 users (~23 min)
 k6 run `
-  -e LOAD_TEST_EMAIL=loadtest@yourgym.com `
-  -e LOAD_TEST_PASSWORD=YourPassword123! `
+  -e BASE_URL=https://gym.emitra.dev `
+  -e LOAD_TEST_EMAIL=$env:LOAD_TEST_EMAIL `
+  -e LOAD_TEST_PASSWORD=$env:LOAD_TEST_PASSWORD `
   load-tests/gym-owner-flow.js
 ```
 
-### Phase 3 — Spike Test
-
-```powershell
-# Sudden traffic surge: 0 → 1000 in 30 seconds
-k6 run load-tests/spike-test.js
+**macOS / Linux:**
+```bash
+k6 run \
+  -e BASE_URL=https://gym.emitra.dev \
+  -e LOAD_TEST_EMAIL=$LOAD_TEST_EMAIL \
+  -e LOAD_TEST_PASSWORD=$LOAD_TEST_PASSWORD \
+  load-tests/gym-owner-flow.js
 ```
 
-### Phase 4 — Soak Test (Optional, run overnight)
+### Phase 3 — Spike Test (~5 min)
 
+```bash
+# Defaults to localhost — set BASE_URL to target production
+k6 run -e BASE_URL=https://gym.emitra.dev load-tests/spike-test.js
+```
+
+### Phase 4 — Soak Test (4 hours — run overnight)
+
+**Windows:**
 ```powershell
-# 100 users for 4 hours — detects memory leaks
 k6 run `
-  -e LOAD_TEST_EMAIL=loadtest@yourgym.com `
-  -e LOAD_TEST_PASSWORD=YourPassword123! `
+  -e BASE_URL=https://gym.emitra.dev `
+  -e LOAD_TEST_EMAIL=$env:LOAD_TEST_EMAIL `
+  -e LOAD_TEST_PASSWORD=$env:LOAD_TEST_PASSWORD `
   load-tests/soak-test.js > soak-results.txt 2>&1
+```
+
+**macOS / Linux:**
+```bash
+k6 run \
+  -e BASE_URL=https://gym.emitra.dev \
+  -e LOAD_TEST_EMAIL=$LOAD_TEST_EMAIL \
+  -e LOAD_TEST_PASSWORD=$LOAD_TEST_PASSWORD \
+  load-tests/soak-test.js | tee soak-results.txt
 ```
 
 ---
 
 ## Saving Results
 
+Create the output directory first, then run:
+
+**Windows:**
 ```powershell
-# Save as JSON for analysis
-k6 run --out json=results/run-$(Get-Date -Format 'yyyyMMdd-HHmm').json load-tests/gym-owner-flow.js
+New-Item -ItemType Directory -Force -Path load-tests/results
+k6 run -e BASE_URL=https://gym.emitra.dev `
+  -e LOAD_TEST_EMAIL=$env:LOAD_TEST_EMAIL `
+  -e LOAD_TEST_PASSWORD=$env:LOAD_TEST_PASSWORD `
+  --out "json=load-tests/results/run-$(Get-Date -Format 'yyyyMMdd-HHmm').json" `
+  load-tests/gym-owner-flow.js
+```
+
+**macOS / Linux:**
+```bash
+mkdir -p load-tests/results
+k6 run -e BASE_URL=https://gym.emitra.dev \
+  -e LOAD_TEST_EMAIL=$LOAD_TEST_EMAIL \
+  -e LOAD_TEST_PASSWORD=$LOAD_TEST_PASSWORD \
+  --out "json=load-tests/results/run-$(date +%Y%m%d-%H%M).json" \
+  load-tests/gym-owner-flow.js
 ```
 
 ---
 
-## What Each Test Covers
+## Rate Limit Overrides for Load Testing
 
-### `gym-owner-flow.js` — Full User Journey
+The app enforces per-user rate limits (members: 100 GET/min, invoices: 20 POST/min).
+At 1000 VUs sharing one test account these **will** trigger 429s — that's expected.
 
-Simulates a gym owner's typical session:
+To increase limits for load testing **without editing source code**, set in `.env.local`:
 
-1. **Login** via Supabase auth (cookie-based session)
-2. **Dashboard** — SSR page with analytics
-3. **Members List** — `GET /api/members` (rate limit: 100 req/min)
-4. **Invoices List** — `GET /api/invoices` (rate limit: 100 req/min)
-5. **Create Member** — `POST /api/members` (rate limit: 50 req/min) — unique phone per VU to avoid conflicts
-6. **Create Invoice** — `POST /api/invoices` (rate limit: 20 req/min) — 429s expected at peak, not counted as errors
-7. **Report Summary** — `GET /api/reports?type=summary` — 5 parallel DB queries
-8. **Report Revenue** — `GET /api/reports?type=revenue` — raw SQL aggregation
-9. **Products List** — `GET /api/products`
+```env
+# Increase GET /api/members limit (default: 100)
+LOAD_TEST_RATE_LIMIT_MEMBERS_GET=500
 
-**Load Pattern:**
-
-```
-Users
-1000 ┤                    ████████████
- 500 ┤         ████████████
- 100 ┤ ████████
-   0 ┤                                ──
-     0    5    10   15   20   23 min
+# Increase POST /api/members limit (default: 50)
+LOAD_TEST_RATE_LIMIT_MEMBERS_POST=200
 ```
 
-### `spike-test.js` — Traffic Surge
+Then update the call in `app/api/members/route.ts`:
+```typescript
+import { getRateLimit } from '@/lib/rate-limit'
 
-Tests resilience when 1000 users hit simultaneously. Covers: homepage, dashboard, and members API. Relaxed thresholds — the goal is **no crashes**, not speed.
+// Was: await apiLimiter.check(100, ...)
+await apiLimiter.check(getRateLimit(100, 'MEMBERS_GET'), `${user.id}:members:get`)
+```
 
-### `soak-test.js` — Stability Over Time
-
-Runs 100 users for 4 hours, randomly cycling through all endpoints. Watch for **response time degradation** — if p95 climbs over time, there's a memory leak or DB connection pool issue.
-
-### `api-only-test.js` — Raw Throughput Benchmark
-
-1000 VUs hitting all endpoints **without auth** for 1 minute. All 401s are expected and counted as successes. Only 500s and timeouts are failures. Great for a quick "is the server alive?" check.
+> **Important:** Remove or reset `.env.local` overrides before deploying to production.
 
 ---
 
@@ -151,69 +202,57 @@ Runs 100 users for 4 hours, randomly cycling through all endpoints. Watch for **
 ```
 ✓ members: status 200
 ✓ add member: status 201
-✗ invoice: status 201 or 429  ← 429s are rate limits, expected at 1000 VUs
+✗ invoice: status 201 or 429   ← 429s are rate limits, expected at 1000 VUs
 
 http_req_duration..............: avg=430ms  p(95)=1.2s  p(99)=2.8s
-http_req_failed................: 3.20%   ← this should be < 5%
-checks.........................: 94.80%  ← should be > 90%
-vus............................: 1000    min=0 max=1000
+http_req_failed................: 3.20%     ← should be < 5%
+checks.........................: 94.80%    ← should be > 90%
+vus............................: 1000      min=0 max=1000
 ```
-
-**Green flags ✅**
-- `p(95)` under thresholds
-- `http_req_failed < 5%`
-- Zero `status === 500` responses
-
-**Red flags 🚨**
-- `p(99)` climbing over time (soak test) → memory leak
-- Many `status === 500` → server crash, check Sentry
-- Many `status === 503` → Supabase connection pool exhausted
 
 ---
 
 ## Monitoring During Tests
 
-Keep these dashboards open while k6 runs:
-
 | Dashboard | URL | Watch For |
 |-----------|-----|-----------|
 | **Vercel** | vercel.com/dashboard | Error rate, function duration, bandwidth |
-| **Supabase** | app.supabase.com → your project | DB connections, query latency |
+| **Supabase** | app.supabase.com | DB connections, query latency, pool usage |
 | **Sentry** | sentry.io | Any 500 errors with stack traces |
 
 ---
 
-## Common Issues & Fixes
+## Common Issues
 
 ### 🔴 Many `429 Too Many Requests`
-
-**Cause:** Rate limits in `/api/members`, `/api/invoices` etc.
-
-The rate limits are per-user, so 1000 VUs sharing one test account will hit them fast.
-
-**Fix for testing:** Use multiple test accounts, or temporarily increase limits in `lib/rate-limit.ts`:
-```typescript
-// Temporarily for load testing only
-await apiLimiter.check(500, `${user.id}:members:get`) // was 100
-```
+**Cause:** Rate limits per user. Use `LOAD_TEST_RATE_LIMIT_*` env overrides (see above).
 
 ### 🔴 Database Connection Errors
+**Cause:** Supabase connection pool exhausted.
+**Fix:** Ensure `DATABASE_URL` includes `?pgbouncer=true&connection_limit=10`.
 
-**Cause:** Supabase free tier has a connection pool limit.
+### 🔴 Auth failures (all 401)
+**Cause:** `LOAD_TEST_EMAIL` / `LOAD_TEST_PASSWORD` not set, or account has no gym profile.
+**Fix:** Verify env vars are set. Create the gym profile at `gym.emitra.dev/onboarding`.
 
-**Fix:** Ensure `DATABASE_URL` in `.env` uses PgBouncer:
-```
-DATABASE_URL="postgres://...?pgbouncer=true&connection_limit=10"
-```
+### 🔴 `BASE_URL` hitting localhost unintentionally
+**Cause:** `spike-test.js` and `soak-test.js` default to `localhost:3000` for safety.
+**Fix:** Always pass `-e BASE_URL=https://gym.emitra.dev` when targeting production.
 
-### 🔴 Auth Failures (all 401)
-
-**Cause:** Test account not set up, or cookie session not persisted by k6.
-
-**Fix:** Verify `LOAD_TEST_EMAIL` env var is set. k6 does handle cookies automatically per VU — each VU gets its own cookie jar.
-
-### 🔴 High p(99) in Soak Test
-
+### 🔴 High p(99) in Soak Test climbing over time
 **Cause:** Memory leak or DB connection pool degradation.
+**Fix:** Check Supabase connection count chart over time. Look for unclosed Prisma transactions.
 
-**Fix:** Check Supabase for connection count over time. Look for unclosed Prisma transactions in server logs.
+---
+
+## Post-Test Cleanup
+
+All members and invoices created by the load test have `notes = 'k6-load-test'`.
+Run this in the Supabase SQL Editor after testing:
+
+```sql
+-- Remove load test invoices first (foreign key constraint)
+DELETE FROM "Invoice" WHERE notes = 'k6-load-test';
+-- Then members
+DELETE FROM "Member" WHERE "emergencyName" = 'Load Test Emergency';
+```
