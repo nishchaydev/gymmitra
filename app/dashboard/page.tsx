@@ -277,8 +277,8 @@ export default async function DashboardPage() {
                             </CardContent>
                         </Card>
                         <div className="lg:col-span-3 space-y-6">
-                            <AttendanceWidget />
-                            <UpcomingBirthdays />
+                            <AttendanceWidget isDemo={isDemo} gymId={gym?.id} />
+                            <UpcomingBirthdays isDemo={isDemo} gymId={gym?.id} />
                         </div>
                     </div>
 

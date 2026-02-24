@@ -36,7 +36,7 @@ export default async function OnboardingPage() {
         } catch (error) {
             // If the DB is unreachable, fall through and show the onboarding form
             // rather than crashing the page with a 500.
-            console.error('[onboarding] Failed to look up gym profile:', error)
+            console.error('[onboarding] Failed to look up gym profile:', error instanceof Error ? error.message : String(error))
         }
 
         // redirect() throws NEXT_REDIRECT internally — must be outside try/catch

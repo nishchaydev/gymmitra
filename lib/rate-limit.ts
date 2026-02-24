@@ -124,7 +124,7 @@ export function getRateLimit(defaultLimit: number, envKey: string): number {
         return defaultLimit
     }
     const parsed = parseInt(envValue, 10)
-    if (!Number.isInteger(parsed) || parsed <= 0 || parsed > MAX_RATE_LIMIT) {
+    if (parsed <= 0 || parsed > MAX_RATE_LIMIT) {
         console.warn(
             `[rate-limit] Invalid ${fullKey}="${envValue}" — ` +
             `must be a positive integer ≤ ${MAX_RATE_LIMIT}. Using default ${defaultLimit}.`

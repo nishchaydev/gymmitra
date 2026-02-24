@@ -91,7 +91,7 @@ export function Navbar() {
                                 </Button>
                             </a>
                             <Link href="#contact">
-                                <Button className="bg-[#1E3A8A] hover:bg-[#1e3a8a]/90 text-white font-semibold px-6 rounded-full shadow-lg shadow-[#1E3A8A]/20 hover:shadow-[#1E3A8A]/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                                <Button className="bg-midnight text-white font-semibold px-6 rounded-full shadow-lg shadow-midnight/20 hover:bg-midnight/90 hover:shadow-midnight/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
                                     Request a Demo
                                 </Button>
                             </Link>
