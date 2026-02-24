@@ -66,17 +66,33 @@ export function setup() {
 
     // Fail fast — do not start the 4-hour soak with broken auth
     if (loginRes.status !== 200) {
+        // Sanitize: never log raw body (may contain tokens/PII)
+        const bodySnippet = loginRes.body
+            ? String(loginRes.body).substring(0, 200) + (loginRes.body.length > 200 ? '…' : '')
+            : '<empty>';
         fail(
-            `Soak auth failed: HTTP ${loginRes.status}\n` +
-            `Body: ${loginRes.body}\n` +
-            `Error: ${loginRes.error || 'none'}`
+            `Soak auth failed: HTTP ${loginRes.status} | ` +
+            `hasBody: ${Boolean(loginRes.body)} | bodyLength: ${loginRes.body ? loginRes.body.length : 0} | ` +
+            `snippet: ${bodySnippet} | error: ${loginRes.error || 'none'}`
         );
     }
 
     const cookies = loginRes.cookies;
+
+    // Guard: ensure we got actual cookie entries with values — empty cookies
+    // would cause all VUs to run silently unauthenticated for 4 hours.
+    if (!cookies || Object.keys(cookies).length === 0) {
+        fail('Soak auth error: login returned no cookies — session was not established.');
+    }
+
     const cookieHeader = Object.keys(cookies)
+        .filter((key) => Array.isArray(cookies[key]) && cookies[key].length > 0 && cookies[key][0].value)
         .map((key) => `${key}=${cookies[key][0].value}`)
         .join('; ');
+
+    if (!cookieHeader) {
+        fail('Soak auth error: cookie header is empty after extraction — all cookie values were missing.');
+    }
 
     console.log(`✅ Soak auth OK — starting 4-hour run against ${BASE_URL}`);
     return { cookie: cookieHeader };

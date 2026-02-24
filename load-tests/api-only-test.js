@@ -55,9 +55,9 @@ const ENDPOINTS = [
 ];
 
 export default function () {
-    // Use __ITER for per-iteration rotation so each loop cycles through endpoints
-    // rather than each VU always hitting the same one
-    const endpoint = ENDPOINTS[__ITER % ENDPOINTS.length];
+    // Combine VU offset + iteration rotation so concurrent VUs are spread across
+    // different endpoints rather than hitting the same one simultaneously
+    const endpoint = ENDPOINTS[(__VU - 1 + __ITER) % ENDPOINTS.length];
 
     const res = http.get(endpoint.url, { tags: { name: endpoint.tag } });
 

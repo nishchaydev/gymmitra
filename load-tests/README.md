@@ -193,7 +193,7 @@ await apiLimiter.check(getRateLimit(100, 'MEMBERS_GET'), `${user.id}:members:get
 await apiLimiter.check(getRateLimit(50, 'MEMBERS_POST'), `${user.id}:members:post`)
 
 // In app/api/invoices/route.ts POST handler:
-await apiLimiter.check(getRateLimit(20, 'INVOICES_POST'), user.id)
+await apiLimiter.check(getRateLimit(20, 'INVOICES_POST'), `${user.id}:invoices:post`)
 ```
 
 > **Important:** Overrides are automatically ignored in production (`NODE_ENV=production`)

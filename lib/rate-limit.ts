@@ -115,8 +115,15 @@ export function getRateLimit(defaultLimit: number, envKey: string): number {
         return defaultLimit
     }
 
-    // Strict parse: Number() rejects partial strings like "100abc"
-    const parsed = Number(envValue)
+    // Strict parse: only accept plain decimal integers (no hex, no scientific notation)
+    if (!/^\d+$/.test(envValue)) {
+        console.warn(
+            `[rate-limit] Invalid ${fullKey}="${envValue}" — ` +
+            `must be a positive integer ≤ ${MAX_RATE_LIMIT}. Using default ${defaultLimit}.`
+        )
+        return defaultLimit
+    }
+    const parsed = parseInt(envValue, 10)
     if (!Number.isInteger(parsed) || parsed <= 0 || parsed > MAX_RATE_LIMIT) {
         console.warn(
             `[rate-limit] Invalid ${fullKey}="${envValue}" — ` +

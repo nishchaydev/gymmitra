@@ -15,22 +15,32 @@ export default async function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
-        const gymProfile = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (gymProfile) {
-            // Already onboarded, sync cookie and redirect
-            const cookieStore = await cookies()
-            cookieStore.set('gym_onboarded', 'true', {
-                maxAge: 30 * 24 * 60 * 60,
-                path: '/',
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
+        let shouldRedirect = false
+        try {
+            const gymProfile = await prisma.gymProfile.findUnique({
+                where: { userId: user.id }
             })
-            redirect('/dashboard')
+
+            if (gymProfile) {
+                // Already onboarded, sync cookie
+                const cookieStore = await cookies()
+                cookieStore.set('gym_onboarded', 'true', {
+                    maxAge: 30 * 24 * 60 * 60,
+                    path: '/',
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax',
+                })
+                shouldRedirect = true
+            }
+        } catch (error) {
+            // If the DB is unreachable, fall through and show the onboarding form
+            // rather than crashing the page with a 500.
+            console.error('[onboarding] Failed to look up gym profile:', error)
         }
+
+        // redirect() throws NEXT_REDIRECT internally — must be outside try/catch
+        if (shouldRedirect) redirect('/dashboard')
     }
 
     return (
