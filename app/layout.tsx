@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { Analytics } from '@vercel/analytics/next';
 import "./globals.css";
 
 const fontDisplay = Outfit({
@@ -85,6 +86,7 @@ export default function RootLayout({
         </main>
         <Toaster />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX"} />
+        <Analytics />
       </body>
     </html>
   );
