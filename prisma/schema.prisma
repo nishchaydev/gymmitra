@@ -35,6 +35,8 @@ model GymProfile {
   invoices       Invoice[]
   sales          Sale[]
   attendance     Attendance[]
+  staff          StaffMember[]
+  ptSessions     PTSession[]
 }
 
 model Member {
@@ -59,6 +61,7 @@ model Member {
   gym               GymProfile           @relation(fields: [gymId], references: [id], onDelete: Cascade)
   subscriptions     MemberSubscription[]
   sales             Sale[]
+  ptSessions        PTSession[]
 
   @@index([gymId])
   @@index([phone])
@@ -86,7 +89,7 @@ model MemberSubscription {
   id            String             @id @default(cuid())
   memberId      String
   planId        String
-  gymId         String             @default("temp-gym-id") // Direct gymId for multi-tenant isolation
+  gymId         String // Direct gymId for multi-tenant isolation
   startDate     DateTime
   endDate       DateTime
   price         Decimal            @db.Decimal(10, 2)
@@ -102,6 +105,7 @@ model MemberSubscription {
 
   @@index([gymId])
   @@index([memberId])
+  @@index([planId])
   @@index([endDate])
   @@index([status])
 }
@@ -130,7 +134,7 @@ model Sale {
   id            String        @id @default(cuid())
   memberId      String?
   productId     String
-  gymId         String        // Direct gymId for multi-tenant isolation
+  gymId         String // Direct gymId for multi-tenant isolation
   quantity      Int
   unitPrice     Decimal       @db.Decimal(10, 2)
   totalAmount   Decimal       @db.Decimal(10, 2)
@@ -178,13 +182,14 @@ model Invoice {
   @@index([gymId])
   @@index([invoiceNumber])
   @@index([memberId])
+  @@index([subscriptionId])
   @@index([issueDate])
 }
 
 model InvoiceItem {
   id          String  @id @default(cuid())
   invoiceId   String
-  gymId       String  @default("temp-gym-id") // Direct gymId for multi-tenant isolation
+  gymId       String // Direct gymId for multi-tenant isolation
   description String
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
@@ -201,7 +206,7 @@ model Notification {
   title     String
   message   String
   userId    String
-  gymId     String?          // Associated gym if applicable
+  gymId     String? // Associated gym if applicable
   isRead    Boolean          @default(false)
   metadata  Json?
   createdAt DateTime         @default(now())
@@ -213,17 +218,18 @@ model Notification {
 }
 
 model Attendance {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   memberId     String
-  gymId        String    // Direct gymId for multi-tenant isolation
-  date         DateTime  @default(now())
-  checkInTime  DateTime  @default(now())
+  gymId        String // Direct gymId for multi-tenant isolation
+  date         DateTime   @default(now())
+  checkInTime  DateTime   @default(now())
   checkOutTime DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  member       Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   gym          GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
+  @@unique([memberId, date])
   @@index([gymId])
   @@index([memberId])
   @@index([date])
@@ -275,4 +281,59 @@ enum NotificationType {
   LOW_STOCK
   NEW_MEMBER
   MONTHLY_SUMMARY
+}
+
+enum Role {
+  STAFF
+  TRAINER
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model StaffMember {
+  id        String   @id @default(cuid())
+  userId    String // Maps to Supabase Auth UUID. Not @unique to allow multi-gym trainers!
+  gymId     String // Links to their employer
+  name      String
+  email     String
+  phone     String?
+  role      Role     @default(STAFF)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gym GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  // Trainer related
+  ptSessions PTSession[]
+
+  @@unique([userId, gymId]) // A user can only have one staff profile per gym
+  @@index([gymId])
+  @@index([email])
+}
+
+model PTSession {
+  id        String        @id @default(cuid())
+  gymId     String
+  trainerId String // References StaffMember.id (where role=TRAINER)
+  memberId  String // References Member.id
+  startTime DateTime
+  endTime   DateTime
+  status    SessionStatus @default(SCHEDULED)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  trainer StaffMember @relation(fields: [trainerId], references: [id])
+  member  Member      @relation(fields: [memberId], references: [id])
+  gym     GymProfile  @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([trainerId, startTime])
+  @@index([gymId])
+  @@index([memberId])
 }

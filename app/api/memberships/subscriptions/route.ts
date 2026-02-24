@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus, MemberStatus } from '@prisma/client'
 
 const subscriptionSchema = z.object({
@@ -13,24 +13,17 @@ const subscriptionSchema = z.object({
     price: z.number().min(0, "Price cannot be negative").optional(),
     paymentStatus: z.nativeEnum(PrismaPaymentStatus).default(PrismaPaymentStatus.PAID),
     discountReason: z.string().optional(),
+    // force=true bypasses the same-plan duplicate check (e.g. extending an active sub)
+    force: z.boolean().optional().default(false),
 })
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) {
+        const auth = await getAuthGym()
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const body = await request.json()
         const validatedData = subscriptionSchema.parse(body)
@@ -59,6 +52,29 @@ export async function POST(request: NextRequest) {
         const startDate = validatedData.startDate
         const endDate = addDays(startDate, plan.duration)
         const price = validatedData.price ?? Number(plan.price)
+
+        // Block duplicate active subscription for the SAME plan (allow cross-plan upgrades)
+        if (!validatedData.force) {
+            const duplicateActive = await prisma.memberSubscription.findFirst({
+                where: {
+                    memberId: validatedData.memberId,
+                    planId: validatedData.planId,
+                    gymId: gym.id,
+                    status: SubscriptionStatus.ACTIVE,
+                    endDate: { gte: new Date() }
+                }
+            })
+            if (duplicateActive) {
+                return NextResponse.json(
+                    {
+                        error: 'Member already has an active subscription for this plan.',
+                        hint: 'To override (e.g. extend), resend with force: true.',
+                        existingEndDate: duplicateActive.endDate
+                    },
+                    { status: 409 }
+                )
+            }
+        }
 
         // Validate override isn't suspiciously low (e.g., < 50% of plan price)
         if (validatedData.price !== undefined && validatedData.price < Number(plan.price) * 0.5) {

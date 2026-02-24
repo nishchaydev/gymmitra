@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMonthOfInterval } from 'date-fns'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 async function getAuthenticatedGym() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
-    return await prisma.gymProfile.findUnique({ where: { userId: user.id } })
+    const auth = await getAuthGym()
+    if (!auth || auth.role !== 'OWNER') return null
+    return auth.gym
 }
 
-// Types for Raw SQL Results
+// ── Raw SQL row types ─────────────────────────────────────────────────────────
+
 interface RevenueRow {
     month: string
     total: number
@@ -22,6 +22,27 @@ interface AttendanceRow {
     day: string
     count: bigint
 }
+
+interface ChurnRow {
+    month: string
+    churned: bigint
+    total_active: bigint
+}
+
+interface RetentionRow {
+    month: string
+    renewed: bigint
+    expired: bigint
+}
+
+interface MemberFrequencyRow {
+    member_id: string
+    member_name: string
+    phone: string
+    visit_count: bigint
+    last_visit: string | null
+}
+
 
 export async function GET(request: NextRequest) {
     try {
@@ -134,6 +155,111 @@ export async function GET(request: NextRequest) {
                 })
             }
             return NextResponse.json(attendanceData)
+        }
+
+        if (type === 'churn') {
+            const startDate = startOfMonth(subMonths(new Date(), 5))
+
+            // Approximate monthly churn: members who went INACTIVE/EXPIRED in that month
+            const churnResult = await prisma.$queryRaw<ChurnRow[]>`
+                WITH MonthlyChurn AS (
+                    SELECT 
+                        date_trunc('month', "updatedAt") as month_date,
+                        COUNT(*) as churned
+                    FROM "Member"
+                    WHERE "gymId" = ${gym.id}
+                        AND status IN ('INACTIVE', 'EXPIRED')
+                        AND "updatedAt" >= ${startDate}
+                    GROUP BY date_trunc('month', "updatedAt")
+                )
+                SELECT 
+                    to_char(month_date, 'YYYY-MM-DD') as month,
+                    churned,
+                    (SELECT COUNT(*) FROM "Member" m2 WHERE m2."gymId" = ${gym.id} AND m2."createdAt" <= month_date + interval '1 month') as total_active
+                FROM MonthlyChurn
+                ORDER BY month_date ASC
+            `
+
+            const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
+            const churnMap = new Map(
+                interval.map(date => [format(date, 'yyyy-MM-01'), { name: format(date, 'MMM yyyy'), churnRate: 0 }])
+            )
+
+            churnResult.forEach(row => {
+                const key = row.month
+                if (churnMap.has(key)) {
+                    const churned = Number(row.churned)
+                    const totalActive = Number(row.total_active) || 1 // prevent div by 0
+                    const rate = Math.min(100, Math.round((churned / totalActive) * 100))
+                    churnMap.get(key)!.churnRate = rate
+                }
+            })
+
+            return NextResponse.json(Array.from(churnMap.values()))
+        }
+
+        if (type === 'retention') {
+            const startDate = startOfMonth(subMonths(new Date(), 5))
+
+            // Subscriptions renewed vs expired
+            const retentionResult = await prisma.$queryRaw<RetentionRow[]>`
+                SELECT 
+                    to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month,
+                    SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END) as renewed,
+                    SUM(CASE WHEN "status" = 'EXPIRED' THEN 1 ELSE 0 END) as expired
+                FROM "MemberSubscription"
+                WHERE "gymId" = ${gym.id}
+                  AND "endDate" >= ${startDate}
+                GROUP BY 1
+                ORDER BY 1 ASC
+            `
+
+            const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
+            const retentionMap = new Map(
+                interval.map(date => [format(date, 'yyyy-MM-01'), { name: format(date, 'MMM yyyy'), retentionRate: 100 }])
+            )
+
+            retentionResult.forEach(row => {
+                const key = row.month
+                if (retentionMap.has(key)) {
+                    const renewed = Number(row.renewed)
+                    const expired = Number(row.expired)
+                    const total = renewed + expired
+                    const rate = total > 0 ? Math.round((renewed / total) * 100) : 100
+                    retentionMap.get(key)!.retentionRate = rate
+                }
+            })
+
+            return NextResponse.json(Array.from(retentionMap.values()))
+        }
+
+        if (type === 'member-frequency') {
+            const thirtyDaysAgo = startOfDay(subDays(new Date(), 30))
+
+            // Group attendance by member over last 30 days
+            const frequencyResult = await prisma.$queryRaw<MemberFrequencyRow[]>`
+                SELECT 
+                    m.id as member_id,
+                    m.name as member_name,
+                    m.phone,
+                    COUNT(a.id) as visit_count,
+                    MAX(a.date) as last_visit
+                FROM "Member" m
+                LEFT JOIN "Attendance" a ON m.id = a."memberId" AND a.date >= ${thirtyDaysAgo}
+                WHERE m."gymId" = ${gym.id}
+                  AND m.status = 'ACTIVE'
+                GROUP BY m.id
+                ORDER BY visit_count ASC, last_visit ASC NULLS FIRST
+                LIMIT 50
+            `
+
+            return NextResponse.json(frequencyResult.map(row => ({
+                memberId: row.member_id,
+                memberName: row.member_name,
+                phone: row.phone,
+                visitCount: Number(row.visit_count),
+                lastVisit: row.last_visit ? format(new Date(row.last_visit), 'yyyy-MM-dd') : null
+            })))
         }
 
         if (!type || type === 'summary') {

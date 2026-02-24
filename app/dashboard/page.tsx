@@ -4,11 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Overview } from "@/components/dashboard/Overview"
 import { Analytics } from "@/components/dashboard/Analytics"
 import { Reports } from "@/components/dashboard/Reports"
+import { RetentionMetrics } from "@/components/dashboard/RetentionMetrics"
+import { Badge } from "@/components/ui/badge"
 import { UpcomingBirthdays } from "@/components/dashboard/UpcomingBirthdays"
 import { RecentInvoices } from "@/components/dashboard/RecentInvoices"
 import { AttendanceWidget } from "@/components/dashboard/AttendanceWidget"
 import { Button } from "@/components/ui/button"
-import { Users, CreditCard, DollarSign, Dumbbell, UserPlus, ShoppingBag, ReceiptText } from "lucide-react"
+import { Activity, CreditCard, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Target, Zap, CheckCircle2, ShoppingBag, ReceiptText, UserPlus, FileText, Dumbbell } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { startOfToday, endOfToday } from "date-fns"
@@ -129,9 +131,9 @@ export default async function DashboardPage() {
     }
 
     return (
-        <div className="flex-1 space-y-6 p-8 pt-6">
+        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
             {isDemo && (
-                <div className="bg-[#1a365d] border-b border-[#4FC3F7]/20 text-white px-4 py-3 text-sm font-medium shadow-sm mb-6 -mx-8 -mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 relative z-10">
+                <div className="bg-[#1a365d] border-b border-[#4FC3F7]/20 text-white px-4 py-3 text-xs sm:text-sm font-medium shadow-sm mb-6 -mx-4 md:-mx-8 -mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 relative z-10">
                     <div className="flex items-center gap-2 text-[#4FC3F7]">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4FC3F7] opacity-75"></span>
@@ -179,6 +181,9 @@ export default async function DashboardPage() {
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="analytics">
                         Analytics
+                    </TabsTrigger>
+                    <TabsTrigger value="insights">
+                        Insights
                     </TabsTrigger>
                     <TabsTrigger value="reports">
                         Reports
@@ -311,6 +316,9 @@ export default async function DashboardPage() {
                 </TabsContent>
                 <TabsContent value="analytics" className="space-y-4">
                     <Analytics isDemo={isDemo} />
+                </TabsContent>
+                <TabsContent value="insights" className="space-y-4">
+                    <RetentionMetrics isDemo={isDemo} />
                 </TabsContent>
                 <TabsContent value="reports" className="space-y-4">
                     <Reports isDemo={isDemo} />

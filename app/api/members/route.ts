@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 
 // Schema for member creation
@@ -20,16 +20,15 @@ const memberCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Rate limit: 100 requests per minute per user
         try {
-            await apiLimiter.check(100, `${user.id}:members:get`)
+            await apiLimiter.check(100, `${auth.userId}:members:get`)
         } catch (error: any) {
             if (error.retryAfter) {
                 return NextResponse.json(
@@ -42,13 +41,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
         }
 
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const { searchParams } = new URL(request.url)
         const status = searchParams.get('status')
@@ -73,16 +66,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Rate limit: 50 creations per minute per user
         try {
-            await apiLimiter.check(50, `${user.id}:members:post`)
+            await apiLimiter.check(50, `${auth.userId}:members:post`)
         } catch (error: any) {
             if (error.retryAfter) {
                 return NextResponse.json(
@@ -94,13 +86,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
         }
 
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const body = await request.json()
 

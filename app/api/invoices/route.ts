@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 
 // Validations
@@ -25,27 +25,20 @@ const invoiceCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Rate limit: 100 requests per minute per user
         try {
-            await apiLimiter.check(100, user.id)
+            await apiLimiter.check(100, auth.userId)
         } catch (error) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
         }
 
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')
@@ -90,27 +83,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Rate limit: 20 creations per minute per user
         try {
-            await apiLimiter.check(20, user.id)
+            await apiLimiter.check(20, auth.userId)
         } catch (error) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
         }
 
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const body = await request.json()
         const validatedData = invoiceCreateSchema.parse(body)

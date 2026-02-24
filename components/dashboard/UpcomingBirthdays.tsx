@@ -3,7 +3,10 @@ import {
     AvatarFallback,
 } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Cake } from "lucide-react"
+import { Cake, MessageCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
 import { prisma } from "@/lib/prisma"
 
@@ -14,6 +17,7 @@ type Props = {
 
 type BirthdayEntry = {
     name: string
+    phone?: string
     date: string   // "Today" | "Tomorrow" | "DD Mon"
     img?: string
 }
@@ -55,7 +59,7 @@ export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
             // Get members with a dateOfBirth to find upcoming birthdays
             const members = await prisma.member.findMany({
                 where: { gymId, status: 'ACTIVE' } as any,
-                select: { name: true, dateOfBirth: true },
+                select: { name: true, phone: true, dateOfBirth: true },
                 take: 100,
             })
 
@@ -69,7 +73,7 @@ export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
                     const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
                     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
                     const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
-                    return { name: m.name, date: label, diffDays }
+                    return { name: m.name, phone: m.phone, date: label, diffDays }
                 })
                 .sort((a: any, b: any) => a.diffDays - b.diffDays)
                 .slice(0, 5)
@@ -105,8 +109,26 @@ export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
                                         Member • {birthday.date}
                                     </p>
                                 </div>
-                                <div className="ml-auto font-medium text-primary text-xs">
-                                    {getDaysUntil(birthday.date)}
+                                <div className="ml-auto flex items-center gap-3">
+                                    <div className="font-medium text-primary text-xs text-right hidden sm:block">
+                                        {getDaysUntil((birthday as any).date)}
+                                    </div>
+                                    {(birthday as any).phone ? (
+                                        <Link
+                                            href={getWhatsAppLink((birthday as any).phone, templates.birthdayWish((birthday as any).name, "Gym Mitra"))}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <Button size="sm" className="h-7 px-2 text-xs bg-[#25D366] hover:bg-[#128C7E] text-white">
+                                                <MessageCircle className="h-3 w-3 mr-1" />
+                                                Wish!
+                                            </Button>
+                                        </Link>
+                                    ) : (
+                                        <div className="font-medium text-primary text-xs text-right sm:hidden">
+                                            {getDaysUntil((birthday as any).date)}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

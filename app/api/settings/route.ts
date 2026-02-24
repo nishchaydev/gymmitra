@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -14,22 +14,13 @@ const settingsSchema = z.object({
 
 export async function GET() {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth || auth.role !== 'OWNER') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const gymProfile = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gymProfile) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
-
-        return NextResponse.json(gymProfile)
+        return NextResponse.json(auth.gym)
     } catch (error) {
         console.error('Failed to fetch settings:', error)
         return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
@@ -38,10 +29,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth || auth.role !== 'OWNER') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -56,11 +46,11 @@ export async function PUT(request: NextRequest) {
         const data = settingsSchema.parse(body)
 
         const gymProfile = await prisma.gymProfile.upsert({
-            where: { userId: user.id },
+            where: { userId: auth.userId },
             update: data,
             create: {
                 ...data,
-                userId: user.id,
+                userId: auth.userId,
             },
         })
 

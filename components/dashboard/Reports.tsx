@@ -49,6 +49,10 @@ export function Reports({ isDemo = false }: ReportsProps) {
                     <TabsTrigger value="revenue">Revenue</TabsTrigger>
                     <TabsTrigger value="attendance">Attendance</TabsTrigger>
                     <TabsTrigger value="expiring">Expiring Memberships</TabsTrigger>
+                    <TabsTrigger value="reminders" className="relative">
+                        Reminders
+                        <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="revenue" className="space-y-4">
@@ -62,10 +66,101 @@ export function Reports({ isDemo = false }: ReportsProps) {
                 <TabsContent value="expiring" className="space-y-4">
                     <ExpiringMembershipsReport />
                 </TabsContent>
+
+                <TabsContent value="reminders" className="space-y-4">
+                    <RemindersReport isDemo={isDemo} />
+                </TabsContent>
             </Tabs>
         </div>
     )
 }
+
+function RemindersReport({ isDemo = false }: { isDemo?: boolean }) {
+    const [data, setData] = useState<any>(null)
+    const [loading, setLoading] = useState(!isDemo)
+
+    useEffect(() => {
+        if (isDemo) {
+            setData({
+                birthdays: [{ type: 'BIRTHDAY', memberId: '1', name: 'Rahul Sharma', message: 'Happy Bday!', link: getWhatsAppLink('919876543210', templates.birthdayWish('Rahul Sharma', 'GymMitra Demo')) }],
+                overdue: [{ type: 'OVERDUE', invoiceId: '2', name: 'Priya Singh', amount: 2500, message: 'Overdue!', link: getWhatsAppLink('919876543210', templates.paymentOverdue('Priya Singh', 2500, 'GymMitra Demo')) }],
+                inactive: [{ type: 'INACTIVE', memberId: '3', name: 'Amit Kumar', daysInactive: 18, message: 'Miss you!', link: getWhatsAppLink('919876543210', templates.inactivityNudge('Amit Kumar', 18, 'GymMitra Demo')) }],
+                expiring: [{ type: 'EXPIRING', subId: '4', name: 'Neha Gupta', daysLeft: 3, message: 'Expiring!', link: getWhatsAppLink('919876543210', templates.renewalReminder('Neha Gupta', 3, 'GymMitra Demo')) }]
+            })
+            return
+        }
+
+        fetch('/api/reminders')
+            .then(res => res.json())
+            .then(data => {
+                setData(data)
+                setLoading(false)
+            })
+            .catch(err => {
+                console.error(err)
+                setLoading(false)
+            })
+    }, [isDemo])
+
+    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+
+    if (!data) return <div className="text-center p-8 text-muted-foreground">Failed to load reminders.</div>
+
+    const totalReminders = (data.birthdays?.length || 0) + (data.overdue?.length || 0) + (data.inactive?.length || 0) + (data.expiring?.length || 0)
+
+    if (totalReminders === 0) {
+        return (
+            <Card>
+                <CardContent className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+                    <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                        <MessageSquare className="h-6 w-6 text-emerald-600" />
+                    </div>
+                    <p className="text-lg font-medium text-slate-900">All caught up!</p>
+                    <p className="text-sm">There are no pending reminders for today.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    const renderActionList = (title: string, items: any[], icon: any, colorClass: string, subtitleFunc: (item: any) => string) => {
+        if (!items || items.length === 0) return null
+
+        return (
+            <div className="space-y-3 mb-6">
+                <h3 className={`text-sm font-bold flex items-center gap-2 ${colorClass}`}>
+                    {icon} {title} ({items.length})
+                </h3>
+                <div className="grid gap-3 md:grid-cols-2">
+                    {items.map((item, i) => (
+                        <Card key={i} className="shadow-sm border-slate-200">
+                            <CardContent className="p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="font-semibold text-slate-900">{item.name}</p>
+                                    <p className="text-xs font-medium text-slate-500 mt-0.5">{subtitleFunc(item)}</p>
+                                </div>
+                                <a href={item.link} target="_blank" rel="noopener noreferrer">
+                                    <Button size="sm" className="bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm gap-2">
+                                        <MessageSquare className="h-4 w-4" /> Send
+                                    </Button>
+                                </a>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-2">
+            {renderActionList("Birthdays Today", data.birthdays, <span className="text-xl">🎂</span>, "text-rose-500", () => "Wish them a happy birthday!")}
+            {renderActionList("Overdue Payments", data.overdue, <span className="text-xl">💳</span>, "text-amber-600", (i) => `₹${i.amount} pending`)}
+            {renderActionList("Expiring Soon (≤ 7 days)", data.expiring, <span className="text-xl">📅</span>, "text-blue-600", (i) => `Expires in ${i.daysLeft} days`)}
+            {renderActionList("Inactive (> 14 days)", data.inactive, <span className="text-xl">⚠️</span>, "text-slate-600", (i) => `Absent for ${i.daysInactive} days`)}
+        </div>
+    )
+}
+
 
 function RevenueReport() {
     const [data, setData] = useState<RevenueData[]>([])
@@ -218,7 +313,7 @@ function ExpiringMembershipsReport() {
                                             const daysLeft = Math.ceil((new Date(sub.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
                                             const link = getWhatsAppLink(
                                                 sub.member.phone,
-                                                templates.renewalReminder(sub.member.name, daysLeft, "Your Gym") // TODO: Get actual gym name
+                                                templates.renewalReminder(sub.member.name, daysLeft, "this gym") // The API pre-generates the real link. We should rely on that instead, but this component is currently fetching its own data and manually constructing the link.
                                             )
                                             window.open(link, '_blank')
                                         }}

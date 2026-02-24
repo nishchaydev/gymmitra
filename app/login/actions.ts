@@ -53,17 +53,30 @@ export async function signup(formData: FormData) {
 
     if (data.user) {
         try {
-            // Create a default Gym Profile for the new user
-            await prisma.gymProfile.create({
-                data: {
-                    name: process.env.NEXT_PUBLIC_GYM_NAME || "My Gym",
-                    email: data.user.email!,
-                    phone: "0000000000", // Placeholder, user updates in settings
-                    userId: data.user.id,
-                }
+            // Check if they are pre-registered as Staff by an Owner
+            const existingStaff = await prisma.staffMember.findMany({
+                where: { email: data.user.email! }
             })
+
+            if (existingStaff.length > 0) {
+                // Link their real Supabase userId to all their staff profiles (multi-gym support)
+                await prisma.staffMember.updateMany({
+                    where: { email: data.user.email! },
+                    data: { userId: data.user.id, isActive: true }
+                })
+            } else {
+                // Create a default Gym Profile for the new Owner user
+                await prisma.gymProfile.create({
+                    data: {
+                        name: process.env.NEXT_PUBLIC_GYM_NAME || "My Gym",
+                        email: data.user.email!,
+                        phone: "0000000000", // Placeholder, user updates in settings
+                        userId: data.user.id,
+                    }
+                })
+            }
         } catch (dbError) {
-            console.error('Error creating gym profile:', dbError)
+            console.error('Error creating gym profile or linking staff:', dbError)
         }
     }
 

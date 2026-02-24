@@ -36,6 +36,16 @@ export const templates = {
     invoiceShare: (name: string, gymName: string, amount: number, url: string) => {
         const formattedAmount = formatCurrency(amount)
         return `Hello ${name}! 👋\n\nThank you for your payment of ${formattedAmount} to ${gymName}.\n\nView your official invoice here:\n${url}\n\nThank you for choosing us! 💪`
+    },
+    birthdayWish: (name: string, gymName: string) => {
+        return `🎂 Happy Birthday, ${name}! The entire team at ${gymName} wishes you a wonderful year ahead. Keep crushing your fitness goals! 💪🎉`
+    },
+    paymentOverdue: (name: string, amount: number, gymName: string) => {
+        const formattedAmount = formatCurrency(amount)
+        return `Hello ${name}, a gentle reminder that a payment of ${formattedAmount} is overdue for your membership at ${gymName}. Please clear it at your earliest convenience to avoid any interruption. Thank you! 🙏`
+    },
+    inactivityNudge: (name: string, daysSinceVisit: number, gymName: string) => {
+        return `Hey ${name}! 👋 We miss you at ${gymName}! It's been ${daysSinceVisit} days since your last visit. Come back and keep your fitness streak alive — your goals are waiting! 💪`
     }
 }
 

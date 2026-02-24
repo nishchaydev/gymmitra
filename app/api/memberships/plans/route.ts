@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 
 const planSchema = z.object({
@@ -13,10 +13,8 @@ const planSchema = z.object({
 })
 
 async function getAuthenticatedGym() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
-    return await prisma.gymProfile.findUnique({ where: { userId: user.id } })
+    const auth = await getAuthGym()
+    return auth ? auth.gym : null
 }
 
 export async function GET(request: NextRequest) {

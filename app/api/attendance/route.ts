@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 import { startOfDay, endOfDay } from 'date-fns'
 
@@ -38,23 +38,16 @@ async function checkAttendanceRateLimit(userId: string, limit: number = 100) {
 export async function POST(request: NextRequest) {
     try {
         const now = new Date() // Unified timestamp for consistency
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const rateLimitResponse = await checkAttendanceRateLimit(user.id)
+        const rateLimitResponse = await checkAttendanceRateLimit(auth.userId)
         if (rateLimitResponse) return rateLimitResponse
 
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const body = await request.json()
         const { memberId } = checkInSchema.parse(body)
@@ -113,23 +106,16 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = await getAuthGym()
 
-        if (!user) {
+        if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const rateLimitResponse = await checkAttendanceRateLimit(user.id)
+        const rateLimitResponse = await checkAttendanceRateLimit(auth.userId)
         if (rateLimitResponse) return rateLimitResponse
 
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) {
-            return NextResponse.json({ error: 'Gym profile not found' }, { status: 404 })
-        }
+        const gym = auth.gym
 
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')

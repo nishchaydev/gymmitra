@@ -65,10 +65,20 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Gym Mitra',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from "@/components/Navbar"
+import { PwaSyncProvider } from "@/components/PwaSyncProvider"
 
 export default function RootLayout({
   children,
@@ -85,6 +95,7 @@ export default function RootLayout({
         <main className="flex-1 bg-gray-50/50">
           {children}
         </main>
+        <PwaSyncProvider />
         <Toaster />
         {gaId && <GoogleAnalytics gaId={gaId} />}
         <Analytics />

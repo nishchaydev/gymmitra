@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { Loader2, Save, Building2 } from "lucide-react"
+import { Loader2, Save, Building2, Users } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { StaffManagement } from "@/components/settings/StaffManagement"
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -31,6 +32,7 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>
 
 export default function SettingsPage() {
+    const [activeTab, setActiveTab] = useState('profile')
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
@@ -112,48 +114,88 @@ export default function SettingsPage() {
             <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
                 <aside className="-mx-4 lg:w-1/5">
                     <nav className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
-                        <Button variant="secondary" className="justify-start">
+                        <Button
+                            variant={activeTab === 'profile' ? "secondary" : "ghost"}
+                            className="justify-start"
+                            onClick={() => setActiveTab('profile')}
+                        >
                             <Building2 className="mr-2 h-4 w-4" />
-                            Profile
+                            Gym Profile
+                        </Button>
+                        <Button
+                            variant={activeTab === 'staff' ? "secondary" : "ghost"}
+                            className="justify-start"
+                            onClick={() => setActiveTab('staff')}
+                        >
+                            <Users className="mr-2 h-4 w-4" />
+                            Staff Management
                         </Button>
                     </nav>
                 </aside>
                 <div className="flex-1 lg:max-w-2xl">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Gym Profile</CardTitle>
-                            <CardDescription>
-                                This information will be displayed on invoices and communications.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Gym Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Gym Mitra" {...field} />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    This is your public display name.
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-2 gap-4">
+                    {activeTab === 'profile' ? (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Gym Profile</CardTitle>
+                                <CardDescription>
+                                    This information will be displayed on invoices and communications.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                                         <FormField
                                             control={form.control}
-                                            name="email"
+                                            name="name"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Email</FormLabel>
+                                                    <FormLabel>Gym Name</FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="admin@example.com" {...field} />
+                                                        <Input placeholder="Gym Mitra" {...field} />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        This is your public display name.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="email"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Email</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="admin@example.com" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="phone"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Phone</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="+91 98765 43210" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <FormField
+                                            control={form.control}
+                                            name="address"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Address</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="123 Main St, City, State" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -161,52 +203,30 @@ export default function SettingsPage() {
                                         />
                                         <FormField
                                             control={form.control}
-                                            name="phone"
+                                            name="gst"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Phone</FormLabel>
+                                                    <FormLabel>GST Number (Optional)</FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="+91 98765 43210" {...field} />
+                                                        <Input placeholder="22AAAAA0000A1Z5" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
-                                    </div>
-                                    <FormField
-                                        control={form.control}
-                                        name="address"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Address</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="123 Main St, City, State" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="gst"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>GST Number (Optional)</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="22AAAAA0000A1Z5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={saving}>
-                                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        <Save className="mr-2 h-4 w-4" /> Save Changes
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
+                                        <Button type="submit" disabled={saving}>
+                                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            <Save className="mr-2 h-4 w-4" /> Save Changes
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
+                            <StaffManagement />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

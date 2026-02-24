@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { CheckCircle2, Loader2, UserCheck } from "lucide-react"
+import { CheckCircle2, Loader2, UserCheck, WifiOff } from "lucide-react"
+import { saveOfflineAttendance } from "@/lib/offlineSync"
 
 export default function KioskPage() {
     const [memberId, setMemberId] = useState("")
@@ -34,7 +35,30 @@ export default function KioskPage() {
             setMemberId("")
             setShowScanner(false)
             setTimeout(() => setLastCheckIn(null), 5000)
-        } catch (error: unknown) {
+        } catch (error: any) {
+            // Handle Offline fallback
+            if (typeof window !== 'undefined' && !navigator.onLine) {
+                try {
+                    await saveOfflineAttendance({
+                        memberId: id,
+                        date: new Date(),
+                        checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+                    })
+                    toast.info("Offline: Check-in saved locally. Will sync when online.", {
+                        icon: <WifiOff className="h-4 w-4" />,
+                        duration: 6000
+                    })
+                    setLastCheckIn({
+                        name: "Member (Offline)",
+                        time: new Date().toLocaleTimeString()
+                    })
+                    setMemberId("")
+                    setShowScanner(false)
+                } catch (saveError) {
+                    toast.error("Failed to save even offline. System error.")
+                }
+                return;
+            }
             toast.error(error instanceof Error ? error.message : "An unexpected error occurred")
         } finally {
             setLoading(false)
