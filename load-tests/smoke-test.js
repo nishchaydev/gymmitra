@@ -15,19 +15,27 @@ export const options = {
     },
 };
 
+export function setup() {
+    if (!TEST_EMAIL || !TEST_PASSWORD) {
+        throw new Error('❌ LOAD_TEST_EMAIL or LOAD_TEST_PASSWORD env vars are missing!');
+    }
+}
+
 export default function () {
     const loginRes = http.post(
         `${BASE_URL}/api/auth/signin`,
         JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD }),
         {
             headers: { 'Content-Type': 'application/json' },
-            redirects: 5,
+            redirects: 0, // Disable redirects to verify 302/303 from Supabase Auth
         }
     );
 
     check(loginRes, {
         'auth: status 200, 302, or 303': (r) =>
             r.status === 200 || r.status === 302 || r.status === 303,
+        'auth: has session cookie/token': (r) =>
+            r.headers['Set-Cookie'] !== undefined || r.json('access_token') !== undefined,
     });
 
     sleep(1);

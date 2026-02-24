@@ -21,17 +21,16 @@ export async function GET(request: NextRequest) {
         const todayEnd = endOfDay(today)
 
         const [birthdays, overdueInvoices, inactiveMembers, expiringSubs] = await Promise.all([
-            // 1. Birthdays Today
+            // 1. Birthdays Today (Only members with DOB)
             prisma.member.findMany({
                 where: {
                     gymId: gym.id,
-                    status: 'ACTIVE'
-                    // Prisma doesn't support raw 'extract(day from dateOfBirth)' natively in where clauses
-                    // We fetch all active members and filter in memory since gym rosters are typically < 1000
+                    status: 'ACTIVE',
+                    dateOfBirth: { not: null as any }
                 },
                 select: { id: true, name: true, phone: true, dateOfBirth: true }
             }).then(members => members.filter(m => {
-                const dob = new Date(m.dateOfBirth)
+                const dob = new Date(m.dateOfBirth!)
                 return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
             })),
 
@@ -73,7 +72,7 @@ export async function GET(request: NextRequest) {
                 where: {
                     gymId: gym.id,
                     status: 'ACTIVE',
-                    endDate: { gte: todayStart, lte: addDays(todayStart, 7) }
+                    endDate: { gte: todayStart, lte: addDays(todayEnd, 7) }
                 },
                 select: {
                     id: true,
@@ -98,7 +97,7 @@ export async function GET(request: NextRequest) {
                 memberId: m.id,
                 name: m.name,
                 message: templates.birthdayWish(m.name, gym.name),
-                link: getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym.name))
+                link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym.name)) : null
             })),
             overdue: overdueInvoices.map(inv => ({
                 type: 'OVERDUE',
@@ -106,7 +105,7 @@ export async function GET(request: NextRequest) {
                 name: inv.member?.name || 'Unknown',
                 amount: Number(inv.total),
                 message: templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym.name),
-                link: getWhatsAppLink(inv.member?.phone || '', templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym.name))
+                link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym.name)) : null
             })),
             inactive: filteredInactive.map(m => {
                 const lastAttendance = m.attendance[0]?.date
@@ -117,18 +116,19 @@ export async function GET(request: NextRequest) {
                     name: m.name,
                     daysInactive: daysSince,
                     message: templates.inactivityNudge(m.name, daysSince, gym.name),
-                    link: getWhatsAppLink(m.phone, templates.inactivityNudge(m.name, daysSince, gym.name))
+                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.name, daysSince, gym.name)) : null
                 }
             }),
             expiring: expiringSubs.map(sub => {
-                const daysLeft = Math.ceil((new Date(sub.endDate).getTime() - today.getTime()) / (1000 * 3600 * 24))
+                const diffTime = new Date(sub.endDate).getTime() - today.getTime();
+                const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
                 return {
                     type: 'EXPIRING',
                     subId: sub.id,
                     name: sub.member?.name || 'Unknown',
                     daysLeft,
                     message: templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym.name),
-                    link: getWhatsAppLink(sub.member?.phone || '', templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym.name))
+                    link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym.name)) : null
                 }
             })
         }

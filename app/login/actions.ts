@@ -53,15 +53,21 @@ export async function signup(formData: FormData) {
 
     if (data.user) {
         try {
-            // Check if they are pre-registered as Staff by an Owner
+            // Case-insensitive email lookup and restrict to profiles not yet linked
             const existingStaff = await prisma.staffMember.findMany({
-                where: { email: data.user.email! }
+                where: {
+                    email: { equals: data.user.email!, mode: 'insensitive' },
+                    userId: { equals: null as any }
+                }
             })
 
             if (existingStaff.length > 0) {
-                // Link their real Supabase userId to all their staff profiles (multi-gym support)
+                // Link their real Supabase userId to all their staff profiles
                 await prisma.staffMember.updateMany({
-                    where: { email: data.user.email! },
+                    where: {
+                        email: { equals: data.user.email!, mode: 'insensitive' },
+                        userId: { equals: null as any }
+                    },
                     data: { userId: data.user.id, isActive: true }
                 })
             } else {
@@ -70,13 +76,15 @@ export async function signup(formData: FormData) {
                     data: {
                         name: process.env.NEXT_PUBLIC_GYM_NAME || "My Gym",
                         email: data.user.email!,
-                        phone: "0000000000", // Placeholder, user updates in settings
+                        phone: "0000000000",
                         userId: data.user.id,
                     }
                 })
             }
-        } catch (dbError) {
+        } catch (dbError: any) {
             console.error('Error creating gym profile or linking staff:', dbError)
+            // Surface the error back to the UI
+            redirect(`/login?view=register&message=${encodeURIComponent("Database error during registration: " + (dbError.message || "Unknown error"))}`)
         }
     }
 

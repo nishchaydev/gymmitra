@@ -37,17 +37,21 @@ export default function KioskPage() {
             setTimeout(() => setLastCheckIn(null), 5000)
         } catch (error: any) {
             // Handle Offline fallback
-            if (typeof window !== 'undefined' && !navigator.onLine) {
+            if (typeof window !== 'undefined' && (!navigator.onLine || error.message?.includes('Failed to fetch'))) {
                 try {
-                    await saveOfflineAttendance({
+                    const saved = await saveOfflineAttendance({
                         memberId: id,
                         date: new Date(),
                         checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
                     })
-                    toast.info("Offline: Check-in saved locally. Will sync when online.", {
-                        icon: <WifiOff className="h-4 w-4" />,
-                        duration: 6000
-                    })
+                    if (saved) {
+                        toast.info("Offline: Check-in saved locally.", {
+                            icon: <WifiOff className="h-4 w-4" />,
+                            duration: 6000
+                        })
+                    } else {
+                        toast.warning("Check-in already saved for today.")
+                    }
                     setLastCheckIn({
                         name: "Member (Offline)",
                         time: new Date().toLocaleTimeString()
@@ -65,12 +69,34 @@ export default function KioskPage() {
         }
     }
 
+    // Auto-sync indicator
+    const [isOnline, setIsOnline] = useState(true)
+    useState(() => {
+        if (typeof window !== 'undefined') {
+            const handleOnline = () => { setIsOnline(true); import('@/lib/offlineSync').then(m => m.syncOfflineAttendance()); }
+            const handleOffline = () => { setIsOnline(false); }
+            window.addEventListener('online', handleOnline)
+            window.addEventListener('offline', handleOffline)
+            return () => {
+                window.removeEventListener('online', handleOnline)
+                window.removeEventListener('offline', handleOffline)
+            }
+        }
+    })
+
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
             <div className="w-full max-w-md space-y-8">
                 <div className="text-center space-y-2">
                     <h1 className="text-4xl font-bold text-white tracking-tight">Gym Mitra</h1>
-                    <p className="text-slate-400">Self Check-In Kiosk</p>
+                    <div className="flex items-center justify-center gap-2">
+                        <p className="text-slate-400">Self Check-In Kiosk</p>
+                        {!isOnline && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                <WifiOff className="h-2 w-2" /> Offline Mode
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <Card className="border-0 shadow-2xl overflow-hidden">

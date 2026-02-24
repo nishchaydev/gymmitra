@@ -302,7 +302,11 @@ function ExpiringMembershipsReport() {
                                             Expires: {new Date(sub.endDate).toLocaleDateString()}
                                         </div>
                                         <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600 bg-yellow-50">
-                                            {Math.ceil((new Date(sub.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
+                                            {(() => {
+                                                const diff = new Date(sub.endDate).getTime() - new Date().getTime();
+                                                const days = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+                                                return `${days} days left`;
+                                            })()}
                                         </Badge>
                                     </div>
                                     <Button
@@ -310,7 +314,8 @@ function ExpiringMembershipsReport() {
                                         variant="ghost"
                                         className="text-brand-primary hover:text-emerald-700 hover:bg-emerald-50"
                                         onClick={() => {
-                                            const daysLeft = Math.ceil((new Date(sub.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                                            const diff = new Date(sub.endDate).getTime() - new Date().getTime();
+                                            const daysLeft = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
                                             const link = getWhatsAppLink(
                                                 sub.member.phone,
                                                 templates.renewalReminder(sub.member.name, daysLeft, "this gym") // The API pre-generates the real link. We should rely on that instead, but this component is currently fetching its own data and manually constructing the link.

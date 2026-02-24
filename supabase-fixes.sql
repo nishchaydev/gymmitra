@@ -1,3 +1,15 @@
+-- Enable RLS for all tables
+ALTER TABLE "GymProfile" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Member" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "MembershipPlan" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Product" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Sale" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Invoice" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "InvoiceItem" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Attendance" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "MemberSubscription" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Notification" ENABLE ROW LEVEL SECURITY;
+
 -- Fix Auth RLS Initialization Plan
 -- This replaces auth.<function>() with (select auth.<function>()) for better query performance
 -- Added ::text cast because Prisma uses text (String) for ids while auth.uid() returns uuid

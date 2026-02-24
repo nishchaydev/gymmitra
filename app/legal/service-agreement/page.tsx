@@ -36,8 +36,8 @@ export default function ServiceAgreementPage() {
                             This Master Subscription Agreement ("Agreement") is entered into by and between eMitra Technologies ("Provider") and the entity or person placing an order for or accessing the Service ("Customer" or "Gym Owner").
                         </p>
 
-                        <section>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">1. Use of the Service</h3>
+                        <section aria-labelledby="section-usage">
+                            <h2 id="section-usage" className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">1. Use of the Service</h2>
                             <p>
                                 <strong>1.1 Provision of Service:</strong> Provider will make the Gym Mitra ERP Software-as-a-Service (SaaS) platform available to the Customer pursuant to this Agreement and the applicable Subscription Plan.
                             </p>
@@ -46,8 +46,8 @@ export default function ServiceAgreementPage() {
                             </p>
                         </section>
 
-                        <section>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">2. Multi-Tenant Data Security & Privacy</h3>
+                        <section aria-labelledby="section-security">
+                            <h2 id="section-security" className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">2. Multi-Tenant Data Security & Privacy</h2>
                             <p>
                                 <strong>2.1 Data Isolation:</strong> The Service employs strict Row-Level Security (RLS) to ensure that Customer Data (including member details, financial records, and staff information) is strictly isolated and inaccessible to other tenants on the platform.
                             </p>
@@ -56,15 +56,15 @@ export default function ServiceAgreementPage() {
                             </p>
                         </section>
 
-                        <section>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">3. Fees and Payment</h3>
+                        <section aria-labelledby="section-fees">
+                            <h2 id="section-fees" className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">3. Fees and Payment</h2>
                             <p>
                                 Customer will pay all fees specified in the Subscription Plan. Except as otherwise specified herein, (i) fees are based on the Service purchased and not actual usage, and (ii) payment obligations are non-cancelable and fees paid are non-refundable.
                             </p>
                         </section>
 
-                        <section>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">4. Term and Termination</h3>
+                        <section aria-labelledby="section-term">
+                            <h2 id="section-term" className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">4. Term and Termination</h2>
                             <p>
                                 This Agreement commences on the date Customer first accepts it and continues until all subscriptions hereunder have expired or have been terminated. Provider may terminate this Agreement for cause upon 30 days written notice to the Customer of a material breach if such breach remains uncured at the expiration of such period.
                             </p>

@@ -7,10 +7,18 @@ const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 3
 
 
 export function Overview({ data = SHOWCASE_STATS.overviewData }: { data?: any[] }) {
+    if (!data || data.length === 0) {
+        return (
+            <div className="h-[300px] w-full flex items-center justify-center bg-slate-50/50 rounded-xl border border-dashed">
+                <p className="text-sm text-muted-foreground">No revenue data available for the selected period.</p>
+            </div>
+        )
+    }
+
     return (
         <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+                <BarChart data={Array.isArray(data) ? data : []}>
                     <XAxis
                         dataKey="name"
                         stroke="var(--muted-foreground)"

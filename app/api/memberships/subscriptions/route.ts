@@ -53,22 +53,23 @@ export async function POST(request: NextRequest) {
         const endDate = addDays(startDate, plan.duration)
         const price = validatedData.price ?? Number(plan.price)
 
-        // Block duplicate active subscription for the SAME plan (allow cross-plan upgrades)
+        // Block duplicate active subscription (allow upgrades via force: true)
         if (!validatedData.force) {
+            const isRenewal = validatedData.startDate > new Date()
             const duplicateActive = await prisma.memberSubscription.findFirst({
                 where: {
                     memberId: validatedData.memberId,
-                    planId: validatedData.planId,
                     gymId: gym.id,
                     status: SubscriptionStatus.ACTIVE,
-                    endDate: { gte: new Date() }
+                    endDate: { gte: validatedData.startDate }
                 }
             })
+
             if (duplicateActive) {
                 return NextResponse.json(
                     {
-                        error: 'Member already has an active subscription for this plan.',
-                        hint: 'To override (e.g. extend), resend with force: true.',
+                        error: 'Member already has an overlapping active subscription.',
+                        hint: 'To override (e.g. extension/manual upgrade), resend with force: true.',
                         existingEndDate: duplicateActive.endDate
                     },
                     { status: 409 }

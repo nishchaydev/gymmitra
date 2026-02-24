@@ -98,7 +98,12 @@ export async function POST(request: NextRequest) {
 
         const gym = auth.gym
 
-        const body = await request.json()
+        let body;
+        try {
+            body = await request.json()
+        } catch (e) {
+            return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 })
+        }
         const validatedData = invoiceCreateSchema.parse(body)
 
         // Calculate totals

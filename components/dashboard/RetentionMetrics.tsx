@@ -172,7 +172,7 @@ export function RetentionMetrics({ isDemo = false }: { isDemo?: boolean }) {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-slate-500 text-sm">
-                                                    {member.lastVisit ? member.lastVisit : 'Never'}
+                                                    {member.lastVisit ? new Date(member.lastVisit).toLocaleDateString() : 'Never'}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <a href={link} target="_blank" rel="noopener noreferrer">

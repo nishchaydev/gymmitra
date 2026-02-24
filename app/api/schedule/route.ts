@@ -6,9 +6,12 @@ import { getAuthGym } from '@/lib/auth'
 const scheduleSchema = z.object({
     trainerId: z.string().min(1, "Trainer is required"),
     memberId: z.string().min(1, "Member is required"),
-    startTime: z.string().transform(str => new Date(str)),
-    endTime: z.string().transform(str => new Date(str)),
+    startTime: z.coerce.date(),
+    endTime: z.coerce.date(),
     notes: z.string().optional()
+}).refine(data => data.endTime > data.startTime, {
+    message: "End time must be after start time",
+    path: ["endTime"]
 })
 
 export async function GET(request: NextRequest) {
@@ -19,8 +22,6 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const start = searchParams.get('start')
         const end = searchParams.get('end')
-
-        // If trainerId is provided, filter by it (useful for trainer view)
         const trainerId = searchParams.get('trainerId')
 
         const whereClause: any = { gymId: auth.gym.id }
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(sessions)
     } catch (error) {
-        console.error('Failed to fetch schedule:', error)
+        console.error('[Schedule GET] Error:', error)
         return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 })
     }
 }
@@ -55,28 +56,43 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const body = await request.json()
-        const data = scheduleSchema.parse(body)
+        let body;
+        try {
+            body = await request.json()
+        } catch (e) {
+            return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 })
+        }
 
-        // Conflict validation: Double booking
-        // Check if the trainer already has a session overlapping this time
+        const result = scheduleSchema.safeParse(body)
+        if (!result.success) {
+            return NextResponse.json({ error: 'Validation failed', details: result.error.format() }, { status: 400 })
+        }
+        const data = result.data
+
+        // 1. Ownership & Existence Verification
+        const [trainer, member] = await Promise.all([
+            prisma.staffMember.findFirst({ where: { id: data.trainerId, gymId: auth.gym.id, role: 'TRAINER' } }),
+            prisma.member.findFirst({ where: { id: data.memberId, gymId: auth.gym.id } })
+        ])
+
+        if (!trainer) return NextResponse.json({ error: 'Trainer not found or unauthorized' }, { status: 404 })
+        if (!member) return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
+
+        // 2. Conflict validation: Double booking
         const conflictingSession = await prisma.pTSession.findFirst({
             where: {
                 gymId: auth.gym.id,
-                trainerId: data.trainerId,
-                status: { notIn: ['CANCELLED'] }, // Only check active/scheduled ones
+                status: { notIn: ['CANCELLED'] },
                 OR: [
-                    {
-                        // New session starts within an existing session
-                        startTime: { lt: data.endTime },
-                        endTime: { gt: data.startTime }
-                    }
+                    { trainerId: data.trainerId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } },
+                    { memberId: data.memberId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } }
                 ]
             }
         })
 
         if (conflictingSession) {
-            return NextResponse.json({ error: 'Trainer is already booked during this time' }, { status: 409 })
+            const victim = conflictingSession.trainerId === data.trainerId ? 'Trainer' : 'Member'
+            return NextResponse.json({ error: `${victim} already has a session overlapping this time` }, { status: 409 })
         }
 
         const session = await prisma.pTSession.create({
@@ -89,10 +105,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(session, { status: 201 })
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
-        }
-        console.error('Failed to schedule session:', error)
+        console.error('[Schedule POST] Error:', error)
         return NextResponse.json({ error: 'Failed to schedule session' }, { status: 500 })
     }
 }

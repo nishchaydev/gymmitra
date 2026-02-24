@@ -222,6 +222,7 @@ model Attendance {
   memberId     String
   gymId        String // Direct gymId for multi-tenant isolation
   date         DateTime   @default(now())
+  checkInDate  String     @default("")
   checkInTime  DateTime   @default(now())
   checkOutTime DateTime?
   createdAt    DateTime   @default(now())
@@ -229,7 +230,7 @@ model Attendance {
   member       Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   gym          GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
-  @@unique([memberId, date])
+  @@unique([memberId, checkInDate])
   @@index([gymId])
   @@index([memberId])
   @@index([date])
@@ -313,6 +314,7 @@ model StaffMember {
   ptSessions PTSession[]
 
   @@unique([userId, gymId]) // A user can only have one staff profile per gym
+  @@unique([email, gymId])  // Prevent duplicate emails within the same gym
   @@index([gymId])
   @@index([email])
 }
@@ -329,11 +331,12 @@ model PTSession {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  trainer StaffMember @relation(fields: [trainerId], references: [id])
-  member  Member      @relation(fields: [memberId], references: [id])
+  trainer StaffMember @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  member  Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
   gym     GymProfile  @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@unique([trainerId, startTime])
   @@index([gymId])
   @@index([memberId])
+  @@index([trainerId])
 }

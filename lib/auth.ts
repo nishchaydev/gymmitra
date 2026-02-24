@@ -15,9 +15,16 @@ export type AuthContext = {
  */
 export async function getAuthGym(): Promise<AuthContext | null> {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data, error } = await supabase.auth.getUser()
 
-    if (!user) return null
+    if (error || !data?.user) {
+        if (error && error.status !== 401) {
+            console.error("Auth context error:", error.message)
+        }
+        return null
+    }
+
+    const { user } = data
 
     // 1. Check if user is an Owner (Creator of the Gym)
     const gymAsOwner = await prisma.gymProfile.findUnique({

@@ -125,6 +125,9 @@
   --midnight-navy: #1E3A8A;
   --ocean-teal: #0D9488;
   --drift-silver: #E2E8F0;
+  --brand-primary: var(--ion-blue);
+  --brand-secondary: var(--midnight-navy);
+  --brand-accent: var(--ocean-teal);
 }
 
 

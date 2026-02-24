@@ -1,7 +1,13 @@
-const { prisma } = require('@prisma/client')
+const { PrismaClient } = require('@prisma/client')
 const { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMonthOfInterval, addDays } = require('date-fns')
 
-const testPrisma = new (require('@prisma/client').PrismaClient)()
+const testPrisma = new PrismaClient()
+
+// Production Guard
+if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PROD_TEST) {
+    console.error("❌ ERROR: Running tests against production is forbidden. Set ALLOW_PROD_TEST=true to override.");
+    process.exit(1);
+}
 
 async function runTests() {
     try {
@@ -63,7 +69,10 @@ async function runTests() {
             ORDER BY visit_count ASC, last_visit ASC NULLS FIRST
             LIMIT 5
         `
-        console.log(frequencyResult)
+        console.log(frequencyResult.map(r => ({
+            ...r,
+            phone: r.phone ? r.phone.replace(/(\d{2})(\d+)(\d{4})/, "$1******$3") : null
+        })))
 
         console.log("\n--- Testing Reminders (Expiring) ---")
         const todayStart = startOfDay(new Date())

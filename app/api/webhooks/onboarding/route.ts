@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
 
-        console.log(`Sending onboarding email to ${ownerEmail}...`);
+        const maskedEmail = ownerEmail.replace(/(.{2})(.*)(@.*)/, "$1***$3");
+        console.log(`Sending onboarding email to ${maskedEmail}...`);
 
         // 3. Send Email using Resend
         const { data, error } = await resend.emails.send({

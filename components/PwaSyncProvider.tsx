@@ -1,24 +1,29 @@
 "use client"
 
+import * as React from 'react'
 import { useEffect } from 'react'
 import { getPendingAttendance, removeSyncedAttendance } from '@/lib/offlineSync'
 import { toast } from 'sonner'
 
 export function PwaSyncProvider() {
+    const syncingRef = React.useRef(false);
+
     useEffect(() => {
         // Only run on client
         if (typeof window === 'undefined') return;
 
         const handleOnline = async () => {
+            if (syncingRef.current) return;
+
             // We are back online. Let's try to sync any pending stored attendances.
             const pending = await getPendingAttendance();
 
             if (pending.length === 0) return;
 
+            syncingRef.current = true;
             toast.info(`Syncing ${pending.length} offline check-ins...`, { id: 'sync-toast' });
 
             try {
-                // We'll batch them in a single endpoint or map over them
                 const response = await fetch('/api/attendance/sync-offline', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -27,7 +32,7 @@ export function PwaSyncProvider() {
 
                 if (response.ok) {
                     const data = await response.json()
-                    const syncedIds = data.syncedIds || pending.map(p => p.id)
+                    const syncedIds = data.syncedIds || pending.map((p: any) => p.id)
                     await removeSyncedAttendance(syncedIds)
                     toast.success("Offline data synced successfully!", { id: 'sync-toast' })
                 } else {
@@ -36,6 +41,8 @@ export function PwaSyncProvider() {
             } catch (error) {
                 console.error("Sync error:", error)
                 toast.error("Failed to connect for sync.", { id: 'sync-toast' })
+            } finally {
+                syncingRef.current = false;
             }
         }
 

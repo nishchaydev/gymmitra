@@ -22,6 +22,16 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
     Table,
     TableBody,
     TableCell,
@@ -58,6 +68,8 @@ export function StaffManagement() {
     const [loading, setLoading] = useState(true)
     const [isInviteOpen, setIsInviteOpen] = useState(false)
     const [inviting, setInviting] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [idToDelete, setIdToDelete] = useState<string | null>(null)
 
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
@@ -115,8 +127,7 @@ export function StaffManagement() {
     }
 
     const deleteStaff = async (id: string) => {
-        if (!confirm("Are you sure you want to remove this staff member? They will lose access instantly.")) return
-
+        setDeletingId(id)
         try {
             const response = await fetch(`/api/staff/${id}`, {
                 method: "DELETE",
@@ -131,6 +142,9 @@ export function StaffManagement() {
             fetchStaff()
         } catch (error: any) {
             toast.error(error.message)
+        } finally {
+            setDeletingId(null)
+            setIdToDelete(null)
         }
     }
 
@@ -283,8 +297,19 @@ export function StaffManagement() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => deleteStaff(member.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                                <Trash2 className="h-4 w-4" />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setIdToDelete(member.id)}
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                disabled={deletingId === member.id}
+                                                aria-label={`Remove ${member.name}`}
+                                            >
+                                                {deletingId === member.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -294,6 +319,34 @@ export function StaffManagement() {
                     </Table>
                 </div>
             </div>
+
+            <AlertDialog open={!!idToDelete} onOpenChange={(open: boolean) => !open && setIdToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove the staff member from your gym. They will lose access to
+                            the dashboard and all management features immediately.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e: React.MouseEvent) => {
+                                e.preventDefault()
+                                if (idToDelete) deleteStaff(idToDelete)
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={!!deletingId}
+                        >
+                            {deletingId ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : null}
+                            Remove Staff
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

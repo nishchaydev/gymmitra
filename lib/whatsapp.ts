@@ -57,11 +57,11 @@ export const getInvoiceWhatsAppLink = (
     shareToken: string
 ) => {
     // Normalize baseUrl: trim trailing slash to prevent double-slashes
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://gymmitra.com'
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
     const baseUrl = siteUrl.replace(/\/$/, '')
 
-    if (!baseUrl || baseUrl === 'https://gymmitra.com' && process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ WhatsApp Link: Base URL not configured properly. Using fallback.', { siteUrl })
+    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_APP_URL) {
+        console.warn('⚠️ WhatsApp Link: NEXT_PUBLIC_APP_URL not set, using fallback.', { siteUrl })
     }
 
     const url = `${baseUrl}/invoice/${shareToken}`

@@ -90,7 +90,14 @@ async function runRedTeamAudit() {
             });
 
             // Simulate race condition: 2 simultaneous Promises trying to book the same slot
-            const targetTime = new Date('2026-01-01T10:00:00Z');
+            // Use a dynamic future date to avoid stale test data
+            const targetTime = new Date();
+            targetTime.setFullYear(targetTime.getFullYear() + 1);
+            targetTime.setMonth(0, 1); // Jan 1st
+            targetTime.setHours(10, 0, 0, 0);
+
+            const endTime = new Date(targetTime);
+            endTime.setHours(11, 0, 0, 0);
 
             let successCount = 0;
             let errorCount = 0;
@@ -101,13 +108,19 @@ async function runRedTeamAudit() {
                     trainerId: staff.id,
                     memberId: member.id,
                     startTime: targetTime,
-                    endTime: new Date('2026-01-01T11:00:00Z'),
+                    endTime: endTime,
                     status: "SCHEDULED"
                 }
             }).then(() => { successCount++; })
-                .catch(() => { errorCount++; });
+                .catch((e) => {
+                    errorCount++;
+                    // Log error only if it's NOT a unique constraint violation (which we expect)
+                    if (e.code !== 'P2002') {
+                        console.error('Unexpected booking error:', e.message);
+                    }
+                });
 
-            // Fire 5 exact same booking requests parallelly
+            // Fire multiple parallel booking requests
             await Promise.all([
                 makeBooking(),
                 makeBooking(),
@@ -116,14 +129,20 @@ async function runRedTeamAudit() {
                 makeBooking()
             ]);
 
-            if (assert(successCount === 1, `Race condition failed! ${successCount} duplicate slots were booked simultaneously.`)) {
-                console.log('✅ PASS: Database compound constraints prevented simultaneous double-booking.');
+            if (assert(successCount === 1, `Race condition failed! ${successCount} duplicate slots were booked.`)) {
+                console.log('✅ PASS: Database P2002 prevented double-booking.');
             }
 
-            // Cleanup
-            await prisma.pTSession.deleteMany({ where: { trainerId: staff.id } });
-            await prisma.member.delete({ where: { id: member.id } });
-            await prisma.staffMember.delete({ where: { id: staff.id } });
+            // Cleanup in a defensive block
+            try {
+                await prisma.pTSession.deleteMany({
+                    where: { trainerId: staff.id }
+                });
+                await prisma.member.delete({ where: { id: member.id } });
+                await prisma.staffMember.delete({ where: { id: staff.id } });
+            } catch (cleanupError) {
+                console.warn('⚠️ Cleanup warning:', cleanupError.message);
+            }
         }
 
 

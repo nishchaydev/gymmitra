@@ -7,10 +7,10 @@ const syncSchema = z.object({
     records: z.array(z.object({
         id: z.string(), // The temp ID
         memberId: z.string(),
-        date: z.string().transform(str => new Date(str)),
+        date: z.coerce.date(),
         checkInTime: z.string(),
         timestamp: z.number()
-    }))
+    })).max(1000)
 })
 
 export async function POST(request: NextRequest) {
@@ -21,51 +21,63 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { records } = syncSchema.parse(body)
+        const result = syncSchema.safeParse(body)
 
-        if (!records || records.length === 0) {
+        if (!result.success) {
+            return NextResponse.json({ error: 'Invalid payload', details: result.error.format() }, { status: 400 })
+        }
+
+        const { records } = result.data
+
+        if (records.length === 0) {
             return NextResponse.json({ syncedIds: [] })
         }
 
+        // 1. Batch Member Lookup (Fix N+1)
+        const memberIds = [...new Set(records.map(r => r.memberId))]
+        const members = await prisma.member.findMany({
+            where: {
+                id: { in: memberIds },
+                gymId: auth.gym.id
+            },
+            select: { id: true }
+        })
+        const validMemberIds = new Set(members.map(m => m.id))
+
         const syncedIds: string[] = []
 
-        // Process sequentially to handle unique constraints properly
+        // 2. Batch Processing for Data Integrity
         for (const record of records) {
+            if (!validMemberIds.has(record.memberId)) continue;
+
             try {
-                // Ensure member belongs to this gym
-                const member = await prisma.member.findFirst({
-                    where: { id: record.memberId, gymId: auth.gym.id }
-                })
+                // Normalize date for uniqueness (YYYY-MM-DD)
+                const checkInDateNormalized = record.date.toISOString().split('T')[0]
 
-                if (!member) continue; // Skip invalid members gracefully
-
-                // Strip time from date to check uniqueness safely
-                const targetDate = new Date(record.date);
-                targetDate.setHours(0, 0, 0, 0);
-
-                // Upsert to handle multiple offline attempts creating duplicate key errors
+                // Upsert to handle offline retries
                 await prisma.attendance.upsert({
                     where: {
-                        memberId_date: {
+                        memberId_checkInDate: {
                             memberId: record.memberId,
-                            date: targetDate,
+                            checkInDate: checkInDateNormalized,
                         }
                     },
-                    update: { // It was already synced earlier possibly, just update time
-                        checkInTime: record.checkInTime
+                    update: {
+                        checkInTime: record.checkInTime,
+                        updatedAt: new Date()
                     },
                     create: {
                         memberId: record.memberId,
                         gymId: auth.gym.id,
-                        date: targetDate,
-                        checkInTime: record.checkInTime
+                        checkInDate: checkInDateNormalized,
+                        checkInTime: record.checkInTime,
+                        date: record.date
                     }
                 })
 
                 syncedIds.push(record.id)
             } catch (err) {
-                console.error(`Failed to sync individual record ${record.id}:`, err)
-                // We continue so other valid records still sync
+                console.error(`[Sync] Failed record ${record.id}:`, err instanceof Error ? err.message : String(err))
             }
         }
 
