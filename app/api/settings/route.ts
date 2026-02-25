@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -20,6 +21,11 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        try { await apiLimiter.check(50, `${auth.userId}:settings:get`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
+
         return NextResponse.json(auth.gym)
     } catch (error) {
         console.error('Failed to fetch settings:', error)
@@ -33,6 +39,11 @@ export async function PUT(request: NextRequest) {
 
         if (!auth || auth.role !== 'OWNER') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        try { await apiLimiter.check(50, `${auth.userId}:settings:put`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
         }
 
         let body;

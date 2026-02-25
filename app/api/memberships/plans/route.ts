@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const planSchema = z.object({
     name: z.string().min(2),
@@ -21,6 +22,11 @@ export async function GET(request: NextRequest) {
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(100, `${gym.id}:plans:get`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const plans = await prisma.membershipPlan.findMany({
             where: {
@@ -42,6 +48,11 @@ export async function POST(request: NextRequest) {
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(50, `${gym.id}:plans:post`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         let body;
         try {

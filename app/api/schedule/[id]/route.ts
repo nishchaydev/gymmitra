@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { SessionStatus } from '@prisma/client'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const updateSchema = z.object({
     status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
@@ -21,48 +22,63 @@ export async function PATCH(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        try { await apiLimiter.check(50, `${auth.userId}:schedule:patch`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
+
         const params = await props.params;
         const body = await request.json()
         const data = updateSchema.parse(body)
 
-        // Ensure session belongs to gym
-        const session = await prisma.pTSession.findFirst({
-            where: { id: params.id, gymId: auth.gym.id }
-        })
-
-        if (!session) {
-            return NextResponse.json({ error: 'Session not found' }, { status: 404 })
-        }
-
-        // Conflict validation if times are changing
-        if (data.startTime && data.endTime) {
-            const conflictingSession = await prisma.pTSession.findFirst({
-                where: {
-                    gymId: auth.gym.id,
-                    trainerId: session.trainerId,
-                    id: { not: session.id }, // Exclude current session
-                    status: { notIn: ['CANCELLED'] },
-                    OR: [
-                        {
-                            startTime: { lt: data.endTime },
-                            endTime: { gt: data.startTime }
-                        }
-                    ]
-                }
+        // Atomic transaction: ownership check + conflict validation + update
+        const updatedSession = await prisma.$transaction(async (tx) => {
+            const session = await tx.pTSession.findFirst({
+                where: { id: params.id, gymId: auth.gym.id }
             })
 
-            if (conflictingSession) {
-                return NextResponse.json({ error: 'Trainer is already booked during this new time' }, { status: 409 })
+            if (!session) {
+                throw new Error('SESSION_NOT_FOUND')
             }
-        }
 
-        const updatedSession = await prisma.pTSession.update({
-            where: { id: params.id },
-            data
+            // Conflict validation if times are changing
+            if (data.startTime && data.endTime) {
+                const conflictingSession = await tx.pTSession.findFirst({
+                    where: {
+                        gymId: auth.gym.id,
+                        trainerId: session.trainerId,
+                        id: { not: session.id },
+                        status: { notIn: ['CANCELLED'] },
+                        OR: [
+                            {
+                                startTime: { lt: data.endTime },
+                                endTime: { gt: data.startTime }
+                            }
+                        ]
+                    }
+                })
+
+                if (conflictingSession) {
+                    throw new Error('CONFLICT:Trainer is already booked during this new time')
+                }
+            }
+
+            return tx.pTSession.update({
+                where: { id: params.id },
+                data
+            })
         })
 
         return NextResponse.json(updatedSession)
     } catch (error) {
+        if (error instanceof Error) {
+            if (error.message === 'SESSION_NOT_FOUND') {
+                return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+            }
+            if (error.message.startsWith('CONFLICT:')) {
+                return NextResponse.json({ error: error.message.replace('CONFLICT:', '') }, { status: 409 })
+            }
+        }
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
         }
@@ -81,9 +97,13 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        try { await apiLimiter.check(50, `${auth.userId}:schedule:delete`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
+
         const params = await props.params;
 
-        // Ensure session belongs to gym
         const session = await prisma.pTSession.findFirst({
             where: { id: params.id, gymId: auth.gym.id }
         })

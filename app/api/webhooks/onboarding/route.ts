@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
     try {
+        // Rate limit by IP (public endpoint)
+        const ip = req.headers.get('x-forwarded-for') || 'anonymous'
+        try { await apiLimiter.check(10, `webhook:onboarding:${ip}`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
+
         // 1. Verify Webhook Secret
         const authHeader = req.headers.get('Authorization');
         const webhookSecret = process.env.WEBHOOK_SECRET;

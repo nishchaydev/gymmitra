@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const memberUpdateSchema = z.object({
     name: z.string().min(2).optional(),
@@ -27,6 +28,11 @@ export async function GET(
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(100, `${gym.id}:members:get-id`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const { id } = await params
         const member = await prisma.member.findFirst({
@@ -71,6 +77,11 @@ export async function PUT(
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+        try { await apiLimiter.check(100, `${gym.id}:members:put`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
+
         const { id } = await params
         const body = await request.json()
         const validatedData = memberUpdateSchema.parse(body)
@@ -106,6 +117,11 @@ export async function DELETE(
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(100, `${gym.id}:members:delete`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const { id } = await params
 

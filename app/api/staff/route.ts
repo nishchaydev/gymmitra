@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const staffSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -15,6 +16,11 @@ export async function GET(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth || auth.role !== 'OWNER') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        try { await apiLimiter.check(100, `${auth.userId}:staff:get`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
         }
 
         const staffMembers = await prisma.staffMember.findMany({
@@ -44,6 +50,11 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth || auth.role !== 'OWNER') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        try { await apiLimiter.check(50, `${auth.userId}:staff:post`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
         }
 
         const body = await request.json()

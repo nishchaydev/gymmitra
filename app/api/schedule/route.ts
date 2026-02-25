@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const scheduleSchema = z.object({
     trainerId: z.string().min(1, "Trainer is required"),
@@ -18,6 +19,11 @@ export async function GET(request: NextRequest) {
     try {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(100, `${auth.userId}:schedule:get`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const { searchParams } = new URL(request.url)
         const start = searchParams.get('start')
@@ -56,6 +62,11 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+        try { await apiLimiter.check(20, `${auth.userId}:schedule:post`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
+
         let body;
         try {
             body = await request.json()
@@ -78,33 +89,38 @@ export async function POST(request: NextRequest) {
         if (!trainer) return NextResponse.json({ error: 'Trainer not found or unauthorized' }, { status: 404 })
         if (!member) return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
 
-        // 2. Conflict validation: Double booking
-        const conflictingSession = await prisma.pTSession.findFirst({
-            where: {
-                gymId: auth.gym.id,
-                status: { notIn: ['CANCELLED'] },
-                OR: [
-                    { trainerId: data.trainerId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } },
-                    { memberId: data.memberId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } }
-                ]
-            }
-        })
+        // 2. Atomic transaction: conflict check + create (prevents TOCTOU race condition)
+        const session = await prisma.$transaction(async (tx) => {
+            const conflictingSession = await tx.pTSession.findFirst({
+                where: {
+                    gymId: auth.gym.id,
+                    status: { notIn: ['CANCELLED'] },
+                    OR: [
+                        { trainerId: data.trainerId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } },
+                        { memberId: data.memberId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } }
+                    ]
+                }
+            })
 
-        if (conflictingSession) {
-            const victim = conflictingSession.trainerId === data.trainerId ? 'Trainer' : 'Member'
-            return NextResponse.json({ error: `${victim} already has a session overlapping this time` }, { status: 409 })
-        }
-
-        const session = await prisma.pTSession.create({
-            data: {
-                ...data,
-                gymId: auth.gym.id,
-                status: 'SCHEDULED'
+            if (conflictingSession) {
+                const victim = conflictingSession.trainerId === data.trainerId ? 'Trainer' : 'Member'
+                throw new Error(`CONFLICT:${victim} already has a session overlapping this time`)
             }
+
+            return tx.pTSession.create({
+                data: {
+                    ...data,
+                    gymId: auth.gym.id,
+                    status: 'SCHEDULED'
+                }
+            })
         })
 
         return NextResponse.json(session, { status: 201 })
     } catch (error) {
+        if (error instanceof Error && error.message.startsWith('CONFLICT:')) {
+            return NextResponse.json({ error: error.message.replace('CONFLICT:', '') }, { status: 409 })
+        }
         console.error('[Schedule POST] Error:', error)
         return NextResponse.json({ error: 'Failed to schedule session' }, { status: 500 })
     }

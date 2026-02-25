@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 export async function DELETE(
     request: NextRequest,
@@ -10,6 +11,11 @@ export async function DELETE(
         const auth = await getAuthGym()
         if (!auth || auth.role !== 'OWNER') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        try { await apiLimiter.check(50, `${auth.userId}:staff:delete`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
         }
 
         const params = await props.params

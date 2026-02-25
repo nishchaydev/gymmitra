@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMonthOfInterval } from 'date-fns'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +49,11 @@ export async function GET(request: NextRequest) {
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(30, `${gym.id}:reports:get`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const searchParams = request.nextUrl.searchParams
         const type = searchParams.get('type')

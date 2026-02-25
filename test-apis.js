@@ -4,7 +4,7 @@ const { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMont
 const testPrisma = new PrismaClient()
 
 // Production Guard
-if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PROD_TEST) {
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_TEST !== 'true') {
     console.error("❌ ERROR: Running tests against production is forbidden. Set ALLOW_PROD_TEST=true to override.");
     process.exit(1);
 }
@@ -71,7 +71,7 @@ async function runTests() {
         `
         console.log(frequencyResult.map(r => ({
             ...r,
-            phone: r.phone ? r.phone.replace(/(\d{2})(\d+)(\d{4})/, "$1******$3") : null
+            phone: r.phone ? r.phone.replace(/(\d{3})(\d+)(\d{4})/, "$1****$3") : null
         })))
 
         console.log("\n--- Testing Reminders (Expiring) ---")

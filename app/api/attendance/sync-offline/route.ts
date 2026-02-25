@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { z } from 'zod'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const syncSchema = z.object({
     records: z.array(z.object({
@@ -18,6 +19,11 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        try { await apiLimiter.check(20, `${auth.userId}:sync-offline:post`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
         }
 
         const body = await request.json()

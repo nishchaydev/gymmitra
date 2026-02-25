@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, subDays, addDays } from 'date-fns'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { getAuthGym } from '@/lib/auth'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,11 @@ export async function GET(request: NextRequest) {
     try {
         const gym = await getAuthenticatedGym()
         if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        try { await apiLimiter.check(30, `${gym.id}:reminders:get`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const today = new Date()
         const todayStart = startOfDay(today)

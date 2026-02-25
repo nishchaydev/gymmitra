@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { addDays } from 'date-fns'
 import { getAuthGym } from '@/lib/auth'
 import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus, MemberStatus } from '@prisma/client'
+import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
 
 const subscriptionSchema = z.object({
     memberId: z.string().min(1, "Member ID is required"),
@@ -24,6 +25,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const gym = auth.gym
+
+        try { await apiLimiter.check(20, `${auth.userId}:subscriptions:post`) } catch (e) {
+            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+            throw e
+        }
 
         const body = await request.json()
         const validatedData = subscriptionSchema.parse(body)

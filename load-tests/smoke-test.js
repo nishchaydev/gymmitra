@@ -34,8 +34,8 @@ export default function () {
     check(loginRes, {
         'auth: status 200, 302, or 303': (r) =>
             r.status === 200 || r.status === 302 || r.status === 303,
-        'auth: has session cookie/token': (r) =>
-            r.headers['Set-Cookie'] !== undefined || r.json('access_token') !== undefined,
+        'auth: has session cookie or token': (r) =>
+            r.headers['Set-Cookie'] !== undefined || (r.body && r.json('access_token')),
     });
 
     sleep(1);
