@@ -298,7 +298,7 @@ enum SessionStatus {
 
 model StaffMember {
   id        String   @id @default(cuid())
-  userId    String // Maps to Supabase Auth UUID. Not @unique to allow multi-gym trainers!
+  userId    String? // Maps to Supabase Auth UUID. Not @unique to allow multi-gym trainers!
   gymId     String // Links to their employer
   name      String
   email     String
