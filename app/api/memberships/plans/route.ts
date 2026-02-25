@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 const planSchema = z.object({
     name: z.string().min(2),
@@ -13,25 +13,23 @@ const planSchema = z.object({
     features: z.array(z.string()).optional(),
 })
 
-async function getAuthenticatedGym() {
+async function getAuth() {
     const auth = await getAuthGym()
-    return auth ? auth.gym : null
+    return auth
 }
 
 export async function GET(request: NextRequest) {
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuth()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(100, `${gym.id}:plans:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(100, `${auth.userId}:plans:get`)
+        if (rl) return rl
 
         const plans = await prisma.membershipPlan.findMany({
             where: {
                 isActive: true,
-                gymId: gym.id
+                gymId: auth.gym.id
             },
             orderBy: { price: 'asc' }
         })
@@ -46,13 +44,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuth()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(50, `${gym.id}:plans:post`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(50, `${auth.userId}:plans:post`)
+        if (rl) return rl
 
         let body;
         try {
@@ -66,7 +62,7 @@ export async function POST(request: NextRequest) {
         const createData: Prisma.MembershipPlanCreateInput = {
             ...validatedData,
             gym: {
-                connect: { id: gym.id }
+                connect: { id: auth.gym.id }
             }
         }
 

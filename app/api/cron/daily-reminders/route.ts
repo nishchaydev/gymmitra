@@ -1,18 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
-import { addDays, startOfDay, endOfDay } from 'date-fns'
+import { addDays, startOfDay, endOfDay, differenceInDays } from 'date-fns'
+import crypto from 'crypto'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
+const BATCH_SIZE = 5
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // Allow up to 60s for processing all gyms
+export const maxDuration = 60
+
+// ── Currency formatter ──────────────────────────────────────────────
+function formatINR(amount: number): string {
+    try {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 2,
+        }).format(amount)
+    } catch {
+        // Fallback for minimal-ICU Node builds
+        return `₹${amount.toFixed(2).replace(/\B(?=(\d{2})+(\d)(?!\d))/g, ',')}`
+    }
+}
+
+// ── Batch processor ─────────────────────────────────────────────────
+async function processBatch<T>(
+    items: T[],
+    fn: (item: T) => Promise<void>,
+    batchSize: number
+): Promise<void> {
+    for (let i = 0; i < items.length; i += batchSize) {
+        const chunk = items.slice(i, i + batchSize)
+        await Promise.allSettled(chunk.map(fn))
+    }
+}
 
 export async function GET(request: NextRequest) {
-    // 1. Verify cron secret (Vercel auto-sets CRON_SECRET for cron invocations)
-    const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    // 1. Timing-safe CRON_SECRET verification
+    const cronSecret = process.env.CRON_SECRET
+    if (!cronSecret) {
+        console.error('[Cron] CRON_SECRET not configured')
+        return new Response('Server misconfigured', { status: 500 })
+    }
+
+    const authHeader = request.headers.get('authorization') || ''
+    const expected = `Bearer ${cronSecret}`
+
+    // Constant-time comparison to prevent timing attacks
+    const headerBuf = Buffer.from(authHeader)
+    const expectedBuf = Buffer.from(expected)
+    if (headerBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(headerBuf, expectedBuf)) {
         return new Response('Unauthorized', { status: 401 })
     }
 
@@ -28,14 +67,13 @@ export async function GET(request: NextRequest) {
         const todayStart = startOfDay(today)
         const sevenDaysFromNow = endOfDay(addDays(today, 7))
 
-        // Process all gyms
         const gyms = await prisma.gymProfile.findMany({
             select: { id: true, name: true, email: true }
         })
 
         for (const gym of gyms) {
             try {
-                // ── Expiring Subscriptions (next 7 days) ────────────────
+                // ── Expiring Subscriptions (next 7 days) ──────────────
                 const expiringSubs = await prisma.memberSubscription.findMany({
                     where: {
                         gymId: gym.id,
@@ -43,15 +81,15 @@ export async function GET(request: NextRequest) {
                         endDate: { gte: todayStart, lte: sevenDaysFromNow }
                     },
                     include: {
-                        member: { select: { name: true, email: true, phone: true } },
+                        member: { select: { id: true, name: true, email: true, phone: true } },
                         plan: { select: { name: true } }
                     }
                 })
 
-                for (const sub of expiringSubs) {
-                    if (!sub.member.email) continue
+                await processBatch(expiringSubs, async (sub) => {
+                    if (!sub.member.email) return
                     try {
-                        const daysLeft = Math.max(0, Math.ceil((sub.endDate.getTime() - today.getTime()) / (1000 * 3600 * 24)))
+                        const daysLeft = Math.max(0, differenceInDays(sub.endDate, today))
                         await resend.emails.send({
                             from: FROM_EMAIL,
                             to: [sub.member.email],
@@ -69,19 +107,19 @@ export async function GET(request: NextRequest) {
                             data: {
                                 type: 'EXPIRY_REMINDER',
                                 title: 'Membership Expiry Reminder',
-                                message: `Sent expiry reminder to ${sub.member.name} (${daysLeft} days left)`,
+                                message: `Sent expiry reminder to memberId=${sub.member.id} (${daysLeft} days left)`,
                                 userId: gym.id,
                                 gymId: gym.id
                             }
                         })
                         results.expiryReminders++
                     } catch (e) {
-                        console.error(`[Cron] Failed expiry email for ${sub.member.email}:`, e)
+                        console.error(`[Cron] Failed expiry email for memberId=${sub.member.id}, subId=${sub.id}:`, e)
                         results.errors++
                     }
-                }
+                }, BATCH_SIZE)
 
-                // ── Overdue Invoices ─────────────────────────────────────
+                // ── Overdue Invoices ──────────────────────────────────
                 const overdueInvoices = await prisma.invoice.findMany({
                     where: {
                         gymId: gym.id,
@@ -89,20 +127,21 @@ export async function GET(request: NextRequest) {
                         memberId: { not: null }
                     },
                     include: {
-                        member: { select: { name: true, email: true } }
+                        member: { select: { id: true, name: true, email: true } }
                     }
                 })
 
-                for (const inv of overdueInvoices) {
-                    if (!inv.member?.email) continue
+                await processBatch(overdueInvoices, async (inv) => {
+                    if (!inv.member?.email) return
                     try {
+                        const formattedTotal = formatINR(Number(inv.total))
                         await resend.emails.send({
                             from: FROM_EMAIL,
                             to: [inv.member.email],
                             subject: `${gym.name} - Payment Reminder`,
                             html: `
                                 <h2>Hi ${inv.member.name},</h2>
-                                <p>This is a gentle reminder that invoice <strong>#${inv.invoiceNumber}</strong> of <strong>₹${Number(inv.total).toLocaleString('en-IN')}</strong> is overdue.</p>
+                                <p>This is a gentle reminder that invoice <strong>#${inv.invoiceNumber}</strong> of <strong>${formattedTotal}</strong> is overdue.</p>
                                 <p>Please clear the payment at your earliest convenience to avoid any interruption in your membership.</p>
                                 <br/>
                                 <p>Thank you,<br/>Team ${gym.name}</p>
@@ -113,32 +152,33 @@ export async function GET(request: NextRequest) {
                             data: {
                                 type: 'PAYMENT_OVERDUE',
                                 title: 'Overdue Payment Reminder Sent',
-                                message: `Sent overdue reminder to ${inv.member.name} for ₹${Number(inv.total)}`,
+                                message: `Sent overdue reminder to memberId=${inv.member.id} for ${formattedTotal}`,
                                 userId: gym.id,
                                 gymId: gym.id
                             }
                         })
                         results.overdueReminders++
                     } catch (e) {
-                        console.error(`[Cron] Failed overdue email for ${inv.member?.email}:`, e)
+                        console.error(`[Cron] Failed overdue email for memberId=${inv.member?.id}, invoiceId=${inv.id}:`, e)
                         results.errors++
                     }
-                }
+                }, BATCH_SIZE)
 
-                // ── Birthday Wishes ──────────────────────────────────────
-                const allActiveMembers = await prisma.member.findMany({
-                    where: { gymId: gym.id, status: 'ACTIVE' },
-                    select: { id: true, name: true, email: true, dateOfBirth: true }
-                })
+                // ── Birthday Wishes (DB-level filter) ─────────────────
+                const todayMonth = today.getMonth() + 1
+                const todayDay = today.getDate()
+                const birthdayMembers: { id: string; name: string; email: string | null }[] =
+                    await prisma.$queryRaw`
+                        SELECT id, name, email FROM "Member"
+                        WHERE "gymId" = ${gym.id}
+                          AND status = 'ACTIVE'
+                          AND "dateOfBirth" IS NOT NULL
+                          AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
+                          AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}
+                    `
 
-                const birthdayMembers = allActiveMembers.filter(m => {
-                    if (!m.dateOfBirth) return false
-                    const dob = new Date(m.dateOfBirth)
-                    return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
-                })
-
-                for (const member of birthdayMembers) {
-                    if (!member.email) continue
+                await processBatch(birthdayMembers, async (member) => {
+                    if (!member.email) return
                     try {
                         await resend.emails.send({
                             from: FROM_EMAIL,
@@ -157,19 +197,19 @@ export async function GET(request: NextRequest) {
                             data: {
                                 type: 'BIRTHDAY',
                                 title: 'Birthday Wish Sent',
-                                message: `Sent birthday wish to ${member.name}`,
+                                message: `Sent birthday wish to memberId=${member.id}`,
                                 userId: gym.id,
                                 gymId: gym.id
                             }
                         })
                         results.birthdayWishes++
                     } catch (e) {
-                        console.error(`[Cron] Failed birthday email for ${member.email}:`, e)
+                        console.error(`[Cron] Failed birthday email for memberId=${member.id}:`, e)
                         results.errors++
                     }
-                }
+                }, BATCH_SIZE)
             } catch (gymError) {
-                console.error(`[Cron] Failed processing gym ${gym.id}:`, gymError)
+                console.error(`[Cron] Failed processing gymId=${gym.id}:`, gymError)
                 results.errors++
             }
         }

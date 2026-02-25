@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 const productUpdateSchema = z.object({
     name: z.string().min(2).optional(),
@@ -14,11 +14,6 @@ const productUpdateSchema = z.object({
     image: z.string().optional(),
 })
 
-async function getAuthenticatedGym() {
-    const auth = await getAuthGym()
-    return auth ? auth.gym : null
-}
-
 export async function GET(
     request: NextRequest,
     props: { params: Promise<{ id: string }> }
@@ -26,19 +21,17 @@ export async function GET(
     const params = await props.params
     const id = params.id
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuthGym()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(100, `${gym.id}:products:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(100, `${auth.userId}:products:get`)
+        if (rl) return rl
 
         const product = await prisma.product.findFirst({
             where: {
                 id,
-                gymId: gym.id, // Security Check
-                isActive: true // Filter out soft-deleted products
+                gymId: auth.gym.id,
+                isActive: true
             }
         })
 
@@ -66,22 +59,20 @@ export async function PUT(
     const params = await props.params
     const id = params.id
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuthGym()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(100, `${gym.id}:products:put`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        // Lower limit for mutations
+        const rl = await guardRateLimit(30, `${auth.userId}:products:put`)
+        if (rl) return rl
 
         const body = await request.json()
         const validatedData = productUpdateSchema.parse(body)
 
-        // Atomic update to avoid TOCTOU and respect ownership/active status
         const updateResult = await prisma.product.updateMany({
             where: {
                 id,
-                gymId: gym.id,
+                gymId: auth.gym.id,
                 isActive: true
             },
             data: validatedData
@@ -118,28 +109,25 @@ export async function DELETE(
     const params = await props.params
     const id = params.id
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuthGym()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(100, `${gym.id}:products:delete`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        // Lower limit for destructive operations
+        const rl = await guardRateLimit(30, `${auth.userId}:products:delete`)
+        if (rl) return rl
 
-        // Soft delete - verify ownership and ensure it's currently active
         const result = await prisma.product.updateMany({
             where: {
                 id,
-                gymId: gym.id,
+                gymId: auth.gym.id,
                 isActive: true
             },
             data: { isActive: false }
         })
 
         if (result.count === 0) {
-            // Check if it exists but is already deleted (idempotency)
             const exists = await prisma.product.findFirst({
-                where: { id, gymId: gym.id }
+                where: { id, gymId: auth.gym.id }
             })
 
             if (!exists) {

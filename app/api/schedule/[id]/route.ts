@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { SessionStatus } from '@prisma/client'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit, ConflictError } from '@/lib/rate-limit'
 
 const updateSchema = z.object({
     status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
@@ -22,16 +22,14 @@ export async function PATCH(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(50, `${auth.userId}:schedule:patch`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(50, `${auth.userId}:schedule:patch`)
+        if (rl) return rl
 
         const params = await props.params;
         const body = await request.json()
         const data = updateSchema.parse(body)
 
-        // Atomic transaction: ownership check + conflict validation + update
+        // Atomic transaction: ownership + conflict + update
         const updatedSession = await prisma.$transaction(async (tx) => {
             const session = await tx.pTSession.findFirst({
                 where: { id: params.id, gymId: auth.gym.id }
@@ -41,25 +39,24 @@ export async function PATCH(
                 throw new Error('SESSION_NOT_FOUND')
             }
 
-            // Conflict validation if times are changing
-            if (data.startTime && data.endTime) {
+            // Conflict check when either time boundary changes (fallback to existing)
+            if (data.startTime || data.endTime) {
+                const newStart = data.startTime ?? session.startTime
+                const newEnd = data.endTime ?? session.endTime
+
                 const conflictingSession = await tx.pTSession.findFirst({
                     where: {
                         gymId: auth.gym.id,
                         trainerId: session.trainerId,
                         id: { not: session.id },
-                        status: { notIn: ['CANCELLED'] },
-                        OR: [
-                            {
-                                startTime: { lt: data.endTime },
-                                endTime: { gt: data.startTime }
-                            }
-                        ]
+                        status: { not: 'CANCELLED' },
+                        startTime: { lt: newEnd },
+                        endTime: { gt: newStart }
                     }
                 })
 
                 if (conflictingSession) {
-                    throw new Error('CONFLICT:Trainer is already booked during this new time')
+                    throw new ConflictError('Trainer is already booked during this new time')
                 }
             }
 
@@ -71,16 +68,15 @@ export async function PATCH(
 
         return NextResponse.json(updatedSession)
     } catch (error) {
-        if (error instanceof Error) {
-            if (error.message === 'SESSION_NOT_FOUND') {
-                return NextResponse.json({ error: 'Session not found' }, { status: 404 })
-            }
-            if (error.message.startsWith('CONFLICT:')) {
-                return NextResponse.json({ error: error.message.replace('CONFLICT:', '') }, { status: 409 })
-            }
-        }
+        // ZodError first (more specific)
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+        }
+        if (error instanceof ConflictError) {
+            return NextResponse.json({ error: error.message }, { status: 409 })
+        }
+        if (error instanceof Error && error.message === 'SESSION_NOT_FOUND') {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 })
         }
         console.error('Failed to update session:', error)
         return NextResponse.json({ error: 'Failed to update session' }, { status: 500 })
@@ -97,24 +93,19 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(50, `${auth.userId}:schedule:delete`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(50, `${auth.userId}:schedule:delete`)
+        if (rl) return rl
 
         const params = await props.params;
 
-        const session = await prisma.pTSession.findFirst({
+        // Atomic delete with ownership check (avoids TOCTOU)
+        const result = await prisma.pTSession.deleteMany({
             where: { id: params.id, gymId: auth.gym.id }
         })
 
-        if (!session) {
+        if (result.count === 0) {
             return NextResponse.json({ error: 'Session not found' }, { status: 404 })
         }
-
-        await prisma.pTSession.delete({
-            where: { id: params.id }
-        })
 
         return NextResponse.json({ message: 'Session removed successfully' })
     } catch (error) {

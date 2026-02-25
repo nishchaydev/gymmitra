@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit, ConflictError } from '@/lib/rate-limit'
 
 const scheduleSchema = z.object({
     trainerId: z.string().min(1, "Trainer is required"),
@@ -20,10 +20,8 @@ export async function GET(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(100, `${auth.userId}:schedule:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(100, `${auth.userId}:schedule:get`)
+        if (rl) return rl
 
         const { searchParams } = new URL(request.url)
         const start = searchParams.get('start')
@@ -62,10 +60,8 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(20, `${auth.userId}:schedule:post`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(20, `${auth.userId}:schedule:post`)
+        if (rl) return rl
 
         let body;
         try {
@@ -80,21 +76,22 @@ export async function POST(request: NextRequest) {
         }
         const data = result.data
 
-        // 1. Ownership & Existence Verification
-        const [trainer, member] = await Promise.all([
-            prisma.staffMember.findFirst({ where: { id: data.trainerId, gymId: auth.gym.id, role: 'TRAINER' } }),
-            prisma.member.findFirst({ where: { id: data.memberId, gymId: auth.gym.id } })
-        ])
-
-        if (!trainer) return NextResponse.json({ error: 'Trainer not found or unauthorized' }, { status: 404 })
-        if (!member) return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
-
-        // 2. Atomic transaction: conflict check + create (prevents TOCTOU race condition)
+        // Atomic transaction with SERIALIZABLE isolation to prevent TOCTOU
         const session = await prisma.$transaction(async (tx) => {
+            // 1. Ownership & Existence checks inside transaction
+            const [trainer, member] = await Promise.all([
+                tx.staffMember.findFirst({ where: { id: data.trainerId, gymId: auth.gym.id, role: 'TRAINER' } }),
+                tx.member.findFirst({ where: { id: data.memberId, gymId: auth.gym.id } })
+            ])
+
+            if (!trainer) throw new Error('TRAINER_NOT_FOUND')
+            if (!member) throw new Error('MEMBER_NOT_FOUND')
+
+            // 2. Conflict check
             const conflictingSession = await tx.pTSession.findFirst({
                 where: {
                     gymId: auth.gym.id,
-                    status: { notIn: ['CANCELLED'] },
+                    status: { not: 'CANCELLED' },
                     OR: [
                         { trainerId: data.trainerId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } },
                         { memberId: data.memberId, startTime: { lt: data.endTime }, endTime: { gt: data.startTime } }
@@ -104,7 +101,7 @@ export async function POST(request: NextRequest) {
 
             if (conflictingSession) {
                 const victim = conflictingSession.trainerId === data.trainerId ? 'Trainer' : 'Member'
-                throw new Error(`CONFLICT:${victim} already has a session overlapping this time`)
+                throw new ConflictError(`${victim} already has a session overlapping this time`)
             }
 
             return tx.pTSession.create({
@@ -114,12 +111,20 @@ export async function POST(request: NextRequest) {
                     status: 'SCHEDULED'
                 }
             })
-        })
+        }, { isolationLevel: 'Serializable' })
 
         return NextResponse.json(session, { status: 201 })
     } catch (error) {
-        if (error instanceof Error && error.message.startsWith('CONFLICT:')) {
-            return NextResponse.json({ error: error.message.replace('CONFLICT:', '') }, { status: 409 })
+        if (error instanceof ConflictError) {
+            return NextResponse.json({ error: error.message }, { status: 409 })
+        }
+        if (error instanceof Error) {
+            if (error.message === 'TRAINER_NOT_FOUND') {
+                return NextResponse.json({ error: 'Trainer not found or unauthorized' }, { status: 404 })
+            }
+            if (error.message === 'MEMBER_NOT_FOUND') {
+                return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
+            }
         }
         console.error('[Schedule POST] Error:', error)
         return NextResponse.json({ error: 'Failed to schedule session' }, { status: 500 })

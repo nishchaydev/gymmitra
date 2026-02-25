@@ -3,24 +3,24 @@ import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, subDays, addDays } from 'date-fns'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-async function getAuthenticatedGym() {
+async function getAuth() {
     const auth = await getAuthGym()
-    return auth ? auth.gym : null
+    return auth
 }
 
 export async function GET(request: NextRequest) {
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuth()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(30, `${gym.id}:reminders:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(30, `${auth.userId}:reminders:get`)
+        if (rl) return rl
+
+        const gym = auth.gym
 
         const today = new Date()
         const todayStart = startOfDay(today)

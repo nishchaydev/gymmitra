@@ -34,8 +34,19 @@ export default function () {
     check(loginRes, {
         'auth: status 200, 302, or 303': (r) =>
             r.status === 200 || r.status === 302 || r.status === 303,
-        'auth: has session cookie or token': (r) =>
-            r.headers['Set-Cookie'] !== undefined || (r.body && r.json('access_token')),
+        'auth: has session cookie or token': (r) => {
+            // Use k6's cookie API (case-insensitive, HTTP/2 safe)
+            if (r.cookies && Object.keys(r.cookies).length > 0) return true;
+            // Fallback: try parsing JSON body for access_token
+            if (r.body) {
+                try {
+                    return !!r.json('access_token');
+                } catch (_) {
+                    return false;
+                }
+            }
+            return false;
+        },
     });
 
     sleep(1);

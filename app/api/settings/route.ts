@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
+
+const SETTINGS_RATE_LIMIT = 50
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -21,10 +23,8 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(50, `${auth.userId}:settings:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(SETTINGS_RATE_LIMIT, `${auth.userId}:settings:get`)
+        if (rl) return rl
 
         return NextResponse.json(auth.gym)
     } catch (error) {
@@ -41,10 +41,8 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(50, `${auth.userId}:settings:put`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(SETTINGS_RATE_LIMIT, `${auth.userId}:settings:put`)
+        if (rl) return rl
 
         let body;
         try {

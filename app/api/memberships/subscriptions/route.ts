@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { addDays } from 'date-fns'
 import { getAuthGym } from '@/lib/auth'
 import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus, MemberStatus } from '@prisma/client'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 const subscriptionSchema = z.object({
     memberId: z.string().min(1, "Member ID is required"),
@@ -14,7 +14,6 @@ const subscriptionSchema = z.object({
     price: z.number().min(0, "Price cannot be negative").optional(),
     paymentStatus: z.nativeEnum(PrismaPaymentStatus).default(PrismaPaymentStatus.PAID),
     discountReason: z.string().optional(),
-    // force=true bypasses the same-plan duplicate check (e.g. extending an active sub)
     force: z.boolean().optional().default(false),
 })
 
@@ -26,10 +25,8 @@ export async function POST(request: NextRequest) {
         }
         const gym = auth.gym
 
-        try { await apiLimiter.check(20, `${auth.userId}:subscriptions:post`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(20, `${auth.userId}:subscriptions:post`)
+        if (rl) return rl
 
         const body = await request.json()
         const validatedData = subscriptionSchema.parse(body)

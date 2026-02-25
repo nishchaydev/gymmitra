@@ -69,10 +69,15 @@ async function runTests() {
             ORDER BY visit_count ASC, last_visit ASC NULLS FIRST
             LIMIT 5
         `
-        console.log(frequencyResult.map(r => ({
-            ...r,
-            phone: r.phone ? r.phone.replace(/(\d{3})(\d+)(\d{4})/, "$1****$3") : null
-        })))
+        console.log(frequencyResult.map(r => {
+            const digits = r.phone ? r.phone.replace(/\D/g, '') : null
+            return {
+                ...r,
+                phone: digits && digits.length >= 7
+                    ? digits.replace(/(\d{3})(\d+)(\d{4})/, "$1****$3")
+                    : null
+            }
+        }))
 
         console.log("\n--- Testing Reminders (Expiring) ---")
         const todayStart = startOfDay(new Date())

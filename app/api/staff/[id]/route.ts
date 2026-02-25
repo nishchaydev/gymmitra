@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 export async function DELETE(
     request: NextRequest,
@@ -13,15 +13,13 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(50, `${auth.userId}:staff:delete`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(50, `${auth.userId}:staff:delete`)
+        if (rl) return rl
 
         const params = await props.params
         const id = params.id
 
-        // Prevent self-deletion if somehow they are both OWNER and STAFF (unlikely but safe)
+        // Prevent self-deletion
         if (id === auth.userId) {
             return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
         }
@@ -35,8 +33,9 @@ export async function DELETE(
             return NextResponse.json({ error: 'Staff member not found or unauthorized' }, { status: 404 })
         }
 
+        // Delete with gymId ownership enforced
         await prisma.staffMember.delete({
-            where: { id }
+            where: { id, gymId: auth.gym.id }
         })
 
         return NextResponse.json({ message: 'Staff member removed successfully' })

@@ -134,3 +134,45 @@ export function getRateLimit(defaultLimit: number, envKey: string): number {
     return parsed
 }
 
+// ── Shared rate-limit guard ─────────────────────────────────────────
+import { NextResponse } from 'next/server'
+
+/**
+ * Centralized rate-limit guard.  Returns a NextResponse (429) when the
+ * caller is rate-limited, or `null` if the request should proceed.
+ *
+ * **Fail-open**: if the rate-limiter itself throws a non-RateLimitError
+ * (e.g. Redis unavailable), the error is logged and the request proceeds.
+ */
+export async function guardRateLimit(
+    limit: number,
+    key: string
+): Promise<NextResponse | null> {
+    try {
+        await apiLimiter.check(limit, key)
+        return null // proceed
+    } catch (e) {
+        if (e instanceof RateLimitError) {
+            return NextResponse.json(
+                { error: 'Too many requests' },
+                {
+                    status: 429,
+                    headers: { 'Retry-After': String(e.retryAfter) },
+                }
+            )
+        }
+        // Fail-open: limiter infra failure should not block the request
+        console.error('[rate-limit] Infrastructure error, failing open:', e)
+        return null
+    }
+}
+
+// ── ConflictError for schedule routes ────────────────────────────────
+export class ConflictError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'ConflictError'
+        Object.setPrototypeOf(this, ConflictError.prototype)
+    }
+}
+

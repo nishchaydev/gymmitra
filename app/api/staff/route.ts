@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 const staffSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -18,10 +18,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(100, `${auth.userId}:staff:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(100, `${auth.userId}:staff:get`)
+        if (rl) return rl
 
         const staffMembers = await prisma.staffMember.findMany({
             where: { gymId: auth.gym.id },
@@ -33,7 +31,6 @@ export async function GET(request: NextRequest) {
                 role: true,
                 isActive: true,
                 createdAt: true
-                // userId excluded to prevent leak of Supabase UUID placeholders
             },
             orderBy: { createdAt: 'desc' }
         })
@@ -52,10 +49,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        try { await apiLimiter.check(50, `${auth.userId}:staff:post`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(50, `${auth.userId}:staff:post`)
+        if (rl) return rl
 
         const body = await request.json()
         const result = staffSchema.safeParse(body)
@@ -65,8 +60,6 @@ export async function POST(request: NextRequest) {
         }
         const validatedData = result.data
 
-        // Atomic check via try-catch on P2002 is safer against race conditions
-        // but we keep the explicit check for better UX
         const existingStaff = await prisma.staffMember.findFirst({
             where: { email: validatedData.email, gymId: auth.gym.id }
         })
@@ -86,7 +79,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(newStaff, { status: 201 })
     } catch (error) {
-        // Catch Prisma unique constraint violation if race condition occurs
         if ((error as any).code === 'P2002') {
             return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
         }

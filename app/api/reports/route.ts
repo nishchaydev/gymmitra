@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMonthOfInterval } from 'date-fns'
 import { getAuthGym } from '@/lib/auth'
-import { apiLimiter, RateLimitError } from '@/lib/rate-limit'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 async function getAuthenticatedGym() {
     const auth = await getAuthGym()
     if (!auth || auth.role !== 'OWNER') return null
-    return auth.gym
+    return auth
 }
 
 // ── Raw SQL row types ─────────────────────────────────────────────────────────
@@ -47,13 +47,13 @@ interface MemberFrequencyRow {
 
 export async function GET(request: NextRequest) {
     try {
-        const gym = await getAuthenticatedGym()
-        if (!gym) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await getAuthenticatedGym()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        try { await apiLimiter.check(30, `${gym.id}:reports:get`) } catch (e) {
-            if (e instanceof RateLimitError) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-            throw e
-        }
+        const rl = await guardRateLimit(30, `${auth.userId}:reports:get`)
+        if (rl) return rl
+
+        const gym = auth.gym
 
         const searchParams = request.nextUrl.searchParams
         const type = searchParams.get('type')
