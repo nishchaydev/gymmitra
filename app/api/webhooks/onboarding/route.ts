@@ -1,22 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
+import { guardRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function isTrustedProxy(ip: string): boolean {
+    if (ip === '127.0.0.1' || ip === '::1') return true
+    const trusted = process.env.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
+    return trusted.includes(ip)
+}
+
+function getClientIdentifier(req: NextRequest): string {
+    const reqIp = (req as any).ip || req.headers.get('x-real-ip')
+    if (reqIp && isTrustedProxy(reqIp)) {
+        const xff = req.headers.get('x-forwarded-for')
+        if (xff) {
+            const first = xff.split(',')[0].trim()
+            if (first) return first
+        }
+    }
+    if (reqIp) return reqIp
+
+    const authHeader = req.headers.get('authorization')
+    if (authHeader) {
+        const hash = crypto.createHash('sha256').update(authHeader).digest('hex').slice(0, 12)
+        return `auth:${hash}`
+    }
+    return 'anonymous'
+}
+
+function verifyWebhookSignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
+    if (!signatureHeader) return false
+    const computed = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
+    const sigBuf = Buffer.from(signatureHeader)
+    const computedBuf = Buffer.from(computed)
+    if (sigBuf.length !== computedBuf.length) return false
+    return crypto.timingSafeEqual(sigBuf, computedBuf)
+}
+
 export async function POST(req: NextRequest) {
     try {
-        // 1. Verify Webhook Secret
+        // 1. Rate limit by client IP/fingerprint to prevent email abuse
+        const clientId = getClientIdentifier(req)
+        const rl = await guardRateLimit(10, `webhook:onboarding:${clientId}`)
+        if (rl) return rl
+
+        // 2. We support two forms of Auth: Bearer token (internal cron) or HMAC signature (Supabase Webhooks)
         const authHeader = req.headers.get('Authorization');
         const webhookSecret = process.env.WEBHOOK_SECRET;
+        const signature = req.headers.get('x-supabase-signature') || req.headers.get('x-webhook-signature');
 
-        if (!webhookSecret || authHeader !== `Bearer ${webhookSecret}`) {
+        if (!webhookSecret) {
+            return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+        }
+
+        const rawBody = await req.text();
+
+        // Check if either the Bearer token matches OR the HMAC signature matches
+        const isBearerValid = authHeader === `Bearer ${webhookSecret}`;
+        const isHmacValid = verifyWebhookSignature(rawBody, signature, webhookSecret);
+
+        if (!isBearerValid && !isHmacValid) {
+            console.warn(`[Webhook] Invalid auth attempt from ${clientId}`);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Parse Payload from Supabase `auth.users` UPDATE trigger
-        const payload = await req.json();
+        // 3. Parse Payload from Supabase `auth.users` UPDATE trigger
+        let payload;
+        try {
+            payload = JSON.parse(rawBody);
+        } catch (err: any) {
+            return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 });
+        }
+
         const { type, record, old_record } = payload;
 
         // Security check - Only process UPDATE events on the auth.users table
@@ -24,16 +83,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Ignoring non-update event' }, { status: 200 });
         }
 
-        // 3. CORE LOGIC: Did they *just* confirm their email?
-        // We check if `email_confirmed_at` was empty in the old record, but now has a timestamp in the new record.
+        // 4. CORE LOGIC: Did they *just* confirm their email?
         const justConfirmed = !old_record?.email_confirmed_at && !!record?.email_confirmed_at;
 
         if (!justConfirmed) {
-            // It was just another profile update, not the initial email confirmation. We skip.
             return NextResponse.json({ message: 'Email not freshly confirmed. Skipping email delivery.' }, { status: 200 });
         }
 
-        // 4. Fetch the Gym Profile to get their Name and SaaS Plan
+        // 5. Fetch the Gym Profile to get their Name and SaaS Plan
         const gymProfile = await prisma.gymProfile.findUnique({
             where: { userId: record.id }
         });
@@ -46,23 +103,21 @@ export async function POST(req: NextRequest) {
         const ownerEmail = record.email;
         const ownerName = gymProfile.name || 'Gym Owner';
         const gymName = gymProfile.businessName || gymProfile.name || 'your new gym';
-        const saasPlan = gymProfile.saasPlan; // BASIC, GROWTH, or ENTERPRISE
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
 
-        console.log(`Email confirmed! Sending Welcome + Plan [${saasPlan}] to ${ownerEmail}...`);
+        console.log(`Email confirmed! Sending Welcome to ${ownerEmail}...`);
 
-        // 5. Send Welcome Email using Resend
+        // 6. Send Welcome Email using Resend
         const { data, error } = await resend.emails.send({
-            from: 'Gym Mitra ERP <hello@mail.emitra.dev>', // MUST use the verified domain
+            from: 'Gym Mitra ERP <hello@mail.emitra.dev>',
             to: [ownerEmail],
-            subject: `Welcome to Gym Mitra ERP -> Your ${saasPlan} Plan is Ready!`,
+            subject: `Welcome to Gym Mitra ERP!`,
             react: OnboardingEmail({
                 ownerName,
                 gymName,
                 loginUrl: `${baseUrl}/login`,
                 serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-                saasPlan,
             }),
         });
 

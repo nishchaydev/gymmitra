@@ -49,7 +49,8 @@ export async function updateSession(request: NextRequest) {
         pathname.startsWith('/login') ||
         pathname.startsWith('/auth') ||
         pathname.startsWith('/error') ||
-        pathname.startsWith('/invoice/') // Public invoice sharing
+        pathname.startsWith('/invoice/') || // Public invoice sharing
+        pathname.startsWith('/api/webhooks') // External webhooks handle their own auth
 
     if (isPublicRoute) {
         // If user is logged in, but tries to access login page, redirect to dashboard
@@ -77,7 +78,7 @@ export async function updateSession(request: NextRequest) {
         pathname.startsWith('/products') ||
         pathname.startsWith('/attendance') ||
         pathname.startsWith('/settings') ||
-        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth'))
+        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth') && !pathname.startsWith('/api/webhooks'))
 
     if (user && !isDemoMode && isProtectedRoute && !isOnboarded) {
         const url = request.nextUrl.clone()
