@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
                 gymName,
                 loginUrl: `${baseUrl}/login`,
                 serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                saasPlan,
             }),
         });
 
