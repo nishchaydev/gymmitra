@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 async function getAuthenticatedGym() {
     const auth = await getAuthGym()
-    if (!auth || auth.role !== 'OWNER') return null
+    if (!auth || !auth.gym || typeof auth.userId !== 'string' || auth.role !== 'OWNER') return null
     return auth
 }
 

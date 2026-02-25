@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma, withRetry } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit, ConflictError } from '@/lib/rate-limit'
+import { Prisma } from '@prisma/client'
 
 const scheduleSchema = z.object({
     trainerId: z.string().min(1, "Trainer is required"),
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
         const data = result.data
 
         // Atomic transaction with SERIALIZABLE isolation to prevent TOCTOU
-        const session = await prisma.$transaction(async (tx) => {
+        const session = await withRetry(() => prisma.$transaction(async (tx) => {
             // 1. Ownership & Existence checks inside transaction
             const [trainer, member] = await Promise.all([
                 tx.staffMember.findFirst({ where: { id: data.trainerId, gymId: auth.gym.id, role: 'TRAINER' } }),
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
                     status: 'SCHEDULED'
                 }
             })
-        }, { isolationLevel: 'Serializable' })
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
 
         return NextResponse.json(session, { status: 201 })
     } catch (error) {

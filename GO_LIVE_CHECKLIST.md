@@ -4,7 +4,7 @@
 
 ---
 
-## 🔴 Critical / Blockers (Must Fix Before Launch)
+## 🟢 Critical / Blockers (All Resolved)
 
 ### 1. Multi-Tenant Data Security (Cross-Tenant Leakage)
 - **Status**: ✅ **FIXED — RLS enabled + Application-level filtering**
@@ -16,8 +16,8 @@
 
 ### 2. Concurrency & Race Conditions
 - **Status**: ✅ **FIXED — Serializable transactions**
-- **Evidence**: Both schedule routes (`app/api/schedule/route.ts` POST, `app/api/schedule/[id]/route.ts` PATCH) now use `prisma.$transaction(..., { isolationLevel: 'Serializable' })` with conflict detection inside the transaction.
-- **Also**: `app/api/memberships/subscriptions/route.ts` and `app/invoices/actions.ts` already had `$transaction`.
+- **Evidence**: Both schedule routes (`app/api/schedule/route.ts` POST, `app/api/schedule/[id]/route.ts` PATCH) now use `withRetry(() => prisma.$transaction(..., { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))` to prevent serialization failures (P2034) by automatically retrying with exponential backoff.
+- **Also**: `app/api/memberships/subscriptions/route.ts` updated with `withRetry` and `$transaction`.
 - **Distributed Locking**: For high-contention scenarios (e.g., flash sales), add Upstash Redis advisory locks with:
   - `SET NX` with `PX` (TTL) to prevent indefinite holds
   - Unique lock value + compare-and-delete via Lua to avoid accidental releases
@@ -69,7 +69,7 @@
 - **Status**: ⚠️ **Not yet addressed**
 - **Evidence**: Member PII (phone, DOB, emergency contacts) stored in plaintext. No deletion/anonymization API. No DPA offered.
 - **Action Required**:
-  - 🟡 **Breach Notification (High)**: Create an incident-response runbook. Integrate automated alerting (e.g., Sentry + PagerDuty). Notification to Data Protection Board required within 72 hours.
+  - 🟡 **Breach Notification (High)**: Create an incident-response runbook. Integrate automated alerting (e.g., Sentry + PagerDuty). Notification to Data Protection Board required within 72 hours, and to CERT-In within 6 hours of discovery.
   - 🟡 **Consent Notice & Withdrawal (High)**: In-app consent capture that is free/specific/informed/unambiguous. Equally simple withdrawal flow.
   - 🔵 **Child Data / Parental Consent**: Age-gate and verifiable parental-consent flow for underage members.
   - 🔵 **Data Export/Deletion**: Add member data export and deletion API endpoints.

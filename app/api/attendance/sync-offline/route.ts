@@ -21,8 +21,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Fail-open: non-RateLimitError from limiter infra is logged, request proceeds
-        const rl = await guardRateLimit(20, `${auth.userId}:sync-offline:post`)
+        let rl;
+        try {
+            rl = await guardRateLimit(20, `${auth.userId}:sync-offline:post`, false)
+        } catch (err) {
+            console.error('[Sync-Offline] Rate limiter infra failure. Failing closed:', err)
+            return NextResponse.json({ error: 'Service Unavailable' }, { status: 503 })
+        }
         if (rl) return rl
 
         const body = await request.json()

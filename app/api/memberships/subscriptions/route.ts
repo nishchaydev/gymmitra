@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma, withRetry } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
 import { getAuthGym } from '@/lib/auth'
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Atomic transaction: Create subscription AND update member status
-        const [subscription] = await prisma.$transaction(async (tx) => {
+        const [subscription] = await withRetry(() => prisma.$transaction(async (tx) => {
             const sub = await tx.memberSubscription.create({
                 data: {
                     memberId: validatedData.memberId,
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
             })
 
             return [sub]
-        })
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
 
         return NextResponse.json(subscription, { status: 201 })
     } catch (error) {

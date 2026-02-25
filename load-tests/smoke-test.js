@@ -35,8 +35,11 @@ export default function () {
         'auth: status 200, 302, or 303': (r) =>
             r.status === 200 || r.status === 302 || r.status === 303,
         'auth: has session cookie or token': (r) => {
-            // Use k6's cookie API (case-insensitive, HTTP/2 safe)
-            if (r.cookies && Object.keys(r.cookies).length > 0) return true;
+            // Use k6's cookie jar API (robust for HTTP/2)
+            const jar = http.cookieJar();
+            const cookies = jar.cookiesForURL(loginRes.url);
+            const hasAuthCookie = Object.keys(cookies).some(name => /^sb-.*-auth-token$/.test(name));
+            if (hasAuthCookie) return true;
             // Fallback: try parsing JSON body for access_token
             if (r.body) {
                 try {

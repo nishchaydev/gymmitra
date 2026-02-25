@@ -21,7 +21,7 @@ async function getAuth() {
 export async function GET(request: NextRequest) {
     try {
         const auth = await getAuth()
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const rl = await guardRateLimit(100, `${auth.userId}:plans:get`)
         if (rl) return rl
@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const auth = await getAuth()
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!auth || !auth.gym || typeof auth.userId !== 'string' || !['ADMIN', 'OWNER'].includes(auth.role)) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
 
         const rl = await guardRateLimit(50, `${auth.userId}:plans:post`)
         if (rl) return rl

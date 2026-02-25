@@ -4,7 +4,12 @@ import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
 import { guardRateLimit } from '@/lib/rate-limit';
 import crypto from 'crypto';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+function isTrustedProxy(ip: string): boolean {
+    if (ip === '127.0.0.1' || ip === '::1') return true
+    const trusted = process.env.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
+    return trusted.includes('*') || trusted.includes(ip)
+}
 
 /**
  * Extract the originating client IP from the request.
@@ -14,14 +19,18 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 function getClientIdentifier(req: NextRequest): string {
     // Prefer req.ip when available (Vercel Edge)
-    const reqIp = (req as any).ip
-    if (reqIp) return reqIp
+    const reqIp = (req as any).ip || req.headers.get('x-real-ip')
 
-    const xff = req.headers.get('x-forwarded-for')
-    if (xff) {
-        const first = xff.split(',')[0].trim()
-        if (first) return first
+    // Only trust X-Forwarded-For if request originates from a trusted proxy
+    if (reqIp && isTrustedProxy(reqIp)) {
+        const xff = req.headers.get('x-forwarded-for')
+        if (xff) {
+            const first = xff.split(',')[0].trim()
+            if (first) return first
+        }
     }
+
+    if (reqIp) return reqIp
 
     // Derive a per-caller fingerprint from auth header
     const authHeader = req.headers.get('authorization')
@@ -54,11 +63,23 @@ export async function POST(req: NextRequest) {
         if (rl) return rl
 
         // 2. Verify Webhook Secret (Bearer token)
-        const authHeader = req.headers.get('Authorization');
-        const webhookSecret = process.env.WEBHOOK_SECRET;
+        const authHeader = req.headers.get('Authorization') || '';
+        const webhookSecret = process.env.WEBHOOK_SECRET || '';
 
-        if (!webhookSecret || authHeader !== `Bearer ${webhookSecret}`) {
-            console.warn(`[Webhook] Invalid auth attempt from ${clientId}`)
+        const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
+
+        const token = authHeader.replace(/^Bearer\s+/i, '');
+        const secretBuf = Buffer.from(webhookSecret);
+        let tokenBuf = Buffer.from(token);
+
+        let lengthsMatch = true;
+        if (tokenBuf.length !== secretBuf.length) {
+            lengthsMatch = false;
+            tokenBuf = Buffer.alloc(secretBuf.length, 0); // same-length zero buffer
+        }
+
+        if (!crypto.timingSafeEqual(secretBuf, tokenBuf) || !lengthsMatch || !webhookSecret) {
+            console.warn(`[Webhook] Invalid auth attempt from ${clientId}`);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -71,7 +92,15 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. Parse payload
-        const payload = JSON.parse(rawBody);
+        let payload;
+        try {
+            payload = JSON.parse(rawBody);
+        } catch (err: any) {
+            if (err instanceof SyntaxError) {
+                return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 });
+            }
+            throw err;
+        }
         const { email, ownerName, gymName } = payload;
 
         if (!email || !ownerName || !gymName) {

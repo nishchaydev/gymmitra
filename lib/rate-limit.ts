@@ -146,7 +146,8 @@ import { NextResponse } from 'next/server'
  */
 export async function guardRateLimit(
     limit: number,
-    key: string
+    key: string,
+    failOpen: boolean = true
 ): Promise<NextResponse | null> {
     try {
         await apiLimiter.check(limit, key)
@@ -161,9 +162,12 @@ export async function guardRateLimit(
                 }
             )
         }
-        // Fail-open: limiter infra failure should not block the request
-        console.error('[rate-limit] Infrastructure error, failing open:', e)
-        return null
+        // Infra failure
+        if (failOpen) {
+            console.error('[rate-limit] Infrastructure error, failing open:', e)
+            return null
+        }
+        throw e
     }
 }
 

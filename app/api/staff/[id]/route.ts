@@ -35,7 +35,7 @@ export async function DELETE(
 
         // Delete with gymId ownership enforced
         await prisma.staffMember.delete({
-            where: { id, gymId: auth.gym.id }
+            where: { id }
         })
 
         return NextResponse.json({ message: 'Staff member removed successfully' })

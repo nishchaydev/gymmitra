@@ -15,7 +15,7 @@ async function getAuth() {
 export async function GET(request: NextRequest) {
     try {
         const auth = await getAuth()
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const rl = await guardRateLimit(30, `${auth.userId}:reminders:get`)
         if (rl) return rl

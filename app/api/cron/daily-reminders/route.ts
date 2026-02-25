@@ -4,7 +4,6 @@ import { Resend } from 'resend'
 import { addDays, startOfDay, endOfDay, differenceInDays } from 'date-fns'
 import crypto from 'crypto'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
 const BATCH_SIZE = 5
 
@@ -45,13 +44,15 @@ export async function GET(request: NextRequest) {
         return new Response('Server misconfigured', { status: 500 })
     }
 
+    const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build')
+
     const authHeader = request.headers.get('authorization') || ''
     const expected = `Bearer ${cronSecret}`
 
-    // Constant-time comparison to prevent timing attacks
-    const headerBuf = Buffer.from(authHeader)
-    const expectedBuf = Buffer.from(expected)
-    if (headerBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(headerBuf, expectedBuf)) {
+    // Constant-time comparison using fixed-length HMAC digests to prevent length leakage
+    const hmacHeader = crypto.createHmac('sha256', cronSecret).update(authHeader).digest()
+    const hmacExpected = crypto.createHmac('sha256', cronSecret).update(expected).digest()
+    if (!crypto.timingSafeEqual(hmacHeader, hmacExpected)) {
         return new Response('Unauthorized', { status: 401 })
     }
 
@@ -165,13 +166,16 @@ export async function GET(request: NextRequest) {
                 }, BATCH_SIZE)
 
                 // ── Birthday Wishes (DB-level filter) ─────────────────
-                const todayMonth = today.getMonth() + 1
-                const todayDay = today.getDate()
+                // Compute today's date in IST (since Gym Mitra targets the Indian market primarily)
+                const gymDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }))
+                const todayMonth = gymDate.getMonth() + 1
+                const todayDay = gymDate.getDate()
+
                 const birthdayMembers: { id: string; name: string; email: string | null }[] =
                     await prisma.$queryRaw`
-                        SELECT id, name, email FROM "Member"
+                        SELECT "id", "name", "email" FROM "Member"
                         WHERE "gymId" = ${gym.id}
-                          AND status = 'ACTIVE'
+                          AND "status" = 'ACTIVE'
                           AND "dateOfBirth" IS NOT NULL
                           AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
                           AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}

@@ -23,7 +23,12 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const rl = await guardRateLimit(SETTINGS_RATE_LIMIT, `${auth.userId}:settings:get`)
+        let rl;
+        try {
+            rl = await guardRateLimit(SETTINGS_RATE_LIMIT, `${auth.userId}:settings:get`, false)
+        } catch (err) {
+            console.error('[Settings] Rate limiter infra failure. Failing open:', err)
+        }
         if (rl) return rl
 
         return NextResponse.json(auth.gym)
@@ -41,7 +46,12 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const rl = await guardRateLimit(SETTINGS_RATE_LIMIT, `${auth.userId}:settings:put`)
+        let rl;
+        try {
+            rl = await guardRateLimit(SETTINGS_RATE_LIMIT, `${auth.userId}:settings:put`, false)
+        } catch (err) {
+            console.error('[Settings] Rate limiter infra failure. Failing open:', err)
+        }
         if (rl) return rl
 
         let body;

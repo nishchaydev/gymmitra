@@ -72,10 +72,13 @@ async function runTests() {
         console.log(frequencyResult.map(r => {
             const digits = r.phone ? r.phone.replace(/\D/g, '') : null
             return {
-                ...r,
-                phone: digits && digits.length >= 7
+                id: r.member_id,
+                member_name: r.member_name ? `${r.member_name[0]}***` : null,
+                phone: digits && digits.length >= 8
                     ? digits.replace(/(\d{3})(\d+)(\d{4})/, "$1****$3")
-                    : null
+                    : null,
+                visit_count: r.visit_count,
+                last_visit: r.last_visit
             }
         }))
 

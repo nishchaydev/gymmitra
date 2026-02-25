@@ -22,7 +22,7 @@ export async function GET(
 ) {
     try {
         const auth = await getAuthGym()
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const rl = await guardRateLimit(100, `${auth.userId}:members:get-id`)
         if (rl) return rl
@@ -68,7 +68,7 @@ export async function PUT(
 ) {
     try {
         const auth = await getAuthGym()
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const rl = await guardRateLimit(30, `${auth.userId}:members:put`)
         if (rl) return rl
@@ -107,7 +107,7 @@ export async function DELETE(
 ) {
     try {
         const auth = await getAuthGym()
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         // Lower limit for destructive operations
         const rl = await guardRateLimit(10, `${auth.userId}:members:delete`)

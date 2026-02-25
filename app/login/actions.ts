@@ -57,7 +57,7 @@ export async function signup(formData: FormData) {
             const existingStaff = await prisma.staffMember.findMany({
                 where: {
                     email: { equals: data.user.email!, mode: 'insensitive' },
-                    userId: { equals: null as any }
+                    userId: null
                 }
             })
 
@@ -66,7 +66,7 @@ export async function signup(formData: FormData) {
                 await prisma.staffMember.updateMany({
                     where: {
                         email: { equals: data.user.email!, mode: 'insensitive' },
-                        userId: { equals: null as any }
+                        userId: null
                     },
                     data: { userId: data.user.id, isActive: true }
                 })

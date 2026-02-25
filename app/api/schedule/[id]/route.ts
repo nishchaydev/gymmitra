@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma, withRetry } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
-import { SessionStatus } from '@prisma/client'
+import { SessionStatus, Prisma } from '@prisma/client'
 import { guardRateLimit, ConflictError } from '@/lib/rate-limit'
 
 const updateSchema = z.object({
@@ -30,7 +30,7 @@ export async function PATCH(
         const data = updateSchema.parse(body)
 
         // Atomic transaction: ownership + conflict + update
-        const updatedSession = await prisma.$transaction(async (tx) => {
+        const updatedSession = await withRetry(() => prisma.$transaction(async (tx) => {
             const session = await tx.pTSession.findFirst({
                 where: { id: params.id, gymId: auth.gym.id }
             })
@@ -43,6 +43,14 @@ export async function PATCH(
             if (data.startTime || data.endTime) {
                 const newStart = data.startTime ?? session.startTime
                 const newEnd = data.endTime ?? session.endTime
+
+                if (newStart.getTime() >= newEnd.getTime()) {
+                    throw new z.ZodError([{
+                        code: z.ZodIssueCode.custom,
+                        path: ['endTime'],
+                        message: 'End time must be after start time'
+                    }])
+                }
 
                 const conflictingSession = await tx.pTSession.findFirst({
                     where: {
@@ -64,7 +72,7 @@ export async function PATCH(
                 where: { id: params.id },
                 data
             })
-        })
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
 
         return NextResponse.json(updatedSession)
     } catch (error) {
