@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
 
         // 6. Send Welcome Email using Resend
         const { data, error } = await resend.emails.send({
-            from: 'Gym Mitra ERP <hello@mail.emitra.dev>',
+            from: 'Gym Mitra ERP <welcome@mail.emitra.dev>',
             to: [ownerEmail],
             subject: `Welcome to Gym Mitra ERP!`,
             react: OnboardingEmail({
