@@ -12,7 +12,7 @@ export async function login(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     })
@@ -21,9 +21,26 @@ export async function login(formData: FormData) {
         redirect(`/login?message=${encodeURIComponent(error.message)}`)
     }
 
-    // Clear demo mode cookie if it exists
+    // Check real verification status to survive multi-device logins
+    const gym = await prisma.gymProfile.findFirst({
+        where: { userId: data.user?.id }
+    })
+
+    const isTrainerProfile = data.user && !gym ? await prisma.staffMember.findFirst({
+        where: { userId: data.user.id }
+    }) : null;
+
     const cookieStore = await cookies()
     cookieStore.delete('mitra_demo_mode')
+
+    if (gym?.isVerified || isTrainerProfile) {
+        cookieStore.set('gym_onboarded', 'true', {
+            maxAge: 30 * 24 * 60 * 60, // 30 days
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
+    }
 
     revalidatePath('/', 'layout')
     redirect('/dashboard')
