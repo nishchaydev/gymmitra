@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dumbbell, AlertCircle, Building2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ClientRegistrationForm } from './ClientRegistrationForm'
 
 export default async function LoginPage(props: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -68,27 +69,7 @@ export default async function LoginPage(props: {
                             </form>
                         </TabsContent>
                         <TabsContent value="register">
-                            <form className="space-y-4 pt-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="register-email">Email</Label>
-                                    <Input id="register-email" name="email" type="email" required placeholder="m@example.com" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="register-password">Password</Label>
-                                    <Input id="register-password" name="password" type="password" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="license-key">Registration Code (Required)</Label>
-                                    <Input id="license-key" name="license_key" type="text" required placeholder="Ex: GRO-AB12-CD34" />
-                                    <p className="text-xs text-muted-foreground">
-                                        Your selected SaaS Plan will be automatically applied based on this code.
-                                    </p>
-                                </div>
-                                <SubmitButton formAction={signup} variant="secondary" className="w-full" text="Sign up" loadingText="Creating account..." />
-                                <p className="text-xs text-center text-muted-foreground mt-2">
-                                    By clicking sign up, you verify that you are an authorized gym administrator.
-                                </p>
-                            </form>
+                            <ClientRegistrationForm />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
