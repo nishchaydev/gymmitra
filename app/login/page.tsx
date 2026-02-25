@@ -78,8 +78,11 @@ export default async function LoginPage(props: {
                                     <Input id="register-password" name="password" type="password" required />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="license-key">License Key (Required)</Label>
-                                    <Input id="license-key" name="license_key" type="text" required placeholder="Enter your purchase code" />
+                                    <Label htmlFor="license-key">Registration Code (Required)</Label>
+                                    <Input id="license-key" name="license_key" type="text" required placeholder="Ex: GRO-AB12-CD34" />
+                                    <p className="text-xs text-muted-foreground">
+                                        Your selected SaaS Plan will be automatically applied based on this code.
+                                    </p>
                                 </div>
                                 <SubmitButton formAction={signup} variant="secondary" className="w-full" text="Sign up" loadingText="Creating account..." />
                                 <p className="text-xs text-center text-muted-foreground mt-2">

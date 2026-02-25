@@ -20,6 +20,7 @@ interface OnboardingEmailProps {
     gymName: string;
     loginUrl: string;
     serviceAgreementUrl: string;
+    saasPlan: string;
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
@@ -29,6 +30,7 @@ export const OnboardingEmail = ({
     gymName,
     loginUrl,
     serviceAgreementUrl,
+    saasPlan,
 }: OnboardingEmailProps) => {
     const previewText = `Welcome to Gym Mitra ERP - Next Steps for ${gymName}`;
 
@@ -56,6 +58,12 @@ export const OnboardingEmail = ({
                         <Text className="text-[14px] leading-[24px]">
                             To complete your onboarding process and protect both your business and your members, please review our official Service Agreement.
                         </Text>
+
+                        <Section className="bg-blue-50 border border-solid border-blue-100 rounded p-[16px] my-[24px]">
+                            <Text className="text-[14px] font-semibold text-blue-800 m-0">
+                                Your Subscription Plan: <span className="font-bold uppercase">{saasPlan}</span>
+                            </Text>
+                        </Section>
 
                         <Section className="text-center mt-[32px] mb-[32px]">
                             <Button
@@ -104,6 +112,7 @@ OnboardingEmail.PreviewProps = {
     gymName: 'Titanium Fitness',
     loginUrl: `${baseUrl}/dashboard`,
     serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+    saasPlan: 'GROWTH',
 } as OnboardingEmailProps;
 
 export default OnboardingEmail;

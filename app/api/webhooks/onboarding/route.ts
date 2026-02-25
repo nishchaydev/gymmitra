@@ -1,134 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
-import { guardRateLimit } from '@/lib/rate-limit';
-import crypto from 'crypto';
+import { prisma } from '@/lib/prisma';
 
-
-function isTrustedProxy(ip: string): boolean {
-    if (ip === '127.0.0.1' || ip === '::1') return true
-    const trusted = process.env.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
-    return trusted.includes(ip)
-}
-
-/**
- * Extract the originating client IP from the request.
- * Parses X-Forwarded-For (takes leftmost entry) or falls back to a
- * hashed fingerprint of the Authorization header to avoid a single
- * shared "anonymous" bucket.
- */
-function getClientIdentifier(req: NextRequest): string {
-    // Prefer req.ip when available (Vercel Edge)
-    const reqIp = (req as any).ip || req.headers.get('x-real-ip')
-
-    // Only trust X-Forwarded-For if request originates from a trusted proxy
-    if (reqIp && isTrustedProxy(reqIp)) {
-        const xff = req.headers.get('x-forwarded-for')
-        if (xff) {
-            const first = xff.split(',')[0].trim()
-            if (first) return first
-        }
-    }
-
-    if (reqIp) return reqIp
-
-    // Derive a per-caller fingerprint from auth header
-    const authHeader = req.headers.get('authorization')
-    if (authHeader) {
-        const hash = crypto.createHash('sha256').update(authHeader).digest('hex').slice(0, 12)
-        return `auth:${hash}`
-    }
-
-    return 'anonymous'
-}
-
-/**
- * Verify the HMAC signature of the raw request body using
- * the shared webhook secret (constant-time comparison).
- */
-function verifyWebhookSignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
-    if (!signatureHeader) return false
-    const computed = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
-    const sigBuf = Buffer.from(signatureHeader)
-    const computedBuf = Buffer.from(computed)
-    if (sigBuf.length !== computedBuf.length) return false
-    return crypto.timingSafeEqual(sigBuf, computedBuf)
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. Rate limit by client IP/fingerprint (public endpoint)
-        const clientId = getClientIdentifier(req)
-        const rl = await guardRateLimit(10, `webhook:onboarding:${clientId}`)
-        if (rl) return rl
+        // 1. Verify Webhook Secret
+        const authHeader = req.headers.get('Authorization');
+        const webhookSecret = process.env.WEBHOOK_SECRET;
 
-        // 2. Verify Webhook Secret (Bearer token)
-        const authHeader = req.headers.get('Authorization') || '';
-        const webhookSecret = process.env.WEBHOOK_SECRET || '';
-
-        const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
-
-        const token = authHeader.replace(/^Bearer\s+/i, '');
-        const secretBuf = Buffer.from(webhookSecret);
-        let tokenBuf = Buffer.from(token);
-
-        let lengthsMatch = true;
-        if (tokenBuf.length !== secretBuf.length) {
-            lengthsMatch = false;
-            tokenBuf = Buffer.alloc(secretBuf.length, 0); // same-length zero buffer
-        }
-
-        if (!crypto.timingSafeEqual(secretBuf, tokenBuf) || !lengthsMatch || !webhookSecret) {
-            console.warn(`[Webhook] Invalid auth attempt from ${clientId}`);
+        if (!webhookSecret || authHeader !== `Bearer ${webhookSecret}`) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 3. Read & verify HMAC signature if present
-        const rawBody = await req.text();
-        const signature = req.headers.get('x-webhook-signature');
-        if (signature && !verifyWebhookSignature(rawBody, signature, webhookSecret)) {
-            console.warn(`[Webhook] HMAC signature mismatch from ${clientId}`)
-            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        // 2. Parse Payload from Supabase `auth.users` UPDATE trigger
+        const payload = await req.json();
+        const { type, record, old_record } = payload;
+
+        // Security check - Only process UPDATE events on the auth.users table
+        if (type !== 'UPDATE' || !record) {
+            return NextResponse.json({ message: 'Ignoring non-update event' }, { status: 200 });
         }
 
-        // 4. Parse payload
-        let payload;
-        try {
-            payload = JSON.parse(rawBody);
-        } catch (err: any) {
-            if (err instanceof SyntaxError) {
-                return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 });
-            }
-            throw err;
-        }
-        const { email, ownerName, gymName } = payload;
+        // 3. CORE LOGIC: Did they *just* confirm their email?
+        // We check if `email_confirmed_at` was empty in the old record, but now has a timestamp in the new record.
+        const justConfirmed = !old_record?.email_confirmed_at && !!record?.email_confirmed_at;
 
-        if (!email || !ownerName || !gymName) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!justConfirmed) {
+            // It was just another profile update, not the initial email confirmation. We skip.
+            return NextResponse.json({ message: 'Email not freshly confirmed. Skipping email delivery.' }, { status: 200 });
         }
 
-        // 5. Send onboarding email
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
+        // 4. Fetch the Gym Profile to get their Name and SaaS Plan
+        const gymProfile = await prisma.gymProfile.findUnique({
+            where: { userId: record.id }
+        });
+
+        if (!gymProfile) {
+            console.error(`Webhook Error: GymProfile not found for user ${record.id}`);
+            return NextResponse.json({ error: 'Profile sync error' }, { status: 400 });
+        }
+
+        const ownerEmail = record.email;
+        const ownerName = gymProfile.name || 'Gym Owner';
+        const gymName = gymProfile.businessName || gymProfile.name || 'your new gym';
+        const saasPlan = gymProfile.saasPlan; // BASIC, GROWTH, or ENTERPRISE
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
+
+        console.log(`Email confirmed! Sending Welcome + Plan [${saasPlan}] to ${ownerEmail}...`);
+
+        // 5. Send Welcome Email using Resend
         const { data, error } = await resend.emails.send({
-            from: 'Gym Mitra <hello@mail.emitra.dev>',
-            to: [email],
-            subject: '🏋️ Welcome to Gym Mitra!',
+            from: 'Gym Mitra ERP <hello@mail.emitra.dev>', // MUST use the verified domain
+            to: [ownerEmail],
+            subject: `Welcome to Gym Mitra ERP -> Your ${saasPlan} Plan is Ready!`,
             react: OnboardingEmail({
                 ownerName,
                 gymName,
-                loginUrl: `${appUrl}/login`,
-                serviceAgreementUrl: `${appUrl}/legal/service-agreement`,
+                loginUrl: `${baseUrl}/login`,
+                serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
             }),
         });
 
         if (error) {
-            console.error('[Webhook] Email send failed:', error);
-            return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+            console.error('Resend Error:', error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, messageId: data?.id });
+        return NextResponse.json({ success: true, data });
     } catch (error) {
-        console.error('[Webhook] Onboarding error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error('Webhook processing error:', error);
+        return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
     }
 }
