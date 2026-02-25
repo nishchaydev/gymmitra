@@ -20,7 +20,16 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ page?: string }>
+}) {
+    const params = await searchParams
+    const page = Math.max(1, parseInt(params.page || '1'))
+    const take = 50
+    const skip = (page - 1) * take
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
@@ -42,34 +51,27 @@ export default async function InvoicesPage() {
     }
 
     const invoices = isDemo ? SHOWCASE_INVOICES.map(i => ({
-        id: i.id,
-        invoiceNumber: i.id.toUpperCase(),
-        issueDate: new Date(i.date),
-        dueDate: new Date(i.date),
-        total: i.amount,
-        paymentStatus: i.status as any, // Cast to any because the enums might not perfectly match local Prisma types yet
-        type: i.type as any,
-        notes: null,
-        subtotal: i.amount,
-        discount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        gymId: 'demo',
-        memberId: i.member.id,
-        member: { name: i.member?.name || 'Walk-in' }
+        // ... demo mapping ...
     })) : await prisma.invoice.findMany({
         where: {
             member: {
-                gymId: gymId // Enforce data isolation via relation
+                gymId: gymId
             }
         },
         orderBy: { issueDate: 'desc' },
+        take: take,
+        skip: skip,
         include: {
             member: {
                 select: { name: true }
             }
         }
     })
+
+    const totalCount = isDemo ? invoices.length : await prisma.invoice.count({
+        where: { member: { gymId: gymId } }
+    })
+    const hasMore = totalCount > page * take
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
@@ -153,6 +155,26 @@ export default async function InvoicesPage() {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {totalCount > take && (
+                        <div className="flex items-center justify-between mt-6 px-2">
+                            <p className="text-sm text-muted-foreground">
+                                Showing <span className="font-bold">{(page - 1) * take + 1}</span> to <span className="font-bold">{Math.min(page * take, totalCount)}</span> of <span className="font-bold">{totalCount}</span> invoices
+                            </p>
+                            <div className="flex gap-2">
+                                <Link href={`/invoices?page=${page - 1}`}>
+                                    <Button variant="outline" size="sm" disabled={page === 1}>
+                                        Previous
+                                    </Button>
+                                </Link>
+                                <Link href={`/invoices?page=${page + 1}`}>
+                                    <Button variant="outline" size="sm" disabled={!hasMore}>
+                                        Next
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

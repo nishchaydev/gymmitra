@@ -13,60 +13,37 @@ import { startOfToday } from "date-fns"
 type Props = {
     isDemo?: boolean
     gymId?: string
+    data?: {
+        count: number
+        recentInitials: string[]
+        lastCheckinLabel: string
+    }
 }
 
-export async function AttendanceWidget({ isDemo, gymId }: Props) {
-    if (isDemo) {
-        // Demo mode: render mock showcase data
-        const avatars = (MOCKUP_DATA as any).birthdays.map((b: any) => b.img)
-        return <AttendanceCard avatarCount={avatars.length} extraCount={12} memberCount={15} lastCheckinLabel="Last check-in 5 mins ago" />
+export async function AttendanceWidget({ isDemo, gymId, data }: Props) {
+    if (isDemo || !data) {
+        // Demo mode or missing data: render mock/pre-calculated props
+        const memberCount = data?.count ?? 15
+        const lastCheckinLabel = data?.lastCheckinLabel ?? "Last check-in 5 mins ago"
+        const recentInitials = data?.recentInitials ?? ['JD', 'AS', 'RK']
+
+        return (
+            <AttendanceCard
+                initials={recentInitials}
+                extraCount={Math.max(0, memberCount - recentInitials.length)}
+                memberCount={memberCount}
+                lastCheckinLabel={lastCheckinLabel}
+            />
+        )
     }
 
-    // Real user: fetch today's actual attendance from the DB
-    let memberCount = 0
-    let lastCheckinLabel = "No check-ins today"
-    let recentInitials: string[] = []
-
-    if (gymId) {
-        try {
-            const today = startOfToday()
-            const [count, recentAttendance] = await Promise.all([
-                prisma.attendance.count({
-                    where: { gymId, date: { gte: today } } as any,
-                }),
-                prisma.attendance.findMany({
-                    where: { gymId, date: { gte: today } } as any,
-                    include: { member: { select: { name: true } } },
-                    orderBy: { checkInTime: 'desc' },
-                    take: 3,
-                }),
-            ])
-
-            memberCount = count
-
-            if (recentAttendance.length > 0) {
-                const last = recentAttendance[0]
-                const checkIn = new Date((last as any).checkInTime)
-                const minutesAgo = Math.round((Date.now() - checkIn.getTime()) / 60000)
-                lastCheckinLabel = minutesAgo < 60
-                    ? `Last check-in ${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`
-                    : `Last check-in ${Math.round(minutesAgo / 60)}h ago`
-
-                recentInitials = recentAttendance.map((a: any) =>
-                    a.member?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) ?? '?'
-                )
-            }
-        } catch (e) {
-            console.error('[AttendanceWidget] DB error:', e instanceof Error ? e.message : String(e))
-        }
-    }
-
+    // Real user: use pre-fetched data from props
     return (
         <AttendanceCard
-            initials={recentInitials}
-            extraCount={Math.max(0, memberCount - recentInitials.length)}
-            memberCount={memberCount}
-            lastCheckinLabel={lastCheckinLabel}
+            initials={data.recentInitials}
+            extraCount={Math.max(0, data.count - data.recentInitials.length)}
+            memberCount={data.count}
+            lastCheckinLabel={data.lastCheckinLabel}
         />
     )
 }

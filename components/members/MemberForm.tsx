@@ -18,6 +18,8 @@ import { useState, useRef, useEffect } from "react"
 import { toast } from "sonner"
 import { SuccessCheckmark } from "@/components/ui/success-animation"
 
+import { createMember } from "@/app/members/actions"
+
 const memberFormSchema = z.object({
     name: z.string().min(2, {
         message: "Name must be at least 2 characters.",
@@ -25,11 +27,10 @@ const memberFormSchema = z.object({
     phone: z.string().min(10, {
         message: "Phone number must be at least 10 digits.",
     }),
-    email: z.string().email().optional(),
+    email: z.string().email().optional().or(z.literal("")),
     dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), {
         message: "Invalid date",
     }),
-    gymId: z.string().default("default-gym-id"), // In real app, from auth
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
@@ -39,7 +40,7 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 
 // Define MemberFormProps type
 interface MemberFormProps {
-    member?: MemberFormValues; // Optional prop for editing existing members
+    member?: any; // Simpler type for now since we're refactoring
 }
 
 export default function MemberForm({ member }: MemberFormProps) {
@@ -61,64 +62,43 @@ export default function MemberForm({ member }: MemberFormProps) {
         defaultValues: member ? {
             name: member.name,
             phone: member.phone,
-            email: member.email,
-            dateOfBirth: member.dateOfBirth,
-            gymId: member.gymId,
-            emergencyName: member.emergencyName,
-            emergencyPhone: member.emergencyPhone,
-            emergencyRelation: member.emergencyRelation,
+            email: member.email || "",
+            dateOfBirth: member.dateOfBirth instanceof Date ? member.dateOfBirth.toISOString().split('T')[0] : member.dateOfBirth,
+            emergencyName: member.emergencyName || "",
+            emergencyPhone: member.emergencyPhone || "",
+            emergencyRelation: member.emergencyRelation || "",
         } : {
             name: "",
             phone: "",
             email: "",
             dateOfBirth: "",
-            gymId: "default-gym-id",
             emergencyName: "",
             emergencyPhone: "",
             emergencyRelation: "",
         },
     })
 
-    useEffect(() => {
-        if (member) {
-            form.reset({
-                name: member.name,
-                phone: member.phone,
-                email: member.email || "",
-                dateOfBirth: member.dateOfBirth,
-                gymId: member.gymId,
-                emergencyName: member.emergencyName || "",
-                emergencyPhone: member.emergencyPhone || "",
-                emergencyRelation: member.emergencyRelation || "",
-            })
-        }
-    }, [member, form])
-
     async function onSubmit(data: MemberFormValues) {
         setIsSubmitting(true)
         try {
-            const response = await fetch("/api/members", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-            })
+            const result = await createMember(data as any) as { success?: boolean, error?: string, id?: string }
 
-            if (!response.ok) {
-                throw new Error("Failed to create member")
+            if (result?.error) {
+                toast.error(result.error)
+                setIsSubmitting(false)
+                return
             }
 
-            setSuccess(true)
-            toast.success("Member created successfully", {
-                description: `${data.name} has been added to your gym.`,
-            })
+            if (result?.success) {
+                setSuccess(true)
+                toast.success("Member created successfully", {
+                    description: `${data.name} has been added to your gym.`,
+                })
 
-            // Wait for animation to play
-            submitTimeoutRef.current = setTimeout(() => {
-                router.push("/members")
-                router.refresh()
-            }, 2000)
+                submitTimeoutRef.current = setTimeout(() => {
+                    router.push("/members")
+                }, 2000)
+            }
         } catch {
             toast.error("Something went wrong", {
                 description: "Please try again."

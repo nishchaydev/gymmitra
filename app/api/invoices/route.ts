@@ -20,7 +20,7 @@ const invoiceCreateSchema = z.object({
     notes: z.string().optional(),
     dueDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
     discount: z.number().nonnegative().optional().default(0),
-    tax: z.number().nonnegative().optional().default(0),
+    taxAmount: z.number().nonnegative().optional().default(0),
 })
 
 export async function GET(request: NextRequest) {
@@ -111,13 +111,13 @@ export async function POST(request: NextRequest) {
             return acc + (item.quantity * item.unitPrice)
         }, 0)
 
-        const total = subtotal + validatedData.tax - validatedData.discount
+        const total = subtotal + validatedData.taxAmount - validatedData.discount
 
         // Generate Invoice Number
         const { generateInvoiceNumber } = await import("@/lib/invoice-utils")
         const invoiceNumber = await generateInvoiceNumber(gym.id)
 
-        const invoice = await prisma.invoice.create({
+        const invoice = await (prisma.invoice as any).create({
             data: {
                 invoiceNumber,
                 type: validatedData.type,
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
                 notes: validatedData.notes,
                 dueDate: validatedData.dueDate,
                 subtotal: subtotal,
-                tax: validatedData.tax,
+                taxAmount: validatedData.taxAmount,
                 discount: validatedData.discount,
                 total: total,
                 shareToken: undefined, // Will auto-generate via default(cuid())

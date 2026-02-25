@@ -65,29 +65,42 @@ export async function POST(request: NextRequest) {
             try {
                 // Normalize date securely using the gym's specific timezone
                 const checkInTimeDate = new Date(record.checkInTime)
-                const timezone = auth.gym.timezone || 'Asia/Kolkata'
+                const timezone = (auth.gym as any).timezone || 'Asia/Kolkata'
                 const localDateString = formatInTimeZone(checkInTimeDate, timezone, 'yyyy-MM-dd')
 
-                // Upsert to handle offline retries
-                await prisma.attendance.upsert({
+                // 3. Idempotent processing: Keep the EARLIEST check-in of the day
+                const existing = await (prisma.attendance as any).findUnique({
                     where: {
                         memberId_localDateString: {
                             memberId: record.memberId,
                             localDateString: localDateString,
                         }
-                    },
-                    update: {
-                        checkInTime: record.checkInTime,
-                        updatedAt: new Date()
-                    },
-                    create: {
-                        memberId: record.memberId,
-                        gymId: auth.gym.id,
-                        localDateString: localDateString,
-                        checkInTime: record.checkInTime,
-                        date: checkInTimeDate
                     }
                 })
+
+                if (existing) {
+                    // Only update if the record coming in is EARLIER (unlikely with timestamps but good for safety)
+                    const existingTime = new Date(existing.checkInTime)
+                    if (checkInTimeDate < existingTime) {
+                        await prisma.attendance.update({
+                            where: { id: existing.id },
+                            data: {
+                                checkInTime: record.checkInTime,
+                                updatedAt: new Date()
+                            }
+                        })
+                    }
+                } else {
+                    await (prisma.attendance as any).create({
+                        data: {
+                            memberId: record.memberId,
+                            gymId: auth.gym.id,
+                            localDateString: localDateString,
+                            checkInTime: record.checkInTime,
+                            date: checkInTimeDate
+                        }
+                    })
+                }
 
                 syncedIds.push(record.id)
             } catch (err) {

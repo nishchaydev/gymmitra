@@ -80,62 +80,86 @@ export async function POST(req: NextRequest) {
 
         const { type, record, old_record } = payload;
 
-        // Security check - Only process UPDATE events on the auth.users table
-        if (type !== 'UPDATE' || !record) {
-            return NextResponse.json({ message: 'Ignoring non-update event' }, { status: 200 });
+        // Security check - Only process INSERT or UPDATE events on the auth.users table
+        if ((type !== 'INSERT' && type !== 'UPDATE') || !record) {
+            return NextResponse.json({ message: 'Ignoring non-auth event' }, { status: 200 });
         }
 
         if (typeof record.id !== 'string' || !record.id.trim() || typeof record.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) {
             return NextResponse.json({ error: 'Missing or invalid record.id/record.email' }, { status: 400 });
         }
 
-        // 4. CORE LOGIC: Did they *just* confirm their email?
-        const justConfirmed = !old_record?.email_confirmed_at && !!record?.email_confirmed_at;
+        // 4. CORE LOGIC: Did they *just* confirm their email (or were they auto-confirmed)?
+        let justConfirmed = false;
+        if (type === 'INSERT') {
+            // For auto-confirmed signups
+            justConfirmed = !!record.email_confirmed_at;
+        } else {
+            // For manual confirmation via link
+            justConfirmed = !old_record?.email_confirmed_at && !!record?.email_confirmed_at;
+        }
 
         if (!justConfirmed) {
             return NextResponse.json({ message: 'Email not freshly confirmed. Skipping email delivery.' }, { status: 200 });
         }
 
-        // 5. Fetch the Gym Profile to get their Name and SaaS Plan
-        const gymProfile = await prisma.gymProfile.findUnique({
+        // 5. HYBRID GYM LOOKUP: Owner vs Staff
+        // First try finding as Owner (Direct GymProfile)
+        let gymProfile = await prisma.gymProfile.findUnique({
             where: { userId: record.id }
         });
 
+        // Fallback: Check if they are a Staff Member
         if (!gymProfile) {
-            console.error(`Webhook Error: GymProfile not found for user ${record.id}`);
-            return NextResponse.json({ error: 'Profile sync error' }, { status: 400 });
+            const staffMember = await prisma.staffMember.findFirst({
+                where: { userId: record.id },
+                include: { gym: true }
+            });
+            if (staffMember?.gym) {
+                gymProfile = staffMember.gym;
+            }
+        }
+
+        if (!gymProfile) {
+            console.warn(`Webhook: No associated Gym found for user ${record.id} (${record.email})`);
+            return NextResponse.json({ error: 'No associated gym found' }, { status: 404 });
         }
 
         const ownerEmail = record.email;
-        const ownerName = gymProfile.name || 'Gym Owner';
-        const gymName = gymProfile.businessName || gymProfile.name || 'your new gym';
+        const ownerName = gymProfile.name || 'User'; // Generic 'User' if name missing
+        const gymName = gymProfile.businessName || gymProfile.name || 'your local gym';
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
 
-        console.log(`Email confirmed! Sending Welcome to ${ownerEmail}...`);
+        console.log(`[Webhook] Event: ${type} | User: ${ownerEmail} | Gym: ${gymName} | Sending Welcome...`);
 
         // 6. Send Welcome Email using Resend
-        const { data, error } = await resend.emails.send({
-            from: 'Gym Mitra ERP <welcome@mail.emitra.dev>',
-            to: [ownerEmail],
-            subject: `Welcome to Gym Mitra ERP!`,
-            react: OnboardingEmail({
-                ownerName,
-                gymName,
-                loginUrl: `${baseUrl}/login`,
-                serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-                saasPlan: (gymProfile as any).saasPlan || 'BASIC',
-            }),
-        });
+        try {
+            const { data, error } = await resend.emails.send({
+                from: 'Gym Mitra ERP <welcome@mail.emitra.dev>',
+                to: [ownerEmail],
+                subject: `Welcome to Gym Mitra ERP!`,
+                react: OnboardingEmail({
+                    ownerName,
+                    gymName,
+                    loginUrl: `${baseUrl}/login`,
+                    serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                    saasPlan: (gymProfile as any).saasPlan || 'BASIC',
+                }),
+            });
 
-        if (error) {
-            console.error('Resend Error:', error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+            if (error) {
+                console.error('[Resend Error]:', error);
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+
+            return NextResponse.json({ success: true, message: 'Welcome email sent', data });
+        } catch (resendErr) {
+            console.error('[Webhook] Resend Runtime Exception:', resendErr);
+            return NextResponse.json({ error: 'Email service failed' }, { status: 503 });
         }
-
-        return NextResponse.json({ success: true, data });
     } catch (error) {
-        console.error('Webhook processing error:', error);
+        console.error('[Webhook] Global processing error:', error);
         return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
     }
 }

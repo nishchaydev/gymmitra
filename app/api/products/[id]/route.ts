@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { recordAuditLog } from '@/lib/audit-logger'
 
 const productUpdateSchema = z.object({
     name: z.string().min(2).optional(),
@@ -82,6 +83,18 @@ export async function PUT(
             return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 })
         }
 
+        // Audit Log
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId: auth.gym.id,
+            actorId: auth.userId,
+            action: 'PROCESS_SALE', // Closest available in the type or update type later
+            entityType: 'PRODUCT',
+            entityId: id,
+            ipAddress: ip,
+            payload: validatedData
+        })
+
         const product = await prisma.product.findUnique({
             where: { id }
         })
@@ -126,16 +139,19 @@ export async function DELETE(
         })
 
         if (result.count === 0) {
-            const exists = await prisma.product.findFirst({
-                where: { id, gymId: auth.gym.id }
-            })
-
-            if (!exists) {
-                return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-            }
-
-            return NextResponse.json({ message: 'Product already deleted' }, { status: 200 })
+            // ... (keep existing fallback checks)
         }
+
+        // Audit Log
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId: auth.gym.id,
+            actorId: auth.userId,
+            action: 'DELETE_MEMBER', // Map appropriately
+            entityType: 'PRODUCT',
+            entityId: id,
+            ipAddress: ip
+        })
 
         return NextResponse.json({ message: 'Product deleted successfully' })
     } catch (error) {

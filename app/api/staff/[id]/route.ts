@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { recordAuditLog } from '@/lib/audit-logger'
 
 export async function DELETE(
     request: NextRequest,
@@ -31,6 +32,17 @@ export async function DELETE(
         if (deleted.count === 0) {
             return NextResponse.json({ error: 'Staff member not found or unauthorized' }, { status: 404 })
         }
+
+        // Audit Log
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId: auth.gym.id,
+            actorId: auth.userId,
+            action: 'DELETE_MEMBER', // Using generic member/staff action or should define 'DELETE_STAFF'
+            entityType: 'STAFF',
+            entityId: id,
+            ipAddress: ip
+        })
 
         return NextResponse.json({ message: 'Staff member removed successfully' })
     } catch (error) {

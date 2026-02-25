@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { recordAuditLog } from '@/lib/audit-logger'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -49,94 +50,118 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
-    const email = formData.get('email') as string
+    const email = (formData.get('email') as string)?.toLowerCase().trim()
     const password = formData.get('password') as string
     const licenseKey = formData.get('license_key') as string
 
-    // Security Check: Validate dynamic Registration Code
-    const regCode = await prisma.registrationCode.findUnique({
-        where: { code: licenseKey }
-    });
-
-    if (!regCode || !regCode.isActive) {
-        redirect(`/login?view=register&message=${encodeURIComponent("Invalid or expired Registration Code.")}`)
+    if (!email || !password || !licenseKey) {
+        return redirect(`/login?view=register&message=${encodeURIComponent("All fields are required.")}`)
     }
 
-    if (regCode.usedCount >= regCode.maxUses) {
-        redirect(`/login?view=register&message=${encodeURIComponent("This Registration Code has reached its maximum number of uses.")}`)
-    }
+    let signupResult;
+    try {
+        signupResult = await prisma.$transaction(async (tx) => {
+            // 1. Validate Registration Code
+            const regCode = await tx.registrationCode.findUnique({
+                where: { code: licenseKey }
+            });
 
-    if (regCode.expiresAt && regCode.expiresAt < new Date()) {
-        redirect(`/login?view=register&message=${encodeURIComponent("This Registration Code has expired.")}`)
-    }
+            if (!regCode || !regCode.isActive || (regCode.expiresAt && regCode.expiresAt < new Date())) {
+                throw new Error("Invalid or expired Registration Code.")
+            }
 
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-    })
+            if (regCode.usedCount >= regCode.maxUses) {
+                throw new Error("Registration Code has reached maximum uses.")
+            }
 
-    if (error) {
-        redirect(`/login?message=${encodeURIComponent(error.message)}`)
-    }
-
-    if (data.user) {
-        try {
-            // Case-insensitive email lookup and restrict to profiles not yet linked
-            const existingStaff = await prisma.staffMember.findMany({
+            // 2. Atomic increment with Optimistic Locking
+            const updateResult = await tx.registrationCode.updateMany({
                 where: {
-                    email: { equals: data.user.email!, mode: 'insensitive' },
-                    userId: null
+                    id: regCode.id,
+                    usedCount: regCode.usedCount // Ensure no one else incremented it between our find and update
+                },
+                data: {
+                    usedCount: { increment: 1 }
                 }
+            });
+
+            if (updateResult.count === 0) {
+                throw new Error("Registration busy. Please try again.")
+            }
+
+            // 3. Auth signup
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
             })
 
+            if (error) throw error;
+            if (!data.user) throw new Error("Failed to create user account.");
+
+            // 4. Link Profiles
+            const existingStaff = await tx.staffMember.findMany({
+                where: { email, userId: null }
+            });
+
+            let targetGymId = null;
+
             if (existingStaff.length > 0) {
-                // Link their real Supabase userId to all their staff profiles
-                await prisma.staffMember.updateMany({
-                    where: {
-                        email: { equals: data.user.email!, mode: 'insensitive' },
-                        userId: null
-                    },
+                await tx.staffMember.updateMany({
+                    where: { email, userId: null },
                     data: { userId: data.user.id, isActive: true }
-                })
+                });
+                targetGymId = existingStaff[0].gymId;
             } else {
-                // Create a default Gym Profile for the new Owner user
-                const newGym = await prisma.gymProfile.create({
+                const newGym = await tx.gymProfile.create({
                     data: {
                         name: process.env.NEXT_PUBLIC_GYM_NAME || "My Gym",
-                        email: data.user.email!,
+                        email: email,
                         phone: "0000000000",
                         userId: data.user.id,
-                        saasPlan: regCode.plan // Inherit plan from the code
+                        saasPlan: regCode.plan,
+                        isVerified: false,
+                        onboardingStep: 0
                     }
-                })
-
-                // Mark the registration code as used
-                await prisma.registrationCode.update({
-                    where: { id: regCode.id },
-                    data: {
-                        usedCount: { increment: 1 },
-                        gymId: newGym.id // Link code to the new gym
-                    }
-                })
+                });
+                targetGymId = newGym.id;
             }
-        } catch (dbError: any) {
-            console.error('Error creating gym profile or linking staff:', dbError)
-            // Surface the error back to the UI
-            redirect(`/login?view=register&message=${encodeURIComponent("Database error during registration: " + (dbError.message || "Unknown error"))}`)
-        }
+
+            // Complete the code link
+            await tx.registrationCode.update({
+                where: { id: regCode.id },
+                data: { gymId: targetGymId }
+            });
+
+            return { userId: data.user.id, gymId: targetGymId, session: data.session };
+        });
+    } catch (error: any) {
+        console.error('Registration failed:', error.message);
+        return redirect(`/login?view=register&message=${encodeURIComponent(error.message || "Registration failed")}`);
     }
 
-    if (!data.session) {
-        // This usually means email confirmation is required
-        redirect(`/login?message=${encodeURIComponent("Please check your email to confirm your account before logging in.")}`)
+    // 5. Record Audit Log (After Transaction Success)
+    const headerList = await headers();
+    const ip = headerList.get('x-forwarded-for') || '127.0.0.1';
+
+    await recordAuditLog({
+        gymId: signupResult.gymId!,
+        actorId: signupResult.userId,
+        action: 'SIGNUP',
+        entityType: 'AUTH',
+        entityId: signupResult.userId,
+        ipAddress: ip,
+        payload: { email }
+    });
+
+    if (!signupResult.session) {
+        return redirect(`/login?message=${encodeURIComponent("Please check your email to confirm your account before logging in.")}`)
     }
 
-    // Clear demo mode cookie if it exists
     const cookieStore = await cookies()
     cookieStore.delete('mitra_demo_mode')
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    return redirect('/dashboard')
 }
 
 export async function demoLogin() {

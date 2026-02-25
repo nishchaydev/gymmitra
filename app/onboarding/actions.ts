@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
+import { headers, cookies } from "next/headers"
+import { recordAuditLog } from "@/lib/audit-logger"
 import { z } from "zod"
 
 const onboardingSchema = z.object({
@@ -81,6 +82,27 @@ export async function completeOnboarding(formData: FormData) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
     })
+
+    // Audit Log
+    const headerList = await headers()
+    const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
+
+    // We fetch the gym profile again or assume it was updated/created
+    const gym = await prisma.gymProfile.findUnique({
+        where: { userId: user.id }
+    })
+
+    if (gym) {
+        recordAuditLog({
+            gymId: gym.id,
+            actorId: user.id,
+            action: 'ONBOARDING_COMPLETE',
+            entityType: 'GYM',
+            entityId: gym.id,
+            ipAddress: ip,
+            payload: { businessName: gym.name }
+        })
+    }
 
     redirect("/dashboard")
 }

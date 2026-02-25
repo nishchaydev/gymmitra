@@ -12,7 +12,7 @@ import { SuccessCheckmark } from '@/components/ui/success-animation'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
-export default function NewInvoiceForm({ members }: { members: any[] }) {
+export default function NewInvoiceForm({ members, taxPercentage = 18 }: { members: any[], taxPercentage?: number }) {
     const router = useRouter()
     const [selectedMember, setSelectedMember] = useState<string>('')
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
@@ -30,7 +30,9 @@ export default function NewInvoiceForm({ members }: { members: any[] }) {
     }
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-    const total = Math.max(0, subtotal - discount)
+    const subtotalAfterDiscount = Math.max(0, subtotal - discount)
+    const taxAmount = (subtotalAfterDiscount * taxPercentage) / 100
+    const total = subtotalAfterDiscount + taxAmount
 
     // Client-side validation
     const isValid = items.length > 0 && items.every(item =>
@@ -178,6 +180,10 @@ export default function NewInvoiceForm({ members }: { members: any[] }) {
                                             onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
                                             className="bg-slate-950 border-slate-700 text-white h-10"
                                         />
+                                    </div>
+                                    <div className="flex justify-between text-slate-400 font-medium pt-1">
+                                        <span>GST ({taxPercentage}%)</span>
+                                        <span>₹{taxAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
                                         <span className="text-lg font-bold text-white">Total Amount</span>

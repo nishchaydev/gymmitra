@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { recordAuditLog } from '@/lib/audit-logger'
 
 const memberUpdateSchema = z.object({
     name: z.string().min(2).optional(),
@@ -86,6 +87,18 @@ export async function PUT(
             data: validatedData
         })
 
+        // Audit Log
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId: auth.gym.id,
+            actorId: auth.userId,
+            action: 'UPDATE_MEMBER',
+            entityType: 'MEMBER',
+            entityId: id,
+            ipAddress: ip,
+            payload: validatedData
+        })
+
         return NextResponse.json(member)
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -125,6 +138,17 @@ export async function DELETE(
         if (result.count === 0) {
             return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
         }
+
+        // Audit Log
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId: auth.gym.id,
+            actorId: auth.userId,
+            action: 'DELETE_MEMBER',
+            entityType: 'MEMBER',
+            entityId: id,
+            ipAddress: ip
+        })
 
         return NextResponse.json({ success: true })
     } catch (error) {

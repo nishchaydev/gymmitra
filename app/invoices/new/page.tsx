@@ -25,7 +25,10 @@ export default async function NewInvoicePage() {
                     <p className="text-slate-500 mt-1">Generate a professional invoice for memberships or products.</p>
                 </div>
             </div>
-            <NewInvoiceForm members={members} />
+            <NewInvoiceForm
+                members={members}
+                taxPercentage={Number((gym as any).taxPercentage || 18)}
+            />
         </div>
     )
 }

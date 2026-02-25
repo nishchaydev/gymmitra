@@ -28,6 +28,7 @@ model GymProfile {
   onboardingStep Int              @default(0)
   timezone       String           @default("Asia/Kolkata")
   saasPlan       SaaSPlan         @default(BASIC)
+  taxPercentage  Decimal          @default(18.0) @db.Decimal(5, 2)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   members        Member[]
@@ -40,6 +41,7 @@ model GymProfile {
   ptSessions     PTSession[]
   registration   RegistrationCode?
   invoiceSequence InvoiceSequence?
+  auditLogs      AuditLog[]
 }
 
 model InvoiceSequence {
@@ -176,7 +178,7 @@ model Invoice {
   subscriptionId String?
   saleId         String?             @unique
   subtotal       Decimal             @db.Decimal(10, 2)
-  tax            Decimal?            @db.Decimal(10, 2)
+  taxAmount      Decimal             @db.Decimal(10, 2) @default(0.0)
   discount       Decimal?            @db.Decimal(10, 2)
   total          Decimal             @db.Decimal(10, 2)
   shareToken     String?             @unique
@@ -207,6 +209,7 @@ model InvoiceItem {
   description String
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
+  taxAmount   Decimal @db.Decimal(10, 2) @default(0.0)
   amount      Decimal @db.Decimal(10, 2)
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -377,4 +380,23 @@ model PTSession {
   @@index([gymId])
   @@index([memberId])
   @@index([trainerId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  gymId      String
+  actorId    String // Supabase User ID
+  action     String // e.g., "CREATE_MEMBER", "PRINT_INVOICE", "LOGIN"
+  entityType String // e.g., "MEMBER", "INVOICE", "AUTH"
+  entityId   String?
+  payload    Json? // Store changed fields or metadata
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  gym        GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@index([gymId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
 }

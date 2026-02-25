@@ -8,18 +8,19 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
-import { prisma } from "@/lib/prisma"
-
-type Props = {
-    isDemo?: boolean
-    gymId?: string
-}
 
 type BirthdayEntry = {
     name: string
     phone?: string
     date: string   // "Today" | "Tomorrow" | "DD Mon"
     img?: string
+    diffDays?: number
+}
+
+type Props = {
+    isDemo?: boolean
+    gymId?: string
+    data?: BirthdayEntry[]
 }
 
 function getDaysUntil(dateStr: string): string | null {
@@ -48,40 +49,11 @@ function getDaysUntil(dateStr: string): string | null {
     return `In ${diffDays} days`
 }
 
-export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
-    let birthdays: BirthdayEntry[] = []
+export async function UpcomingBirthdays({ isDemo, data }: Props) {
+    let birthdays: BirthdayEntry[] = data || []
 
-    if (isDemo) {
+    if (isDemo && (!data || data.length === 0)) {
         birthdays = (MOCKUP_DATA as any).birthdays
-    } else if (gymId) {
-        try {
-            const today = new Date(); today.setHours(0, 0, 0, 0)
-            // Get members with a dateOfBirth to find upcoming birthdays
-            const members = await prisma.member.findMany({
-                where: { gymId, status: 'ACTIVE' } as any,
-                select: { name: true, phone: true, dateOfBirth: true },
-                take: 100,
-            })
-
-            const withDays = members
-                .filter((m: any) => m.dateOfBirth)
-                .map((m: any) => {
-                    const dob = new Date(m.dateOfBirth)
-                    let next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
-                    next.setHours(0, 0, 0, 0)
-                    if (next < today) next.setFullYear(today.getFullYear() + 1)
-                    const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                    const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
-                    return { name: m.name, phone: m.phone, date: label, diffDays }
-                })
-                .sort((a: any, b: any) => a.diffDays - b.diffDays)
-                .slice(0, 5)
-
-            birthdays = withDays
-        } catch (e) {
-            console.error('[UpcomingBirthdays] DB error:', e instanceof Error ? e.message : String(e))
-        }
     }
 
     return (
@@ -100,7 +72,7 @@ export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
                         {birthdays.map((birthday, idx) => (
                             <div key={idx} className="flex items-center">
                                 <Avatar className="h-9 w-9">
-                                    {(birthday as any).img && <img src={(birthday as any).img} alt={birthday.name} />}
+                                    {birthday.img && <img src={birthday.img} alt={birthday.name} />}
                                     <AvatarFallback>{birthday.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                                 </Avatar>
                                 <div className="ml-4 space-y-1">
@@ -111,11 +83,11 @@ export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
                                 </div>
                                 <div className="ml-auto flex items-center gap-3">
                                     <div className="font-medium text-primary text-xs text-right hidden sm:block">
-                                        {getDaysUntil((birthday as any).date)}
+                                        {getDaysUntil(birthday.date)}
                                     </div>
-                                    {(birthday as any).phone ? (
+                                    {birthday.phone ? (
                                         <Link
-                                            href={getWhatsAppLink((birthday as any).phone, templates.birthdayWish((birthday as any).name, "Gym Mitra"))}
+                                            href={getWhatsAppLink(birthday.phone, templates.birthdayWish(birthday.name, "Gym Mitra"))}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -126,7 +98,7 @@ export async function UpcomingBirthdays({ isDemo, gymId }: Props) {
                                         </Link>
                                     ) : (
                                         <div className="font-medium text-primary text-xs text-right sm:hidden">
-                                            {getDaysUntil((birthday as any).date)}
+                                            {getDaysUntil(birthday.date)}
                                         </div>
                                     )}
                                 </div>

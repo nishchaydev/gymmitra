@@ -16,7 +16,7 @@ import { prisma } from "@/lib/prisma"
 import { startOfToday, endOfToday } from "date-fns"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { SHOWCASE_STATS } from "@/lib/showcase-data"
+import { SHOWCASE_STATS, MOCKUP_DATA } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
 import { exitDemo } from "./actions"
 
@@ -91,8 +91,11 @@ export default async function DashboardPage() {
         )
     }
 
-    // Data fetching logic - Logged in users ALWAYS see real data (even if 0)
+    // Data fetching logic - Centralized for performance (Anti-Waterfall)
     let dashboardData;
+    let recentInvoices: any[] = []
+    let todayAttendance = { count: 0, recentInitials: [] as string[], lastCheckinLabel: "No check-ins today" }
+    let upcomingBirthdays: any[] = []
 
     if (isDemo) {
         dashboardData = {
@@ -100,10 +103,29 @@ export default async function DashboardPage() {
             activeMembers: SHOWCASE_STATS.activeMembers,
             revenue: SHOWCASE_STATS.totalRevenue.toLocaleString('en-IN'),
             productSalesCount: SHOWCASE_STATS.productSales,
-            dailyCheckins: 12 // Mock value for demo
+            dailyCheckins: 12
         }
+        recentInvoices = SHOWCASE_STATS.recentInvoices.map((inv, idx) => ({
+            ...inv,
+            id: `demo-${inv.id}`,
+            invoiceNumber: `DEMO-INV-${String(idx + 1).padStart(4, '0')}`,
+            total: inv.amount,
+            paymentStatus: inv.status,
+            createdAt: new Date(inv.date)
+        }))
+        upcomingBirthdays = (MOCKUP_DATA as any).birthdays
     } else {
-        const [totalMembers, activeMembers, totalRevenue, productSalesCount, dailyCheckins] = await Promise.all([
+        const today = startOfToday()
+        const [
+            totalMembers,
+            activeMembers,
+            totalRevenue,
+            productSalesCount,
+            dailyCheckins,
+            invoices,
+            attendance,
+            birthdays
+        ] = await Promise.all([
             prisma.member.count({ where: { gymId: gym!.id } as any }),
             prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }),
             prisma.invoice.aggregate({
@@ -114,20 +136,72 @@ export default async function DashboardPage() {
             prisma.attendance.count({
                 where: {
                     gymId: gym!.id,
-                    date: {
-                        gte: startOfToday(),
-                        lte: endOfToday()
-                    }
+                    date: { gte: today, lte: endOfToday() }
                 } as any
+            }),
+            prisma.invoice.findMany({
+                where: { gymId: gym!.id } as any,
+                include: { member: { select: { name: true } } } as any,
+                orderBy: { createdAt: 'desc' } as any,
+                take: 5
+            }),
+            prisma.attendance.findMany({
+                where: { gymId: gym!.id, date: { gte: today } } as any,
+                include: { member: { select: { name: true } } },
+                orderBy: { checkInTime: 'desc' },
+                take: 3,
+            }),
+            prisma.member.findMany({
+                where: {
+                    gymId: gym!.id,
+                    status: 'ACTIVE',
+                    dateOfBirth: { not: null }
+                } as any,
+                select: { name: true, phone: true, dateOfBirth: true },
+                take: 50, // We filter in memory for simplicity/speed for small/mid gyms
             })
         ])
+
         dashboardData = {
             totalMembers,
             activeMembers,
             revenue: Number((totalRevenue as any)._sum.total || 0).toLocaleString('en-IN'),
             productSalesCount,
-            dailyCheckins
+            dailyCheckins: dailyCheckins || 0
         }
+        recentInvoices = invoices as any[]
+
+        // Process Attendance
+        if (attendance.length > 0) {
+            const last = attendance[0]
+            const checkIn = new Date((last as any).checkInTime)
+            const minutesAgo = Math.round((Date.now() - checkIn.getTime()) / 60000)
+            todayAttendance = {
+                count: dailyCheckins,
+                lastCheckinLabel: minutesAgo < 60
+                    ? `Last check-in ${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`
+                    : `Last check-in ${Math.round(minutesAgo / 60)}h ago`,
+                recentInitials: attendance.map((a: any) =>
+                    a.member?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) ?? '?'
+                )
+            }
+        }
+
+        // Process Birthdays (Optimization: JS filtering for now, but in one query)
+        const todayMonth = today.getMonth()
+        const todayDate = today.getDate()
+        upcomingBirthdays = birthdays
+            .map((m: any) => {
+                const dob = new Date(m.dateOfBirth)
+                let next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
+                if (next < today) next.setFullYear(today.getFullYear() + 1)
+                const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
+                return { ...m, date: label, diffDays }
+            })
+            .sort((a: any, b: any) => a.diffDays - b.diffDays)
+            .slice(0, 5)
     }
 
     return (
@@ -282,14 +356,25 @@ export default async function DashboardPage() {
                             </CardContent>
                         </Card>
                         <div className="lg:col-span-3 space-y-6">
-                            <AttendanceWidget isDemo={isDemo} gymId={gym?.id} />
-                            <UpcomingBirthdays isDemo={isDemo} gymId={gym?.id} />
+                            <AttendanceWidget
+                                isDemo={isDemo}
+                                gymId={gym?.id}
+                                data={todayAttendance}
+                            />
+                            <UpcomingBirthdays
+                                isDemo={isDemo}
+                                gymId={gym?.id}
+                                data={upcomingBirthdays}
+                            />
                         </div>
                     </div>
 
                     <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
                         <div className="lg:col-span-4 overflow-hidden rounded-xl">
-                            <RecentInvoices isDemo={isDemo} />
+                            <RecentInvoices
+                                isDemo={isDemo}
+                                data={recentInvoices}
+                            />
                         </div>
                         <Card className="lg:col-span-3 border-slate-200 shadow-sm">
                             <CardHeader>

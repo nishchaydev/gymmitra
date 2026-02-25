@@ -69,15 +69,24 @@ export function generateUpiQrData(upiId: string, amount: number, name: string, i
 }
 
 /**
- * Calculates invoice totals
+ * Calculates invoice totals with GST
  */
-export function calculateInvoiceTotal(items: { quantity: number, unitPrice: number }[], discount: number = 0) {
+export function calculateInvoiceTotal(
+    items: { quantity: number, unitPrice: number }[],
+    discount: number = 0,
+    taxPercentage: number = 18
+) {
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-    const total = Math.max(0, subtotal - discount)
+    const subtotalAfterDiscount = Math.max(0, subtotal - discount)
+
+    // GST Calculation: Tax is applied on the discounted subtotal
+    const taxAmount = (subtotalAfterDiscount * Number(taxPercentage)) / 100
+    const total = subtotalAfterDiscount + taxAmount
 
     return {
         subtotal,
         discount,
+        taxAmount,
         total
     }
 }

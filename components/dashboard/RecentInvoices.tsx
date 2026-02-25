@@ -17,10 +17,10 @@ import { EmptyState } from "@/components/ui/empty-state"
 
 import { SHOWCASE_STATS } from "@/lib/showcase-data"
 
-export async function RecentInvoices({ isDemo }: { isDemo?: boolean }) {
-    let invoices = []
+export async function RecentInvoices({ isDemo, data }: { isDemo?: boolean, data?: any[] }) {
+    let invoices = data || []
 
-    if (isDemo) {
+    if (isDemo && (!data || data.length === 0)) {
         invoices = SHOWCASE_STATS.recentInvoices.map((inv, idx) => ({
             ...inv,
             id: `demo-${inv.id}`,
@@ -29,24 +29,6 @@ export async function RecentInvoices({ isDemo }: { isDemo?: boolean }) {
             paymentStatus: inv.status,
             createdAt: new Date(inv.date)
         }))
-    } else {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) return null
-
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-
-        if (!gym) return null
-
-        invoices = await prisma.invoice.findMany({
-            where: { gymId: gym.id } as any,
-            include: { member: true } as any,
-            orderBy: { createdAt: 'desc' } as any,
-            take: 5
-        }) as any
     }
 
     return (

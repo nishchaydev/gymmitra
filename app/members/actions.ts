@@ -3,6 +3,69 @@
 import { redirect } from 'next/navigation'
 import { withAuth } from '@/lib/with-auth'
 
+import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
+import { recordAuditLog } from '@/lib/audit-logger'
+import { headers } from 'next/headers'
+
+const memberSchema = z.object({
+    name: z.string().min(2, "Name is required"),
+    phone: z.string().min(10, "Phone number is required"),
+    email: z.string().email().optional().or(z.literal('')),
+    dateOfBirth: z.string()
+        .refine(val => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .transform(str => new Date(str)),
+    emergencyName: z.string().optional(),
+    emergencyPhone: z.string().optional(),
+    emergencyRelation: z.string().optional(),
+})
+
+export const createMember = withAuth(async (context, data: z.input<typeof memberSchema>) => {
+    const validatedData = memberSchema.parse(data)
+    const gymId = context.gym.id
+
+    try {
+        const member = await prisma.member.create({
+            data: {
+                name: validatedData.name,
+                phone: validatedData.phone,
+                email: validatedData.email || null,
+                dateOfBirth: validatedData.dateOfBirth,
+                gymId,
+                status: 'ACTIVE',
+                emergencyName: validatedData.emergencyName || '',
+                emergencyPhone: validatedData.emergencyPhone || '',
+                emergencyRelation: validatedData.emergencyRelation || '',
+            }
+        })
+
+        revalidatePath('/members')
+        revalidatePath('/dashboard')
+
+        // 4. Audit Log
+        const headerList = await headers()
+        const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId,
+            actorId: context.userId,
+            action: 'CREATE_MEMBER',
+            entityType: 'MEMBER',
+            entityId: member.id,
+            ipAddress: ip,
+            payload: { name: validatedData.name, phone: validatedData.phone }
+        })
+
+        return { success: true, id: member.id }
+    } catch (error: any) {
+        console.error('Error creating member:', error)
+        if (error.code === 'P2002') {
+            return { error: 'Member with this phone number already exists.' }
+        }
+        return { error: 'Failed to create member.' }
+    }
+})
+
 export const searchMembers = withAuth(async (_context, formData: FormData) => {
     const query = formData.get('q') as string
     const params = new URLSearchParams()

@@ -25,11 +25,14 @@ export const dynamic = 'force-dynamic'
 export default async function MembersPage({
     searchParams,
 }: {
-    searchParams: Promise<{ q?: string; status?: string }>
+    searchParams: Promise<{ q?: string; status?: string; page?: string }>
 }) {
     const params = await searchParams
     const query = params.q || ''
     const status = params.status
+    const page = Math.max(1, parseInt(params.page || '1'))
+    const take = 50
+    const skip = (page - 1) * take
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -87,8 +90,13 @@ export default async function MembersPage({
 
     let members = isDemo ? (SHOWCASE_MEMBERS as any[]) : await prisma.member.findMany({
         where: whereClause,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: take,
+        skip: skip
     })
+
+    const totalCount = isDemo ? members.length : await prisma.member.count({ where: whereClause })
+    const hasMore = totalCount > page * take
 
     if (isDemo) {
         if (query) {
@@ -197,6 +205,26 @@ export default async function MembersPage({
                             </TableBody>
                         </Table>
                     </div>
+
+                    {totalCount > take && (
+                        <div className="flex items-center justify-between mt-6 px-2">
+                            <p className="text-sm text-muted-foreground">
+                                Showing <span className="font-bold">{(page - 1) * take + 1}</span> to <span className="font-bold">{Math.min(page * take, totalCount)}</span> of <span className="font-bold">{totalCount}</span> members
+                            </p>
+                            <div className="flex gap-2">
+                                <Link href={`/members?page=${page - 1}${query ? `&q=${query}` : ''}${status ? `&status=${status}` : ''}`}>
+                                    <Button variant="outline" size="sm" disabled={page === 1}>
+                                        Previous
+                                    </Button>
+                                </Link>
+                                <Link href={`/members?page=${page + 1}${query ? `&q=${query}` : ''}${status ? `&status=${status}` : ''}`}>
+                                    <Button variant="outline" size="sm" disabled={!hasMore}>
+                                        Next
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

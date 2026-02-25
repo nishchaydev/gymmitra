@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
+import { recordAuditLog } from '@/lib/audit-logger'
 import { startOfDay, endOfDay } from 'date-fns'
 
 const checkInSchema = z.object({
@@ -94,6 +95,18 @@ export async function POST(request: NextRequest) {
                 checkInTime: now,
                 localDateString: localDateString
             }
+        })
+
+        // Audit Log (Manual Check-in)
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        recordAuditLog({
+            gymId: gym.id,
+            actorId: auth.userId,
+            action: 'UPDATE_MEMBER', // Using generic action
+            entityType: 'ATTENDANCE',
+            entityId: attendance.id,
+            ipAddress: ip,
+            payload: { memberId, localDateString }
         })
 
         return NextResponse.json(attendance, { status: 201 })
