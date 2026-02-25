@@ -4,8 +4,9 @@ import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
 import { guardRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { verifyWebhookSignature } from '@/lib/webhook-utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_for_build');
 
 function isTrustedProxy(ip: string): boolean {
     if (ip === '127.0.0.1' || ip === '::1') return true
@@ -17,10 +18,12 @@ function getClientIdentifier(req: NextRequest): string {
     const reqIp = (req as any).ip || req.headers.get('x-real-ip')
     if (reqIp && isTrustedProxy(reqIp)) {
         const xff = req.headers.get('x-forwarded-for')
-        if (xff) {
+        if (xff && xff.trim() !== '') {
             const first = xff.split(',')[0].trim()
             if (first) return first
         }
+        console.warn(`[Webhook] Missing or empty X-Forwarded-For from trusted proxy ${reqIp}`);
+        return `proxy:${reqIp}`;
     }
     if (reqIp) return reqIp
 
@@ -30,15 +33,6 @@ function getClientIdentifier(req: NextRequest): string {
         return `auth:${hash}`
     }
     return 'anonymous'
-}
-
-function verifyWebhookSignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
-    if (!signatureHeader) return false
-    const computed = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
-    const sigBuf = Buffer.from(signatureHeader)
-    const computedBuf = Buffer.from(computed)
-    if (sigBuf.length !== computedBuf.length) return false
-    return crypto.timingSafeEqual(sigBuf, computedBuf)
 }
 
 export async function POST(req: NextRequest) {
@@ -60,7 +54,15 @@ export async function POST(req: NextRequest) {
         const rawBody = await req.text();
 
         // Check if either the Bearer token matches OR the HMAC signature matches
-        const isBearerValid = authHeader === `Bearer ${webhookSecret}`;
+        let isBearerValid = false;
+        if (authHeader) {
+            const expectedDigest = crypto.createHash('sha256').update(`Bearer ${webhookSecret}`).digest();
+            const actualDigest = crypto.createHash('sha256').update(authHeader).digest();
+            if (expectedDigest.length === actualDigest.length) {
+                isBearerValid = crypto.timingSafeEqual(expectedDigest, actualDigest);
+            }
+        }
+
         const isHmacValid = verifyWebhookSignature(rawBody, signature, webhookSecret);
 
         if (!isBearerValid && !isHmacValid) {
@@ -81,6 +83,10 @@ export async function POST(req: NextRequest) {
         // Security check - Only process UPDATE events on the auth.users table
         if (type !== 'UPDATE' || !record) {
             return NextResponse.json({ message: 'Ignoring non-update event' }, { status: 200 });
+        }
+
+        if (typeof record.id !== 'string' || !record.id.trim() || typeof record.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) {
+            return NextResponse.json({ error: 'Missing or invalid record.id/record.email' }, { status: 400 });
         }
 
         // 4. CORE LOGIC: Did they *just* confirm their email?
@@ -118,6 +124,7 @@ export async function POST(req: NextRequest) {
                 gymName,
                 loginUrl: `${baseUrl}/login`,
                 serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                saasPlan: (gymProfile as any).saasPlan || 'BASIC',
             }),
         });
 

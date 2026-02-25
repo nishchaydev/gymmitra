@@ -59,12 +59,6 @@ export const OnboardingEmail = ({
                             To complete your onboarding process and protect both your business and your members, please review our official Service Agreement.
                         </Text>
 
-                        <Section className="bg-blue-50 border border-solid border-blue-100 rounded p-[16px] my-[24px]">
-                            <Text className="text-[14px] font-semibold text-blue-800 m-0">
-                                Your Subscription Plan: <span className="font-bold uppercase">{saasPlan}</span>
-                            </Text>
-                        </Section>
-
                         <Section className="text-center mt-[32px] mb-[32px]">
                             <Button
                                 className="bg-blue-600 rounded text-white text-[14px] font-semibold no-underline text-center px-6 py-3"
@@ -112,7 +106,7 @@ OnboardingEmail.PreviewProps = {
     gymName: 'Titanium Fitness',
     loginUrl: `${baseUrl}/dashboard`,
     serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-    saasPlan: 'GROWTH',
+    saasPlan: 'BASIC',
 } as OnboardingEmailProps;
 
 export default OnboardingEmail;

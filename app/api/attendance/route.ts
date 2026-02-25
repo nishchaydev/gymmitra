@@ -68,15 +68,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Member is not active' }, { status: 400 })
         }
 
-        const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
-        const endOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+        // UTC naive logic removed. Shift to Gym's physical timezone.
+        const { formatInTimeZone } = await import('date-fns-tz')
+        const timezone = gym.timezone || 'Asia/Kolkata'
+        const localDateString = formatInTimeZone(now, timezone, 'yyyy-MM-dd')
 
-        const existingAttendance = await prisma.attendance.findFirst({
+        const existingAttendance = await prisma.attendance.findUnique({
             where: {
-                memberId,
-                date: {
-                    gte: startOfTodayUTC,
-                    lte: endOfTodayUTC
+                memberId_localDateString: {
+                    memberId,
+                    localDateString
                 }
             }
         })
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
                 gym: { connect: { id: gym.id } },
                 date: now,
                 checkInTime: now,
+                localDateString: localDateString
             }
         })
 

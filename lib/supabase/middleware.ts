@@ -78,7 +78,7 @@ export async function updateSession(request: NextRequest) {
         pathname.startsWith('/products') ||
         pathname.startsWith('/attendance') ||
         pathname.startsWith('/settings') ||
-        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth') && !pathname.startsWith('/api/webhooks'))
+        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth'))
 
     if (user && !isDemoMode && isProtectedRoute && !isOnboarded) {
         const url = request.nextUrl.clone()

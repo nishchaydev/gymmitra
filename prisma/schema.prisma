@@ -24,9 +24,9 @@ model GymProfile {
   upiId          String?
   logoUrl        String?
   invoicePrefix  String           @default("GM")
-  invoiceCounter Int              @default(0)
   isVerified     Boolean          @default(false)
   onboardingStep Int              @default(0)
+  timezone       String           @default("Asia/Kolkata")
   saasPlan       SaaSPlan         @default(BASIC)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -39,6 +39,17 @@ model GymProfile {
   staff          StaffMember[]
   ptSessions     PTSession[]
   registration   RegistrationCode?
+  invoiceSequence InvoiceSequence?
+}
+
+model InvoiceSequence {
+  id           String     @id @default(cuid())
+  gymId        String     @unique
+  currentValue Int        @default(0)
+  version      Int        @default(1) // For Optimistic Concurrency Control
+  updatedAt    DateTime   @updatedAt
+
+  gym          GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 }
 
 model Member {
@@ -168,7 +179,8 @@ model Invoice {
   tax            Decimal?            @db.Decimal(10, 2)
   discount       Decimal?            @db.Decimal(10, 2)
   total          Decimal             @db.Decimal(10, 2)
-  shareToken     String?             @unique @default(cuid())
+  shareToken     String?             @unique
+  shareTokenExpiresAt DateTime?
   paymentStatus  PaymentStatus       @default(PENDING)
   paymentMethod  PaymentMethod?
   notes          String?
@@ -220,19 +232,19 @@ model Notification {
 }
 
 model Attendance {
-  id           String     @id @default(cuid())
-  memberId     String
-  gymId        String // Direct gymId for multi-tenant isolation
-  date         DateTime   @default(now())
-  checkInDate  String     @default("")
-  checkInTime  DateTime   @default(now())
-  checkOutTime DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  member       Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  gym          GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  id             String     @id @default(cuid())
+  memberId       String
+  gymId          String // Direct gymId for multi-tenant isolation
+  date           DateTime   @default(now())
+  localDateString String     @default("")
+  checkInTime    DateTime   @default(now())
+  checkOutTime   DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  member         Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gym            GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
-  @@unique([memberId, checkInDate])
+  @@unique([memberId, localDateString])
   @@index([gymId])
   @@index([memberId])
   @@index([date])

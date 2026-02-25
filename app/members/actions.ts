@@ -1,8 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { withAuth } from '@/lib/with-auth'
 
-export async function searchMembers(formData: FormData) {
+export const searchMembers = withAuth(async (_context, formData: FormData) => {
     const query = formData.get('q') as string
     const params = new URLSearchParams()
 
@@ -11,9 +12,9 @@ export async function searchMembers(formData: FormData) {
     }
 
     redirect(`/members?${params.toString()}`)
-}
+})
 
-export async function filterByStatus(status: string) {
+export const filterByStatus = withAuth(async (_context, status: string) => {
     const params = new URLSearchParams()
 
     if (status && status !== 'ALL') {
@@ -21,4 +22,4 @@ export async function filterByStatus(status: string) {
     }
 
     redirect(`/members?${params.toString()}`)
-}
+})

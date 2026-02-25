@@ -56,20 +56,24 @@ export async function POST(request: NextRequest) {
 
         const syncedIds: string[] = []
 
+        const { formatInTimeZone } = await import('date-fns-tz')
+
         // 2. Batch Processing for Data Integrity
         for (const record of records) {
             if (!validMemberIds.has(record.memberId)) continue;
 
             try {
-                // Normalize date for uniqueness (YYYY-MM-DD)
-                const checkInDateNormalized = record.date.toISOString().split('T')[0]
+                // Normalize date securely using the gym's specific timezone
+                const checkInTimeDate = new Date(record.checkInTime)
+                const timezone = auth.gym.timezone || 'Asia/Kolkata'
+                const localDateString = formatInTimeZone(checkInTimeDate, timezone, 'yyyy-MM-dd')
 
                 // Upsert to handle offline retries
                 await prisma.attendance.upsert({
                     where: {
-                        memberId_checkInDate: {
+                        memberId_localDateString: {
                             memberId: record.memberId,
-                            checkInDate: checkInDateNormalized,
+                            localDateString: localDateString,
                         }
                     },
                     update: {
@@ -79,9 +83,9 @@ export async function POST(request: NextRequest) {
                     create: {
                         memberId: record.memberId,
                         gymId: auth.gym.id,
-                        checkInDate: checkInDateNormalized,
+                        localDateString: localDateString,
                         checkInTime: record.checkInTime,
-                        date: record.date
+                        date: checkInTimeDate
                     }
                 })
 

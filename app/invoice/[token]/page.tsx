@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { InvoiceView } from "@/components/invoice/InvoiceView"
 import { Metadata } from 'next'
+import { apiLimiter } from '@/lib/rate-limit'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,8 +13,8 @@ interface PublicInvoicePageProps {
     }>
 }
 
-// Minimal length for CUID (~25) or UUID (36) to prevent brute-force on short strings
-const MIN_TOKEN_LENGTH = 25
+// 64-char hex strings expected
+const MIN_TOKEN_LENGTH = 64
 
 /**
  * Dynamic metadata for public invoice sharing
@@ -26,14 +28,20 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
     }
 
     const invoice = await prisma.invoice.findFirst({
-        where: { shareToken: token },
+        where: {
+            shareToken: token,
+            OR: [
+                { shareTokenExpiresAt: null },
+                { shareTokenExpiresAt: { gt: new Date() } }
+            ]
+        },
         select: {
             invoiceNumber: true,
             gym: { select: { businessName: true } }
         }
     })
 
-    if (!invoice) return { title: 'Invoice Not Found | Gym Mitra' }
+    if (!invoice) return { title: 'Invoice Not Found or Expired | Gym Mitra' }
 
     return {
         title: `Invoice ${invoice.invoiceNumber} - ${invoice.gym?.businessName || 'Gym Mitra'}`,
@@ -44,14 +52,30 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
 export default async function PublicInvoicePage({ params }: PublicInvoicePageProps) {
     const { token } = await params
 
-    // Basic token validation
+    // 1. Basic token validation
     if (!token || token.length < MIN_TOKEN_LENGTH) {
         notFound()
     }
 
-    // No auth required - public access via random token
+    // 2. IP-based Rate Limiting (10 requests per minute) to prevent enumeration
+    const headersList = await headers()
+    const ip = headersList.get('x-forwarded-for') || '127.0.0.1'
+    try {
+        await apiLimiter.check(10, `invoice-view:${ip}`)
+    } catch {
+        // Return 429 logic or just drop the connection via notFound if scraping
+        notFound()
+    }
+
+    // 3. Strict Expiry Check in DB Query
     const dbInvoice = await prisma.invoice.findFirst({
-        where: { shareToken: token },
+        where: {
+            shareToken: token,
+            OR: [
+                { shareTokenExpiresAt: null }, // Legacy invoices without expiry
+                { shareTokenExpiresAt: { gt: new Date() } } // New invoices with valid expiry
+            ]
+        },
         include: {
             gym: true,
             member: true,

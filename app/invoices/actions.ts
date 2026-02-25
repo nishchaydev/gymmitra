@@ -1,11 +1,10 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { generateInvoiceNumber } from "@/lib/invoice-utils"
 import { z } from "zod"
+import { withAuth } from "@/lib/with-auth"
 
 const invoiceItemSchema = z.object({
     description: z.string().min(1),
@@ -22,20 +21,13 @@ const createInvoiceSchema = z.object({
     discount: z.number().min(0).default(0),
 })
 
-export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
+// Secure Server Action wrapped in withAuth
+export const createInvoice = withAuth(async (context, data: z.infer<typeof createInvoiceSchema>) => {
     // 1. Runtime Validation
     const validatedData = createInvoiceSchema.parse(data)
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) throw new Error("Unauthorized")
-
-    const gym = await prisma.gymProfile.findUnique({
-        where: { userId: user.id }
-    })
-
-    if (!gym) throw new Error("Gym not found")
+    // 2. Strict Tenant Context derived server-side
+    const gym = context.gym
 
     try {
         const invoice = await prisma.$transaction(async (tx) => {
@@ -47,6 +39,11 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
 
             const discountCents = Math.round(validatedData.discount * 100)
             const totalCents = Math.max(0, subtotalCents - discountCents)
+
+            const crypto = await import('crypto')
+            const shareToken = crypto.randomBytes(32).toString('hex')
+            const shareTokenExpiresAt = new Date()
+            shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
 
             return await tx.invoice.create({
                 data: {
@@ -60,6 +57,8 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
                     paymentMethod: validatedData.paymentMethod,
                     paymentStatus: "PAID",
                     notes: validatedData.notes ?? null,
+                    shareToken: shareToken,
+                    shareTokenExpiresAt: shareTokenExpiresAt,
                     items: {
                         create: validatedData.items.map(item => {
                             const itemAmountCents = Math.round(item.quantity * (item.unitPrice * 100))
@@ -84,4 +83,4 @@ export async function createInvoice(data: z.infer<typeof createInvoiceSchema>) {
         console.error("Invoice Action Error:", error)
         return { error: error instanceof Error ? error.message : "Failed to create invoice" }
     }
-}
+}, ['OWNER', 'STAFF']) // Only Owners and Staff can create invoices
