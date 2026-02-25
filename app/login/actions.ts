@@ -53,10 +53,21 @@ export async function signup(formData: FormData) {
     const password = formData.get('password') as string
     const licenseKey = formData.get('license_key') as string
 
-    // Security Check: Only allow signups with a valid license key
-    const secretKey = process.env.REGISTRATION_SECRET || "MITRA2026"
-    if (licenseKey !== secretKey) {
-        redirect(`/login?view=register&message=${encodeURIComponent("Invalid License Key. Please contact your administrator to purchase a license.")}`)
+    // Security Check: Validate dynamic Registration Code
+    const regCode = await prisma.registrationCode.findUnique({
+        where: { code: licenseKey }
+    });
+
+    if (!regCode || !regCode.isActive) {
+        redirect(`/login?view=register&message=${encodeURIComponent("Invalid or expired Registration Code.")}`)
+    }
+
+    if (regCode.usedCount >= regCode.maxUses) {
+        redirect(`/login?view=register&message=${encodeURIComponent("This Registration Code has reached its maximum number of uses.")}`)
+    }
+
+    if (regCode.expiresAt && regCode.expiresAt < new Date()) {
+        redirect(`/login?view=register&message=${encodeURIComponent("This Registration Code has expired.")}`)
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -89,12 +100,22 @@ export async function signup(formData: FormData) {
                 })
             } else {
                 // Create a default Gym Profile for the new Owner user
-                await prisma.gymProfile.create({
+                const newGym = await prisma.gymProfile.create({
                     data: {
                         name: process.env.NEXT_PUBLIC_GYM_NAME || "My Gym",
                         email: data.user.email!,
                         phone: "0000000000",
                         userId: data.user.id,
+                        saasPlan: regCode.plan // Inherit plan from the code
+                    }
+                })
+
+                // Mark the registration code as used
+                await prisma.registrationCode.update({
+                    where: { id: regCode.id },
+                    data: {
+                        usedCount: { increment: 1 },
+                        gymId: newGym.id // Link code to the new gym
                     }
                 })
             }

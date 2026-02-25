@@ -24,19 +24,13 @@ export async function DELETE(
             return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
         }
 
-        // Ensure the staff member belongs to the current gym
-        const staffMember = await prisma.staffMember.findFirst({
+        const deleted = await prisma.staffMember.deleteMany({
             where: { id, gymId: auth.gym.id }
         })
 
-        if (!staffMember) {
+        if (deleted.count === 0) {
             return NextResponse.json({ error: 'Staff member not found or unauthorized' }, { status: 404 })
         }
-
-        // Delete with gymId ownership enforced
-        await prisma.staffMember.delete({
-            where: { id }
-        })
 
         return NextResponse.json({ message: 'Staff member removed successfully' })
     } catch (error) {

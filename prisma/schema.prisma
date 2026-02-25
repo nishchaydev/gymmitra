@@ -27,6 +27,7 @@ model GymProfile {
   invoiceCounter Int              @default(0)
   isVerified     Boolean          @default(false)
   onboardingStep Int              @default(0)
+  saasPlan       SaaSPlan         @default(BASIC)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   members        Member[]
@@ -37,6 +38,7 @@ model GymProfile {
   attendance     Attendance[]
   staff          StaffMember[]
   ptSessions     PTSession[]
+  registration   RegistrationCode?
 }
 
 model Member {
@@ -236,6 +238,24 @@ model Attendance {
   @@index([date])
 }
 
+model RegistrationCode {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  plan        SaaSPlan
+  maxUses     Int         @default(1)
+  usedCount   Int         @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean     @default(true)
+  gymId       String?     @unique // Linked gym once used
+  
+  gym         GymProfile? @relation(fields: [gymId], references: [id])
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([code])
+}
+
 enum MemberStatus {
   ACTIVE
   INACTIVE
@@ -296,9 +316,15 @@ enum SessionStatus {
   NO_SHOW
 }
 
+enum SaaSPlan {
+  BASIC
+  GROWTH
+  ENTERPRISE
+}
+
 model StaffMember {
   id        String   @id @default(cuid())
-  userId    String? // Maps to Supabase Auth UUID. Not @unique to allow multi-gym trainers!
+  userId    String? // Maps to Supabase UUID. Constrained by @@unique([userId, gymId])
   gymId     String // Links to their employer
   name      String
   email     String

@@ -44,7 +44,13 @@ export async function GET(request: NextRequest) {
         return new Response('Server misconfigured', { status: 500 })
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build')
+    // 2. Email Service Configuration
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) {
+        console.error('[Cron] RESEND_API_KEY not configured')
+        return new Response('Email service misconfigured', { status: 500 })
+    }
+    const resend = new Resend(resendKey)
 
     const authHeader = request.headers.get('authorization') || ''
     const expected = `Bearer ${cronSecret}`
@@ -166,10 +172,10 @@ export async function GET(request: NextRequest) {
                 }, BATCH_SIZE)
 
                 // ── Birthday Wishes (DB-level filter) ─────────────────
-                // Compute today's date in IST (since Gym Mitra targets the Indian market primarily)
-                const gymDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }))
-                const todayMonth = gymDate.getMonth() + 1
-                const todayDay = gymDate.getDate()
+                const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: 'numeric', day: 'numeric' })
+                const parts = formatter.formatToParts(new Date())
+                const todayMonth = parseInt(parts.find(p => p.type === 'month')!.value, 10)
+                const todayDay = parseInt(parts.find(p => p.type === 'day')!.value, 10)
 
                 const birthdayMembers: { id: string; name: string; email: string | null }[] =
                     await prisma.$queryRaw`

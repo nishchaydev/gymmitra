@@ -10,7 +10,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 /**
  * Retries a database operation (like a Serializable transaction) on serialization failure (P2034)
- * with exponential backoff.
+ * with linear backoff plus jitter.
  */
 export async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
   let attempts = 0
@@ -20,7 +20,7 @@ export async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promi
       return await fn()
     } catch (error: any) {
       if (error?.code === 'P2034' && attempts < maxAttempts) {
-        // Exponential backoff: 100ms, 200ms, ...
+        // Linear backoff with jitter: 100ms, 200ms, 300ms...
         const delay = attempts * 100 + Math.random() * 50
         await new Promise(resolve => setTimeout(resolve, delay))
         continue

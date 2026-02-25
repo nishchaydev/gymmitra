@@ -8,7 +8,7 @@ import crypto from 'crypto';
 function isTrustedProxy(ip: string): boolean {
     if (ip === '127.0.0.1' || ip === '::1') return true
     const trusted = process.env.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
-    return trusted.includes('*') || trusted.includes(ip)
+    return trusted.includes(ip)
 }
 
 /**

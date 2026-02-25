@@ -69,7 +69,7 @@
 - **Status**: ⚠️ **Not yet addressed**
 - **Evidence**: Member PII (phone, DOB, emergency contacts) stored in plaintext. No deletion/anonymization API. No DPA offered.
 - **Action Required**:
-  - 🟡 **Breach Notification (High)**: Create an incident-response runbook. Integrate automated alerting (e.g., Sentry + PagerDuty). Notification to Data Protection Board required within 72 hours, and to CERT-In within 6 hours of discovery.
+  - 🟡 **Breach Notification (High)**: Create an incident-response runbook. Integrate automated alerting (e.g., Sentry + PagerDuty). Notification to Data Protection Board required within 72 hours (once DPDP Act rules are officially enforced), and to CERT-In within 6 hours of discovery.
   - 🟡 **Consent Notice & Withdrawal (High)**: In-app consent capture that is free/specific/informed/unambiguous. Equally simple withdrawal flow.
   - 🔵 **Child Data / Parental Consent**: Age-gate and verifiable parental-consent flow for underage members.
   - 🔵 **Data Export/Deletion**: Add member data export and deletion API endpoints.

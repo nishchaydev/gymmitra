@@ -69,18 +69,7 @@ async function runTests() {
             ORDER BY visit_count ASC, last_visit ASC NULLS FIRST
             LIMIT 5
         `
-        console.log(frequencyResult.map(r => {
-            const digits = r.phone ? r.phone.replace(/\D/g, '') : null
-            return {
-                id: r.member_id,
-                member_name: r.member_name ? `${r.member_name[0]}***` : null,
-                phone: digits && digits.length >= 8
-                    ? digits.replace(/(\d{3})(\d+)(\d{4})/, "$1****$3")
-                    : null,
-                visit_count: r.visit_count,
-                last_visit: r.last_visit
-            }
-        }))
+        console.log(`Found ${frequencyResult.length} frequent visitors. (Details masked for safety)`)
 
         console.log("\n--- Testing Reminders (Expiring) ---")
         const todayStart = startOfDay(new Date())

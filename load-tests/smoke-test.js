@@ -38,7 +38,7 @@ export default function () {
             // Use k6's cookie jar API (robust for HTTP/2)
             const jar = http.cookieJar();
             const cookies = jar.cookiesForURL(loginRes.url);
-            const hasAuthCookie = Object.keys(cookies).some(name => /^sb-.*-auth-token$/.test(name));
+            const hasAuthCookie = Object.keys(cookies).some(name => /^sb-.*-auth-token(\.\d+)?$/.test(name));
             if (hasAuthCookie) return true;
             // Fallback: try parsing JSON body for access_token
             if (r.body) {
