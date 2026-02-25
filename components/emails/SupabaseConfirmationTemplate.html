@@ -1,59 +1,98 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirm Your Email</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb;">
+
+<body
+    style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb;">
     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f9fafb; padding: 40px 0;">
         <tr>
             <td align="center">
-                <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); max-width: 600px; margin: 0 auto;">
-                    
+                <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0"
+                    style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); max-width: 600px; margin: 0 auto;">
+
                     <!-- Header -->
                     <tr>
-                        <td align="center" style="padding: 40px 0 20px 0; background-color: #ffffff;">
-                            <h1 style="color: #2563eb; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Gym Mitra ERP</h1>
+                        <td align="center" style="padding: 40px 0 30px 0; background-color: #ffffff;">
+                            <!-- Dumbbell Logo SVG -->
+                            <table border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 15px;">
+                                <tr>
+                                    <td align="center"
+                                        style="background-color: #E6F0FF; padding: 12px; border-radius: 12px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+                                            viewBox="0 0 24 24" fill="none" stroke="#0066FF" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14.4 14.4 9.6 9.6" />
+                                            <path
+                                                d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z" />
+                                            <path d="m21.5 21.5-1.4-1.4" />
+                                            <path d="M3.9 3.9 2.5 2.5" />
+                                            <path
+                                                d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z" />
+                                        </svg>
+                                    </td>
+                                </tr>
+                            </table>
+                            <h1
+                                style="color: #0F172A; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; font-family: 'Inter', -apple-system, sans-serif;">
+                                Gym<span style="color: #0066FF;">Mitra</span>
+                            </h1>
+                            <p
+                                style="color: #64748B; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin: 4px 0 0 0;">
+                                Technologies</p>
                         </td>
                     </tr>
-                    
+
                     <!-- Content -->
                     <tr>
-                        <td style="padding: 20px 40px 40px 40px;">
-                            <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0; text-align: center;">Verify Your Identity</h2>
-                            
-                            <p style="color: #4b5563; font-size: 16px; line-height: 24px; margin-bottom: 30px; text-align: center;">
-                                You're just one step away from transforming your gym management. Please confirm your email address to activate your account and access your dashboard.
+                        <td style="padding: 10px 40px 40px 40px;">
+                            <h2
+                                style="color: #1E3A8A; font-size: 22px; font-weight: 700; margin-top: 0; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                Verify Your Identity</h2>
+
+                            <p
+                                style="color: #4b5563; font-size: 16px; line-height: 24px; margin-bottom: 30px; text-align: center;">
+                                You're just one step away from transforming your gym management. Please confirm your
+                                email address to activate your account and access your dashboard.
                             </p>
-                            
+
                             <!-- Action Button -->
                             <table width="100%" border="0" cellspacing="0" cellpadding="0">
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ .ConfirmationURL }}" style="background-color: #2563eb; color: #ffffff; display: inline-block; font-family: sans-serif; font-size: 16px; font-weight: 600; line-height: 50px; text-align: center; text-decoration: none; width: 250px; -webkit-text-size-adjust: none; border-radius: 6px;">Confirm Email Address</a>
+                                        <a href="{{ .ConfirmationURL }}"
+                                            style="background-color: #0066FF; color: #ffffff; display: inline-block; font-family: sans-serif; font-size: 16px; font-weight: 600; line-height: 50px; text-align: center; text-decoration: none; width: 280px; -webkit-text-size-adjust: none; border-radius: 50px; box-shadow: 0 4px 6px -1px rgba(0, 102, 255, 0.2);">Confirm
+                                            Email Address</a>
                                     </td>
                                 </tr>
                             </table>
 
-                            <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin-top: 30px; text-align: center;">
-                                This link will securely log you into your new account. For security purposes, please do not share this email with anyone.
+                            <p
+                                style="color: #6b7280; font-size: 14px; line-height: 20px; margin-top: 30px; text-align: center;">
+                                This link will securely log you into your new account. For security purposes, please do
+                                not share this email with anyone.
                             </p>
-                            
+
                             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 40px 0;" />
-                            
+
                             <!-- Footer -->
-                            <p style="color: #9ca3af; font-size: 12px; line-height: 18px; text-align: center; margin: 0;">
+                            <p
+                                style="color: #9ca3af; font-size: 12px; line-height: 18px; text-align: center; margin: 0;">
                                 If you did not create this account, you can safely ignore this email.
                                 <br><br>
                                 &copy; 2026 eMitra Technologies. All rights reserved.
                             </p>
                         </td>
                     </tr>
-                    
+
                 </table>
             </td>
         </tr>
     </table>
 </body>
+
 </html>
