@@ -21,6 +21,7 @@ const invoiceCreateSchema = z.object({
     dueDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
     discount: z.number().nonnegative().optional().default(0),
     taxAmount: z.number().nonnegative().optional().default(0),
+    idempotencyKey: z.string().optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -106,6 +107,21 @@ export async function POST(request: NextRequest) {
         }
         const validatedData = invoiceCreateSchema.parse(body)
 
+        // Idempotency Check
+        if (validatedData.idempotencyKey) {
+            const existingInvoice = await prisma.invoice.findFirst({
+                where: {
+                    idempotencyKey: validatedData.idempotencyKey,
+                    gymId: gym.id
+                },
+                include: { items: true }
+            })
+            if (existingInvoice) {
+                // Return the already created invoice instead of double charging
+                return NextResponse.json(existingInvoice, { status: 200 })
+            }
+        }
+
         // Calculate totals
         const subtotal = validatedData.items.reduce((acc, item) => {
             return acc + (item.quantity * item.unitPrice)
@@ -116,6 +132,11 @@ export async function POST(request: NextRequest) {
         // Generate Invoice Number
         const { generateInvoiceNumber } = await import("@/lib/invoice-utils")
         const invoiceNumber = await generateInvoiceNumber(gym.id)
+
+        const crypto = await import('crypto')
+        const shareToken = crypto.randomBytes(32).toString('hex')
+        const shareTokenExpiresAt = new Date()
+        shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
 
         const invoice = await (prisma.invoice as any).create({
             data: {
@@ -131,7 +152,9 @@ export async function POST(request: NextRequest) {
                 taxAmount: validatedData.taxAmount,
                 discount: validatedData.discount,
                 total: total,
-                shareToken: undefined, // Will auto-generate via default(cuid())
+                idempotencyKey: validatedData.idempotencyKey,
+                shareToken: shareToken,
+                shareTokenExpiresAt: shareTokenExpiresAt,
                 items: {
                     create: validatedData.items.map(item => ({
                         description: item.description,

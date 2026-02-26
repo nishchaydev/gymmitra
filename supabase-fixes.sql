@@ -63,3 +63,17 @@ CREATE POLICY "Gyms can manage their own staff members" ON "StaffMember" FOR ALL
 ALTER TABLE "PTSession" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Gyms can manage their own PT sessions" ON "PTSession";
 CREATE POLICY "Gyms can manage their own PT sessions" ON "PTSession" FOR ALL USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text)) WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
+
+-- Fix RLS Enabled No Policy for system tables
+ALTER TABLE "AuditLog" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Gyms can manage their own audit logs" ON "AuditLog";
+CREATE POLICY "Gyms can manage their own audit logs" ON "AuditLog" FOR ALL USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text)) WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
+
+ALTER TABLE "InvoiceSequence" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Gyms can manage their own invoice sequence" ON "InvoiceSequence";
+CREATE POLICY "Gyms can manage their own invoice sequence" ON "InvoiceSequence" FOR ALL USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text)) WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
+
+ALTER TABLE "RegistrationCode" ENABLE ROW LEVEL SECURITY;
+-- Registration codes are pre-generated, so we only allow reading/updating them if they belong to the gym or are unassigned
+DROP POLICY IF EXISTS "Gyms can view their registration codes" ON "RegistrationCode";
+CREATE POLICY "Gyms can view their registration codes" ON "RegistrationCode" FOR ALL USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text) OR "gymId" IS NULL) WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));

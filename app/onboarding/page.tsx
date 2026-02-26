@@ -21,7 +21,7 @@ export default async function OnboardingPage() {
                 where: { userId: user.id }
             })
 
-            if (gymProfile) {
+            if (gymProfile && gymProfile.isVerified) {
                 // Already onboarded, sync cookie
                 const cookieStore = await cookies()
                 cookieStore.set('gym_onboarded', 'true', {

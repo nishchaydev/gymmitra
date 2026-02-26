@@ -9,56 +9,56 @@ datasource db {
 }
 
 model GymProfile {
-  id             String           @id @default(cuid())
-  name           String
-  email          String
-  phone          String
-  address        String?
-  logo           String?
-  gst            String?
-  userId         String           @unique
-  businessName   String?
-  city           String?
-  state          String?
-  pincode        String?
-  upiId          String?
-  logoUrl        String?
-  invoicePrefix  String           @default("GM")
-  isVerified     Boolean          @default(false)
-  onboardingStep Int              @default(0)
-  timezone       String           @default("Asia/Kolkata")
-  saasPlan       SaaSPlan         @default(BASIC)
-  taxPercentage  Decimal          @default(18.0) @db.Decimal(5, 2)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  members        Member[]
-  plans          MembershipPlan[]
-  products       Product[]
-  invoices       Invoice[]
-  sales          Sale[]
-  attendance     Attendance[]
-  staff          StaffMember[]
-  ptSessions     PTSession[]
-  registration   RegistrationCode?
+  id              String            @id @default(cuid())
+  name            String
+  email           String
+  phone           String
+  address         String?
+  logo            String?
+  gst             String?
+  userId          String            @unique
+  businessName    String?
+  city            String?
+  state           String?
+  pincode         String?
+  upiId           String?
+  logoUrl         String?
+  invoicePrefix   String            @default("GM")
+  isVerified      Boolean           @default(false)
+  onboardingStep  Int               @default(0)
+  timezone        String            @default("Asia/Kolkata")
+  saasPlan        SaaSPlan          @default(BASIC)
+  taxPercentage   Decimal           @default(18.0) @db.Decimal(5, 2)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  members         Member[]
+  plans           MembershipPlan[]
+  products        Product[]
+  invoices        Invoice[]
+  sales           Sale[]
+  attendance      Attendance[]
+  staff           StaffMember[]
+  ptSessions      PTSession[]
+  registration    RegistrationCode?
   invoiceSequence InvoiceSequence?
-  auditLogs      AuditLog[]
+  auditLogs       AuditLog[]
 }
 
 model InvoiceSequence {
-  id           String     @id @default(cuid())
-  gymId        String     @unique
-  currentValue Int        @default(0)
-  version      Int        @default(1) // For Optimistic Concurrency Control
-  updatedAt    DateTime   @updatedAt
+  id           String   @id @default(cuid())
+  gymId        String   @unique
+  currentValue Int      @default(0)
+  version      Int      @default(1) // For Optimistic Concurrency Control
+  updatedAt    DateTime @updatedAt
 
-  gym          GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 }
 
 model Member {
   id                String               @id @default(cuid())
   name              String
   email             String?
-  phone             String               @unique
+  phone             String               
   dateOfBirth       DateTime
   photo             String?
   address           String?
@@ -79,8 +79,7 @@ model Member {
   ptSessions        PTSession[]
 
   @@index([gymId])
-  @@index([phone])
-  @@index([status])
+  @@unique([gymId, phone])
 }
 
 model MembershipPlan {
@@ -120,9 +119,6 @@ model MemberSubscription {
 
   @@index([gymId])
   @@index([memberId])
-  @@index([planId])
-  @@index([endDate])
-  @@index([status])
 }
 
 model Product {
@@ -142,7 +138,6 @@ model Product {
   sales         Sale[]
 
   @@index([gymId])
-  @@index([category])
 }
 
 model Sale {
@@ -156,6 +151,7 @@ model Sale {
   discount      Decimal?      @db.Decimal(10, 2)
   finalAmount   Decimal       @db.Decimal(10, 2)
   paymentMethod PaymentMethod
+  idempotencyKey String?      @unique
   saleDate      DateTime      @default(now())
   createdAt     DateTime      @default(now())
   invoice       Invoice?
@@ -165,41 +161,38 @@ model Sale {
 
   @@index([gymId])
   @@index([memberId])
-  @@index([productId])
-  @@index([saleDate])
 }
 
 model Invoice {
-  id             String              @id @default(cuid())
-  invoiceNumber  String              @unique
-  type           InvoiceType
-  gymId          String
-  memberId       String?
-  subscriptionId String?
-  saleId         String?             @unique
-  subtotal       Decimal             @db.Decimal(10, 2)
-  taxAmount      Decimal             @db.Decimal(10, 2) @default(0.0)
-  discount       Decimal?            @db.Decimal(10, 2)
-  total          Decimal             @db.Decimal(10, 2)
-  shareToken     String?             @unique
+  id                  String              @id @default(cuid())
+  invoiceNumber       String              
+  type                InvoiceType
+  gymId               String
+  memberId            String?
+  subscriptionId      String?
+  saleId              String?             @unique
+  subtotal            Decimal             @db.Decimal(10, 2)
+  taxAmount           Decimal             @default(0.0) @db.Decimal(10, 2)
+  discount            Decimal?            @db.Decimal(10, 2)
+  total               Decimal             @db.Decimal(10, 2)
+  shareToken          String?             @unique
   shareTokenExpiresAt DateTime?
-  paymentStatus  PaymentStatus       @default(PENDING)
-  paymentMethod  PaymentMethod?
-  notes          String?
-  issueDate      DateTime            @default(now())
-  dueDate        DateTime?
-  createdAt      DateTime            @default(now())
-  gym            GymProfile          @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  member         Member?             @relation(fields: [memberId], references: [id])
-  sale           Sale?               @relation(fields: [saleId], references: [id])
-  subscription   MemberSubscription? @relation(fields: [subscriptionId], references: [id])
-  items          InvoiceItem[]
+  paymentStatus       PaymentStatus       @default(PENDING)
+  paymentMethod       PaymentMethod?
+  idempotencyKey      String?             @unique
+  notes               String?
+  issueDate           DateTime            @default(now())
+  dueDate             DateTime?
+  createdAt           DateTime            @default(now())
+  gym                 GymProfile          @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  member              Member?             @relation(fields: [memberId], references: [id])
+  sale                Sale?               @relation(fields: [saleId], references: [id])
+  subscription        MemberSubscription? @relation(fields: [subscriptionId], references: [id])
+  items               InvoiceItem[]
 
   @@index([gymId])
-  @@index([invoiceNumber])
   @@index([memberId])
-  @@index([subscriptionId])
-  @@index([issueDate])
+  @@unique([gymId, invoiceNumber])
 }
 
 model InvoiceItem {
@@ -209,11 +202,10 @@ model InvoiceItem {
   description String
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
-  taxAmount   Decimal @db.Decimal(10, 2) @default(0.0)
+  taxAmount   Decimal @default(0.0) @db.Decimal(10, 2)
   amount      Decimal @db.Decimal(10, 2)
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-  @@index([gymId])
   @@index([invoiceId])
 }
 
@@ -229,44 +221,39 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@index([gymId])
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
 }
 
 model Attendance {
-  id             String     @id @default(cuid())
-  memberId       String
-  gymId          String // Direct gymId for multi-tenant isolation
-  date           DateTime   @default(now())
+  id              String     @id @default(cuid())
+  memberId        String
+  gymId           String // Direct gymId for multi-tenant isolation
+  date            DateTime   @default(now())
   localDateString String     @default("")
-  checkInTime    DateTime   @default(now())
-  checkOutTime   DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  member         Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  gym            GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  checkInTime     DateTime   @default(now())
+  checkOutTime    DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gym             GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, localDateString])
-  @@index([gymId])
   @@index([memberId])
-  @@index([date])
 }
 
 model RegistrationCode {
-  id          String      @id @default(cuid())
-  code        String      @unique
-  plan        SaaSPlan
-  maxUses     Int         @default(1)
-  usedCount   Int         @default(0)
-  expiresAt   DateTime?
-  isActive    Boolean     @default(true)
-  gymId       String?     @unique // Linked gym once used
-  
-  gym         GymProfile? @relation(fields: [gymId], references: [id])
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        String    @id @default(cuid())
+  code      String    @unique
+  plan      SaaSPlan
+  maxUses   Int       @default(1)
+  usedCount Int       @default(0)
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  gymId     String?   @unique // Linked gym once used
+
+  gym GymProfile? @relation(fields: [gymId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code])
 }
@@ -355,9 +342,8 @@ model StaffMember {
   ptSessions PTSession[]
 
   @@unique([userId, gymId]) // A user can only have one staff profile per gym
-  @@unique([email, gymId])  // Prevent duplicate emails within the same gym
+  @@unique([email, gymId]) // Prevent duplicate emails within the same gym
   @@index([gymId])
-  @@index([email])
 }
 
 model PTSession {
@@ -379,7 +365,6 @@ model PTSession {
   @@unique([trainerId, startTime])
   @@index([gymId])
   @@index([memberId])
-  @@index([trainerId])
 }
 
 model AuditLog {
@@ -393,10 +378,8 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 
-  gym        GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@index([gymId])
-  @@index([actorId])
-  @@index([createdAt])
   @@index([entityType, entityId])
 }

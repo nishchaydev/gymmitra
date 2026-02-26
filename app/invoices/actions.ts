@@ -21,6 +21,7 @@ const createInvoiceSchema = z.object({
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),
     discount: z.number().min(0).default(0),
+    idempotencyKey: z.string().optional(),
 })
 
 // Secure Server Action wrapped in withAuth
@@ -30,6 +31,19 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
 
     // 2. Strict Tenant Context derived server-side
     const gym = context.gym
+
+    // 3. Idempotency Check
+    if (validatedData.idempotencyKey) {
+        const existingInvoice = await prisma.invoice.findFirst({
+            where: {
+                idempotencyKey: validatedData.idempotencyKey,
+                gymId: gym.id
+            }
+        })
+        if (existingInvoice) {
+            return { success: true, id: existingInvoice.id }
+        }
+    }
 
     try {
         const invoice = await prisma.$transaction(async (tx) => {
@@ -62,6 +76,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     taxAmount: taxAmountCents / 100,
                     discount: validatedData.discount,
                     total: totalCents / 100,
+                    idempotencyKey: validatedData.idempotencyKey,
                     paymentMethod: validatedData.paymentMethod,
                     paymentStatus: "PAID",
                     notes: validatedData.notes ?? null,

@@ -114,7 +114,7 @@ export async function signup(formData: FormData) {
             } else {
                 const newGym = await tx.gymProfile.create({
                     data: {
-                        name: process.env.NEXT_PUBLIC_GYM_NAME || "My Gym",
+                        name: "My Gym",
                         email: email,
                         phone: "0000000000",
                         userId: data.user.id,
