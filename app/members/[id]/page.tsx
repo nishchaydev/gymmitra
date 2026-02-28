@@ -108,9 +108,11 @@ export default async function MemberDetailPage({
                 </div>
                 <div className="flex gap-2">
                     <CheckInButton memberId={member.id} />
-                    <Button variant="outline">
-                        <Edit className="mr-2 h-4 w-4" /> Edit Profile
-                    </Button>
+                    <Link href={`/members/${member.id}/edit`}>
+                        <Button variant="outline">
+                            <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                        </Button>
+                    </Link>
                 </div>
             </div>
 

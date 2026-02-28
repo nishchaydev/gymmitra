@@ -24,13 +24,14 @@ model GymProfile {
   upiId           String?
   logoUrl         String?
   invoicePrefix   String            @default("GM")
-  isVerified      Boolean           @default(false)
-  onboardingStep  Int               @default(0)
-  timezone        String            @default("Asia/Kolkata")
-  saasPlan        SaaSPlan          @default(BASIC)
-  taxPercentage   Decimal           @default(18.0) @db.Decimal(5, 2)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  isVerified           Boolean           @default(false)
+  onboardingStep       Int               @default(0)
+  timezone             String            @default("Asia/Kolkata")
+  saasPlan             SaaSPlan          @default(BASIC)
+  taxPercentage        Decimal           @default(18.0) @db.Decimal(5, 2)
+  termsAndConditions   String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
   members         Member[]
   plans           MembershipPlan[]
   products        Product[]
@@ -266,6 +267,7 @@ enum MemberStatus {
   ACTIVE
   INACTIVE
   EXPIRED
+  PENDING
 }
 
 enum SubscriptionStatus {

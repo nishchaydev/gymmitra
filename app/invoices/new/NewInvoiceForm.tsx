@@ -44,7 +44,11 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
         item.quantity > 0 &&
         item.unitPrice >= 0
     )
-    const hasValidWalkIn = selectedMember === 'WALK-IN' ? walkInName.trim().length > 0 && walkInPhone.trim().length > 0 : true
+    // Validate phone: at least 7 digits plus optional formatting chars
+    const phoneRegex = /^[+\d][\d\s\-().]{6,19}$/
+    const hasValidWalkIn = selectedMember === 'WALK-IN'
+        ? walkInName.trim().length > 0 && phoneRegex.test(walkInPhone.trim())
+        : true
     const isValid = hasItems && hasValidWalkIn
 
     if (success) {
@@ -111,6 +115,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                             <div className="space-y-1.5">
                                                 <Label className="text-xs text-slate-500 uppercase font-bold">Phone Number <span className="text-red-400">*</span></Label>
                                                 <Input
+                                                    type="tel"
                                                     value={walkInPhone} onChange={(e) => setWalkInPhone(e.target.value)}
                                                     placeholder="9998887776"
                                                     className="bg-slate-900 border-slate-700 text-white"
@@ -267,10 +272,10 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                         try {
                                             const result = await createInvoice({
                                                 memberId: selectedMember === 'WALK-IN' ? undefined : (selectedMember || undefined),
-                                                walkInName: selectedMember === 'WALK-IN' ? walkInName : undefined,
-                                                walkInPhone: selectedMember === 'WALK-IN' ? walkInPhone : undefined,
-                                                walkInEmail: selectedMember === 'WALK-IN' ? walkInEmail : undefined,
-                                                walkInAddress: selectedMember === 'WALK-IN' ? walkInAddress : undefined,
+                                                walkInName: selectedMember === 'WALK-IN' ? walkInName.trim() || undefined : undefined,
+                                                walkInPhone: selectedMember === 'WALK-IN' ? walkInPhone.trim() || undefined : undefined,
+                                                walkInEmail: selectedMember === 'WALK-IN' ? walkInEmail.trim() || undefined : undefined,
+                                                walkInAddress: selectedMember === 'WALK-IN' ? walkInAddress.trim() || undefined : undefined,
                                                 paymentMethod,
                                                 items,
                                                 discount
@@ -289,8 +294,8 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 }, 2000)
                                             }
 
-                                        } catch (error) {
-                                            console.error(error)
+                                        } catch {
+                                            console.error("Error creating invoice")
                                             toast.error("Error creating invoice")
                                         } finally {
                                             setIsSubmitting(false)

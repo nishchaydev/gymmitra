@@ -183,7 +183,8 @@ export default async function MembersPage({
                                             <TableCell>
                                                 <Badge variant={
                                                     member.status === 'ACTIVE' ? 'default' :
-                                                        member.status === 'EXPIRED' ? 'destructive' : 'secondary'
+                                                        member.status === 'PENDING' ? 'secondary' :
+                                                            member.status === 'EXPIRED' ? 'destructive' : 'secondary'
                                                 }>
                                                     {member.status}
                                                 </Badge>

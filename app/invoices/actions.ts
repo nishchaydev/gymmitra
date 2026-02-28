@@ -17,9 +17,10 @@ const invoiceItemSchema = z.object({
 
 const createInvoiceSchema = z.object({
     memberId: z.string().optional(),
+    // Walk-in fields: only relevant when no memberId is provided
     walkInName: z.string().optional(),
-    walkInPhone: z.string().optional(),
-    walkInEmail: z.string().optional(),
+    walkInPhone: z.string().regex(/^[+\d][\d\s\-().]{6,19}$/, "Invalid phone number").optional(),
+    walkInEmail: z.string().email("Invalid email").optional().or(z.literal('')),
     walkInAddress: z.string().optional(),
     paymentMethod: z.enum(["CASH", "UPI"]),
     notes: z.string().optional(),
@@ -81,10 +82,11 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     discount: validatedData.discount,
                     total: totalCents / 100,
                     idempotencyKey: validatedData.idempotencyKey,
-                    walkInName: validatedData.walkInName || null,
-                    walkInPhone: validatedData.walkInPhone || null,
-                    walkInEmail: validatedData.walkInEmail || null,
-                    walkInAddress: validatedData.walkInAddress || null,
+                    // Convention: empty strings become null using ?? null (preserves explicit nulls, ignores undefined)
+                    walkInName: validatedData.walkInName ?? null,
+                    walkInPhone: validatedData.walkInPhone ?? null,
+                    walkInEmail: validatedData.walkInEmail ?? null,
+                    walkInAddress: validatedData.walkInAddress ?? null,
                     paymentMethod: validatedData.paymentMethod,
                     paymentStatus: "PAID",
                     notes: validatedData.notes ?? null,

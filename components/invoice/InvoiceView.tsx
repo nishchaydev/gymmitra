@@ -24,13 +24,15 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         if (!componentRef.current) return
 
         try {
-            // First pass to get dimensions
             const canvas = await html2canvas(componentRef.current, {
-                scale: 2, // Higher scale for better quality
+                scale: 2,
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff'
             })
+
+            // Cache the base64 data URL so encoding runs only once
+            const cachedDataUrl = canvas.toDataURL('image/png', 1.0)
 
             const imgWidth = 210 // A4 width in mm
             const pageHeight = 297 // A4 height in mm
@@ -40,33 +42,13 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
 
             const doc = new jsPDF('p', 'mm', 'a4', true)
 
-            // Add image to first page
-            doc.addImage(
-                canvas.toDataURL('image/png', 1.0),
-                'PNG',
-                0,
-                position,
-                imgWidth,
-                imgHeight,
-                '',
-                'FAST'
-            )
+            doc.addImage(cachedDataUrl, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST')
             heightLeft -= pageHeight
 
-            // Add new pages if the content overflows
             while (heightLeft >= 0) {
                 position = heightLeft - imgHeight
                 doc.addPage()
-                doc.addImage(
-                    canvas.toDataURL('image/png', 1.0),
-                    'PNG',
-                    0,
-                    position,
-                    imgWidth,
-                    imgHeight,
-                    '',
-                    'FAST'
-                )
+                doc.addImage(cachedDataUrl, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST')
                 heightLeft -= pageHeight
             }
 
@@ -93,23 +75,27 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         const customerName = invoice.member?.name || invoice.walkInName || 'Customer'
         const phone = invoice.member?.phone || invoice.walkInPhone || ''
 
-        let targetPhone = phone
-        // Ensure phone starts with country code if provided, otherwise assume India (+91)
-        if (targetPhone && !targetPhone.startsWith('+')) {
+        // Only prepend +91 for valid 10-digit local Indian numbers
+        let targetPhone = phone.replace(/\s/g, '')
+        if (/^\d{10}$/.test(targetPhone)) {
             targetPhone = `91${targetPhone}`
+        } else if (targetPhone.startsWith('+')) {
+            targetPhone = targetPhone.slice(1) // remove '+' for wa.me URL
         }
 
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
         const invoiceUrl = invoice.shareToken ? `${baseUrl}/invoice/${invoice.shareToken}` : ''
 
-        const sweetMessage = `Hi ${customerName}!\n\nThank you for choosing ${gymName} 🏋️‍♂️✨\n\nYour invoice for ₹${invoice.total} is ready.\n${invoiceUrl ? `You can view or download it here: ${invoiceUrl}\n\n` : ''}We look forward to seeing you reach your fitness goals!\nHave a great day! 💪`
+        // Format total as INR currency
+        const formattedTotal = Number(invoice.total).toLocaleString('en-IN', { style: 'currency', currency: 'INR' })
+
+        const sweetMessage = `Hi ${customerName}!\n\nThank you for choosing ${gymName} 🏋️‍♂️✨\n\nYour invoice for ${formattedTotal} is ready.\n${invoiceUrl ? `You can view or download it here: ${invoiceUrl}\n\n` : ''}We look forward to seeing you reach your fitness goals!\nHave a great day! 💪`
 
         const encodedMessage = encodeURIComponent(sweetMessage)
 
         if (targetPhone) {
             window.open(`https://wa.me/${targetPhone}?text=${encodedMessage}`, '_blank')
         } else {
-            // Fallback if no phone number
             window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
         }
     }
@@ -149,6 +135,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                             phone: invoice.gym.phone || 'N/A',
                             email: invoice.gym.email || 'N/A',
                             upiId: invoice.gym.upiId,
+                            termsAndConditions: invoice.gym.termsAndConditions,
                         }}
                         memberInfo={{
                             name: invoice.member?.name || invoice.walkInName || 'Walk-in Customer',

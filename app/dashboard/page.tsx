@@ -33,12 +33,9 @@ export default async function DashboardPage() {
     // Demo mode is ONLY for unauthenticated visitors or explicit demo users.
     const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    // Bypass Auth for Debugging
-    /*
     if (!user && !isDemo) {
         redirect("/login")
     }
-    */
 
     // Get the gym profile for this user
     let gym = null

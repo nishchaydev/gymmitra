@@ -13,6 +13,7 @@ const settingsSchema = z.object({
     address: z.string().optional(),
     gst: z.string().optional(),
     invoicePrefix: z.string().min(1).max(5).optional(),
+    termsAndConditions: z.string().max(1000).optional(),
 })
 
 export async function GET() {

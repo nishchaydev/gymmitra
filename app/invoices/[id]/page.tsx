@@ -33,6 +33,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             total: mockInv.amount,
             subtotal: mockInv.amount,
             discount: 0,
+            shareToken: null,
             gym: {
                 businessName: "Gym Mitra Showcase",
                 address: "Showcase Street, Digital District",
@@ -94,6 +95,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                         phone: true,
                         email: true,
                         upiId: true,
+                        termsAndConditions: true,
                     }
                 },
                 member: {

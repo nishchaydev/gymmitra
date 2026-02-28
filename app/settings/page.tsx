@@ -15,6 +15,7 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { Loader2, Save, Building2, Users } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +28,7 @@ const settingsSchema = z.object({
     phone: z.string().min(10, "Phone number is required"),
     address: z.string().optional(),
     gst: z.string().optional(),
+    termsAndConditions: z.string().max(1000).optional(),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -44,6 +46,7 @@ export default function SettingsPage() {
             phone: "",
             address: "",
             gst: "",
+            termsAndConditions: "",
         },
     })
 
@@ -59,6 +62,7 @@ export default function SettingsPage() {
                         phone: data.phone || "",
                         address: data.address || "",
                         gst: data.gst || "",
+                        termsAndConditions: data.termsAndConditions || "",
                     })
                 }
             } catch {
@@ -210,6 +214,27 @@ export default function SettingsPage() {
                                                     <FormControl>
                                                         <Input placeholder="22AAAAA0000A1Z5" {...field} />
                                                     </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="termsAndConditions"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Custom Terms &amp; Conditions</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea
+                                                            placeholder="1. Membership fees are non-refundable.&#10;2. Members must carry their ID card.&#10;3. Timings: 5AM–10PM daily."
+                                                            rows={5}
+                                                            maxLength={1000}
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        These will appear on all your invoices. Max 1000 characters.
+                                                    </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
