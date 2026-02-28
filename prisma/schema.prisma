@@ -180,6 +180,10 @@ model Invoice {
   paymentStatus       PaymentStatus       @default(PENDING)
   paymentMethod       PaymentMethod?
   idempotencyKey      String?             @unique
+  walkInName          String?
+  walkInPhone         String?
+  walkInEmail         String?
+  walkInAddress       String?
   notes               String?
   issueDate           DateTime            @default(now())
   dueDate             DateTime?

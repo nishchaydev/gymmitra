@@ -15,6 +15,10 @@ import { useRouter } from 'next/navigation'
 export default function NewInvoiceForm({ members, taxPercentage = 18 }: { members: any[], taxPercentage?: number }) {
     const router = useRouter()
     const [selectedMember, setSelectedMember] = useState<string>('')
+    const [walkInName, setWalkInName] = useState('')
+    const [walkInPhone, setWalkInPhone] = useState('')
+    const [walkInEmail, setWalkInEmail] = useState('')
+    const [walkInAddress, setWalkInAddress] = useState('')
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
     const [discount, setDiscount] = useState(0)
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH')
@@ -35,11 +39,13 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
     const total = subtotalAfterDiscount + taxAmount
 
     // Client-side validation
-    const isValid = items.length > 0 && items.every(item =>
+    const hasItems = items.length > 0 && items.every(item =>
         item.description.trim().length > 0 &&
         item.quantity > 0 &&
         item.unitPrice >= 0
     )
+    const hasValidWalkIn = selectedMember === 'WALK-IN' ? walkInName.trim().length > 0 && walkInPhone.trim().length > 0 : true
+    const isValid = hasItems && hasValidWalkIn
 
     if (success) {
         return (
@@ -89,6 +95,46 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                         ))}
                                     </SelectContent>
                                 </Select>
+
+                                {selectedMember === 'WALK-IN' && (
+                                    <div className="mt-6 p-4 bg-slate-950/50 rounded-xl border border-slate-800 space-y-4">
+                                        <h4 className="text-sm font-bold text-slate-300">Walk-in Customer Details</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-slate-500 uppercase font-bold">Name <span className="text-red-400">*</span></Label>
+                                                <Input
+                                                    value={walkInName} onChange={(e) => setWalkInName(e.target.value)}
+                                                    placeholder="John Doe"
+                                                    className="bg-slate-900 border-slate-700 text-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-slate-500 uppercase font-bold">Phone Number <span className="text-red-400">*</span></Label>
+                                                <Input
+                                                    value={walkInPhone} onChange={(e) => setWalkInPhone(e.target.value)}
+                                                    placeholder="9998887776"
+                                                    className="bg-slate-900 border-slate-700 text-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-slate-500 uppercase font-bold">Email Address</Label>
+                                                <Input
+                                                    value={walkInEmail} onChange={(e) => setWalkInEmail(e.target.value)}
+                                                    placeholder="john@example.com" type="email"
+                                                    className="bg-slate-900 border-slate-700 text-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-slate-500 uppercase font-bold">Address</Label>
+                                                <Input
+                                                    value={walkInAddress} onChange={(e) => setWalkInAddress(e.target.value)}
+                                                    placeholder="123 Main St, City"
+                                                    className="bg-slate-900 border-slate-700 text-white"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -221,6 +267,10 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                         try {
                                             const result = await createInvoice({
                                                 memberId: selectedMember === 'WALK-IN' ? undefined : (selectedMember || undefined),
+                                                walkInName: selectedMember === 'WALK-IN' ? walkInName : undefined,
+                                                walkInPhone: selectedMember === 'WALK-IN' ? walkInPhone : undefined,
+                                                walkInEmail: selectedMember === 'WALK-IN' ? walkInEmail : undefined,
+                                                walkInAddress: selectedMember === 'WALK-IN' ? walkInAddress : undefined,
                                                 paymentMethod,
                                                 items,
                                                 discount

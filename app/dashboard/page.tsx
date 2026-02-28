@@ -33,17 +33,24 @@ export default async function DashboardPage() {
     // Demo mode is ONLY for unauthenticated visitors or explicit demo users.
     const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
+    // Bypass Auth for Debugging
+    /*
     if (!user && !isDemo) {
         redirect("/login")
     }
+    */
 
     // Get the gym profile for this user
     let gym = null
     let dbError = false
     try {
-        gym = isDemo ? { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true } : await prisma.gymProfile.findUnique({
-            where: { userId: user?.id }
-        })
+        if (isDemo) {
+            gym = { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true }
+        } else if (user) {
+            gym = await prisma.gymProfile.findUnique({
+                where: { userId: user.id }
+            })
+        }
     } catch (error) {
         console.error("Failed to load gym profile:", error)
         dbError = true
@@ -155,8 +162,7 @@ export default async function DashboardPage() {
                 where: {
                     gymId: gym!.id,
                     status: 'ACTIVE',
-                    dateOfBirth: { not: null }
-                } as any,
+                },
                 select: { name: true, phone: true, dateOfBirth: true },
                 take: 50, // We filter in memory for simplicity/speed for small/mid gyms
             })

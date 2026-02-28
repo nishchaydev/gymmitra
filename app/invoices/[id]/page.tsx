@@ -48,6 +48,10 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 phone: "9998887776",
                 email: `${mockInv.member.name.toLowerCase().replace(/\s+/g, '.')}@example.com`
             },
+            walkInName: null,
+            walkInPhone: null,
+            walkInEmail: null,
+            walkInAddress: null,
             items: [
                 {
                     id: "item1",
@@ -70,8 +74,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 subtotal: true,
                 discount: true,
                 total: true,
-                // shareToken: true,
+                shareToken: true,
                 notes: true,
+                walkInName: true,
+                walkInPhone: true,
+                walkInEmail: true,
+                walkInAddress: true,
                 issueDate: true,
                 dueDate: true,
                 createdAt: true,

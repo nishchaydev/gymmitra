@@ -50,7 +50,7 @@ export function InvoiceTemplate({
     const upiQrData = gymInfo.upiId ? generateUpiQrData(gymInfo.upiId, total, gymInfo.name, invoiceNumber) : null
 
     return (
-        <div className="bg-white p-8 max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0" id="invoice-template">
+        <div className="bg-white p-8 max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid" id="invoice-template">
             {/* Header */}
             <div className="flex justify-between items-start mb-12">
                 <div className="space-y-4">
@@ -161,11 +161,11 @@ export function InvoiceTemplate({
             </div>
 
             {/* Bottom Accent */}
-            <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center opacity-50">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Generated via GymMitra ERP</div>
+            <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center opacity-50 print:mt-10">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Generated via GymMitra</div>
                 <div className="flex gap-2 text-primary font-black text-lg italic tracking-tighter">
                     <Building2 className="w-5 h-5" />
-                    Tri-Star Fitness
+                    {gymInfo.name}
                 </div>
             </div>
         </div>
