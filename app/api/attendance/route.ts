@@ -5,6 +5,7 @@ import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { startOfDay, endOfDay } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 
 const checkInSchema = z.object({
     memberId: z.string().min(1, "Member ID is required"),
@@ -70,9 +71,14 @@ export async function POST(request: NextRequest) {
         }
 
         // UTC naive logic removed. Shift to Gym's physical timezone.
-        const { formatInTimeZone } = await import('date-fns-tz')
-        const timezone = gym.timezone || 'Asia/Kolkata'
-        const localDateString = formatInTimeZone(now, timezone, 'yyyy-MM-dd')
+        let localDateString: string
+        try {
+            const timezone = gym.timezone || 'Asia/Kolkata'
+            localDateString = formatInTimeZone(now, timezone, 'yyyy-MM-dd')
+        } catch (tzError) {
+            console.warn(`Invalid timezone [${gym.timezone}] for gym ${gym.id}, falling back to UTC`)
+            localDateString = now.toISOString().split('T')[0]
+        }
 
         const existingAttendance = await prisma.attendance.findUnique({
             where: {
@@ -98,8 +104,9 @@ export async function POST(request: NextRequest) {
         })
 
         // Audit Log (Manual Check-in)
-        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        recordAuditLog({
+        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        const ip = ipHeader.split(',')[0].trim()
+        await recordAuditLog({
             gymId: gym.id,
             actorId: auth.userId,
             action: 'UPDATE_MEMBER', // Using generic action

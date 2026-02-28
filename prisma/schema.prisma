@@ -29,7 +29,7 @@ model GymProfile {
   timezone             String            @default("Asia/Kolkata")
   saasPlan             SaaSPlan          @default(BASIC)
   taxPercentage        Decimal           @default(18.0) @db.Decimal(5, 2)
-  termsAndConditions   String?
+  termsAndConditions   String? @db.Text
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   members         Member[]

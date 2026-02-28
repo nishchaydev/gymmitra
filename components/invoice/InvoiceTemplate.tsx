@@ -134,13 +134,13 @@ export function InvoiceTemplate({
                     {gymInfo.termsAndConditions ? (
                         <div className="text-[10px] text-slate-400 max-w-[300px] leading-relaxed italic">
                             <p className="font-bold mb-1 not-italic">TERMS & CONDITIONS</p>
-                            {gymInfo.termsAndConditions.split('\n').map((line, i) => (
+                            {gymInfo.termsAndConditions.split('\n').map(l => l.trim()).filter(Boolean).map((line, i) => (
                                 <p key={i}>{line}</p>
                             ))}
                         </div>
                     ) : (
                         <div className="text-[10px] text-slate-400 max-w-[300px] leading-relaxed italic">
-                            <p className="font-bold mb-1">TERMS & CONDITIONS</p>
+                            <p className="font-bold mb-1 not-italic">TERMS & CONDITIONS</p>
                             <p>1. Membership registration fees are non-refundable.</p>
                             <p>2. Please keep this invoice for your records.</p>
                             <p>3. Subscription transfers are subject to management approval.</p>

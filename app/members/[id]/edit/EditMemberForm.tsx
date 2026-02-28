@@ -28,11 +28,14 @@ interface Member {
 export default function EditMemberForm({ member }: { member: Member }) {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
+    const safeDate = member.dateOfBirth ? new Date(member.dateOfBirth) : new Date()
+    const initialDate = isNaN(safeDate.getTime()) ? '' : safeDate.toISOString().split('T')[0]
+
     const [form, setForm] = useState({
         name: member.name,
         email: member.email || '',
         phone: member.phone,
-        dateOfBirth: new Date(member.dateOfBirth).toISOString().split('T')[0],
+        dateOfBirth: initialDate,
         address: member.address || '',
         status: member.status,
         emergencyName: member.emergencyName,
@@ -44,6 +47,11 @@ export default function EditMemberForm({ member }: { member: Member }) {
     const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }))
 
     const handleSave = async () => {
+        if (!form.name.trim() || !form.phone.trim()) {
+            toast.error('Name and Phone are required')
+            return
+        }
+
         setSaving(true)
         try {
             const res = await fetch(`/api/members/${member.id}`, {
@@ -53,8 +61,15 @@ export default function EditMemberForm({ member }: { member: Member }) {
             })
 
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.error || 'Failed to update member')
+                let errMessage = 'Failed to update member'
+                try {
+                    const err = await res.json()
+                    errMessage = err.error || errMessage
+                } catch {
+                    const text = await res.text()
+                    errMessage = `HTTP ${res.status}: ${text || errMessage}`
+                }
+                throw new Error(errMessage)
             }
 
             toast.success('Member profile updated!')
@@ -72,7 +87,7 @@ export default function EditMemberForm({ member }: { member: Member }) {
             <Card>
                 <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="name">Full Name</Label>
                             <Input id="name" value={form.name} onChange={e => update('name', e.target.value)} />
@@ -82,7 +97,7 @@ export default function EditMemberForm({ member }: { member: Member }) {
                             <Input id="phone" value={form.phone} onChange={e => update('phone', e.target.value)} />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="email">Email (Optional)</Label>
                             <Input id="email" type="email" value={form.email} onChange={e => update('email', e.target.value)} />
@@ -92,7 +107,7 @@ export default function EditMemberForm({ member }: { member: Member }) {
                             <Input id="dob" type="date" value={form.dateOfBirth} onChange={e => update('dateOfBirth', e.target.value)} />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="address">Address</Label>
                             <Input id="address" value={form.address} onChange={e => update('address', e.target.value)} />
@@ -116,7 +131,7 @@ export default function EditMemberForm({ member }: { member: Member }) {
             <Card>
                 <CardHeader><CardTitle>Emergency Contact</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="eName">Name</Label>
                             <Input id="eName" value={form.emergencyName} onChange={e => update('emergencyName', e.target.value)} />

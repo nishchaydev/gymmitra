@@ -11,6 +11,7 @@ import { User } from "@supabase/supabase-js"
 
 export function Navbar() {
     const [isScrolled, setIsScrolled] = React.useState(false)
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
     const [user, setUser] = React.useState<User | null>(null)
     const { scrollY } = useScroll()
     const supabase = createClient()
@@ -78,28 +79,61 @@ export function Navbar() {
 
                 <div className="flex items-center gap-4">
                     {user ? (
-                        <a href="https://gym.emitra.dev" target="_blank" rel="noopener noreferrer">
+                        <Link href="/dashboard" className="hidden md:block">
                             <Button className="bg-primary hover:bg-primary-600 text-white font-bold px-6 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
                                 Go to Dashboard
                             </Button>
-                        </a>
+                        </Link>
                     ) : (
                         <>
-                            <a href="https://gym.emitra.dev/login" className="hidden md:block" target="_blank" rel="noopener noreferrer">
+                            <Link href="/login" className="hidden md:block">
                                 <Button className="font-black bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all uppercase tracking-widest text-xs px-6">
                                     Login
                                 </Button>
-                            </a>
-                            <Link href="#contact">
+                            </Link>
+                            <Link href="#contact" className="hidden md:block">
                                 <Button className="bg-midnight text-white font-semibold px-6 rounded-full shadow-lg shadow-midnight/20 hover:bg-midnight/90 hover:shadow-midnight/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
                                     Request a Demo
                                 </Button>
                             </Link>
                         </>
                     )}
-                    <Button variant="ghost" size="icon" className="md:hidden">
+                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                         <Menu className="h-6 w-6 text-slate-700" />
                     </Button>
+                </div>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            <div className={cn("fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 md:hidden", isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible")} onClick={() => setIsMobileMenuOpen(false)} />
+
+            {/* Mobile Menu Sheet */}
+            <div className={cn("fixed top-0 right-0 h-full w-[280px] bg-white z-50 shadow-2xl transition-transform duration-300 transform md:hidden flex flex-col", isMobileMenuOpen ? "translate-x-0" : "translate-x-full")}>
+                <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+                    <span className="font-display font-bold text-xl text-primary">GymMitra</span>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white rounded-full shadow-sm"><Menu className="w-5 h-5 text-slate-600" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+                    <nav className="flex flex-col gap-4 text-sm font-bold text-slate-700">
+                        <Link href="#products" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-slate-100">Products</Link>
+                        <Link href="#pricing" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-slate-100">Pricing</Link>
+                    </nav>
+                    <div className="mt-auto flex flex-col gap-4 pt-6 border-t border-slate-100">
+                        {user ? (
+                            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                                <Button className="w-full bg-primary text-white font-bold rounded-full">Go to Dashboard</Button>
+                            </Link>
+                        ) : (
+                            <>
+                                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Button className="w-full bg-primary text-white font-bold rounded-full">Login</Button>
+                                </Link>
+                                <Link href="#contact" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Button variant="outline" className="w-full font-bold rounded-full">Request Demo</Button>
+                                </Link>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </motion.header>

@@ -17,7 +17,7 @@ export interface AuditLogParams {
     action: AuditAction;
     entityType: string;
     entityId?: string;
-    payload?: any;
+    payload?: Record<string, unknown> | null;
     ipAddress?: string;
 }
 

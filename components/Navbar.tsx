@@ -103,7 +103,6 @@ export function Navbar() {
                         <Link
                             key={route.href}
                             href={route.href}
-                            prefetch={false}
                             className={cn(
                                 "text-sm font-medium transition-colors hover:text-primary",
                                 route.active ? "text-primary font-semibold" : "text-muted-foreground"
@@ -150,7 +149,7 @@ export function Navbar() {
                                 <>
                                     <div className="flex flex-col space-y-2 mb-4 pb-4 border-b">
                                         {routes.map((route) => (
-                                            <Link key={route.href} href={route.href} prefetch={false} onClick={closeMenu} className={cn("text-base font-medium p-3 rounded-lg", route.active ? "bg-primary/5 text-primary font-bold" : "text-muted-foreground hover:bg-slate-50")}>
+                                            <Link key={route.href} href={route.href} onClick={closeMenu} className={cn("text-base font-medium p-3 rounded-lg", route.active ? "bg-primary/5 text-primary font-bold" : "text-muted-foreground hover:bg-slate-50")}>
                                                 {route.label}
                                             </Link>
                                         ))}

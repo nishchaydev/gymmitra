@@ -96,11 +96,11 @@ export default async function MemberDetailPage({
         <div className="container mx-auto p-8 space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Link href="/members">
-                        <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" asChild aria-label="Back to Members List">
+                        <Link href="/members">
                             <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <h1 className="text-3xl font-bold">{member.name}</h1>
                     <Badge variant={member.status === 'ACTIVE' ? 'default' : 'secondary'}>
                         {member.status}
@@ -108,11 +108,11 @@ export default async function MemberDetailPage({
                 </div>
                 <div className="flex gap-2">
                     <CheckInButton memberId={member.id} />
-                    <Link href={`/members/${member.id}/edit`}>
-                        <Button variant="outline">
+                    <Button variant="outline" asChild>
+                        <Link href={`/members/${member.id}/edit`}>
                             <Edit className="mr-2 h-4 w-4" /> Edit Profile
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </div>
             </div>
 

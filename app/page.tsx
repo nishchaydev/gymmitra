@@ -1,20 +1,22 @@
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Navbar } from "@/components/landing/Navbar"
 import { Hero } from "@/components/landing/Hero"
-import { SocialProof } from "@/components/landing/SocialProof"
-import { LiveDemo } from "@/components/landing/LiveDemo"
-import { BeforeAfter } from "@/components/landing/BeforeAfter"
-import { Features } from "@/components/landing/Features"
-import { ROICalculator } from "@/components/landing/ROICalculator"
-import { Testimonials } from "@/components/landing/Testimonials"
-import { MobilePreview } from "@/components/landing/MobilePreview"
-import { Pricing } from "@/components/landing/Pricing"
-import { FAQ } from "@/components/landing/FAQ"
-import { FinalCTA } from "@/components/landing/FinalCTA"
-import { Contact } from "@/components/landing/Contact"
-import { AboutEMitra } from "@/components/landing/AboutEMitra"
 import { MobileStickyCTA } from "@/components/landing/MobileStickyCTA"
 import { ShieldCheck, Zap, Award, Building2 } from "lucide-react"
+
+const SocialProof = dynamic(() => import("@/components/landing/SocialProof").then(m => m.SocialProof))
+const LiveDemo = dynamic(() => import("@/components/landing/LiveDemo").then(m => m.LiveDemo))
+const BeforeAfter = dynamic(() => import("@/components/landing/BeforeAfter").then(m => m.BeforeAfter))
+const Features = dynamic(() => import("@/components/landing/Features").then(m => m.Features))
+const ROICalculator = dynamic(() => import("@/components/landing/ROICalculator").then(m => m.ROICalculator))
+const Testimonials = dynamic(() => import("@/components/landing/Testimonials").then(m => m.Testimonials))
+const MobilePreview = dynamic(() => import("@/components/landing/MobilePreview").then(m => m.MobilePreview))
+const Pricing = dynamic(() => import("@/components/landing/Pricing").then(m => m.Pricing))
+const FAQ = dynamic(() => import("@/components/landing/FAQ").then(m => m.FAQ))
+const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then(m => m.FinalCTA))
+const Contact = dynamic(() => import("@/components/landing/Contact").then(m => m.Contact))
+const AboutEMitra = dynamic(() => import("@/components/landing/AboutEMitra").then(m => m.AboutEMitra))
 
 export default function Home() {
   return (
@@ -102,8 +104,8 @@ export default function Home() {
                 <ul className="space-y-4">
                   <li><Link href="#features" className="text-sm hover:text-ocean transition-colors duration-200">Features</Link></li>
                   <li><Link href="#pricing" className="text-sm hover:text-ocean transition-colors duration-200">Pricing</Link></li>
-                  <li><a href="https://gym.emitra.dev/login?view=register" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</a></li>
-                  <li><a href="https://gym.emitra.dev/attendance/kiosk" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-ocean transition-colors duration-200">Live Kiosk</a></li>
+                  <li><Link href="/login?view=register" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</Link></li>
+                  <li><Link href="/attendance/kiosk" className="text-sm hover:text-ocean transition-colors duration-200">Live Kiosk</Link></li>
                 </ul>
               </div>
               <div className="space-y-6">

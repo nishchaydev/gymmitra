@@ -44,8 +44,8 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
         item.quantity > 0 &&
         item.unitPrice >= 0
     )
-    // Validate phone: at least 7 digits plus optional formatting chars
-    const phoneRegex = /^[+\d][\d\s\-().]{6,19}$/
+    // Validate phone: require at least 7 digits in total, ignoring spaces/formatting
+    const phoneRegex = /^(?=(?:\D*\d){7})[+\d][\d\s\-().]{6,19}$/
     const hasValidWalkIn = selectedMember === 'WALK-IN'
         ? walkInName.trim().length > 0 && phoneRegex.test(walkInPhone.trim())
         : true
@@ -294,8 +294,8 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 }, 2000)
                                             }
 
-                                        } catch {
-                                            console.error("Error creating invoice")
+                                        } catch (err) {
+                                            console.error("Error creating invoice", err)
                                             toast.error("Error creating invoice")
                                         } finally {
                                             setIsSubmitting(false)

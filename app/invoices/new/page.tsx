@@ -27,7 +27,7 @@ export default async function NewInvoicePage() {
             </div>
             <NewInvoiceForm
                 members={members}
-                taxPercentage={Number((gym as any).taxPercentage || 18)}
+                taxPercentage={gym.taxPercentage ? Number(gym.taxPercentage) : 18}
             />
         </div>
     )

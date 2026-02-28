@@ -33,7 +33,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             total: mockInv.amount,
             subtotal: mockInv.amount,
             discount: 0,
-            shareToken: null,
+            shareToken: "demo-token-123",
             gym: {
                 businessName: "Gym Mitra Showcase",
                 address: "Showcase Street, Digital District",

@@ -34,14 +34,6 @@ export async function GET(request: NextRequest) {
         return new Response('Server misconfigured', { status: 500 })
     }
 
-    // 2. Email Service Configuration
-    const resendKey = process.env.RESEND_API_KEY
-    if (!resendKey) {
-        console.error('[Cron] RESEND_API_KEY not configured')
-        return new Response('Email service misconfigured', { status: 500 })
-    }
-    const resend = new Resend(resendKey)
-
     const authHeader = request.headers.get('authorization') || ''
     const expected = `Bearer ${cronSecret}`
 
@@ -51,6 +43,14 @@ export async function GET(request: NextRequest) {
     if (!crypto.timingSafeEqual(hmacHeader, hmacExpected)) {
         return new Response('Unauthorized', { status: 401 })
     }
+
+    // 2. Email Service Configuration
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) {
+        console.error('[Cron] RESEND_API_KEY not configured')
+        return new Response('Email service misconfigured', { status: 500 })
+    }
+    const resend = new Resend(resendKey)
 
     const results = {
         expiryReminders: 0,
@@ -197,24 +197,26 @@ export async function GET(request: NextRequest) {
 
                 // ── Dispatch Batch APIs ───────────────────────────────
                 if (emailBatch.length > 0) {
-                    // Resend Batch API (max 100 per call, handles array of payloads)
-                    const chunks = []
-                    for (let i = 0; i < emailBatch.length; i += 100) {
-                        chunks.push(emailBatch.slice(i, i + 100))
-                    }
+                    const chunkCount = Math.ceil(emailBatch.length / 100)
+                    for (let i = 0; i < chunkCount; i++) {
+                        const emailChunk = emailBatch.slice(i * 100, (i + 1) * 100)
+                        const notifChunk = notificationBatch.slice(i * 100, (i + 1) * 100)
 
-                    for (const chunk of chunks) {
                         try {
-                            await resend.batch.send(chunk)
+                            const response = await resend.batch.send(emailChunk)
+                            if (response.error) {
+                                console.error(`[Cron] Resend batch error for gymId=${gym.id}:`, response.error)
+                                results.errors++
+                            } else {
+                                // Only insert notifications for the emails that successfully sent
+                                if (notifChunk.length > 0) {
+                                    await prisma.notification.createMany({ data: notifChunk })
+                                }
+                            }
                         } catch (e) {
                             console.error(`[Cron] Resend batch failed for gymId=${gym.id}:`, e)
                             results.errors++
                         }
-                    }
-
-                    // Bulk insert notifications
-                    if (notificationBatch.length > 0) {
-                        await prisma.notification.createMany({ data: notificationBatch })
                     }
                 }
             } catch (gymError) {

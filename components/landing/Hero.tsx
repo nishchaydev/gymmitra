@@ -103,7 +103,7 @@ export function Hero() {
                     </MotionWrapper>
 
                     <MotionWrapper delay={0.4} className="flex flex-col sm:flex-row gap-6 justify-center w-full items-center mb-8">
-                        <Link href="https://gym.emitra.dev/login" className="w-full sm:w-auto">
+                        <Link href="/login" className="w-full sm:w-auto">
                             <Button className="w-full h-14 px-8 text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/25 transition-all active:scale-95 uppercase tracking-widest rounded-2xl">
                                 Start Free Trial
                                 <ArrowRight className="ml-2 h-6 w-6" />
@@ -201,6 +201,9 @@ export function Hero() {
                                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=owner${i}`}
                                         className="w-8 h-8 rounded-full border-2 border-white bg-white"
                                         alt="Owner"
+                                        width={32}
+                                        height={32}
+                                        loading="lazy"
                                     />
                                 ))}
                                 <div className="w-8 h-8 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold shadow-sm backdrop-blur-sm">

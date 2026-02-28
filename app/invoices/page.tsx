@@ -26,7 +26,8 @@ export default async function InvoicesPage({
     searchParams: Promise<{ page?: string }>
 }) {
     const params = await searchParams
-    const page = Math.max(1, parseInt(params.page || '1'))
+    const parsedPage = parseInt(params.page || '1')
+    const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
     const take = 50
     const skip = (page - 1) * take
 
@@ -50,8 +51,13 @@ export default async function InvoicesPage({
         gymId = gym.id
     }
 
-    const invoices = isDemo ? SHOWCASE_INVOICES.map(i => ({
-        // ... demo mapping ...
+    const invoices = isDemo ? SHOWCASE_INVOICES.slice(skip, skip + take).map(i => ({
+        id: i.id,
+        invoiceNumber: `INV-${i.id}`,
+        member: i.member,
+        paymentStatus: i.status,
+        issueDate: i.date,
+        total: i.amount
     })) : await prisma.invoice.findMany({
         where: {
             member: {
@@ -68,10 +74,12 @@ export default async function InvoicesPage({
         }
     })
 
-    const totalCount = isDemo ? invoices.length : await prisma.invoice.count({
+    const totalCount = isDemo ? SHOWCASE_INVOICES.length : await prisma.invoice.count({
         where: { member: { gymId: gymId } }
     })
     const hasMore = totalCount > page * take
+    const startRange = totalCount === 0 ? 0 : Math.min((page - 1) * take + 1, totalCount)
+    const endRange = Math.min(page * take, totalCount)
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
@@ -159,16 +167,26 @@ export default async function InvoicesPage({
                     {totalCount > take && (
                         <div className="flex items-center justify-between mt-6 px-2">
                             <p className="text-sm text-muted-foreground">
-                                Showing <span className="font-bold">{(page - 1) * take + 1}</span> to <span className="font-bold">{Math.min(page * take, totalCount)}</span> of <span className="font-bold">{totalCount}</span> invoices
+                                Showing <span className="font-bold">{startRange}</span> to <span className="font-bold">{endRange}</span> of <span className="font-bold">{totalCount}</span> invoices
                             </p>
                             <div className="flex gap-2">
-                                <Link href={`/invoices?page=${page - 1}`}>
-                                    <Button variant="outline" size="sm" disabled={page === 1}>
+                                <Link
+                                    href={`/invoices?page=${page - 1}`}
+                                    className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                                    aria-disabled={page === 1}
+                                    tabIndex={page === 1 ? -1 : undefined}
+                                >
+                                    <Button variant="outline" size="sm" disabled={page === 1} tabIndex={-1}>
                                         Previous
                                     </Button>
                                 </Link>
-                                <Link href={`/invoices?page=${page + 1}`}>
-                                    <Button variant="outline" size="sm" disabled={!hasMore}>
+                                <Link
+                                    href={`/invoices?page=${page + 1}`}
+                                    className={!hasMore ? 'pointer-events-none opacity-50' : ''}
+                                    aria-disabled={!hasMore}
+                                    tabIndex={!hasMore ? -1 : undefined}
+                                >
+                                    <Button variant="outline" size="sm" disabled={!hasMore} tabIndex={-1}>
                                         Next
                                     </Button>
                                 </Link>

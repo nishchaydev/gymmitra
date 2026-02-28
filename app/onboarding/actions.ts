@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
+import { Resend } from 'resend'
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { headers, cookies } from "next/headers"
@@ -18,6 +19,7 @@ const onboardingSchema = z.object({
     email: z.string().email("Valid email is required"),
     upiId: z.string().min(3, "UPI ID is required"),
     invoicePrefix: z.string().min(2, "Prefix is required").max(5, "Max 5 characters"),
+    plans: z.string().optional(),
 })
 
 const ONBOARDING_COMPLETE_STEP = 4
@@ -40,27 +42,65 @@ export async function completeOnboarding(formData: FormData) {
         email: formData.get("email"),
         upiId: formData.get("upiId"),
         invoicePrefix: formData.get("invoicePrefix")?.toString().toUpperCase(),
+        plans: formData.get("plans"),
     }
 
     try {
         const validatedData = onboardingSchema.parse(rawData)
+        const updateData = {
+            businessName: validatedData.businessName,
+            address: validatedData.address,
+            city: validatedData.city,
+            state: validatedData.state,
+            pincode: validatedData.pincode,
+            phone: validatedData.phone,
+            email: validatedData.email,
+            upiId: validatedData.upiId,
+            invoicePrefix: validatedData.invoicePrefix,
+        }
 
-        await prisma.gymProfile.upsert({
+        const gymProfile = await prisma.gymProfile.upsert({
             where: { userId: user.id },
             update: {
-                ...validatedData,
+                ...updateData,
                 name: validatedData.businessName,
                 isVerified: true,
                 onboardingStep: ONBOARDING_COMPLETE_STEP,
             },
             create: {
                 userId: user.id,
-                ...validatedData,
+                ...updateData,
                 name: validatedData.businessName,
                 isVerified: true,
                 onboardingStep: ONBOARDING_COMPLETE_STEP,
             }
         })
+
+        // Process Plans
+        if (validatedData.plans) {
+            try {
+                const parsedPlans = JSON.parse(validatedData.plans)
+                const enabledPlans = parsedPlans.filter((p: any) => p.enabled)
+
+                if (enabledPlans.length > 0) {
+                    await prisma.membershipPlan.createMany({
+                        data: enabledPlans.map((p: any) => ({
+                            gymId: gymProfile.id,
+                            name: p.name,
+                            description: `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''} Membership`,
+                            durationMonths: p.durationMonths,
+                            price: p.price,
+                            isActive: true
+                        })),
+                        skipDuplicates: true
+                    })
+                }
+            } catch (planError) {
+                console.error("Failed to parsed or create onboarding plans:", planError)
+                // We don't throw here to avoid failing entire onboarding over plan creation
+            }
+        }
+
     } catch (error) {
         if (error instanceof z.ZodError) {
             console.error("Onboarding validation failed:", error.flatten())
@@ -93,7 +133,7 @@ export async function completeOnboarding(formData: FormData) {
     })
 
     if (gym) {
-        recordAuditLog({
+        await recordAuditLog({
             gymId: gym.id,
             actorId: user.id,
             action: 'ONBOARDING_COMPLETE',
@@ -102,6 +142,41 @@ export async function completeOnboarding(formData: FormData) {
             ipAddress: ip,
             payload: { businessName: gym.name }
         })
+
+        // Send Welcome Email asynchronously
+        try {
+            const resendKey = process.env.RESEND_API_KEY
+            if (resendKey && gym.email) {
+                const resend = new Resend(resendKey)
+                const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gymmitra.vercel.app'
+
+                // Fire and forget so we don't block the redirect
+                resend.emails.send({
+                    from: 'Gym Mitra Team <hello@mail.emitra.dev>',
+                    to: gym.email,
+                    subject: `Welcome to Gym Mitra, ${gym.businessName}! 🎉`,
+                    html: `
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                            <h2>Welcome aboard, ${gym.businessName}! 🚀</h2>
+                            <p>We are thrilled to have you join Gym Mitra. Your workspace is now fully set up and ready to go.</p>
+                            <p>Here are your next steps to get the most out of Gym Mitra:</p>
+                            <ul>
+                                <li><strong>Add Members:</strong> Start digitizing your member records.</li>
+                                <li><strong>Generate Invoices:</strong> Create professional GST-ready invoices in 1-click.</li>
+                                <li><strong>Track Attendance:</strong> Keep an eye on daily footfall.</li>
+                            </ul>
+                            <br/>
+                            <a href="${baseUrl}/dashboard" style="background-color: #A3E635; color: #1e293b; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Go to your Dashboard</a>
+                            <br/><br/>
+                            <p>If you have any questions, simply reply to this email. We're here to help you grow!</p>
+                            <p>Best,<br/>The Gym Mitra Team</p>
+                        </div>
+                    `
+                })
+            }
+        } catch (emailError) {
+            console.error('[Onboarding] Failed to send welcome email:', emailError)
+        }
     }
 
     redirect("/dashboard")

@@ -232,8 +232,9 @@ export default function SettingsPage() {
                                                             {...field}
                                                         />
                                                     </FormControl>
-                                                    <FormDescription>
-                                                        These will appear on all your invoices. Max 1000 characters.
+                                                    <FormDescription className="flex justify-between">
+                                                        <span>These will appear on all your invoices. Max 1000 characters.</span>
+                                                        <span>{field.value?.length || 0}/1000</span>
                                                     </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>

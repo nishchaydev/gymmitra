@@ -53,7 +53,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
     try {
         const invoice = await prisma.$transaction(async (tx) => {
             const invoiceNumber = await generateInvoiceNumber(gym.id, tx)
-            const taxPercentage = Number((gym as any).taxPercentage || 18)
+            const taxPercentage = gym.taxPercentage ? Number(gym.taxPercentage) : 18
 
             // Use integer arithmetic (cents) for precision
             const subtotalCents = validatedData.items.reduce((acc, item) =>
@@ -71,7 +71,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             const shareTokenExpiresAt = new Date()
             shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
 
-            return await (tx.invoice as any).create({
+            return await tx.invoice.create({
                 data: {
                     invoiceNumber,
                     type: "SALE",
@@ -119,7 +119,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
         // 4. Audit Log
         const headerList = await headers()
         const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
-        recordAuditLog({
+        await recordAuditLog({
             gymId: gym.id,
             actorId: context.userId,
             action: 'CREATE_INVOICE',

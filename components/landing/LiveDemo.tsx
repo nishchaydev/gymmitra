@@ -121,9 +121,8 @@ export function LiveDemo() {
                                                 <div className="text-sm text-slate-500 font-bold">Last updated: Just now</div>
                                             </div>
 
-                                            {/* Top Interactive CTA - Highly Visible */}
                                             <div className="mb-8">
-                                                <Link href="https://gym.emitra.dev" className="block group">
+                                                <Link href="/dashboard" className="block group">
                                                     <div className="w-full h-auto py-6 px-4 bg-slate-100/50 hover:bg-white text-slate-700 font-bold border-2 border-slate-200/50 hover:border-primary/30 transition-all rounded-2xl group-hover:shadow-[0_0_40px_-10px_rgba(0,102,255,0.3)] flex flex-col items-center justify-center text-center">
                                                         <p className="text-primary/60 text-[10px] font-black mb-1 uppercase tracking-[0.2em] italic">Experience the Full Power</p>
                                                         <h4 className="text-lg font-black mb-4 font-display">Wanna see how it feels to use our product?</h4>
@@ -262,7 +261,7 @@ export function LiveDemo() {
 
                 <div className="text-center mt-12">
                     <p className="text-slate-300 mb-6 font-bold uppercase tracking-widest text-xs">See how easy it is?</p>
-                    <Link href="https://gym.emitra.dev/login?view=register">
+                    <Link href="/login?view=register">
                         <Button size="lg" className="h-16 px-12 text-xl rounded-full bg-primary text-white hover:bg-primary-600 shadow-2xl shadow-primary/20 font-black transition-all hover:-translate-y-1 uppercase tracking-widest">
                             Start Your Free 14-Day Trial
                             <ArrowRight className="ml-2 h-6 w-6" />

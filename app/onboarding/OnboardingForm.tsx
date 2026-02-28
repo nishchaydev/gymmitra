@@ -14,6 +14,7 @@ const steps = [
     { title: 'Business Info', icon: Building2 },
     { title: 'Location', icon: MapPin },
     { title: 'Contact', icon: Contact },
+    { title: 'Membership Plans', icon: CheckCircle2 },
     { title: 'Invoice Setup', icon: CreditCard },
 ]
 
@@ -29,12 +30,30 @@ export default function OnboardingForm() {
         pincode: '',
         phone: '',
         upiId: '',
-        invoicePrefix: ''
+        invoicePrefix: '',
+        plans: [
+            { name: 'Monthly', durationMonths: 1, price: 1500, enabled: true },
+            { name: 'Quarterly', durationMonths: 3, price: 4000, enabled: true },
+            { name: 'Half-Yearly', durationMonths: 6, price: 7500, enabled: false },
+            { name: 'Yearly', durationMonths: 12, price: 14000, enabled: true },
+        ]
     })
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const togglePlan = (index: number) => {
+        const newPlans = [...formData.plans]
+        newPlans[index].enabled = !newPlans[index].enabled
+        setFormData(prev => ({ ...prev, plans: newPlans }))
+    }
+
+    const updatePlanPrice = (index: number, price: string) => {
+        const newPlans = [...formData.plans]
+        newPlans[index].price = parseInt(price) || 0
+        setFormData(prev => ({ ...prev, plans: newPlans }))
     }
 
     const nextStep = () => {
@@ -58,7 +77,11 @@ export default function OnboardingForm() {
             // Create a new FormData object and append all state values
             const submissionData = new FormData()
             Object.entries(formData).forEach(([key, value]) => {
-                submissionData.append(key, value)
+                if (key === 'plans') {
+                    submissionData.append(key, JSON.stringify(value))
+                } else {
+                    submissionData.append(key, value as string)
+                }
             })
 
             await completeOnboarding(submissionData)
@@ -237,6 +260,40 @@ export default function OnboardingForm() {
                                 )}
 
                                 {currentStep === 3 && (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2 mb-4">
+                                            <Label>Set your Membership Plans</Label>
+                                            <p className="text-xs text-muted-foreground">Select the plans you offer and set their default prices. You can always change this later in Settings.</p>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            {formData.plans.map((plan, index) => (
+                                                <div key={plan.name} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${plan.enabled ? 'border-primary bg-primary/5' : 'border-slate-200 bg-white'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div
+                                                            className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer ${plan.enabled ? 'bg-primary border-primary text-white' : 'border-slate-300'}`}
+                                                            onClick={() => togglePlan(index)}
+                                                        >
+                                                            {plan.enabled && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                        </div>
+                                                        <span className="font-medium text-sm">{plan.name} Plan</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-slate-500">₹</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={plan.price}
+                                                            onChange={(e) => updatePlanPrice(index, e.target.value)}
+                                                            disabled={!plan.enabled}
+                                                            className="w-24 h-8 text-right bg-white disabled:bg-slate-100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentStep === 4 && (
                                     <div className="space-y-4 text-center">
                                         <div className="space-y-2 text-left">
                                             <Label htmlFor="invoicePrefix">Invoice Prefix</Label>

@@ -89,15 +89,20 @@ export async function PUT(
         })
 
         // Audit Log
-        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        recordAuditLog({
+        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        const ip = ipHeader.split(',')[0].trim()
+
+        // Redact PII
+        const { phone, emergencyPhone, ...safePayload } = validatedData as any
+
+        await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
             action: 'UPDATE_MEMBER',
             entityType: 'MEMBER',
             entityId: id,
             ipAddress: ip,
-            payload: validatedData
+            payload: safePayload
         })
 
         return NextResponse.json(member)
@@ -141,8 +146,10 @@ export async function DELETE(
         }
 
         // Audit Log
-        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        recordAuditLog({
+        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
+        const ip = ipHeader.split(',')[0].trim()
+
+        await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
             action: 'DELETE_MEMBER',

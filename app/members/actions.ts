@@ -46,7 +46,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
         // 4. Audit Log
         const headerList = await headers()
         const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
-        recordAuditLog({
+        await recordAuditLog({
             gymId,
             actorId: context.userId,
             action: 'CREATE_MEMBER',

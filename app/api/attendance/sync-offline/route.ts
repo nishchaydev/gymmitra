@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { z } from 'zod'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { formatInTimeZone } from 'date-fns-tz'
 
 const syncSchema = z.object({
     records: z.array(z.object({
@@ -56,42 +57,27 @@ export async function POST(request: NextRequest) {
 
         const syncedIds: string[] = []
 
-        const { formatInTimeZone } = await import('date-fns-tz')
-
         // 2. Batch Processing for Data Integrity
         for (const record of records) {
             if (!validMemberIds.has(record.memberId)) continue;
 
             try {
-                // Normalize date securely using the gym's specific timezone
                 const checkInTimeDate = new Date(record.checkInTime)
-                const timezone = (auth.gym as any).timezone || 'Asia/Kolkata'
-                const localDateString = formatInTimeZone(checkInTimeDate, timezone, 'yyyy-MM-dd')
+                if (isNaN(checkInTimeDate.getTime())) {
+                    throw new Error(`Invalid date: ${record.checkInTime}`)
+                }
 
-                // 3. Idempotent processing: Keep the EARLIEST check-in of the day
-                const existing = await (prisma.attendance as any).findUnique({
-                    where: {
-                        memberId_localDateString: {
-                            memberId: record.memberId,
-                            localDateString: localDateString,
-                        }
-                    }
-                })
+                const timezone = auth.gym.timezone || 'Asia/Kolkata'
+                let localDateString: string
+                try {
+                    localDateString = formatInTimeZone(checkInTimeDate, timezone, 'yyyy-MM-dd')
+                } catch (e) {
+                    localDateString = checkInTimeDate.toISOString().split('T')[0]
+                }
 
-                if (existing) {
-                    // Only update if the record coming in is EARLIER (unlikely with timestamps but good for safety)
-                    const existingTime = new Date(existing.checkInTime)
-                    if (checkInTimeDate < existingTime) {
-                        await prisma.attendance.update({
-                            where: { id: existing.id },
-                            data: {
-                                checkInTime: record.checkInTime,
-                                updatedAt: new Date()
-                            }
-                        })
-                    }
-                } else {
-                    await (prisma.attendance as any).create({
+                // 3. Idempotent processing: Optimistic create to prevent TOCTOU race conditions
+                try {
+                    await prisma.attendance.create({
                         data: {
                             memberId: record.memberId,
                             gymId: auth.gym.id,
@@ -100,6 +86,32 @@ export async function POST(request: NextRequest) {
                             date: checkInTimeDate
                         }
                     })
+                } catch (createErr: any) {
+                    // P2002: Unique constraint failed
+                    if (createErr.code === 'P2002') {
+                        const existing = await prisma.attendance.findUnique({
+                            where: {
+                                memberId_localDateString: {
+                                    memberId: record.memberId,
+                                    localDateString: localDateString,
+                                }
+                            }
+                        })
+
+                        if (existing) {
+                            const existingTime = new Date(existing.checkInTime)
+                            if (checkInTimeDate < existingTime) {
+                                await prisma.attendance.update({
+                                    where: { id: existing.id },
+                                    data: {
+                                        checkInTime: record.checkInTime,
+                                    }
+                                })
+                            }
+                        }
+                    } else {
+                        throw createErr
+                    }
                 }
 
                 syncedIds.push(record.id)

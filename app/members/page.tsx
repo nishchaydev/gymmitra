@@ -30,7 +30,8 @@ export default async function MembersPage({
     const params = await searchParams
     const query = params.q || ''
     const status = params.status
-    const page = Math.max(1, parseInt(params.page || '1'))
+    const parsedPage = parseInt(params.page || '1')
+    const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
     const take = 50
     const skip = (page - 1) * take
 
@@ -196,9 +197,9 @@ export default async function MembersPage({
                                                 })()}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Link href={`/members/${member.id}`}>
-                                                    <Button variant="ghost" size="sm">View</Button>
-                                                </Link>
+                                                <Button variant="ghost" size="sm" asChild>
+                                                    <Link href={`/members/${member.id}`}>View</Link>
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -213,13 +214,23 @@ export default async function MembersPage({
                                 Showing <span className="font-bold">{(page - 1) * take + 1}</span> to <span className="font-bold">{Math.min(page * take, totalCount)}</span> of <span className="font-bold">{totalCount}</span> members
                             </p>
                             <div className="flex gap-2">
-                                <Link href={`/members?page=${page - 1}${query ? `&q=${query}` : ''}${status ? `&status=${status}` : ''}`}>
-                                    <Button variant="outline" size="sm" disabled={page === 1}>
+                                <Link
+                                    href={`/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`}
+                                    className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                                    aria-disabled={page === 1}
+                                    tabIndex={page === 1 ? -1 : undefined}
+                                >
+                                    <Button variant="outline" size="sm" disabled={page === 1} tabIndex={-1}>
                                         Previous
                                     </Button>
                                 </Link>
-                                <Link href={`/members?page=${page + 1}${query ? `&q=${query}` : ''}${status ? `&status=${status}` : ''}`}>
-                                    <Button variant="outline" size="sm" disabled={!hasMore}>
+                                <Link
+                                    href={`/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`}
+                                    className={!hasMore ? 'pointer-events-none opacity-50' : ''}
+                                    aria-disabled={!hasMore}
+                                    tabIndex={!hasMore ? -1 : undefined}
+                                >
+                                    <Button variant="outline" size="sm" disabled={!hasMore} tabIndex={-1}>
                                         Next
                                     </Button>
                                 </Link>
