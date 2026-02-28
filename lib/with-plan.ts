@@ -1,6 +1,6 @@
 import { getAuthGym, AuthContext } from '@/lib/auth'
 
-type SaaSPlan = 'BASIC' | 'GROWTH' | 'ENTERPRISE'
+export type SaaSPlan = 'BASIC' | 'GROWTH' | 'ENTERPRISE'
 
 const planHierarchy: Record<SaaSPlan, number> = {
     BASIC: 0,

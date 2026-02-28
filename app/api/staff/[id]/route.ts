@@ -34,16 +34,16 @@ export async function DELETE(
         }
 
         // Audit Log
-        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        const ip = ipHeader.split(',')[0].trim()
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
         await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
-            action: 'DELETE_MEMBER', // Using generic member/staff action or should define 'DELETE_STAFF'
+            action: 'DELETE_STAFF' as any,
             entityType: 'STAFF',
             entityId: id,
             ipAddress: ip
-        })
+        }).catch(err => console.error('recordAuditLog DELETE_STAFF', err))
 
         return NextResponse.json({ message: 'Staff member removed successfully' })
     } catch (error) {

@@ -11,7 +11,11 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_for_build'
 function isTrustedProxy(ip: string): boolean {
     if (ip === '127.0.0.1' || ip === '::1') return true
     const trusted = process.env.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
-    return trusted.includes(ip)
+    if (process.env.NODE_ENV === 'production' && trusted.includes('*')) {
+        console.warn('CRITICAL: TRUSTED_PROXIES contains "*" in production! Rejecting wildcard.');
+        return false;
+    }
+    return trusted.includes('*') || trusted.includes(ip)
 }
 
 function getClientIdentifier(req: NextRequest): string {
@@ -113,6 +117,7 @@ export async function POST(req: NextRequest) {
         if (!gymProfile) {
             const staffMember = await prisma.staffMember.findFirst({
                 where: { userId: record.id },
+                orderBy: { createdAt: 'asc' },
                 include: { gym: true }
             });
             if (staffMember?.gym) {
@@ -121,12 +126,12 @@ export async function POST(req: NextRequest) {
         }
 
         if (!gymProfile) {
-            console.warn(`Webhook: No associated Gym found for user ${record.id} (${record.email})`);
-            return NextResponse.json({ error: 'No associated gym found' }, { status: 404 });
+            console.warn(`Webhook: No associated Gym found for user ${record.id} ([REDACTED])`);
+            return NextResponse.json({ error: 'No associated gym found' }, { status: 503 });
         }
 
         const ownerEmail = record.email;
-        const ownerName = gymProfile.name || 'User'; // Generic 'User' if name missing
+        const ownerName = record.raw_user_meta_data?.name || gymProfile.name || 'User'; // Generic 'User' if name missing
         const gymName = gymProfile.businessName || gymProfile.name || 'your local gym';
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';

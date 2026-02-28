@@ -45,19 +45,28 @@ export default function OnboardingForm() {
     }
 
     const togglePlan = (index: number) => {
-        const newPlans = [...formData.plans]
-        newPlans[index].enabled = !newPlans[index].enabled
-        setFormData(prev => ({ ...prev, plans: newPlans }))
+        setFormData(prev => {
+            const newPlans = [...prev.plans]
+            newPlans[index] = { ...newPlans[index], enabled: !newPlans[index].enabled }
+            return { ...prev, plans: newPlans }
+        })
     }
 
     const updatePlanPrice = (index: number, price: string) => {
-        const newPlans = [...formData.plans]
-        newPlans[index].price = parseInt(price) || 0
-        setFormData(prev => ({ ...prev, plans: newPlans }))
+        setFormData(prev => {
+            const newPlans = [...prev.plans]
+            const parsedPrice = parseInt(price, 10) || 0
+            newPlans[index] = { ...newPlans[index], price: Math.max(0, parsedPrice) }
+            return { ...prev, plans: newPlans }
+        })
     }
 
     const nextStep = () => {
         const form = document.querySelector('form')
+        if (currentStep === 3 && !formData.plans.some(p => p.enabled)) {
+            toast.error("Please select at least one membership plan to continue.")
+            return
+        }
         if (form && form.reportValidity()) {
             setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
         }
@@ -270,8 +279,18 @@ export default function OnboardingForm() {
                                                 <div key={plan.name} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${plan.enabled ? 'border-primary bg-primary/5' : 'border-slate-200 bg-white'}`}>
                                                     <div className="flex items-center gap-3">
                                                         <div
-                                                            className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer ${plan.enabled ? 'bg-primary border-primary text-white' : 'border-slate-300'}`}
+                                                            role="checkbox"
+                                                            tabIndex={0}
+                                                            aria-checked={plan.enabled}
+                                                            aria-label={`Enable ${plan.name} Plan`}
+                                                            className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${plan.enabled ? 'bg-primary border-primary text-white' : 'border-slate-300'}`}
                                                             onClick={() => togglePlan(index)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                    e.preventDefault();
+                                                                    togglePlan(index);
+                                                                }
+                                                            }}
                                                         >
                                                             {plan.enabled && <CheckCircle2 className="w-3.5 h-3.5" />}
                                                         </div>
@@ -281,6 +300,7 @@ export default function OnboardingForm() {
                                                         <span className="text-sm text-slate-500">₹</span>
                                                         <Input
                                                             type="number"
+                                                            min="0"
                                                             value={plan.price}
                                                             onChange={(e) => updatePlanPrice(index, e.target.value)}
                                                             disabled={!plan.enabled}

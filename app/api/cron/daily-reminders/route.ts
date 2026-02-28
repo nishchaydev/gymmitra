@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
 import { addDays, startOfDay, endOfDay, differenceInDays } from 'date-fns'
+import { CreateEmailOptions } from 'resend'
+import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 
 const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
-const BATCH_SIZE = 5
+const BATCH_SIZE = 100
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -71,8 +73,8 @@ export async function GET(request: NextRequest) {
         for (const gym of gyms) {
             try {
                 // ── Collect all emails for this gym ───────────────────
-                const emailBatch: any[] = []
-                const notificationBatch: any[] = []
+                const emailBatch: CreateEmailOptions[] = []
+                const notificationBatch: Prisma.NotificationCreateManyInput[] = []
 
                 // ── Expiring Subscriptions (next 7 days) ──────────────
                 const expiringSubs = await prisma.memberSubscription.findMany({
@@ -111,7 +113,6 @@ export async function GET(request: NextRequest) {
                         userId: gym.id,
                         gymId: gym.id
                     })
-                    results.expiryReminders++
                 }
 
                 // ── Overdue Invoices ──────────────────────────────────
@@ -150,7 +151,6 @@ export async function GET(request: NextRequest) {
                         userId: gym.id,
                         gymId: gym.id
                     })
-                    results.overdueReminders++
                 }
 
                 // ── Birthday Wishes ───────────────────────────────────
@@ -192,30 +192,48 @@ export async function GET(request: NextRequest) {
                         userId: gym.id,
                         gymId: gym.id
                     })
-                    results.birthdayWishes++
                 }
 
                 // ── Dispatch Batch APIs ───────────────────────────────
                 if (emailBatch.length > 0) {
-                    const chunkCount = Math.ceil(emailBatch.length / 100)
+                    const chunkCount = Math.ceil(emailBatch.length / BATCH_SIZE)
                     for (let i = 0; i < chunkCount; i++) {
-                        const emailChunk = emailBatch.slice(i * 100, (i + 1) * 100)
-                        const notifChunk = notificationBatch.slice(i * 100, (i + 1) * 100)
+                        const emailChunk = emailBatch.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
+                        const notifChunk = notificationBatch.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
 
                         try {
                             const response = await resend.batch.send(emailChunk)
                             if (response.error) {
                                 console.error(`[Cron] Resend batch error for gymId=${gym.id}:`, response.error)
-                                results.errors++
-                            } else {
-                                // Only insert notifications for the emails that successfully sent
-                                if (notifChunk.length > 0) {
-                                    await prisma.notification.createMany({ data: notifChunk })
+                                results.errors += emailChunk.length
+                            } else if (response.data && response.data.data) {
+                                const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
+                                response.data.data.forEach((emailResult: any, idx: number) => {
+                                    if (emailResult.error) {
+                                        results.errors++
+                                    } else {
+                                        if (notifChunk[idx]) {
+                                            successfulNotifs.push(notifChunk[idx])
+                                            switch (notifChunk[idx].type) {
+                                                case 'BIRTHDAY': results.birthdayWishes++; break;
+                                                case 'EXPIRY_REMINDER': results.expiryReminders++; break;
+                                                case 'PAYMENT_OVERDUE': results.overdueReminders++; break;
+                                            }
+                                        }
+                                    }
+                                })
+                                if (successfulNotifs.length > 0) {
+                                    try {
+                                        await prisma.notification.createMany({ data: successfulNotifs })
+                                    } catch (notifErr) {
+                                        console.error(`[Cron] Database insertion failed for notifications:`, notifErr)
+                                        results.errors += successfulNotifs.length
+                                    }
                                 }
                             }
                         } catch (e) {
                             console.error(`[Cron] Resend batch failed for gymId=${gym.id}:`, e)
-                            results.errors++
+                            results.errors += emailChunk.length
                         }
                     }
                 }

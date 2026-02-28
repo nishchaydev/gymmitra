@@ -80,8 +80,11 @@ export function calculateInvoiceTotal(
     const subtotalAfterDiscount = Math.max(0, subtotal - discount)
 
     // GST Calculation: Tax is applied on the discounted subtotal
-    const taxAmount = (subtotalAfterDiscount * Number(taxPercentage)) / 100
-    const total = subtotalAfterDiscount + taxAmount
+    const taxAmountRaw = (subtotalAfterDiscount * Number(taxPercentage)) / 100
+    const totalRaw = subtotalAfterDiscount + taxAmountRaw
+
+    const taxAmount = Math.round(taxAmountRaw * 100) / 100
+    const total = Math.round(totalRaw * 100) / 100
 
     return {
         subtotal,

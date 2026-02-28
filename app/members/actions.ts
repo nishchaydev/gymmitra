@@ -10,8 +10,8 @@ import { recordAuditLog } from '@/lib/audit-logger'
 import { headers } from 'next/headers'
 
 const memberSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    phone: z.string().min(10, "Phone number is required"),
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    phone: z.string().min(10, "Phone number must be at least 10 digits"),
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string()
         .refine(val => !isNaN(Date.parse(val)), { message: "Invalid date format" })
@@ -22,7 +22,12 @@ const memberSchema = z.object({
 })
 
 export const createMember = withAuth(async (context, data: z.input<typeof memberSchema>) => {
-    const validatedData = memberSchema.parse(data)
+    const parsed = memberSchema.safeParse(data)
+    if (!parsed.success) {
+        return { error: parsed.error.issues[0]?.message || 'Validation failed' }
+    }
+
+    const validatedData = parsed.data
     const gymId = context.gym.id
 
     try {
@@ -45,7 +50,9 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
 
         // 4. Audit Log
         const headerList = await headers()
-        const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
+        const ipHeader = headerList.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
+
         await recordAuditLog({
             gymId,
             actorId: context.userId,
@@ -53,14 +60,21 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
             entityType: 'MEMBER',
             entityId: member.id,
             ipAddress: ip,
-            payload: { name: validatedData.name, phone: validatedData.phone }
-        })
+            payload: { name: validatedData.name } // Phone redacted
+        }).catch(err => console.error('recordAuditLog CREATE_MEMBER', err))
 
         return { success: true, id: member.id }
     } catch (error: any) {
         console.error('Error creating member:', error)
         if (error.code === 'P2002') {
-            return { error: 'Member with this phone number already exists.' }
+            const target = error.meta?.target || []
+            if (target.includes('email')) {
+                return { error: 'Member with this email already exists.' }
+            }
+            if (target.includes('phone')) {
+                return { error: 'Member with this phone number already exists.' }
+            }
+            return { error: 'Member with the same unique field already exists.' }
         }
         return { error: 'Failed to create member.' }
     }

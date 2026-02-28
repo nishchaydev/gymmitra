@@ -28,8 +28,8 @@ interface Member {
 export default function EditMemberForm({ member }: { member: Member }) {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const safeDate = member.dateOfBirth ? new Date(member.dateOfBirth) : new Date()
-    const initialDate = isNaN(safeDate.getTime()) ? '' : safeDate.toISOString().split('T')[0]
+    const safeDate = member.dateOfBirth ? new Date(member.dateOfBirth) : null
+    const initialDate = safeDate && !isNaN(safeDate.getTime()) ? safeDate.toISOString().split('T')[0] : ''
 
     const [form, setForm] = useState({
         name: member.name,
@@ -51,6 +51,10 @@ export default function EditMemberForm({ member }: { member: Member }) {
             toast.error('Name and Phone are required')
             return
         }
+        if (!form.emergencyName?.trim() || !form.emergencyPhone?.trim() || !form.emergencyRelation?.trim()) {
+            toast.error('Emergency contact information is required')
+            return
+        }
 
         setSaving(true)
         try {
@@ -63,7 +67,8 @@ export default function EditMemberForm({ member }: { member: Member }) {
             if (!res.ok) {
                 let errMessage = 'Failed to update member'
                 try {
-                    const err = await res.json()
+                    const clonedRes = res.clone()
+                    const err = await clonedRes.json()
                     errMessage = err.error || errMessage
                 } catch {
                     const text = await res.text()

@@ -21,7 +21,12 @@ export async function GET(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const rl = await guardRateLimit(100, `${auth.userId}:schedule:get`)
+        let rl;
+        try {
+            rl = await guardRateLimit(100, `${auth.userId}:schedule:get`)
+        } catch (err) {
+            console.error('[Schedule GET] Rate limit infra failure:', err)
+        }
         if (rl) return rl
 
         const { searchParams } = new URL(request.url)
@@ -61,7 +66,12 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const rl = await guardRateLimit(20, `${auth.userId}:schedule:post`)
+        let rl;
+        try {
+            rl = await guardRateLimit(20, `${auth.userId}:schedule:post`)
+        } catch (err) {
+            console.error('[Schedule POST] Rate limit infra failure:', err)
+        }
         if (rl) return rl
 
         let body;

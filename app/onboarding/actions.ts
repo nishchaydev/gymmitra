@@ -45,6 +45,7 @@ export async function completeOnboarding(formData: FormData) {
         plans: formData.get("plans"),
     }
 
+    let gymProfile: any;
     try {
         const validatedData = onboardingSchema.parse(rawData)
         const updateData = {
@@ -59,7 +60,8 @@ export async function completeOnboarding(formData: FormData) {
             invoicePrefix: validatedData.invoicePrefix,
         }
 
-        const gymProfile = await prisma.gymProfile.upsert({
+        let gymProfile;
+        gymProfile = await prisma.gymProfile.upsert({
             where: { userId: user.id },
             update: {
                 ...updateData,
@@ -79,16 +81,24 @@ export async function completeOnboarding(formData: FormData) {
         // Process Plans
         if (validatedData.plans) {
             try {
+                const planSchema = z.array(z.object({
+                    name: z.string().min(1),
+                    durationMonths: z.number().int().positive(),
+                    price: z.number().nonnegative(),
+                    enabled: z.boolean()
+                }))
+
                 const parsedPlans = JSON.parse(validatedData.plans)
-                const enabledPlans = parsedPlans.filter((p: any) => p.enabled)
+                const validPlans = planSchema.parse(parsedPlans)
+                const enabledPlans = validPlans.filter(p => p.enabled)
 
                 if (enabledPlans.length > 0) {
                     await prisma.membershipPlan.createMany({
-                        data: enabledPlans.map((p: any) => ({
+                        data: enabledPlans.map(p => ({
                             gymId: gymProfile.id,
                             name: p.name,
                             description: `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''} Membership`,
-                            durationMonths: p.durationMonths,
+                            duration: p.durationMonths,
                             price: p.price,
                             isActive: true
                         })),
@@ -96,7 +106,7 @@ export async function completeOnboarding(formData: FormData) {
                     })
                 }
             } catch (planError) {
-                console.error("Failed to parsed or create onboarding plans:", planError)
+                console.error("Failed to parse or create onboarding plans:", planError)
                 // We don't throw here to avoid failing entire onboarding over plan creation
             }
         }
@@ -127,37 +137,33 @@ export async function completeOnboarding(formData: FormData) {
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
 
-    // We fetch the gym profile again or assume it was updated/created
-    const gym = await prisma.gymProfile.findUnique({
-        where: { userId: user.id }
-    })
-
-    if (gym) {
+    // We reuse the gymProfile we upserted
+    if (gymProfile) {
         await recordAuditLog({
-            gymId: gym.id,
+            gymId: gymProfile.id,
             actorId: user.id,
             action: 'ONBOARDING_COMPLETE',
             entityType: 'GYM',
-            entityId: gym.id,
+            entityId: gymProfile.id,
             ipAddress: ip,
-            payload: { businessName: gym.name }
+            payload: { businessName: gymProfile.name }
         })
 
         // Send Welcome Email asynchronously
         try {
             const resendKey = process.env.RESEND_API_KEY
-            if (resendKey && gym.email) {
+            if (resendKey && gymProfile.email) {
                 const resend = new Resend(resendKey)
                 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gymmitra.vercel.app'
 
                 // Fire and forget so we don't block the redirect
                 resend.emails.send({
                     from: 'Gym Mitra Team <hello@mail.emitra.dev>',
-                    to: gym.email,
-                    subject: `Welcome to Gym Mitra, ${gym.businessName}! 🎉`,
+                    to: gymProfile.email,
+                    subject: `Welcome to Gym Mitra, ${gymProfile.businessName}! 🎉`,
                     html: `
                         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2>Welcome aboard, ${gym.businessName}! 🚀</h2>
+                            <h2>Welcome aboard, ${gymProfile.businessName}! 🚀</h2>
                             <p>We are thrilled to have you join Gym Mitra. Your workspace is now fully set up and ready to go.</p>
                             <p>Here are your next steps to get the most out of Gym Mitra:</p>
                             <ul>
@@ -172,10 +178,12 @@ export async function completeOnboarding(formData: FormData) {
                             <p>Best,<br/>The Gym Mitra Team</p>
                         </div>
                     `
+                }).catch(emailError => {
+                    console.error('[Onboarding] Failed to send welcome email promise:', emailError)
                 })
             }
         } catch (emailError) {
-            console.error('[Onboarding] Failed to send welcome email:', emailError)
+            console.error('[Onboarding] Failed to initiate welcome email:', emailError)
         }
     }
 

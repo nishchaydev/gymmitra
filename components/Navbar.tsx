@@ -94,6 +94,8 @@ export function Navbar() {
                     size="icon"
                     className="md:hidden ml-auto"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={isMobileMenuOpen}
                 >
                     {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </Button>
@@ -129,9 +131,9 @@ export function Navbar() {
                             </Button>
                         </div>
                     ) : (
-                        <Link href="/login">
-                            <Button variant="default">Sign In</Button>
-                        </Link>
+                        <Button asChild variant="default">
+                            <Link href="/login">Sign In</Link>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -142,7 +144,7 @@ export function Navbar() {
                     <div className="flex flex-col h-full bg-slate-50/30">
                         <div className="p-6 border-b bg-white flex justify-between items-center">
                             <span className="font-bold text-xl text-primary">GymMitra</span>
-                            <button onClick={closeMenu} className="p-2 rounded-full hover:bg-slate-100"><X className="h-5 w-5" /></button>
+                            <button onClick={closeMenu} className="p-2 rounded-full hover:bg-slate-100" aria-label="Close mobile menu"><X className="h-5 w-5" /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-2">
                             {(user || isDemo) ? (
@@ -165,7 +167,9 @@ export function Navbar() {
                                     </div>
                                 </>
                             ) : (
-                                <Link href="/login" onClick={closeMenu} className="block mt-4"><Button variant="default" className="w-full bg-primary">Sign In</Button></Link>
+                                <Button asChild variant="default" className="w-full bg-primary block mt-4">
+                                    <Link href="/login" onClick={closeMenu}>Sign In</Link>
+                                </Button>
                             )}
                         </div>
                     </div>

@@ -40,7 +40,7 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 
 // Define MemberFormProps type
 interface MemberFormProps {
-    member?: any; // Simpler type for now since we're refactoring
+    member?: (Partial<Omit<MemberFormValues, 'dateOfBirth'>> & { dateOfBirth?: Date | string; id?: string }) | null;
 }
 
 export default function MemberForm({ member }: MemberFormProps) {
@@ -63,7 +63,7 @@ export default function MemberForm({ member }: MemberFormProps) {
             name: member.name,
             phone: member.phone,
             email: member.email || "",
-            dateOfBirth: member.dateOfBirth instanceof Date ? member.dateOfBirth.toISOString().split('T')[0] : member.dateOfBirth,
+            dateOfBirth: member.dateOfBirth instanceof Date ? member.dateOfBirth.toISOString().split('T')[0] : (member.dateOfBirth || ""),
             emergencyName: member.emergencyName || "",
             emergencyPhone: member.emergencyPhone || "",
             emergencyRelation: member.emergencyRelation || "",

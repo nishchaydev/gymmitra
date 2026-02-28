@@ -7,6 +7,7 @@ import { z } from "zod"
 import { withAuth } from "@/lib/with-auth"
 import { recordAuditLog } from "@/lib/audit-logger"
 import { headers } from 'next/headers'
+import crypto from 'crypto'
 
 const invoiceItemSchema = z.object({
     description: z.string().min(1),
@@ -26,6 +27,8 @@ const createInvoiceSchema = z.object({
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),
     discount: z.number().min(0).default(0),
+    taxPercentage: z.number().min(0).max(100).optional(),
+    taxAmount: z.number().min(0).optional(),
     idempotencyKey: z.string().optional(),
 })
 
@@ -37,23 +40,14 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
     // 2. Strict Tenant Context derived server-side
     const gym = context.gym
 
-    // 3. Idempotency Check
-    if (validatedData.idempotencyKey) {
-        const existingInvoice = await prisma.invoice.findFirst({
-            where: {
-                idempotencyKey: validatedData.idempotencyKey,
-                gymId: gym.id
-            }
-        })
-        if (existingInvoice) {
-            return { success: true, id: existingInvoice.id }
-        }
-    }
+    const headerList = await headers()
+    const ipHeader = headerList.get('x-forwarded-for')
+    const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
     try {
         const invoice = await prisma.$transaction(async (tx) => {
             const invoiceNumber = await generateInvoiceNumber(gym.id, tx)
-            const taxPercentage = gym.taxPercentage ? Number(gym.taxPercentage) : 18
+            const taxPercentage = gym.taxPercentage != null ? Number(gym.taxPercentage) : 18
 
             // Use integer arithmetic (cents) for precision
             const subtotalCents = validatedData.items.reduce((acc, item) =>
@@ -63,13 +57,16 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             const subtotalAfterDiscountCents = Math.max(0, subtotalCents - discountCents)
 
             // Calculate Tax (Applied on the discounted subtotal)
-            const taxAmountCents = Math.round((subtotalAfterDiscountCents * taxPercentage) / 100)
+            const providedTaxPercentage = validatedData.taxPercentage ?? taxPercentage;
+            const taxAmountCents = Math.round((subtotalAfterDiscountCents * providedTaxPercentage) / 100)
             const totalCents = subtotalAfterDiscountCents + taxAmountCents
 
-            const crypto = await import('crypto')
             const shareToken = crypto.randomBytes(32).toString('hex')
             const shareTokenExpiresAt = new Date()
             shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
+
+            let remainingTaxCents = taxAmountCents;
+            let remainingSubtotalCents = subtotalCents;
 
             return await tx.invoice.create({
                 data: {
@@ -79,10 +76,10 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     member: validatedData.memberId ? { connect: { id: validatedData.memberId } } : undefined,
                     subtotal: subtotalCents / 100,
                     taxAmount: taxAmountCents / 100,
+                    taxPercentage: providedTaxPercentage,
                     discount: validatedData.discount,
                     total: totalCents / 100,
                     idempotencyKey: validatedData.idempotencyKey,
-                    // Convention: empty strings become null using ?? null (preserves explicit nulls, ignores undefined)
                     walkInName: validatedData.walkInName ?? null,
                     walkInPhone: validatedData.walkInPhone ?? null,
                     walkInEmail: validatedData.walkInEmail ?? null,
@@ -95,14 +92,19 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     items: {
                         create: validatedData.items.map(item => {
                             const itemAmountCents = Math.round(item.quantity * (item.unitPrice * 100))
-                            // Calculate item-level tax proportionally (optional but good for ERP)
-                            const proportionality = subtotalCents > 0 ? (itemAmountCents / subtotalCents) : 0
-                            const itemTaxAmountCents = Math.round(taxAmountCents * proportionality)
+
+                            let itemTaxAmountCents = 0;
+                            if (remainingSubtotalCents > 0) {
+                                itemTaxAmountCents = Math.round(remainingTaxCents * (itemAmountCents / remainingSubtotalCents));
+                                remainingTaxCents -= itemTaxAmountCents;
+                                remainingSubtotalCents -= itemAmountCents;
+                            }
 
                             return {
                                 description: item.description,
                                 quantity: item.quantity,
                                 unitPrice: item.unitPrice,
+                                taxPercentage: providedTaxPercentage,
                                 taxAmount: itemTaxAmountCents / 100,
                                 amount: itemAmountCents / 100,
                                 gymId: gym.id
@@ -116,9 +118,6 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
         revalidatePath("/dashboard")
         revalidatePath("/invoices")
 
-        // 4. Audit Log
-        const headerList = await headers()
-        const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
         await recordAuditLog({
             gymId: gym.id,
             actorId: context.userId,
@@ -127,11 +126,20 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             entityId: invoice.id,
             ipAddress: ip,
             payload: { invoiceNumber: invoice.invoiceNumber, total: invoice.total }
-        })
+        }).catch(err => console.error('[Action] Audit logging failed silently:', err))
 
         return { success: true, id: invoice.id }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Invoice Action Error:", error)
+        if (error.code === 'P2002' && validatedData.idempotencyKey) {
+            const existingInvoice = await prisma.invoice.findFirst({
+                where: {
+                    idempotencyKey: validatedData.idempotencyKey,
+                    gymId: gym.id
+                }
+            })
+            if (existingInvoice) return { success: true, id: existingInvoice.id }
+        }
         return { error: error instanceof Error ? error.message : "Failed to create invoice" }
     }
 }, ['OWNER', 'STAFF']) // Only Owners and Staff can create invoices

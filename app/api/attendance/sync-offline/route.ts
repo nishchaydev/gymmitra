@@ -55,9 +55,18 @@ export async function POST(request: NextRequest) {
         })
         const validMemberIds = new Set(members.map(m => m.id))
 
+        // 2. Validate Timezone out-of-loop
+        let validTimezone = auth.gym.timezone || 'Asia/Kolkata'
+        try {
+            formatInTimeZone(new Date(), validTimezone, 'yyyy-MM-dd')
+        } catch (e) {
+            console.warn(`[Sync-Offline] Invalid timezone ${validTimezone} for gym ${auth.gym.id}, falling back to Asia/Kolkata`)
+            validTimezone = 'Asia/Kolkata'
+        }
+
         const syncedIds: string[] = []
 
-        // 2. Batch Processing for Data Integrity
+        // 3. Batch Processing for Data Integrity
         for (const record of records) {
             if (!validMemberIds.has(record.memberId)) continue;
 
@@ -67,12 +76,22 @@ export async function POST(request: NextRequest) {
                     throw new Error(`Invalid date: ${record.checkInTime}`)
                 }
 
-                const timezone = auth.gym.timezone || 'Asia/Kolkata'
                 let localDateString: string
                 try {
-                    localDateString = formatInTimeZone(checkInTimeDate, timezone, 'yyyy-MM-dd')
+                    localDateString = formatInTimeZone(checkInTimeDate, validTimezone, 'yyyy-MM-dd')
                 } catch (e) {
-                    localDateString = checkInTimeDate.toISOString().split('T')[0]
+                    const match = record.checkInTime.match(/([+-])(\d{2}):(\d{2})$/)
+                    if (match) {
+                        const sign = match[1] === '+' ? 1 : -1
+                        const hours = parseInt(match[2], 10)
+                        const mins = parseInt(match[3], 10)
+                        const offsetMins = sign * (hours * 60 + mins)
+                        const localTime = new Date(checkInTimeDate.getTime() + offsetMins * 60000)
+                        localDateString = localTime.toISOString().split('T')[0]
+                    } else {
+                        console.warn(`[Sync-Offline] Cannot determine local date for ${record.checkInTime}, fallback to UTC`)
+                        localDateString = checkInTimeDate.toISOString().split('T')[0]
+                    }
                 }
 
                 // 3. Idempotent processing: Optimistic create to prevent TOCTOU race conditions
@@ -105,9 +124,11 @@ export async function POST(request: NextRequest) {
                                     where: { id: existing.id },
                                     data: {
                                         checkInTime: record.checkInTime,
+                                        date: checkInTimeDate
                                     }
                                 })
                             }
+                            syncedIds.push(record.id)
                         }
                     } else {
                         throw createErr

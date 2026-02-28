@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { Prisma } from '@prisma/client';
 
 export type AuditAction =
     | 'LOGIN'
@@ -9,7 +10,8 @@ export type AuditAction =
     | 'CREATE_INVOICE'
     | 'PROCESS_SALE'
     | 'ONBOARDING_COMPLETE'
-    | 'PLAN_UPGRADE';
+    | 'PLAN_UPGRADE'
+    | 'CHECKIN_MEMBER';
 
 export interface AuditLogParams {
     gymId: string;
@@ -27,14 +29,14 @@ export interface AuditLogParams {
  */
 export async function recordAuditLog(params: AuditLogParams) {
     try {
-        await (prisma as any).auditLog.create({
+        await prisma.auditLog.create({
             data: {
                 gymId: params.gymId,
                 actorId: params.actorId,
                 action: params.action,
                 entityType: params.entityType,
                 entityId: params.entityId,
-                payload: params.payload,
+                payload: params.payload ? (params.payload as Prisma.InputJsonObject) : undefined,
                 ipAddress: params.ipAddress,
             }
         });

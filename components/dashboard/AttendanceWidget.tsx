@@ -7,12 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Clock, UserCheck, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
-import { prisma } from "@/lib/prisma"
-import { startOfToday } from "date-fns"
+
 
 type Props = {
     isDemo?: boolean
-    gymId?: string
+
     data?: {
         count: number
         recentInitials: string[]
@@ -20,7 +19,7 @@ type Props = {
     }
 }
 
-export async function AttendanceWidget({ isDemo, gymId, data }: Props) {
+export async function AttendanceWidget({ isDemo, data }: Props) {
     if (isDemo || !data) {
         // Demo mode or missing data: render mock/pre-calculated props
         const memberCount = data?.count ?? 15

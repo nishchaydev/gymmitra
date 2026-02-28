@@ -1,4 +1,5 @@
 import { PrismaClient, SaaSPlan } from '@prisma/client';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -25,10 +26,12 @@ Examples:
 
     console.log(`Generating ${countArg} code(s) for the ${planArg} plan (Max uses: ${usesArg})...`);
 
-    for (let i = 0; i < countArg; i++) {
+    let createdCount = 0;
+    while (createdCount < countArg) {
         // Generate a secure random code like "PRO-AB12-CD34"
-        const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-        const code = `${planArg.substring(0, 3)}-${randomSuffix}`;
+        const r1 = crypto.randomBytes(2).toString('hex').toUpperCase();
+        const r2 = crypto.randomBytes(2).toString('hex').toUpperCase();
+        const code = `${planArg.substring(0, 3)}-${r1}-${r2}`;
 
         try {
             const newCode = await prisma.registrationCode.create({
@@ -39,8 +42,14 @@ Examples:
                 }
             });
             console.log(`✅ Created Code: ${newCode.code}`);
-        } catch (e) {
+            createdCount++;
+        } catch (e: any) {
+            if (e.code === 'P2002') {
+                console.log(`Collision for code ${code}, retrying...`);
+                continue;
+            }
             console.error('Error creating code:', e);
+            break;
         }
     }
 
@@ -50,7 +59,7 @@ Examples:
         await prisma.registrationCode.create({
             data: {
                 code: 'MITRA-GROWTH-VIP',
-                plan: 'GROWTH',
+                plan: SaaSPlan.GROWTH,
                 maxUses: 999
             }
         });

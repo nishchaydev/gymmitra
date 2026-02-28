@@ -25,12 +25,6 @@ export default async function InvoicesPage({
 }: {
     searchParams: Promise<{ page?: string }>
 }) {
-    const params = await searchParams
-    const parsedPage = parseInt(params.page || '1')
-    const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
-    const take = 50
-    const skip = (page - 1) * take
-
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
@@ -50,6 +44,20 @@ export default async function InvoicesPage({
         if (!gym) return <div className="p-8">Gym profile not found.</div>
         gymId = gym.id
     }
+
+    const totalCount = isDemo ? SHOWCASE_INVOICES.length : await prisma.invoice.count({
+        where: { member: { gymId: gymId } }
+    })
+
+    const take = 50
+    const totalPages = Math.max(1, Math.ceil(totalCount / take))
+    const params = await searchParams
+    const parsedPage = parseInt(params.page || '1', 10)
+    let page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
+    // Clamp to max pages
+    if (page > totalPages) page = totalPages
+
+    const skip = (page - 1) * take
 
     const invoices = isDemo ? SHOWCASE_INVOICES.slice(skip, skip + take).map(i => ({
         id: i.id,
@@ -74,9 +82,6 @@ export default async function InvoicesPage({
         }
     })
 
-    const totalCount = isDemo ? SHOWCASE_INVOICES.length : await prisma.invoice.count({
-        where: { member: { gymId: gymId } }
-    })
     const hasMore = totalCount > page * take
     const startRange = totalCount === 0 ? 0 : Math.min((page - 1) * take + 1, totalCount)
     const endRange = Math.min(page * take, totalCount)
@@ -170,26 +175,28 @@ export default async function InvoicesPage({
                                 Showing <span className="font-bold">{startRange}</span> to <span className="font-bold">{endRange}</span> of <span className="font-bold">{totalCount}</span> invoices
                             </p>
                             <div className="flex gap-2">
-                                <Link
-                                    href={`/invoices?page=${page - 1}`}
-                                    className={page === 1 ? 'pointer-events-none opacity-50' : ''}
-                                    aria-disabled={page === 1}
-                                    tabIndex={page === 1 ? -1 : undefined}
-                                >
-                                    <Button variant="outline" size="sm" disabled={page === 1} tabIndex={-1}>
+                                {page === 1 ? (
+                                    <Button variant="outline" size="sm" disabled>
                                         Previous
                                     </Button>
-                                </Link>
-                                <Link
-                                    href={`/invoices?page=${page + 1}`}
-                                    className={!hasMore ? 'pointer-events-none opacity-50' : ''}
-                                    aria-disabled={!hasMore}
-                                    tabIndex={!hasMore ? -1 : undefined}
-                                >
-                                    <Button variant="outline" size="sm" disabled={!hasMore} tabIndex={-1}>
+                                ) : (
+                                    <Link href={`/invoices?page=${page - 1}`}>
+                                        <Button variant="outline" size="sm">
+                                            Previous
+                                        </Button>
+                                    </Link>
+                                )}
+                                {!hasMore ? (
+                                    <Button variant="outline" size="sm" disabled>
                                         Next
                                     </Button>
-                                </Link>
+                                ) : (
+                                    <Link href={`/invoices?page=${page + 1}`}>
+                                        <Button variant="outline" size="sm">
+                                            Next
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     )}

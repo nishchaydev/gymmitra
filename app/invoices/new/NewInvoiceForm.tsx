@@ -35,7 +35,9 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const subtotalAfterDiscount = Math.max(0, subtotal - discount)
-    const taxAmount = (subtotalAfterDiscount * taxPercentage) / 100
+
+    const clampedTaxPercentage = Math.max(0, Math.min(100, taxPercentage))
+    const taxAmount = (subtotalAfterDiscount * clampedTaxPercentage) / 100
     const total = subtotalAfterDiscount + taxAmount
 
     // Client-side validation
@@ -233,7 +235,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                         />
                                     </div>
                                     <div className="flex justify-between text-slate-400 font-medium pt-1">
-                                        <span>GST ({taxPercentage}%)</span>
+                                        <span>GST ({clampedTaxPercentage}%)</span>
                                         <span>₹{taxAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
@@ -278,7 +280,9 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 walkInAddress: selectedMember === 'WALK-IN' ? walkInAddress.trim() || undefined : undefined,
                                                 paymentMethod,
                                                 items,
-                                                discount
+                                                discount,
+                                                taxPercentage: clampedTaxPercentage,
+                                                taxAmount: taxAmount
                                             }) as { success: boolean, id?: string, error?: string }
 
                                             if (result?.error) {

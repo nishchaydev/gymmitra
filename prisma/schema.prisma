@@ -9,40 +9,41 @@ datasource db {
 }
 
 model GymProfile {
-  id              String            @id @default(cuid())
-  name            String
-  email           String
-  phone           String
-  address         String?
-  logo            String?
-  gst             String?
-  userId          String            @unique
-  businessName    String?
-  city            String?
-  state           String?
-  pincode         String?
-  upiId           String?
-  logoUrl         String?
-  invoicePrefix   String            @default("GM")
-  isVerified           Boolean           @default(false)
-  onboardingStep       Int               @default(0)
-  timezone             String            @default("Asia/Kolkata")
-  saasPlan             SaaSPlan          @default(BASIC)
-  taxPercentage        Decimal           @default(18.0) @db.Decimal(5, 2)
-  termsAndConditions   String? @db.Text
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  members         Member[]
-  plans           MembershipPlan[]
-  products        Product[]
-  invoices        Invoice[]
-  sales           Sale[]
-  attendance      Attendance[]
-  staff           StaffMember[]
-  ptSessions      PTSession[]
-  registration    RegistrationCode?
-  invoiceSequence InvoiceSequence?
-  auditLogs       AuditLog[]
+  id                 String            @id @default(cuid())
+  name               String
+  email              String
+  phone              String
+  address            String?
+  logo               String?
+  gst                String?
+  userId             String            @unique
+  businessName       String?
+  city               String?
+  state              String?
+  pincode            String?
+  upiId              String?
+  logoUrl            String?
+  invoicePrefix      String            @default("GM")
+  isVerified         Boolean           @default(false)
+  onboardingStep     Int               @default(0)
+  timezone           String            @default("Asia/Kolkata")
+  saasPlan           SaaSPlan          @default(BASIC)
+  taxPercentage      Decimal           @default(18.0) @db.Decimal(5, 2)
+  termsAndConditions String?           @db.Text
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  members            Member[]
+  plans              MembershipPlan[]
+  products           Product[]
+  invoices           Invoice[]
+  sales              Sale[]
+  attendance         Attendance[]
+  staff              StaffMember[]
+  ptSessions         PTSession[]
+  registrationCodeId String?
+  registrationCode   RegistrationCode? @relation(fields: [registrationCodeId], references: [id], onDelete: SetNull)
+  invoiceSequence    InvoiceSequence?
+  auditLogs          AuditLog[]
 }
 
 model InvoiceSequence {
@@ -59,7 +60,7 @@ model Member {
   id                String               @id @default(cuid())
   name              String
   email             String?
-  phone             String               
+  phone             String
   dateOfBirth       DateTime
   photo             String?
   address           String?
@@ -79,8 +80,8 @@ model Member {
   sales             Sale[]
   ptSessions        PTSession[]
 
-  @@index([gymId])
   @@unique([gymId, phone])
+  @@index([gymId])
 }
 
 model MembershipPlan {
@@ -142,23 +143,23 @@ model Product {
 }
 
 model Sale {
-  id            String        @id @default(cuid())
-  memberId      String?
-  productId     String
-  gymId         String // Direct gymId for multi-tenant isolation
-  quantity      Int
-  unitPrice     Decimal       @db.Decimal(10, 2)
-  totalAmount   Decimal       @db.Decimal(10, 2)
-  discount      Decimal?      @db.Decimal(10, 2)
-  finalAmount   Decimal       @db.Decimal(10, 2)
-  paymentMethod PaymentMethod
-  idempotencyKey String?      @unique
-  saleDate      DateTime      @default(now())
-  createdAt     DateTime      @default(now())
-  invoice       Invoice?
-  member        Member?       @relation(fields: [memberId], references: [id])
-  product       Product       @relation(fields: [productId], references: [id])
-  gym           GymProfile    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  memberId       String?
+  productId      String
+  gymId          String // Direct gymId for multi-tenant isolation
+  quantity       Int
+  unitPrice      Decimal       @db.Decimal(10, 2)
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  discount       Decimal?      @db.Decimal(10, 2)
+  finalAmount    Decimal       @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  idempotencyKey String?       @unique
+  saleDate       DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  invoice        Invoice?
+  member         Member?       @relation(fields: [memberId], references: [id])
+  product        Product       @relation(fields: [productId], references: [id])
+  gym            GymProfile    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@index([gymId])
   @@index([memberId])
@@ -166,7 +167,7 @@ model Sale {
 
 model Invoice {
   id                  String              @id @default(cuid())
-  invoiceNumber       String              
+  invoiceNumber       String
   type                InvoiceType
   gymId               String
   memberId            String?
@@ -174,6 +175,7 @@ model Invoice {
   saleId              String?             @unique
   subtotal            Decimal             @db.Decimal(10, 2)
   taxAmount           Decimal             @default(0.0) @db.Decimal(10, 2)
+  taxPercentage       Decimal?            @db.Decimal(5, 2)
   discount            Decimal?            @db.Decimal(10, 2)
   total               Decimal             @db.Decimal(10, 2)
   shareToken          String?             @unique
@@ -195,21 +197,22 @@ model Invoice {
   subscription        MemberSubscription? @relation(fields: [subscriptionId], references: [id])
   items               InvoiceItem[]
 
+  @@unique([gymId, invoiceNumber])
   @@index([gymId])
   @@index([memberId])
-  @@unique([gymId, invoiceNumber])
 }
 
 model InvoiceItem {
-  id          String  @id @default(cuid())
-  invoiceId   String
-  gymId       String // Direct gymId for multi-tenant isolation
-  description String
-  quantity    Int
-  unitPrice   Decimal @db.Decimal(10, 2)
-  taxAmount   Decimal @default(0.0) @db.Decimal(10, 2)
-  amount      Decimal @db.Decimal(10, 2)
-  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  invoiceId     String
+  gymId         String // Direct gymId for multi-tenant isolation
+  description   String
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  taxPercentage Decimal? @db.Decimal(5, 2)
+  taxAmount     Decimal  @default(0.0) @db.Decimal(10, 2)
+  amount        Decimal  @db.Decimal(10, 2)
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
 }
@@ -233,7 +236,7 @@ model Attendance {
   memberId        String
   gymId           String // Direct gymId for multi-tenant isolation
   date            DateTime   @default(now())
-  localDateString String     @default("")
+  localDateString String
   checkInTime     DateTime   @default(now())
   checkOutTime    DateTime?
   createdAt       DateTime   @default(now())
@@ -253,9 +256,8 @@ model RegistrationCode {
   usedCount Int       @default(0)
   expiresAt DateTime?
   isActive  Boolean   @default(true)
-  gymId     String?   @unique // Linked gym once used
 
-  gym GymProfile? @relation(fields: [gymId], references: [id])
+  gyms GymProfile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -382,9 +384,10 @@ model AuditLog {
   entityId   String?
   payload    Json? // Store changed fields or metadata
   ipAddress  String?
+  ipHash     String?
   createdAt  DateTime @default(now())
 
-  gym GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym GymProfile @relation(fields: [gymId], references: [id], onDelete: Restrict)
 
   @@index([gymId])
   @@index([entityType, entityId])

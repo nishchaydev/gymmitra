@@ -89,11 +89,8 @@ export async function PUT(
         })
 
         // Audit Log
-        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        const ip = ipHeader.split(',')[0].trim()
-
-        // Redact PII
-        const { phone, emergencyPhone, ...safePayload } = validatedData as any
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
         await recordAuditLog({
             gymId: auth.gym.id,
@@ -102,8 +99,8 @@ export async function PUT(
             entityType: 'MEMBER',
             entityId: id,
             ipAddress: ip,
-            payload: safePayload
-        })
+            payload: { changedFields: Object.keys(validatedData) }
+        }).catch(err => console.error('recordAuditLog UPDATE_MEMBER', err))
 
         return NextResponse.json(member)
     } catch (error) {
@@ -146,8 +143,8 @@ export async function DELETE(
         }
 
         // Audit Log
-        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        const ip = ipHeader.split(',')[0].trim()
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
         await recordAuditLog({
             gymId: auth.gym.id,
@@ -156,7 +153,7 @@ export async function DELETE(
             entityType: 'MEMBER',
             entityId: id,
             ipAddress: ip
-        })
+        }).catch(err => console.error('recordAuditLog DELETE_MEMBER', err))
 
         return NextResponse.json({ success: true })
     } catch (error) {

@@ -1,5 +1,6 @@
 import {
     Avatar,
+    AvatarImage,
     AvatarFallback,
 } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,11 +20,17 @@ type BirthdayEntry = {
 
 type Props = {
     isDemo?: boolean
-    gymId?: string
+    gymName?: string
     data?: BirthdayEntry[]
 }
 
-function getDaysUntil(dateStr: string): string | null {
+function getDaysUntil(dateStr: string, diffDaysFallback?: number): string | null {
+    if (diffDaysFallback !== undefined && !isNaN(diffDaysFallback)) {
+        if (diffDaysFallback === 0) return 'Today!'
+        if (diffDaysFallback === 1) return 'Tomorrow'
+        return `In ${diffDaysFallback} days`
+    }
+
     if (dateStr === 'Today') return 'Today!'
     if (dateStr === 'Tomorrow') return 'Tomorrow'
 
@@ -43,13 +50,13 @@ function getDaysUntil(dateStr: string): string | null {
     birthday.setHours(0, 0, 0, 0)
     if (birthday < today) birthday.setFullYear(today.getFullYear() + 1)
 
-    const diffDays = Math.round((birthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays === 0) return 'Today!'
-    if (diffDays === 1) return 'Tomorrow'
-    return `In ${diffDays} days`
+    const diffDaysVal = Math.round((birthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDaysVal === 0) return 'Today!'
+    if (diffDaysVal === 1) return 'Tomorrow'
+    return `In ${diffDaysVal} days`
 }
 
-export async function UpcomingBirthdays({ isDemo, data }: Props) {
+export async function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: Props) {
     let birthdays: BirthdayEntry[] = data || []
 
     if (isDemo && (!data || data.length === 0)) {
@@ -72,8 +79,8 @@ export async function UpcomingBirthdays({ isDemo, data }: Props) {
                         {birthdays.map((birthday, idx) => (
                             <div key={idx} className="flex items-center">
                                 <Avatar className="h-9 w-9">
-                                    {birthday.img && <img src={birthday.img} alt={birthday.name} />}
-                                    <AvatarFallback>{birthday.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                                    {birthday.img && <AvatarImage src={birthday.img} alt={birthday.name} />}
+                                    <AvatarFallback>{birthday.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}</AvatarFallback>
                                 </Avatar>
                                 <div className="ml-4 space-y-1">
                                     <p className="text-sm font-medium leading-none">{birthday.name}</p>
@@ -83,11 +90,11 @@ export async function UpcomingBirthdays({ isDemo, data }: Props) {
                                 </div>
                                 <div className="ml-auto flex items-center gap-3">
                                     <div className="font-medium text-primary text-xs text-right hidden sm:block">
-                                        {getDaysUntil(birthday.date)}
+                                        {getDaysUntil(birthday.date, birthday.diffDays)}
                                     </div>
                                     {birthday.phone ? (
                                         <Link
-                                            href={getWhatsAppLink(birthday.phone, templates.birthdayWish(birthday.name, "Gym Mitra"))}
+                                            href={getWhatsAppLink(birthday.phone, templates.birthdayWish(birthday.name, gymName))}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -98,7 +105,7 @@ export async function UpcomingBirthdays({ isDemo, data }: Props) {
                                         </Link>
                                     ) : (
                                         <div className="font-medium text-primary text-xs text-right sm:hidden">
-                                            {getDaysUntil(birthday.date)}
+                                            {getDaysUntil(birthday.date, birthday.diffDays)}
                                         </div>
                                     )}
                                 </div>

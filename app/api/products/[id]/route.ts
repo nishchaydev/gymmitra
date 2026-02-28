@@ -84,17 +84,17 @@ export async function PUT(
         }
 
         // Audit Log
-        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        const ip = ipHeader.split(',')[0].trim()
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
         await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
-            action: 'PROCESS_SALE', // Closest available in the type or update type later
+            action: 'UPDATE_PRODUCT' as any,
             entityType: 'PRODUCT',
             entityId: id,
             ipAddress: ip,
-            payload: validatedData
-        })
+            payload: { changedFields: Object.keys(validatedData) }
+        }).catch(err => console.error('recordAuditLog UPDATE_PRODUCT', err))
 
         const product = await prisma.product.findUnique({
             where: { id }
@@ -140,20 +140,20 @@ export async function DELETE(
         })
 
         if (result.count === 0) {
-            // ... (keep existing fallback checks)
+            return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 })
         }
 
         // Audit Log
-        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        const ip = ipHeader.split(',')[0].trim()
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
         await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
-            action: 'DELETE_MEMBER', // Map appropriately
+            action: 'DELETE_PRODUCT' as any,
             entityType: 'PRODUCT',
             entityId: id,
             ipAddress: ip
-        })
+        }).catch(err => console.error('recordAuditLog DELETE_PRODUCT', err))
 
         return NextResponse.json({ message: 'Product deleted successfully' })
     } catch (error) {

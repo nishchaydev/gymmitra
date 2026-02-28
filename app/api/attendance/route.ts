@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
-import { startOfDay, endOfDay } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
 
 const checkInSchema = z.object({
@@ -72,12 +71,12 @@ export async function POST(request: NextRequest) {
 
         // UTC naive logic removed. Shift to Gym's physical timezone.
         let localDateString: string
+        const timezone = gym.timezone || 'Asia/Kolkata'
         try {
-            const timezone = gym.timezone || 'Asia/Kolkata'
             localDateString = formatInTimeZone(now, timezone, 'yyyy-MM-dd')
         } catch (tzError) {
-            console.warn(`Invalid timezone [${gym.timezone}] for gym ${gym.id}, falling back to UTC`)
-            localDateString = now.toISOString().split('T')[0]
+            console.warn(`Invalid timezone [${timezone}] for gym ${gym.id}:`, tzError)
+            return NextResponse.json({ error: `Invalid timezone configuration: ${timezone}` }, { status: 400 })
         }
 
         const existingAttendance = await prisma.attendance.findUnique({
@@ -104,17 +103,17 @@ export async function POST(request: NextRequest) {
         })
 
         // Audit Log (Manual Check-in)
-        const ipHeader = request.headers.get('x-forwarded-for') || '127.0.0.1'
-        const ip = ipHeader.split(',')[0].trim()
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
         await recordAuditLog({
             gymId: gym.id,
             actorId: auth.userId,
-            action: 'UPDATE_MEMBER', // Using generic action
+            action: 'CHECKIN_MEMBER' as any, // Type updated elsewhere
             entityType: 'ATTENDANCE',
             entityId: attendance.id,
             ipAddress: ip,
             payload: { memberId, localDateString }
-        })
+        }).catch(err => console.error('Audit Log failed for CHECKIN_MEMBER', err))
 
         return NextResponse.json(attendance, { status: 201 })
     } catch (error) {

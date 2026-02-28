@@ -59,7 +59,8 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
 
     // 2. IP-based Rate Limiting (10 requests per minute) to prevent enumeration
     const headersList = await headers()
-    const ip = headersList.get('x-forwarded-for') || '127.0.0.1'
+    const ipHeader = headersList.get('x-forwarded-for')
+    const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
     try {
         await apiLimiter.check(10, `invoice-view:${ip}`)
     } catch {

@@ -79,26 +79,26 @@ export function Navbar() {
 
                 <div className="flex items-center gap-4">
                     {user ? (
-                        <Link href="/dashboard" className="hidden md:block">
-                            <Button className="bg-primary hover:bg-primary-600 text-white font-bold px-6 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                        <Button asChild className="hidden md:flex bg-primary hover:bg-primary-600 text-white font-bold px-6 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                            <Link href="/dashboard">
                                 Go to Dashboard
-                            </Button>
-                        </Link>
+                            </Link>
+                        </Button>
                     ) : (
                         <>
-                            <Link href="/login" className="hidden md:block">
-                                <Button className="font-black bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all uppercase tracking-widest text-xs px-6">
+                            <Button asChild className="hidden md:flex font-black bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all uppercase tracking-widest text-xs px-6">
+                                <Link href="/login">
                                     Login
-                                </Button>
-                            </Link>
-                            <Link href="#contact" className="hidden md:block">
-                                <Button className="bg-midnight text-white font-semibold px-6 rounded-full shadow-lg shadow-midnight/20 hover:bg-midnight/90 hover:shadow-midnight/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                                </Link>
+                            </Button>
+                            <Button asChild className="hidden md:flex bg-midnight text-white font-semibold px-6 rounded-full shadow-lg shadow-midnight/20 hover:bg-midnight/90 hover:shadow-midnight/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                                <Link href="#contact">
                                     Request a Demo
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         </>
                     )}
-                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"} aria-expanded={isMobileMenuOpen}>
                         <Menu className="h-6 w-6 text-slate-700" />
                     </Button>
                 </div>
@@ -111,7 +111,7 @@ export function Navbar() {
             <div className={cn("fixed top-0 right-0 h-full w-[280px] bg-white z-50 shadow-2xl transition-transform duration-300 transform md:hidden flex flex-col", isMobileMenuOpen ? "translate-x-0" : "translate-x-full")}>
                 <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                     <span className="font-display font-bold text-xl text-primary">GymMitra</span>
-                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white rounded-full shadow-sm"><Menu className="w-5 h-5 text-slate-600" /></button>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white rounded-full shadow-sm" aria-label="Close mobile menu"><Menu className="w-5 h-5 text-slate-600" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
                     <nav className="flex flex-col gap-4 text-sm font-bold text-slate-700">
@@ -120,17 +120,17 @@ export function Navbar() {
                     </nav>
                     <div className="mt-auto flex flex-col gap-4 pt-6 border-t border-slate-100">
                         {user ? (
-                            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                                <Button className="w-full bg-primary text-white font-bold rounded-full">Go to Dashboard</Button>
-                            </Link>
+                            <Button asChild className="w-full bg-primary text-white font-bold rounded-full">
+                                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Go to Dashboard</Link>
+                            </Button>
                         ) : (
                             <>
-                                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button className="w-full bg-primary text-white font-bold rounded-full">Login</Button>
-                                </Link>
-                                <Link href="#contact" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="outline" className="w-full font-bold rounded-full">Request Demo</Button>
-                                </Link>
+                                <Button asChild className="w-full bg-primary text-white font-bold rounded-full">
+                                    <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                                </Button>
+                                <Button asChild variant="outline" className="w-full font-bold rounded-full">
+                                    <Link href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Request Demo</Link>
+                                </Button>
                             </>
                         )}
                     </div>

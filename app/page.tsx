@@ -5,18 +5,18 @@ import { Hero } from "@/components/landing/Hero"
 import { MobileStickyCTA } from "@/components/landing/MobileStickyCTA"
 import { ShieldCheck, Zap, Award, Building2 } from "lucide-react"
 
-const SocialProof = dynamic(() => import("@/components/landing/SocialProof").then(m => m.SocialProof))
-const LiveDemo = dynamic(() => import("@/components/landing/LiveDemo").then(m => m.LiveDemo))
-const BeforeAfter = dynamic(() => import("@/components/landing/BeforeAfter").then(m => m.BeforeAfter))
-const Features = dynamic(() => import("@/components/landing/Features").then(m => m.Features))
-const ROICalculator = dynamic(() => import("@/components/landing/ROICalculator").then(m => m.ROICalculator))
-const Testimonials = dynamic(() => import("@/components/landing/Testimonials").then(m => m.Testimonials))
-const MobilePreview = dynamic(() => import("@/components/landing/MobilePreview").then(m => m.MobilePreview))
-const Pricing = dynamic(() => import("@/components/landing/Pricing").then(m => m.Pricing))
-const FAQ = dynamic(() => import("@/components/landing/FAQ").then(m => m.FAQ))
-const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then(m => m.FinalCTA))
-const Contact = dynamic(() => import("@/components/landing/Contact").then(m => m.Contact))
-const AboutEMitra = dynamic(() => import("@/components/landing/AboutEMitra").then(m => m.AboutEMitra))
+const SocialProof = dynamic(() => import("@/components/landing/SocialProof").then(m => m.SocialProof), { loading: () => <div className="min-h-[200px] animate-pulse bg-slate-50 w-full" /> })
+const LiveDemo = dynamic(() => import("@/components/landing/LiveDemo").then(m => m.LiveDemo), { loading: () => <div className="min-h-[600px] animate-pulse bg-slate-50 w-full" /> })
+const BeforeAfter = dynamic(() => import("@/components/landing/BeforeAfter").then(m => m.BeforeAfter), { loading: () => <div className="min-h-[500px] animate-pulse bg-slate-50 w-full" /> })
+const Features = dynamic(() => import("@/components/landing/Features").then(m => m.Features), { loading: () => <div className="min-h-[800px] animate-pulse bg-slate-50 w-full" /> })
+const ROICalculator = dynamic(() => import("@/components/landing/ROICalculator").then(m => m.ROICalculator), { loading: () => <div className="min-h-[600px] animate-pulse bg-slate-50 w-full" /> })
+const Testimonials = dynamic(() => import("@/components/landing/Testimonials").then(m => m.Testimonials), { loading: () => <div className="min-h-[500px] animate-pulse bg-slate-50 w-full" /> })
+const MobilePreview = dynamic(() => import("@/components/landing/MobilePreview").then(m => m.MobilePreview), { loading: () => <div className="min-h-[600px] animate-pulse bg-slate-50 w-full" /> })
+const Pricing = dynamic(() => import("@/components/landing/Pricing").then(m => m.Pricing), { loading: () => <div className="min-h-[600px] animate-pulse bg-slate-50 w-full" /> })
+const FAQ = dynamic(() => import("@/components/landing/FAQ").then(m => m.FAQ), { loading: () => <div className="min-h-[500px] animate-pulse bg-slate-50 w-full" /> })
+const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then(m => m.FinalCTA), { loading: () => <div className="min-h-[400px] animate-pulse bg-primary/5 w-full" /> })
+const Contact = dynamic(() => import("@/components/landing/Contact").then(m => m.Contact), { loading: () => <div className="min-h-[500px] animate-pulse bg-slate-50 w-full" /> })
+const AboutEMitra = dynamic(() => import("@/components/landing/AboutEMitra").then(m => m.AboutEMitra), { loading: () => <div className="min-h-[400px] animate-pulse bg-slate-900 w-full" /> })
 
 export default function Home() {
   return (

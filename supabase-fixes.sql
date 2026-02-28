@@ -67,7 +67,10 @@ CREATE POLICY "Gyms can manage their own PT sessions" ON "PTSession" FOR ALL USI
 -- Fix RLS Enabled No Policy for system tables
 ALTER TABLE "AuditLog" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Gyms can manage their own audit logs" ON "AuditLog";
-CREATE POLICY "Gyms can manage their own audit logs" ON "AuditLog" FOR ALL USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text)) WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
+DROP POLICY IF EXISTS "Gyms can view their audit logs" ON "AuditLog";
+DROP POLICY IF EXISTS "Gyms can insert their audit logs" ON "AuditLog";
+CREATE POLICY "Gyms can view their audit logs" ON "AuditLog" FOR SELECT USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
+CREATE POLICY "Gyms can insert their audit logs" ON "AuditLog" FOR INSERT WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
 
 ALTER TABLE "InvoiceSequence" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Gyms can manage their own invoice sequence" ON "InvoiceSequence";
@@ -76,4 +79,6 @@ CREATE POLICY "Gyms can manage their own invoice sequence" ON "InvoiceSequence" 
 ALTER TABLE "RegistrationCode" ENABLE ROW LEVEL SECURITY;
 -- Registration codes are pre-generated, so we only allow reading/updating them if they belong to the gym or are unassigned
 DROP POLICY IF EXISTS "Gyms can view their registration codes" ON "RegistrationCode";
-CREATE POLICY "Gyms can view their registration codes" ON "RegistrationCode" FOR ALL USING ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text) OR "gymId" IS NULL) WITH CHECK ("gymId" IN (SELECT id FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));
+DROP POLICY IF EXISTS "Gyms can update their registration codes" ON "RegistrationCode";
+CREATE POLICY "Gyms can view their registration codes" ON "RegistrationCode" FOR SELECT USING (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text) OR "isActive" = true);
+CREATE POLICY "Gyms can update their registration codes" ON "RegistrationCode" FOR UPDATE USING (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text)) WITH CHECK (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));

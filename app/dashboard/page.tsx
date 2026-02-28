@@ -150,7 +150,7 @@ export default async function DashboardPage() {
                 take: 5
             }),
             prisma.attendance.findMany({
-                where: { gymId: gym!.id, date: { gte: today } } as any,
+                where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } as any,
                 include: { member: { select: { name: true } } },
                 orderBy: { checkInTime: 'desc' },
                 take: 3,
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
         if (attendance.length > 0) {
             const last = attendance[0]
             const checkIn = new Date((last as any).checkInTime)
-            const minutesAgo = Math.round((Date.now() - checkIn.getTime()) / 60000)
+            const minutesAgo = Math.max(0, Math.round((Date.now() - checkIn.getTime()) / 60000))
             todayAttendance = {
                 count: dailyCheckins,
                 lastCheckinLabel: minutesAgo < 60
@@ -195,7 +195,9 @@ export default async function DashboardPage() {
         const todayDate = today.getDate()
         upcomingBirthdays = birthdays
             .map((m: any) => {
-                const dob = new Date(m.dateOfBirth)
+                const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString();
+                const [year, month, day] = dobString.split('T')[0].split('-').map(Number);
+                const dob = new Date(year, month - 1, day);
                 let next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
                 if (next < today) next.setFullYear(today.getFullYear() + 1)
                 const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -361,12 +363,11 @@ export default async function DashboardPage() {
                         <div className="lg:col-span-3 space-y-6">
                             <AttendanceWidget
                                 isDemo={isDemo}
-                                gymId={gym?.id}
                                 data={todayAttendance}
                             />
                             <UpcomingBirthdays
                                 isDemo={isDemo}
-                                gymId={gym?.id}
+                                gymName={gym?.businessName || gym?.name}
                                 data={upcomingBirthdays}
                             />
                         </div>

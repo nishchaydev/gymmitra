@@ -107,27 +107,12 @@ export async function POST(request: NextRequest) {
         }
         const validatedData = invoiceCreateSchema.parse(body)
 
-        // Idempotency Check
-        if (validatedData.idempotencyKey) {
-            const existingInvoice = await prisma.invoice.findFirst({
-                where: {
-                    idempotencyKey: validatedData.idempotencyKey,
-                    gymId: gym.id
-                },
-                include: { items: true }
-            })
-            if (existingInvoice) {
-                // Return the already created invoice instead of double charging
-                return NextResponse.json(existingInvoice, { status: 200 })
-            }
-        }
-
         // Calculate totals
         const subtotal = validatedData.items.reduce((acc, item) => {
             return acc + (item.quantity * item.unitPrice)
         }, 0)
 
-        const total = subtotal + validatedData.taxAmount - validatedData.discount
+        const total = Math.max(0, subtotal + validatedData.taxAmount - validatedData.discount)
 
         // Generate Invoice Number
         const { generateInvoiceNumber } = await import("@/lib/invoice-utils")
@@ -138,39 +123,55 @@ export async function POST(request: NextRequest) {
         const shareTokenExpiresAt = new Date()
         shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
 
-        const invoice = await (prisma.invoice as any).create({
-            data: {
-                invoiceNumber,
-                type: validatedData.type,
-                gymId: gym.id,
-                memberId: validatedData.memberId,
-                paymentStatus: validatedData.paymentStatus,
-                paymentMethod: validatedData.paymentMethod,
-                notes: validatedData.notes,
-                dueDate: validatedData.dueDate,
-                subtotal: subtotal,
-                taxAmount: validatedData.taxAmount,
-                discount: validatedData.discount,
-                total: total,
-                idempotencyKey: validatedData.idempotencyKey,
-                shareToken: shareToken,
-                shareTokenExpiresAt: shareTokenExpiresAt,
-                items: {
-                    create: validatedData.items.map(item => ({
-                        description: item.description,
-                        quantity: item.quantity,
-                        unitPrice: item.unitPrice,
-                        amount: item.quantity * item.unitPrice,
-                        gymId: gym.id, // Mandatory for multi-tenancy
-                    }))
+        try {
+            const invoice = await prisma.invoice.create({
+                data: {
+                    invoiceNumber,
+                    type: validatedData.type,
+                    gymId: gym.id,
+                    memberId: validatedData.memberId,
+                    paymentStatus: validatedData.paymentStatus,
+                    paymentMethod: validatedData.paymentMethod,
+                    notes: validatedData.notes,
+                    dueDate: validatedData.dueDate,
+                    subtotal: subtotal,
+                    taxAmount: validatedData.taxAmount,
+                    discount: validatedData.discount,
+                    total: total,
+                    idempotencyKey: validatedData.idempotencyKey,
+                    shareToken: shareToken,
+                    shareTokenExpiresAt: shareTokenExpiresAt,
+                    items: {
+                        create: validatedData.items.map(item => ({
+                            description: item.description,
+                            quantity: item.quantity,
+                            unitPrice: item.unitPrice,
+                            amount: item.quantity * item.unitPrice,
+                            gymId: gym.id, // Mandatory for multi-tenancy
+                        }))
+                    }
+                },
+                include: {
+                    items: true
                 }
-            },
-            include: {
-                items: true
-            }
-        })
+            })
 
-        return NextResponse.json(invoice, { status: 201 })
+            return NextResponse.json(invoice, { status: 201 })
+        } catch (createErr: any) {
+            if (createErr.code === 'P2002' && validatedData.idempotencyKey) {
+                const existingInvoice = await prisma.invoice.findFirst({
+                    where: {
+                        idempotencyKey: validatedData.idempotencyKey,
+                        gymId: gym.id
+                    },
+                    include: { items: true }
+                })
+                if (existingInvoice) {
+                    return NextResponse.json(existingInvoice, { status: 200 })
+                }
+            }
+            throw createErr
+        }
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(
