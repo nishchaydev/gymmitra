@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useRef } from 'react'
-import { useReactToPrint } from 'react-to-print'
 import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Share2, MessageCircle } from 'lucide-react'
@@ -12,24 +11,93 @@ interface InvoiceViewProps {
     invoice: any // Replace with proper type when Prisma generation succeeds
 }
 
+/**
+ * Recursively strip oklch/lab/lch CSS color values from an element's inline styles
+ * and computed styles, replacing them with safe hex equivalents.
+ * html2canvas cannot parse modern CSS color functions like oklch() or lab().
+ */
+function stripUnsupportedColors(el: HTMLElement) {
+    const UNSUPPORTED = /\b(oklch|lab|lch|oklab)\s*\(/gi
+    const FALLBACK = '#000000'
+
+    el.querySelectorAll('*').forEach((node) => {
+        if (!(node instanceof HTMLElement)) return
+        const style = node.getAttribute('style') || ''
+        if (UNSUPPORTED.test(style)) {
+            node.setAttribute('style', style.replace(UNSUPPORTED, `${FALLBACK} /*`))
+        }
+        // Also scrub computed inline colors that html2canvas reads
+        const computed = window.getComputedStyle(node)
+        const colorProps = ['color', 'backgroundColor', 'borderColor', 'outlineColor'] as const
+        colorProps.forEach((prop) => {
+            const val = computed[prop]
+            if (val && UNSUPPORTED.test(val)) {
+                // @ts-ignore
+                node.style[prop] = FALLBACK
+            }
+        })
+    })
+}
+
 export function InvoiceView({ invoice }: InvoiceViewProps) {
     const componentRef = useRef<HTMLDivElement>(null)
 
-    const handlePrint = useReactToPrint({
-        contentRef: componentRef,
-        documentTitle: `Invoice-${invoice.invoiceNumber}`,
-    })
+    /** Print: inject minimal @media print CSS so no content gets cut */
+    const handlePrint = () => {
+        if (!componentRef.current) return
+        const content = componentRef.current.innerHTML
+        const printWindow = window.open('', '_blank', 'width=900,height=700')
+        if (!printWindow) return
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Invoice-${invoice.invoiceNumber}</title>
+                <style>
+                    @page { size: A4; margin: 10mm; }
+                    body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    * { box-sizing: border-box; }
+                    table { width: 100%; border-collapse: collapse; }
+                    .no-print { display: none !important; }
+                </style>
+            </head>
+            <body>${content}</body>
+            </html>
+        `)
+        printWindow.document.close()
+        printWindow.focus()
+        setTimeout(() => {
+            printWindow.print()
+            printWindow.close()
+        }, 500)
+    }
 
     const handleDownloadPDF = async () => {
         if (!componentRef.current) return
 
         try {
-            const canvas = await html2canvas(componentRef.current, {
+            // Clone element off-screen so we don't mutate the live DOM
+            const original = componentRef.current
+            const clone = original.cloneNode(true) as HTMLElement
+            clone.style.position = 'fixed'
+            clone.style.top = '-9999px'
+            clone.style.left = '-9999px'
+            clone.style.width = original.offsetWidth + 'px'
+            clone.style.background = '#ffffff'
+            document.body.appendChild(clone)
+
+            // Remove oklch/lab that html2canvas cannot parse
+            stripUnsupportedColors(clone)
+
+            const canvas = await html2canvas(clone, {
                 scale: 2,
                 useCORS: true,
+                allowTaint: true,
                 logging: false,
                 backgroundColor: '#ffffff'
             })
+
+            document.body.removeChild(clone)
 
             // Cache the base64 data URL so encoding runs only once
             const cachedDataUrl = canvas.toDataURL('image/png', 1.0)
