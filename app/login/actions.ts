@@ -156,7 +156,7 @@ export async function signup(formData: FormData) {
             return { userId: authData.user!.id, gymId: targetGymIds[0], session: authData.session };
         });
     } catch (error: any) {
-        console.error('Registration linked failed:', error.message);
+        console.error('Registration linking failed:', error.message);
         // Clean up orphaned Supabase auth user to prevent dangling accounts
         if (authData?.user?.id) {
             try {

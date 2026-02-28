@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
                             } else if (response.data && response.data.data) {
                                 const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
                                 response.data.data.forEach((emailResult: any, idx: number) => {
-                                    if (emailResult === null) {
+                                    if (!emailResult || emailResult.error || !emailResult.id) {
                                         results.errors++
                                     } else {
                                         if (notifChunk[idx]) {

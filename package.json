@@ -55,11 +55,13 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "pg": "^8.19.0",
     "prisma": "^5.22.0",
     "shadcn": "^3.8.4",
     "tailwindcss": "^4",

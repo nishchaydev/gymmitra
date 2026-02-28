@@ -59,9 +59,13 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             // Calculate Tax (Applied on the discounted subtotal)
             // taxAmount takes precedence over taxPercentage if explicitly provided by the caller
             const providedTaxPercentage = validatedData.taxPercentage ?? taxPercentage;
-            const taxAmountCents = validatedData.taxAmount != null && validatedData.taxAmount >= 0
+            const taxAmountCents = validatedData.taxAmount != null
                 ? Math.round(validatedData.taxAmount * 100)
                 : Math.round((subtotalAfterDiscountCents * providedTaxPercentage) / 100)
+            // Derive effective percentage from actual amount so stored value stays consistent
+            const effectiveTaxPercentage = subtotalAfterDiscountCents > 0
+                ? (taxAmountCents / subtotalAfterDiscountCents) * 100
+                : providedTaxPercentage
             const totalCents = subtotalAfterDiscountCents + taxAmountCents
 
             const shareToken = crypto.randomBytes(32).toString('hex')
@@ -79,7 +83,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     member: validatedData.memberId ? { connect: { id: validatedData.memberId } } : undefined,
                     subtotal: subtotalCents / 100,
                     taxAmount: taxAmountCents / 100,
-                    taxPercentage: providedTaxPercentage,
+                    taxPercentage: effectiveTaxPercentage,
                     discount: validatedData.discount,
                     total: totalCents / 100,
                     idempotencyKey: validatedData.idempotencyKey,
@@ -107,7 +111,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                                 description: item.description,
                                 quantity: item.quantity,
                                 unitPrice: item.unitPrice,
-                                taxPercentage: providedTaxPercentage,
+                                taxPercentage: effectiveTaxPercentage,
                                 taxAmount: itemTaxAmountCents / 100,
                                 amount: itemAmountCents / 100,
                                 gymId: gym.id

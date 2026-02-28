@@ -81,7 +81,7 @@ export async function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: 
                             <div key={idx} className="flex items-center">
                                 <Avatar className="h-9 w-9">
                                     {birthday.img && <AvatarImage src={birthday.img} alt={birthday.name} />}
-                                    <AvatarFallback>{birthday.name.trim().split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2)}</AvatarFallback>
+                                    <AvatarFallback>{(() => { const trimmed = birthday.name?.trim(); return trimmed ? trimmed.split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2) : '?' })()} </AvatarFallback>
                                 </Avatar>
                                 <div className="ml-4 space-y-1">
                                     <p className="text-sm font-medium leading-none">{birthday.name}</p>
