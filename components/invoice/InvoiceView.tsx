@@ -4,136 +4,222 @@ import React, { useRef } from 'react'
 import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Share2, MessageCircle } from 'lucide-react'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 
 interface InvoiceViewProps {
-    invoice: any // Replace with proper type when Prisma generation succeeds
+    invoice: any
 }
 
 /**
- * Recursively strip oklch/lab/lch CSS color values from an element's inline styles
- * and computed styles, replacing them with safe hex equivalents.
- * html2canvas cannot parse modern CSS color functions like oklch() or lab().
+ * Returns the canonical app base URL.
+ * Uses NEXT_PUBLIC_APP_URL env var (set to your custom domain) so
+ * shared links always point to your domain, not gymmitra.vercel.app.
  */
-function stripUnsupportedColors(el: HTMLElement) {
-    const UNSUPPORTED = /\b(oklch|lab|lch|oklab)\s*\(/gi
-    const FALLBACK = '#000000'
+function getBaseUrl(): string {
+    if (typeof window === 'undefined') return ''
+    return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin
+}
 
-    el.querySelectorAll('*').forEach((node) => {
-        if (!(node instanceof HTMLElement)) return
-        const style = node.getAttribute('style') || ''
-        if (UNSUPPORTED.test(style)) {
-            node.setAttribute('style', style.replace(UNSUPPORTED, `${FALLBACK} /*`))
-        }
-        // Also scrub computed inline colors that html2canvas reads
-        const computed = window.getComputedStyle(node)
-        const colorProps = ['color', 'backgroundColor', 'borderColor', 'outlineColor'] as const
-        colorProps.forEach((prop) => {
-            const val = computed[prop]
-            if (val && UNSUPPORTED.test(val)) {
-                // @ts-ignore
-                node.style[prop] = FALLBACK
-            }
-        })
-    })
+/**
+ * Builds a standalone, self-contained print-ready HTML page for the invoice.
+ *
+ * Why NOT html2canvas / jsPDF:
+ *   Tailwind v4 emits oklch() color functions in its stylesheet CSS variables.
+ *   html2canvas evaluates computed styles and chokes on oklch with the error
+ *   "unsupported color function lab". The browser's native PDF renderer has
+ *   no such limitation, produces far better fidelity, and requires no extra deps.
+ *
+ * Strategy:
+ *   Snapshot the rendered innerHTML of the invoice, embed it in a new window
+ *   with a minimal CSS that re-defines all Tailwind color classes using safe
+ *   hex/rgb values, override CSS custom properties at :root, then auto-trigger
+ *   window.print(). The user's browser prints to PDF via the system dialog.
+ */
+function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload: boolean): string {
+    const banner = forDownload
+        ? `<div id="pdf-banner">📄 <strong>To save as PDF:</strong> In the print dialog, set Destination → <strong>Save as PDF</strong>, then click Save.</div>`
+        : ''
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice-${invoiceNumber}</title>
+  <style>
+    @page { size: A4 portrait; margin: 10mm; }
+    html, body {
+      margin: 0; padding: 0; background: #fff;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    * { box-sizing: border-box; }
+
+    /* Override Tailwind v4 CSS custom properties with safe hex values */
+    :root {
+      --primary: #2563eb;
+      --primary-foreground: #ffffff;
+      --color-blue-500: #3b82f6;
+      --color-blue-600: #2563eb;
+      --color-emerald-500: #10b981;
+      --color-emerald-600: #059669;
+      --color-slate-50:  #f8fafc;
+      --color-slate-100: #f1f5f9;
+      --color-slate-200: #e2e8f0;
+      --color-slate-300: #cbd5e1;
+      --color-slate-400: #94a3b8;
+      --color-slate-500: #64748b;
+      --color-slate-600: #475569;
+      --color-slate-700: #334155;
+      --color-slate-900: #0f172a;
+      --color-white: #ffffff;
+    }
+
+    /* Hide buttons and non-printable UI */
+    .no-print, button, [data-print-hide] { display: none !important; }
+
+    /* ---- Tailwind utility re-declarations (hex only) ---- */
+    .text-primary  { color: #2563eb; }
+    .text-blue-600 { color: #2563eb; }
+    .text-emerald-600 { color: #059669; }
+    .text-slate-900 { color: #0f172a; }
+    .text-slate-500 { color: #64748b; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-200 { color: #e2e8f0; }
+    .bg-white    { background-color: #ffffff; }
+    .bg-slate-50 { background-color: #f8fafc; }
+    .border-slate-100 { border-color: #f1f5f9; }
+    .border-slate-200 { border-color: #e2e8f0; }
+    .border-slate-900 { border-color: #0f172a; }
+
+    /* Layout */
+    .flex { display: flex; }
+    .grid { display: grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .justify-between { justify-content: space-between; }
+    .items-start  { align-items: flex-start; }
+    .items-center { align-items: center; }
+    .items-end    { align-items: flex-end; }
+    .gap-2  { gap: 0.5rem; }
+    .gap-3  { gap: 0.75rem; }
+    .gap-12 { gap: 3rem; }
+    .space-y-1 > * + * { margin-top: 0.25rem; }
+    .space-y-3 > * + * { margin-top: 0.75rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+    .space-y-6 > * + * { margin-top: 1.5rem; }
+    .ml-auto { margin-left: auto; }
+    .mb-4  { margin-bottom: 1rem; }
+    .mb-12 { margin-bottom: 3rem; }
+    .mt-20 { margin-top: 5rem; }
+    .pb-2  { padding-bottom: 0.5rem; }
+    .pt-8  { padding-top: 2rem; }
+    .py-2  { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .py-4  { padding-top: 1rem;  padding-bottom: 1rem;  }
+    .px-4  { padding-left: 1rem; padding-right: 1rem; }
+    .p-8   { padding: 2rem; }
+
+    /* Sizing */
+    .w-3  { width: 0.75rem; }  .h-3  { height: 0.75rem; }
+    .w-5  { width: 1.25rem; }  .h-5  { height: 1.25rem; }
+    .w-10 { width: 2.5rem;  }  .h-10 { height: 2.5rem;  }
+    .w-24 { width: 6rem; }     .h-12 { height: 3rem; }
+    .w-\[300px\] { width: 300px; }
+    .max-w-\[200px\] { max-width: 200px; }
+    .max-w-\[300px\] { max-width: 300px; }
+
+    /* Typography */
+    .text-\[10px\] { font-size: 10px; }
+    .text-xs  { font-size: 0.75rem; }
+    .text-sm  { font-size: 0.875rem; }
+    .text-lg  { font-size: 1.125rem; }
+    .text-2xl { font-size: 1.5rem; }
+    .text-3xl { font-size: 1.875rem; }
+    .text-4xl { font-size: 2.25rem; }
+    .font-medium { font-weight: 500; }
+    .font-bold   { font-weight: 700; }
+    .font-black  { font-weight: 900; }
+    .italic      { font-style: italic; }
+    .not-italic  { font-style: normal; }
+    .uppercase   { text-transform: uppercase; }
+    .tracking-tighter  { letter-spacing: -0.05em; }
+    .tracking-widest   { letter-spacing: 0.1em; }
+    .tracking-\[0\.2em\] { letter-spacing: 0.2em; }
+    .leading-relaxed   { line-height: 1.625; }
+    .text-right  { text-align: right; }
+    .text-center { text-align: center; }
+    .underline   { text-decoration: underline; }
+    .underline-offset-8 { text-underline-offset: 8px; }
+    .opacity-30  { opacity: 0.3; }
+    .opacity-50  { opacity: 0.5; }
+
+    /* Borders */
+    .border     { border: 1px solid #e2e8f0; }
+    .border-b   { border-bottom: 1px solid #e2e8f0; }
+    .border-t   { border-top: 1px solid #e2e8f0; }
+    .border-y   { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .border-t-2 { border-top: 2px solid #0f172a; }
+    .divide-y > * + *           { border-top: 1px solid #f1f5f9; }
+    .divide-slate-100 > * + *   { border-top-color: #f1f5f9; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0; }
+
+    /* SVG icons */
+    svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
+    /* No content clipping on print */
+    #invoice-template { page-break-inside: avoid; break-inside: avoid; }
+
+    /* Banner (only visible before print dialog) */
+    #pdf-banner {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #1e40af;
+      display: flex; align-items: center; gap: 8px;
+    }
+    @media print { #pdf-banner { display: none !important; } }
+  </style>
+</head>
+<body>
+  ${banner}
+  ${bodyHtml}
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>`
 }
 
 export function InvoiceView({ invoice }: InvoiceViewProps) {
     const componentRef = useRef<HTMLDivElement>(null)
 
-    /** Print: inject minimal @media print CSS so no content gets cut */
-    const handlePrint = () => {
+    const openInvoicePrintWindow = (forDownload: boolean) => {
         if (!componentRef.current) return
-        const content = componentRef.current.innerHTML
-        const printWindow = window.open('', '_blank', 'width=900,height=700')
-        if (!printWindow) return
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Invoice-${invoice.invoiceNumber}</title>
-                <style>
-                    @page { size: A4; margin: 10mm; }
-                    body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    * { box-sizing: border-box; }
-                    table { width: 100%; border-collapse: collapse; }
-                    .no-print { display: none !important; }
-                </style>
-            </head>
-            <body>${content}</body>
-            </html>
-        `)
-        printWindow.document.close()
-        printWindow.focus()
-        setTimeout(() => {
-            printWindow.print()
-            printWindow.close()
-        }, 500)
-    }
-
-    const handleDownloadPDF = async () => {
-        if (!componentRef.current) return
-
-        try {
-            // Clone element off-screen so we don't mutate the live DOM
-            const original = componentRef.current
-            const clone = original.cloneNode(true) as HTMLElement
-            clone.style.position = 'fixed'
-            clone.style.top = '-9999px'
-            clone.style.left = '-9999px'
-            clone.style.width = original.offsetWidth + 'px'
-            clone.style.background = '#ffffff'
-            document.body.appendChild(clone)
-
-            // Remove oklch/lab that html2canvas cannot parse
-            stripUnsupportedColors(clone)
-
-            const canvas = await html2canvas(clone, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            })
-
-            document.body.removeChild(clone)
-
-            // Cache the base64 data URL so encoding runs only once
-            const cachedDataUrl = canvas.toDataURL('image/png', 1.0)
-
-            const imgWidth = 210 // A4 width in mm
-            const pageHeight = 297 // A4 height in mm
-            const imgHeight = (canvas.height * imgWidth) / canvas.width
-            let heightLeft = imgHeight
-            let position = 0
-
-            const doc = new jsPDF('p', 'mm', 'a4', true)
-
-            doc.addImage(cachedDataUrl, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST')
-            heightLeft -= pageHeight
-
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight
-                doc.addPage()
-                doc.addImage(cachedDataUrl, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST')
-                heightLeft -= pageHeight
-            }
-
-            doc.save(`Invoice-${invoice.invoiceNumber}.pdf`)
-        } catch (error) {
-            console.error('Error generating PDF:', error)
-            import('sonner').then(({ toast }) => toast.error('Failed to generate PDF'))
+        const bodyHtml = componentRef.current.innerHTML
+        const win = window.open('', '_blank', 'width=900,height=800')
+        if (!win) {
+            import('sonner').then(({ toast }) =>
+                toast.error('Pop-up blocked. Please allow pop-ups for this site.')
+            )
+            return
         }
+        win.document.write(buildPrintDocument(invoice.invoiceNumber, bodyHtml, forDownload))
+        win.document.close()
+        win.focus()
     }
+
+    const handlePrint = () => openInvoicePrintWindow(false)
+    const handleDownloadPDF = () => openInvoicePrintWindow(true)
 
     const copyPublicLink = () => {
         if (!invoice.shareToken) {
-            import('sonner').then(({ toast }) => toast.error('Public link not available for this invoice'))
+            import('sonner').then(({ toast }) =>
+                toast.error('Public link not available for this invoice')
+            )
             return
         }
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-        const url = `${baseUrl}/invoice/${invoice.shareToken}`
+        const url = `${getBaseUrl()}/invoice/${invoice.shareToken}`
         navigator.clipboard.writeText(url)
         import('sonner').then(({ toast }) => toast.success('Public link copied to clipboard!'))
     }
@@ -143,19 +229,24 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         const customerName = invoice.member?.name || invoice.walkInName || 'Customer'
         const phone = invoice.member?.phone || invoice.walkInPhone || ''
 
-        // Only prepend +91 for valid 10-digit local Indian numbers
-        let targetPhone = phone.replace(/\s/g, '')
-        if (/^\d{10}$/.test(targetPhone)) {
+        // Strip all non-digits, then remove leading 0 (e.g. 06261854014 → 6261854014)
+        let targetPhone = phone.replace(/\D/g, '')
+        if (targetPhone.startsWith('0')) {
+            targetPhone = targetPhone.slice(1)
+        }
+        // If 10 digits, add India country code; if already has country code, use as-is
+        if (targetPhone.length === 10) {
             targetPhone = `91${targetPhone}`
-        } else if (targetPhone.startsWith('+')) {
-            targetPhone = targetPhone.slice(1) // remove '+' for wa.me URL
         }
 
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-        const invoiceUrl = invoice.shareToken ? `${baseUrl}/invoice/${invoice.shareToken}` : ''
+        const invoiceUrl = invoice.shareToken
+            ? `${getBaseUrl()}/invoice/${invoice.shareToken}`
+            : ''
 
-        // Format total as INR currency
-        const formattedTotal = Number(invoice.total).toLocaleString('en-IN', { style: 'currency', currency: 'INR' })
+        const formattedTotal = Number(invoice.total).toLocaleString('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+        })
 
         const sweetMessage = `Hi ${customerName}!\n\nThank you for choosing ${gymName} 🏋️‍♂️✨\n\nYour invoice for ${formattedTotal} is ready.\n${invoiceUrl ? `You can view or download it here: ${invoiceUrl}\n\n` : ''}We look forward to seeing you reach your fitness goals!\nHave a great day! 💪`
 
@@ -170,7 +261,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-end gap-3 no-print">
+            <div className="flex justify-end gap-3 no-print flex-wrap">
                 {invoice.shareToken && (
                     <Button variant="outline" size="sm" onClick={copyPublicLink} className="text-primary hover:text-primary">
                         <Share2 className="w-4 h-4 mr-2" /> Copy Public Link
@@ -182,7 +273,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                 <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
                     <Download className="w-4 h-4 mr-2" /> Download PDF
                 </Button>
-                <Button variant="default" size="sm" onClick={() => handlePrint()}>
+                <Button variant="default" size="sm" onClick={handlePrint}>
                     <Printer className="w-4 h-4 mr-2" /> Print Invoice
                 </Button>
             </div>
@@ -194,7 +285,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                         date={new Date(invoice.createdAt).toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'long',
-                            year: 'numeric'
+                            year: 'numeric',
                         })}
                         paymentMethod={invoice.paymentMethod}
                         gymInfo={{
@@ -214,7 +305,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                             description: item.description,
                             quantity: item.quantity,
                             unitPrice: Number(item.unitPrice),
-                            total: Number(item.amount)
+                            total: Number(item.amount),
                         }))}
                         subtotal={Number(invoice.subtotal)}
                         discount={Number(invoice.discount || 0)}

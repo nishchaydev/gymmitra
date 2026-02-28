@@ -4,8 +4,9 @@
  */
 
 export const getWhatsAppLink = (phone: string, message: string) => {
-    // Remove non-numeric characters from phone
-    const cleanPhone = phone.replace(/\D/g, '')
+    // Remove non-numeric characters, then strip leading 0 (e.g. 06261854014 → 6261854014)
+    const stripped = phone.replace(/\D/g, '')
+    const cleanPhone = stripped.startsWith('0') ? stripped.slice(1) : stripped
 
     // Add country code if missing (assumes India +91)
     const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
