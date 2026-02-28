@@ -89,7 +89,7 @@ export async function PUT(
         await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
-            action: 'UPDATE_PRODUCT' as any,
+            action: 'UPDATE_PRODUCT',
             entityType: 'PRODUCT',
             entityId: id,
             ipAddress: ip,
@@ -149,7 +149,7 @@ export async function DELETE(
         await recordAuditLog({
             gymId: auth.gym.id,
             actorId: auth.userId,
-            action: 'DELETE_PRODUCT' as any,
+            action: 'DELETE_PRODUCT',
             entityType: 'PRODUCT',
             entityId: id,
             ipAddress: ip

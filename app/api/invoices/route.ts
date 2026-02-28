@@ -159,15 +159,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(invoice, { status: 201 })
         } catch (createErr: any) {
             if (createErr.code === 'P2002' && validatedData.idempotencyKey) {
-                const existingInvoice = await prisma.invoice.findFirst({
-                    where: {
-                        idempotencyKey: validatedData.idempotencyKey,
-                        gymId: gym.id
-                    },
-                    include: { items: true }
-                })
-                if (existingInvoice) {
-                    return NextResponse.json(existingInvoice, { status: 200 })
+                // Ensure the collision was actually on idempotencyKey before returning success
+                if (createErr.meta?.target?.includes('idempotencyKey')) {
+                    const existingInvoice = await prisma.invoice.findFirst({
+                        where: {
+                            idempotencyKey: validatedData.idempotencyKey,
+                            gymId: gym.id
+                        },
+                        include: { items: true }
+                    })
+                    if (existingInvoice) {
+                        return NextResponse.json(existingInvoice, { status: 200 })
+                    }
                 }
             }
             throw createErr

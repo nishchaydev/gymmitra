@@ -60,7 +60,6 @@ export async function completeOnboarding(formData: FormData) {
             invoicePrefix: validatedData.invoicePrefix,
         }
 
-        let gymProfile;
         gymProfile = await prisma.gymProfile.upsert({
             where: { userId: user.id },
             update: {

@@ -209,22 +209,24 @@ export async function GET(request: NextRequest) {
                             } else if (response.data && response.data.data) {
                                 const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
                                 response.data.data.forEach((emailResult: any, idx: number) => {
-                                    if (emailResult.error) {
+                                    if (emailResult === null) {
                                         results.errors++
                                     } else {
                                         if (notifChunk[idx]) {
                                             successfulNotifs.push(notifChunk[idx])
-                                            switch (notifChunk[idx].type) {
-                                                case 'BIRTHDAY': results.birthdayWishes++; break;
-                                                case 'EXPIRY_REMINDER': results.expiryReminders++; break;
-                                                case 'PAYMENT_OVERDUE': results.overdueReminders++; break;
-                                            }
                                         }
                                     }
                                 })
                                 if (successfulNotifs.length > 0) {
                                     try {
                                         await prisma.notification.createMany({ data: successfulNotifs })
+                                        successfulNotifs.forEach(notif => {
+                                            switch (notif.type) {
+                                                case 'BIRTHDAY': results.birthdayWishes++; break;
+                                                case 'EXPIRY_REMINDER': results.expiryReminders++; break;
+                                                case 'PAYMENT_OVERDUE': results.overdueReminders++; break;
+                                            }
+                                        });
                                     } catch (notifErr) {
                                         console.error(`[Cron] Database insertion failed for notifications:`, notifErr)
                                         results.errors += successfulNotifs.length

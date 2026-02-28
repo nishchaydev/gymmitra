@@ -11,7 +11,9 @@ export type AuditAction =
     | 'PROCESS_SALE'
     | 'ONBOARDING_COMPLETE'
     | 'PLAN_UPGRADE'
-    | 'CHECKIN_MEMBER';
+    | 'CHECKIN_MEMBER'
+    | 'UPDATE_PRODUCT'
+    | 'DELETE_PRODUCT';
 
 export interface AuditLogParams {
     gymId: string;

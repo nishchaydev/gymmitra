@@ -17,12 +17,8 @@ export function withAuth<TArgs extends any[], TReturn>(
 ) {
     return async (...args: TArgs): Promise<TReturn> => {
         // 1. Strictly derive Context (and gymId) from the Server Session
-        let context;
-        try {
-            context = await getAuthGym()
-        } catch (e) {
-            console.error('[withAuth] Error resolving gym context', e)
-        }
+        // Only null return means unauthenticated. Real errors (network, DB) are rethrown.
+        const context = await getAuthGym()
 
         if (!context) {
             throw new Error('Unauthorized: Authentication required.')

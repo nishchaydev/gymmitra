@@ -105,7 +105,7 @@ export default async function MembersPage({
     }
 
     let members = isDemo
-        ? allDemoMembers.slice(skip, skip + take)
+        ? [...allDemoMembers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(skip, skip + take)
         : await prisma.member.findMany({
             where: whereClause,
             orderBy: { createdAt: 'desc' },

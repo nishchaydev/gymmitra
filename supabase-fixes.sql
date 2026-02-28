@@ -80,5 +80,5 @@ ALTER TABLE "RegistrationCode" ENABLE ROW LEVEL SECURITY;
 -- Registration codes are pre-generated, so we only allow reading/updating them if they belong to the gym or are unassigned
 DROP POLICY IF EXISTS "Gyms can view their registration codes" ON "RegistrationCode";
 DROP POLICY IF EXISTS "Gyms can update their registration codes" ON "RegistrationCode";
-CREATE POLICY "Gyms can view their registration codes" ON "RegistrationCode" FOR SELECT USING (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text) OR "isActive" = true);
+CREATE POLICY "Gyms can view their registration codes" ON "RegistrationCode" FOR SELECT USING (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text) OR id NOT IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "registrationCodeId" IS NOT NULL));
 CREATE POLICY "Gyms can update their registration codes" ON "RegistrationCode" FOR UPDATE USING (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text)) WITH CHECK (id IN (SELECT "registrationCodeId" FROM "GymProfile" WHERE "userId" = (select auth.uid())::text));

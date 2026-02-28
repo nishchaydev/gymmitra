@@ -63,7 +63,9 @@ export default function MemberForm({ member }: MemberFormProps) {
             name: member.name,
             phone: member.phone,
             email: member.email || "",
-            dateOfBirth: member.dateOfBirth instanceof Date ? member.dateOfBirth.toISOString().split('T')[0] : (member.dateOfBirth || ""),
+            dateOfBirth: member.dateOfBirth instanceof Date
+                ? `${member.dateOfBirth.getFullYear()}-${String(member.dateOfBirth.getMonth() + 1).padStart(2, '0')}-${String(member.dateOfBirth.getDate()).padStart(2, '0')}`
+                : (member.dateOfBirth || ""),
             emergencyName: member.emergencyName || "",
             emergencyPhone: member.emergencyPhone || "",
             emergencyRelation: member.emergencyRelation || "",

@@ -57,8 +57,11 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             const subtotalAfterDiscountCents = Math.max(0, subtotalCents - discountCents)
 
             // Calculate Tax (Applied on the discounted subtotal)
+            // taxAmount takes precedence over taxPercentage if explicitly provided by the caller
             const providedTaxPercentage = validatedData.taxPercentage ?? taxPercentage;
-            const taxAmountCents = Math.round((subtotalAfterDiscountCents * providedTaxPercentage) / 100)
+            const taxAmountCents = validatedData.taxAmount != null && validatedData.taxAmount >= 0
+                ? Math.round(validatedData.taxAmount * 100)
+                : Math.round((subtotalAfterDiscountCents * providedTaxPercentage) / 100)
             const totalCents = subtotalAfterDiscountCents + taxAmountCents
 
             const shareToken = crypto.randomBytes(32).toString('hex')

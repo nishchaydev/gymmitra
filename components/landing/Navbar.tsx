@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Dumbbell, Menu } from "lucide-react"
+import { Dumbbell, Menu, X } from "lucide-react"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
@@ -111,7 +111,7 @@ export function Navbar() {
             <div className={cn("fixed top-0 right-0 h-full w-[280px] bg-white z-50 shadow-2xl transition-transform duration-300 transform md:hidden flex flex-col", isMobileMenuOpen ? "translate-x-0" : "translate-x-full")}>
                 <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                     <span className="font-display font-bold text-xl text-primary">GymMitra</span>
-                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white rounded-full shadow-sm" aria-label="Close mobile menu"><Menu className="w-5 h-5 text-slate-600" /></button>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white rounded-full shadow-sm" aria-label="Close mobile menu"><X className="w-5 h-5 text-slate-600" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
                     <nav className="flex flex-col gap-4 text-sm font-bold text-slate-700">

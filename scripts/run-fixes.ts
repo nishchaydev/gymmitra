@@ -11,8 +11,10 @@ async function main() {
 
         console.log("Executing SQL statements...")
 
-        // Prisma requires raw queries to be executed somewhat carefully
-        // We can't just pass the whole file with multiple statements easily using $executeRawUnsafe always
+        // Splitting by ';' is a simplified approach.
+        // IMPORTANT CONSTRAINT: The SQL file must NOT contain semicolons inside
+        // strings, dollar-quoted blocks, or PL/pgSQL bodies. For complex SQL,
+        // use a dedicated migration tool (e.g., flyway, Supabase CLI, or pg client.query).
         const statements = sqlFile.split(';').map(s => s.trim()).filter(Boolean);
         for (const statement of statements) {
             await prisma.$executeRawUnsafe(statement);

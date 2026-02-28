@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
             rl = await guardRateLimit(100, `${auth.userId}:schedule:get`)
         } catch (err) {
             console.error('[Schedule GET] Rate limit infra failure:', err)
+            return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 })
         }
         if (rl) return rl
 
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
             rl = await guardRateLimit(20, `${auth.userId}:schedule:post`)
         } catch (err) {
             console.error('[Schedule POST] Rate limit infra failure:', err)
+            return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 })
         }
         if (rl) return rl
 

@@ -26,6 +26,7 @@ type Props = {
 
 function getDaysUntil(dateStr: string, diffDaysFallback?: number): string | null {
     if (diffDaysFallback !== undefined && !isNaN(diffDaysFallback)) {
+        if (diffDaysFallback < 0) return null
         if (diffDaysFallback === 0) return 'Today!'
         if (diffDaysFallback === 1) return 'Tomorrow'
         return `In ${diffDaysFallback} days`
@@ -80,7 +81,7 @@ export async function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: 
                             <div key={idx} className="flex items-center">
                                 <Avatar className="h-9 w-9">
                                     {birthday.img && <AvatarImage src={birthday.img} alt={birthday.name} />}
-                                    <AvatarFallback>{birthday.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}</AvatarFallback>
+                                    <AvatarFallback>{birthday.name.trim().split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2)}</AvatarFallback>
                                 </Avatar>
                                 <div className="ml-4 space-y-1">
                                     <p className="text-sm font-medium leading-none">{birthday.name}</p>

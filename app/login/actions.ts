@@ -91,6 +91,14 @@ export async function signup(formData: FormData) {
                 throw new Error("Registration Code invalidated during sign-up. Please contact support.")
             }
 
+            // Also validate isActive and expiry atomically inside the transaction
+            if (!regCode.isActive) {
+                throw new Error("Registration Code invalidated during sign-up. Please contact support.")
+            }
+            if (regCode.expiresAt && regCode.expiresAt < new Date()) {
+                throw new Error("Registration Code invalidated during sign-up. Please contact support.")
+            }
+
             // 3. Atomic increment with Optimistic Locking
             const updateResult = await tx.registrationCode.updateMany({
                 where: {
@@ -137,8 +145,8 @@ export async function signup(formData: FormData) {
                 targetGymIds = [newGym.id];
             }
 
-            // Complete the code link (assuming it links to the primary gym)
-            if (targetGymIds[0]) {
+            // Only link gym if a new gym was created (not staff signup path)
+            if (existingStaff.length === 0 && targetGymIds[0]) {
                 await tx.gymProfile.update({
                     where: { id: targetGymIds[0] },
                     data: { registrationCodeId: regCode.id }
@@ -149,6 +157,14 @@ export async function signup(formData: FormData) {
         });
     } catch (error: any) {
         console.error('Registration linked failed:', error.message);
+        // Clean up orphaned Supabase auth user to prevent dangling accounts
+        if (authData?.user?.id) {
+            try {
+                await supabase.auth.admin.deleteUser(authData.user.id)
+            } catch (cleanupErr) {
+                console.error('[Login] Failed to cleanup orphaned Supabase user:', cleanupErr)
+            }
+        }
         // Sanitize generic errors escaping to UI
         return redirect(`/login?view=register&message=${encodeURIComponent("Could not complete registration. Ensure the code is valid.")}`);
     }

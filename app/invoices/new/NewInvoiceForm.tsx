@@ -282,7 +282,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 items,
                                                 discount,
                                                 taxPercentage: clampedTaxPercentage,
-                                                taxAmount: taxAmount
+                                                // taxAmount is intentionally omitted: server recomputes from taxPercentage
                                             }) as { success: boolean, id?: string, error?: string }
 
                                             if (result?.error) {
