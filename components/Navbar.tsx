@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 import { Button } from "./ui/button"
-import { LogOut, User as UserIcon, Building2, Menu, X } from "lucide-react"
+import { LogOut, User as UserIcon, Dumbbell, Menu, X } from "lucide-react"
 
 export function Navbar() {
     const pathname = usePathname()
@@ -87,7 +87,7 @@ export function Navbar() {
         <nav className="border-b bg-white shadow-sm sticky top-0 z-[100]">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
                 <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary font-display">
-                    <Building2 className="h-6 w-6" />
+                    <Dumbbell className="h-6 w-6" />
                     <span>GymMitra</span>
                 </Link>
 
