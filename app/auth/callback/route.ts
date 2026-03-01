@@ -17,7 +17,7 @@ export async function GET(request: Request) {
             const { prisma } = await import('@/lib/prisma')
             const gym = await prisma.gymProfile.findFirst({
                 where: { userId: user.id }
-            })
+            }) as any
 
             if (gym?.slug) {
                 return NextResponse.redirect(`${baseUrl}/${gym.slug}/dashboard`)

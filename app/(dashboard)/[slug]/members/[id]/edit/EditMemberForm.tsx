@@ -25,7 +25,7 @@ interface Member {
     notes?: string | null
 }
 
-export default function EditMemberForm({ member }: { member: Member }) {
+export default function EditMemberForm({ member, gymSlug }: { member: Member, gymSlug: string }) {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
     const safeDate = member.dateOfBirth ? new Date(member.dateOfBirth) : null
@@ -78,7 +78,7 @@ export default function EditMemberForm({ member }: { member: Member }) {
             }
 
             toast.success('Member profile updated!')
-            router.push(`/members/${member.id}`)
+            router.push(`/${gymSlug}/members/${member.id}`)
             router.refresh()
         } catch (err: any) {
             toast.error(err.message)

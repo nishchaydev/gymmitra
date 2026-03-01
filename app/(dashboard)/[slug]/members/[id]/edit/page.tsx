@@ -6,8 +6,8 @@ import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
-export default async function EditMemberPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
+export default async function EditMemberPage({ params }: { params: Promise<{ id: string, slug: string }> }) {
+    const { id, slug } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -24,7 +24,7 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
     return (
         <div className="container mx-auto p-8 max-w-2xl">
             <div className="flex items-center gap-4 mb-8">
-                <Link href={`/members/${id}`}>
+                <Link href={`/${slug}/members/${id}`}>
                     <Button variant="ghost" size="icon"><ChevronLeft className="h-4 w-4" /></Button>
                 </Link>
                 <div>
@@ -32,7 +32,7 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
                     <p className="text-muted-foreground">Update {member.name}&apos;s profile</p>
                 </div>
             </div>
-            <EditMemberForm member={member as any} />
+            <EditMemberForm member={member as any} gymSlug={slug} />
         </div>
     )
 }

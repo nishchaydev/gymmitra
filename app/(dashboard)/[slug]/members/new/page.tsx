@@ -1,14 +1,20 @@
 import MemberForm from "@/components/members/MemberForm"
+import { createMember } from "../actions"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 
-export default function NewMemberPage() {
+export default async function NewMemberPage({
+    params,
+}: {
+    params: Promise<{ slug: string }>
+}) {
+    const { slug } = await params
     return (
         <div className="container mx-auto p-8">
             <div className="flex items-center gap-4 mb-8">
-                <Link href="/members">
-                    <Button variant="ghost" size="icon">
+                <Link href={`/${slug}/members`}>
+                    <Button variant="ghost" size="icon" aria-label="Back to Members List">
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
                 </Link>
@@ -16,7 +22,7 @@ export default function NewMemberPage() {
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-sm border">
-                <MemberForm />
+                <MemberForm gymSlug={slug} onSubmitAction={createMember} />
             </div>
         </div>
     )

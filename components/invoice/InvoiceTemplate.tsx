@@ -33,6 +33,8 @@ interface InvoiceTemplateProps {
     }
     items: InvoiceItem[]
     subtotal: number
+    taxPercentage?: number
+    taxAmount?: number
     discount: number
     total: number
 }
@@ -45,6 +47,8 @@ export function InvoiceTemplate({
     memberInfo,
     items,
     subtotal,
+    taxPercentage,
+    taxAmount,
     discount,
     total
 }: InvoiceTemplateProps) {
@@ -157,6 +161,12 @@ export function InvoiceTemplate({
                         <div className="flex justify-between text-sm py-2">
                             <span className="text-slate-500 font-medium">Discount</span>
                             <span className="text-emerald-600 font-bold">-₹{discount.toLocaleString('en-IN')}</span>
+                        </div>
+                    )}
+                    {(taxAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm py-2">
+                            <span className="text-slate-500 font-medium">GST ({taxPercentage ?? 18}%)</span>
+                            <span className="text-slate-900 font-bold">₹{taxAmount?.toLocaleString('en-IN')}</span>
                         </div>
                     )}
                     <div className="flex justify-between items-center py-4 border-t-2 border-slate-900">

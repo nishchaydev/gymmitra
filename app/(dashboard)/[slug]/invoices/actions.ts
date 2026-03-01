@@ -30,6 +30,9 @@ const createInvoiceSchema = z.object({
     taxPercentage: z.number().min(0).max(100).optional(),
     taxAmount: z.number().min(0).optional(),
     idempotencyKey: z.string().optional(),
+}).refine(data => data.memberId || data.walkInName, {
+    message: "Customer identification is required (Member or Walk-in Name)",
+    path: ["walkInName"]
 })
 
 // Secure Server Action wrapped in withAuth
@@ -122,8 +125,9 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             })
         })
 
-        revalidatePath("/dashboard")
-        revalidatePath("/invoices")
+        const slug = (gym as any).slug || 'gym'
+        revalidatePath(`/${slug}/dashboard`)
+        revalidatePath(`/${slug}/invoices`)
 
         await recordAuditLog({
             gymId: gym.id,
@@ -138,14 +142,17 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
         return { success: true, id: invoice.id }
     } catch (error: any) {
         console.error("Invoice Action Error:", error)
-        if (error.code === 'P2002' && validatedData.idempotencyKey) {
-            const existingInvoice = await prisma.invoice.findFirst({
-                where: {
-                    idempotencyKey: validatedData.idempotencyKey,
-                    gymId: gym.id
-                }
-            })
-            if (existingInvoice) return { success: true, id: existingInvoice.id }
+        if (error.code === 'P2002') {
+            const target = error.meta?.target
+            if (Array.isArray(target) && target.includes('idempotencyKey') && validatedData.idempotencyKey) {
+                const existingInvoice = await prisma.invoice.findFirst({
+                    where: {
+                        idempotencyKey: validatedData.idempotencyKey,
+                        gymId: gym.id
+                    }
+                })
+                if (existingInvoice) return { success: true, id: existingInvoice.id }
+            }
         }
         return { error: error instanceof Error ? error.message : "Failed to create invoice" }
     }

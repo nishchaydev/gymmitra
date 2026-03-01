@@ -20,9 +20,9 @@ import { redirect } from 'next/navigation'
 export default async function MemberDetailPage({
     params,
 }: {
-    params: Promise<{ id: string }>
+    params: Promise<{ slug: string; id: string }>
 }) {
-    const { id } = await params
+    const { slug, id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
@@ -97,7 +97,7 @@ export default async function MemberDetailPage({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" asChild aria-label="Back to Members List">
-                        <Link href="/members">
+                        <Link href={`/${slug}/members`}>
                             <ChevronLeft className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -109,7 +109,7 @@ export default async function MemberDetailPage({
                 <div className="flex gap-2">
                     <CheckInButton memberId={member.id} />
                     <Button variant="outline" asChild>
-                        <Link href={`/members/${member.id}/edit`}>
+                        <Link href={`/${slug}/members/${member.id}/edit`}>
                             <Edit className="mr-2 h-4 w-4" /> Edit Profile
                         </Link>
                     </Button>

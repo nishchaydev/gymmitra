@@ -62,11 +62,11 @@ export async function POST(request: NextRequest) {
         })
 
         if (!member) {
-            return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+            return NextResponse.json({ error: 'Member not found in this gym. Please check the ID.' }, { status: 404 })
         }
 
         if (member.status !== 'ACTIVE') {
-            return NextResponse.json({ error: 'Member is not active' }, { status: 400 })
+            return NextResponse.json({ error: `Check-in denied. Member status is ${member.status}.` }, { status: 400 })
         }
 
         // UTC naive logic removed. Shift to Gym's physical timezone.
@@ -99,6 +99,9 @@ export async function POST(request: NextRequest) {
                 date: now,
                 checkInTime: now,
                 localDateString: localDateString
+            },
+            include: {
+                member: true // Include member details in the response
             }
         })
 
@@ -121,7 +124,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
         }
         console.error('Error recording attendance:', error)
-        return NextResponse.json({ error: 'Failed to record attendance' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to record attendance. Please try again.' }, { status: 500 })
     }
 }
 

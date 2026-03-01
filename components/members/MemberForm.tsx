@@ -18,7 +18,7 @@ import { useState, useRef, useEffect } from "react"
 import { toast } from "sonner"
 import { SuccessCheckmark } from "@/components/ui/success-animation"
 
-import { createMember } from "@/app/members/actions"
+// Import removed: Server Action is now passed as a prop or called from the parent page due to dynamic routing
 
 const memberFormSchema = z.object({
     name: z.string().min(2, {
@@ -41,9 +41,11 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 // Define MemberFormProps type
 interface MemberFormProps {
     member?: (Partial<Omit<MemberFormValues, 'dateOfBirth'>> & { dateOfBirth?: Date | string; id?: string }) | null;
+    gymSlug: string;
+    onSubmitAction: (data: any) => Promise<{ success?: boolean, error?: string, id?: string }>;
 }
 
-export default function MemberForm({ member }: MemberFormProps) {
+export default function MemberForm({ member, gymSlug, onSubmitAction }: MemberFormProps) {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
@@ -83,7 +85,7 @@ export default function MemberForm({ member }: MemberFormProps) {
     async function onSubmit(data: MemberFormValues) {
         setIsSubmitting(true)
         try {
-            const result = await createMember(data as any) as { success?: boolean, error?: string, id?: string }
+            const result = await onSubmitAction(data as any)
 
             if (result?.error) {
                 toast.error(result.error)
@@ -98,7 +100,7 @@ export default function MemberForm({ member }: MemberFormProps) {
                 })
 
                 submitTimeoutRef.current = setTimeout(() => {
-                    router.push("/members")
+                    router.push(`/${gymSlug}/members`)
                 }, 2000)
             }
         } catch {

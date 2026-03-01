@@ -45,7 +45,7 @@ export async function login(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    const finalSlug = gym?.slug || (isTrainerProfile as any)?.gym?.slug || 'gym'
+    const finalSlug = (gym as any)?.slug || (isTrainerProfile as any)?.gym?.slug || 'gym'
     redirect(`/${finalSlug}/dashboard`)
 }
 
@@ -146,7 +146,7 @@ export async function signup(formData: FormData) {
                 });
                 targetGymIds = existingStaff.map(s => s.gymId);
             } else {
-                const baseSlug = (formData.get('gym_name') as string)?.toLowerCase().trim().replace(/\s+/g, '-') || email.split('@')[0].replace(/[^a-z0-9]/g, '-');
+                const baseSlug = ((formData.get('gym_name') as string)?.toLowerCase().trim().replace(/[^a-z0-9]/g, '-') || email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-') || 'gym').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'gym';
                 const newGym = await tx.gymProfile.create({
                     data: {
                         name: "My Gym",
@@ -235,7 +235,7 @@ export async function signup(formData: FormData) {
         include: { gym: true }
     }) : null
 
-    const finalSlug = userGym?.slug || (staffGym as any)?.gym?.slug || 'gym'
+    const finalSlug = (userGym as any)?.slug || (staffGym as any)?.gym?.slug || 'gym'
     return redirect(`/${finalSlug}/dashboard`)
 }
 
@@ -249,5 +249,5 @@ export async function demoLogin() {
     })
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect('/dashboard') // This will trigger the global redirect in app/dashboard/page.tsx
 }

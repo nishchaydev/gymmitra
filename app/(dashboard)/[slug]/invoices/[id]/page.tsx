@@ -5,8 +5,8 @@ import { redirect, notFound } from "next/navigation"
 import { SHOWCASE_STATS } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
 
-export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
+export default async function InvoiceDetailPage({ params }: { params: Promise<{ slug: string; id: string }> }) {
+    const { slug, id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -73,6 +73,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 paymentStatus: true,
                 paymentMethod: true,
                 subtotal: true,
+                taxAmount: true,
+                taxPercentage: true,
                 discount: true,
                 total: true,
                 shareToken: true,
@@ -119,8 +121,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
         if (!dbInvoice) notFound()
 
-        if ((dbInvoice as any).gym.userId !== user?.id) {
-            redirect("/dashboard")
+        if (!isDemoMode && (dbInvoice as any).gym.userId !== user?.id) {
+            redirect(`/${slug}/dashboard`)
         }
 
         invoice = dbInvoice as any

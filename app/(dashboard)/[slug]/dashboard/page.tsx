@@ -25,7 +25,12 @@ export const metadata: Metadata = {
     description: "Manage your gym's members, revenue, and attendance with ease.",
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+    params,
+}: {
+    params: Promise<{ slug: string }>
+}) {
+    const { slug } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
@@ -64,7 +69,9 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p>We could not load your profile at this time. Please check back in a few minutes.</p>
-                        <Button className="w-full" onClick={() => window.location.assign('/dashboard')}>Reload Dashboard</Button>
+                        <Link href={`/${slug}/dashboard`} className="w-full">
+                            <Button className="w-full">Reload Dashboard</Button>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
@@ -191,8 +198,6 @@ export default async function DashboardPage() {
         }
 
         // Process Birthdays (Optimization: JS filtering for now, but in one query)
-        const todayMonth = today.getMonth()
-        const todayDate = today.getDate()
         upcomingBirthdays = birthdays
             .map((m: any) => {
                 const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString();
@@ -243,12 +248,12 @@ export default async function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <Link href="/members/new">
+                    <Link href={`/${slug}/members/new`}>
                         <Button className="bg-primary hover:bg-primary-600 shadow-md w-full md:w-auto">
                             <UserPlus className="mr-2 h-4 w-4" /> Add Member
                         </Button>
                     </Link>
-                    <Link href="/products/new">
+                    <Link href={`/${slug}/products/new`}>
                         <Button variant="secondary" className="shadow-sm w-full md:w-auto">
                             <ShoppingBag className="mr-2 h-4 w-4" /> New Product
                         </Button>
@@ -319,7 +324,7 @@ export default async function DashboardPage() {
                             <CardContent>
                                 <div className="space-y-1">
                                     <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.productSalesCount}</div>
-                                    <div className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest uppercase tracking-widest">
+                                    <div className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">
                                         All-time items
                                     </div>
                                 </div>
@@ -386,12 +391,12 @@ export default async function DashboardPage() {
                                 <CardDescription>Most frequent operations</CardDescription>
                             </CardHeader>
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                                <Link href="/members/new" className="w-full">
+                                <Link href={`/${slug}/members/new`} className="w-full">
                                     <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
                                         <UserPlus className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add New Member
                                     </Button>
                                 </Link>
-                                <Link href="/products/new" className="w-full">
+                                <Link href={`/${slug}/products/new`} className="w-full">
                                     <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
                                         <ShoppingBag className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add Inventory
                                     </Button>

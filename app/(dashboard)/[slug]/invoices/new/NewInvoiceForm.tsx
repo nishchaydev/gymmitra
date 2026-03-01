@@ -10,27 +10,32 @@ import { Plus, Trash2, ReceiptText, User, ShoppingBag, CreditCard } from 'lucide
 import { createInvoice } from '../actions'
 import { SuccessCheckmark } from '@/components/ui/success-animation'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 export default function NewInvoiceForm({ members, taxPercentage = 18 }: { members: any[], taxPercentage?: number }) {
     const router = useRouter()
+    const params = useParams()
+    const slug = params?.slug as string || 'gym'
+
     const [selectedMember, setSelectedMember] = useState<string>('')
     const [walkInName, setWalkInName] = useState('')
     const [walkInPhone, setWalkInPhone] = useState('')
     const [walkInEmail, setWalkInEmail] = useState('')
     const [walkInAddress, setWalkInAddress] = useState('')
-    const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([{ description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
+    const [items, setItems] = useState<{ id: string, description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([
+        { id: typeof window !== 'undefined' ? crypto.randomUUID() : 'initial', description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }
+    ])
     const [discount, setDiscount] = useState(0)
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
 
-    const addItem = () => setItems([...items, { description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
-    const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
-    const updateItem = (index: number, field: string, value: string | number) => {
-        const newItems = [...items]
-        newItems[index] = { ...newItems[index], [field]: value }
-        setItems(newItems)
+    const addItem = () => setItems([...items, { id: crypto.randomUUID(), description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
+    const removeItem = (id: string) => setItems(items.filter((item) => item.id !== id))
+    const updateItem = (id: string, field: string, value: string | number) => {
+        setItems(items.map(item =>
+            item.id === id ? { ...item, [field]: value } : item
+        ))
     }
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
@@ -165,14 +170,14 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                 </Button>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                {items.map((item, index) => (
-                                    <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 bg-slate-950/50 rounded-2xl border border-slate-800/50 group">
+                                {items.map((item) => (
+                                    <div key={item.id} className="grid grid-cols-12 gap-4 items-end p-4 bg-slate-950/50 rounded-2xl border border-slate-800/50 group">
                                         <div className="col-span-12 md:col-span-5 space-y-1.5">
                                             <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Description</Label>
                                             <Input
                                                 placeholder="e.g., Monthly Membership"
                                                 value={item.description}
-                                                onChange={(e) => updateItem(index, 'description', e.target.value)}
+                                                onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                                                 className="bg-slate-900 border-slate-700 text-white h-11"
                                             />
                                         </div>
@@ -181,7 +186,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                             <Input
                                                 type="number"
                                                 value={item.quantity}
-                                                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
+                                                onChange={(e) => updateItem(item.id, 'quantity', Math.max(1, parseInt(e.target.value) || 0))}
                                                 className="bg-slate-900 border-slate-700 text-white h-11"
                                             />
                                         </div>
@@ -192,7 +197,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 <Input
                                                     type="number"
                                                     value={item.unitPrice}
-                                                    onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => updateItem(item.id, 'unitPrice', Math.max(0, parseFloat(e.target.value) || 0))}
                                                     className="bg-slate-900 border-slate-700 text-white pl-8 h-11"
                                                 />
                                             </div>
@@ -201,7 +206,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => removeItem(index)}
+                                                onClick={() => removeItem(item.id)}
                                                 className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-11 w-11 rounded-xl"
                                                 disabled={items.length === 1}
                                             >
@@ -230,7 +235,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                         <Input
                                             type="number"
                                             value={discount}
-                                            onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
                                             className="bg-slate-950 border-slate-700 text-white h-10"
                                         />
                                     </div>
@@ -290,11 +295,11 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 return
                                             }
 
-                                            if (result?.success && result.id) {
+                                            if (result?.success) {
                                                 setSuccess(true)
                                                 toast.success("Invoice generated successfully")
                                                 setTimeout(() => {
-                                                    router.push(`/invoices/${result.id}`)
+                                                    router.push(`/${slug}/invoices/${result.id || ''}`)
                                                 }, 2000)
                                             }
 

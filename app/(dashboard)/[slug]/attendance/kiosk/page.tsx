@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Scanner } from "@yudiel/react-qr-scanner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,20 +17,23 @@ export default function KioskPage() {
 
     const handleCheckIn = async (id: string) => {
         if (!id) return
+        const trimmedId = id.trim()
+        if (!trimmedId) return
         setLoading(true)
         try {
             const response = await fetch("/api/attendance", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ memberId: id }),
+                body: JSON.stringify({ memberId: trimmedId }),
             })
             const data = await response.json()
             if (!response.ok) throw new Error(data.error || "Failed to check in")
 
-            toast.success("Welcome! Check-in successful.")
+            const memberName = data.member?.name || "Member"
+            toast.success(`Welcome ${memberName}! Check-in successful.`)
             setLastCheckIn({
-                name: "Member",
-                time: new Date().toLocaleTimeString()
+                name: memberName,
+                time: data.checkInTime ? new Date(data.checkInTime).toLocaleTimeString() : new Date().toLocaleTimeString()
             })
             setMemberId("")
             setShowScanner(false)
@@ -71,9 +74,12 @@ export default function KioskPage() {
 
     // Auto-sync indicator
     const [isOnline, setIsOnline] = useState(true)
-    useState(() => {
+    useEffect(() => {
         if (typeof window !== 'undefined') {
-            const handleOnline = () => { setIsOnline(true); import('@/lib/offlineSync').then(m => m.syncOfflineAttendance()); }
+            const handleOnline = () => {
+                setIsOnline(true);
+                import('@/lib/offlineSync').then(m => m.syncOfflineAttendance());
+            }
             const handleOffline = () => { setIsOnline(false); }
             window.addEventListener('online', handleOnline)
             window.addEventListener('offline', handleOffline)
@@ -82,7 +88,7 @@ export default function KioskPage() {
                 window.removeEventListener('offline', handleOffline)
             }
         }
-    })
+    }, [])
 
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">

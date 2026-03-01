@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -41,18 +41,15 @@ const productFormSchema = z.object({
     lowStockAlert: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), {
         message: "Low stock alert must be a number",
     }),
-    gymId: z.string().min(1, "Gym ID is required"),
 })
 
 type ProductFormValues = z.infer<typeof productFormSchema>
 
 export default function NewProductPage() {
     const router = useRouter()
+    const params = useParams()
+    const slug = params?.slug as string || 'gym'
     const [loading, setLoading] = useState(false)
-
-    // In a real app, this would come from the auth context
-    // For now we hardcode or fetch a default gym
-    const defaultGymId = "default-gym-id" // Replace with actual logic or fetching
 
     const form = useForm<ProductFormValues>({
         resolver: zodResolver(productFormSchema),
@@ -62,8 +59,7 @@ export default function NewProductPage() {
             description: "",
             price: "",
             stock: "",
-            lowStockAlert: "10",
-            gymId: defaultGymId,
+            lowStockAlert: "10"
         },
     })
 
@@ -88,7 +84,7 @@ export default function NewProductPage() {
             }
 
             toast.success("Product created successfully")
-            router.push("/products")
+            router.push(`/${slug}/products`)
             router.refresh()
         } catch (error) {
             toast.error("Something went wrong", {
@@ -219,7 +215,7 @@ export default function NewProductPage() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => router.back()}
+                                    onClick={() => router.push(`/${slug}/products`)}
                                     disabled={loading}
                                 >
                                     Cancel

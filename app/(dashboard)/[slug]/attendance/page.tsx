@@ -9,7 +9,12 @@ import { SHOWCASE_MEMBERS } from "@/lib/showcase-data"
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export default async function AttendancePage() {
+export default async function AttendancePage({
+    params,
+}: {
+    params: Promise<{ slug: string }>
+}) {
+    const { slug } = await params
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -67,7 +72,7 @@ export default async function AttendancePage() {
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <div className="flex items-center gap-2">
-                    <Link href="/dashboard">
+                    <Link href={`/${slug}/dashboard`}>
                         <Button variant="ghost" size="icon">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
@@ -75,7 +80,7 @@ export default async function AttendancePage() {
                     <h2 className="text-3xl font-bold tracking-tight">Attendance</h2>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <Link href="/attendance/kiosk">
+                    <Link href={`/${slug}/attendance/kiosk`}>
                         <Button>
                             <MonitorPlay className="mr-2 h-4 w-4" /> Launch Kiosk Mode
                         </Button>
@@ -135,6 +140,6 @@ export default async function AttendancePage() {
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </div >
     )
 }

@@ -27,14 +27,17 @@ import { redirect } from 'next/navigation'
 // ...
 
 export default async function ProductsPage({
+    params,
     searchParams,
 }: {
+    params: Promise<{ slug: string }>
     searchParams: Promise<{ q?: string; category?: string; lowStock?: string }>
 }) {
-    const params = await searchParams
-    const query = params.q || ''
-    const category = params.category
-    const showLowStock = params.lowStock === 'true'
+    const { slug } = await params
+    const sParams = await searchParams
+    const query = sParams.q || ''
+    const category = sParams.category
+    const showLowStock = sParams.lowStock === 'true'
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -108,7 +111,7 @@ export default async function ProductsPage({
                     <h1 className="text-3xl font-bold">Products & Inventory</h1>
                     <p className="text-muted-foreground">Manage gym merchandise and supplements</p>
                 </div>
-                <Link href="/products/new">
+                <Link href={`/${slug}/products/new`}>
                     <Button>
                         <Plus className="mr-2 h-4 w-4" /> Add Product
                     </Button>
@@ -174,7 +177,7 @@ export default async function ProductsPage({
                                                 title="No products yet"
                                                 description="Add memberships or retail items to start selling."
                                                 actionLabel="Add Product"
-                                                actionHref="/products/new"
+                                                actionHref={`/${slug}/products/new`}
                                                 className="border-0 bg-transparent rounded-none"
                                             />
                                         </TableCell>

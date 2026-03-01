@@ -67,12 +67,14 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
     } catch (error: any) {
         console.error('Error creating member:', error)
         if (error.code === 'P2002') {
-            const target = error.meta?.target || []
-            if (target.includes('email')) {
-                return { error: 'Member with this email already exists.' }
-            }
-            if (target.includes('phone')) {
-                return { error: 'Member with this phone number already exists.' }
+            const target = error.meta?.target
+            if (Array.isArray(target)) {
+                if (target.includes('email')) {
+                    return { error: 'Member with this email already exists.' }
+                }
+                if (target.includes('phone')) {
+                    return { error: 'Member with this phone number already exists.' }
+                }
             }
             return { error: 'Member with the same unique field already exists.' }
         }
@@ -88,7 +90,8 @@ export const searchMembers = withAuth(async (_context, formData: FormData) => {
         params.set('q', query.trim())
     }
 
-    redirect(`/members?${params.toString()}`)
+    const slug = _context.gym.slug
+    redirect(`/${slug}/members?${params.toString()}`)
 })
 
 export const filterByStatus = withAuth(async (_context, status: string) => {
@@ -98,5 +101,6 @@ export const filterByStatus = withAuth(async (_context, status: string) => {
         params.set('status', status)
     }
 
-    redirect(`/members?${params.toString()}`)
+    const slug = _context.gym.slug
+    redirect(`/${slug}/members?${params.toString()}`)
 })

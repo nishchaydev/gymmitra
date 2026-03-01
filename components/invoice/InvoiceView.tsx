@@ -305,6 +305,8 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                             total: Number(item.amount),
                         }))}
                         subtotal={Number(invoice.subtotal)}
+                        taxPercentage={Number(invoice.taxPercentage || 0)}
+                        taxAmount={Number(invoice.taxAmount || 0)}
                         discount={Number(invoice.discount || 0)}
                         total={Number(invoice.total)}
                     />
