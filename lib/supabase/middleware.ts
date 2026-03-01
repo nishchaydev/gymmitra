@@ -53,8 +53,8 @@ export async function updateSession(request: NextRequest) {
         pathname.startsWith('/api/webhooks') // External webhooks handle their own auth
 
     if (isPublicRoute) {
-        // If user is logged in, but tries to access login page, redirect to dashboard
-        if (user && pathname.startsWith('/login')) {
+        // If user is logged in, but tries to access login page or landing page, redirect to dashboard
+        if (user && (pathname.startsWith('/login') || pathname === '/')) {
             const url = request.nextUrl.clone()
             url.pathname = '/dashboard'
             return NextResponse.redirect(url)

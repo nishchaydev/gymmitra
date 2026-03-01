@@ -11,11 +11,21 @@ export async function GET(request: Request) {
 
     if (code) {
         const supabase = await createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) {
+        const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (!error && user) {
+            const { prisma } = await import('@/lib/prisma')
+            const gym = await prisma.gymProfile.findFirst({
+                where: { userId: user.id }
+            })
+
+            if (gym?.slug) {
+                return NextResponse.redirect(`${baseUrl}/${gym.slug}/dashboard`)
+            }
+
             return NextResponse.redirect(`${baseUrl}${next}`)
         }
-        console.error('[Auth Callback] Code exchange failed:', error.message)
+        console.error('[Auth Callback] Code exchange failed:', error?.message)
     } else {
         console.error('[Auth Callback] No code provided in search params')
     }

@@ -4,6 +4,7 @@ import React, { useRef } from 'react'
 import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Share2, MessageCircle } from 'lucide-react'
+import { getInvoiceWhatsAppLink } from '@/lib/whatsapp'
 
 interface InvoiceViewProps {
     invoice: any
@@ -226,48 +227,32 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
             )
             return
         }
-        const url = `${getBaseUrl()}/invoice/${invoice.shareToken}`
+        const url = `${getBaseUrl()}/${invoice.gym?.slug || 'gym'}/invoice/${invoice.shareToken}`
         navigator.clipboard.writeText(url)
         import('sonner').then(({ toast }) => toast.success('Public link copied to clipboard!'))
     }
 
     const shareOnWhatsApp = () => {
-        const gymName = invoice.gym.businessName || invoice.gym.name
-        const customerName = invoice.member?.name || invoice.walkInName || 'Customer'
         const phone = invoice.member?.phone || invoice.walkInPhone || ''
+        const memberName = invoice.member?.name || invoice.walkInName || 'Customer'
+        const gymName = invoice.gym.businessName || invoice.gym.name
+        const amount = Number(invoice.total)
+        const shareToken = invoice.shareToken || ''
+        const gymSlug = invoice.gym?.slug || 'gym'
 
-        // Strip all non-digits, then remove leading 0 (e.g. 06261854014 → 6261854014)
-        let targetPhone = phone.replace(/\D/g, '')
-        if (targetPhone.startsWith('0')) {
-            targetPhone = targetPhone.slice(1)
-        }
-        // If 10 digits, add India country code; if already has country code, use as-is
-        if (targetPhone.length === 10) {
-            targetPhone = `91${targetPhone}`
-        }
+        const whatsappLink = getInvoiceWhatsAppLink(
+            phone,
+            memberName,
+            gymName,
+            amount,
+            shareToken,
+            gymSlug
+        )
 
-        const invoiceUrl = invoice.shareToken
-            ? `${getBaseUrl()}/invoice/${invoice.shareToken}`
-            : ''
-
-        if (invoice.shareToken === null || (invoice.shareToken && typeof invoice.shareToken === 'string' && !invoice.shareToken.trim())) {
-            import('sonner').then(({ toast }) => toast.error('Invoice link is invalid or missing.'))
-            return
-        }
-
-        const formattedTotal = Number(invoice.total).toLocaleString('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-        })
-
-        const sweetMessage = `Hi ${customerName}!\n\nThank you for choosing ${gymName} 🏋️‍♂️✨\n\nYour invoice for ${formattedTotal} is ready.\n${invoiceUrl ? `You can view or download it here: ${invoiceUrl}\n\n` : ''}We look forward to seeing you reach your fitness goals!\nHave a great day! 💪`
-
-        const encodedMessage = encodeURIComponent(sweetMessage)
-
-        if (targetPhone) {
-            window.open(`https://wa.me/${targetPhone}?text=${encodedMessage}`, '_blank')
+        if (whatsappLink && whatsappLink !== '#') {
+            window.open(whatsappLink, '_blank')
         } else {
-            window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
+            import('sonner').then(({ toast }) => toast.error('Check if phone and invoice link are available.'))
         }
     }
 

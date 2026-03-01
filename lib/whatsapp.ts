@@ -115,7 +115,8 @@ export const getInvoiceWhatsAppLink = (
     memberName: string,
     gymName: string,
     amount: number,
-    shareToken: string
+    shareToken: string,
+    gymSlug: string
 ): string | null => {
     // Normalize baseUrl: trim trailing slash to prevent double-slashes
     const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
@@ -131,7 +132,7 @@ export const getInvoiceWhatsAppLink = (
     }
 
     const safeToken = encodeURIComponent(shareToken.trim())
-    const url = `${baseUrl}/invoice/${safeToken}`
+    const url = `${baseUrl}/${gymSlug}/invoice/${safeToken}`
     const message = templates.invoiceShare(memberName, gymName, amount, url)
     return getWhatsAppLink(phone, message)
 }

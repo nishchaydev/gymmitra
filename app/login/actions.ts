@@ -28,7 +28,8 @@ export async function login(formData: FormData) {
     })
 
     const isTrainerProfile = data.user && !gym ? await prisma.staffMember.findFirst({
-        where: { userId: data.user.id }
+        where: { userId: data.user.id },
+        include: { gym: true }
     }) : null;
 
     const cookieStore = await cookies()
@@ -44,7 +45,8 @@ export async function login(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    const finalSlug = gym?.slug || (isTrainerProfile as any)?.gym?.slug || 'gym'
+    redirect(`/${finalSlug}/dashboard`)
 }
 
 export async function signup(formData: FormData) {
@@ -83,17 +85,25 @@ export async function signup(formData: FormData) {
     let signupResult;
     try {
         signupResult = await prisma.$transaction(async (tx) => {
+            // First, fetch the code to check usedCount against maxUses
+            const regCodeCheck = await tx.registrationCode.findUnique({
+                where: { code: licenseKey }
+            });
+
+            if (!regCodeCheck || !regCodeCheck.isActive || (regCodeCheck.expiresAt && regCodeCheck.expiresAt < new Date())) {
+                throw new Error("Invalid, expired, or deactivated Registration Code.")
+            }
+
+            if (regCodeCheck.usedCount >= regCodeCheck.maxUses) {
+                throw new Error("Registration Code has reached maximum uses.")
+            }
+
             // 1. Atomic update with full validation in where clause
             // This prevents TOCTOU (Time-of-Check to Time-of-Use) races
             const updateResult = await tx.registrationCode.updateMany({
                 where: {
-                    code: licenseKey,
-                    isActive: true,
-                    usedCount: { lt: prisma.registrationCode.fields.maxUses }, // Prisma requires fields reference or specific count
-                    OR: [
-                        { expiresAt: null },
-                        { expiresAt: { gte: new Date() } }
-                    ]
+                    id: regCodeCheck.id,
+                    usedCount: regCodeCheck.usedCount // Optimistic Concurrency Control
                 },
                 data: {
                     usedCount: { increment: 1 }
@@ -101,12 +111,12 @@ export async function signup(formData: FormData) {
             });
 
             if (updateResult.count === 0) {
-                throw new Error("Invalid, expired, or deactivated Registration Code.")
+                throw new Error("Registration busy. Please try again.")
             }
 
             // Fetch the updated code to continue with the signup
             const regCode = await tx.registrationCode.findUnique({
-                where: { code: licenseKey }
+                where: { id: regCodeCheck.id }
             });
 
             if (!regCode) {
@@ -136,9 +146,11 @@ export async function signup(formData: FormData) {
                 });
                 targetGymIds = existingStaff.map(s => s.gymId);
             } else {
+                const baseSlug = (formData.get('gym_name') as string)?.toLowerCase().trim().replace(/\s+/g, '-') || email.split('@')[0].replace(/[^a-z0-9]/g, '-');
                 const newGym = await tx.gymProfile.create({
                     data: {
                         name: "My Gym",
+                        slug: `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`,
                         email: email,
                         phone: "0000000000",
                         userId: authData.user!.id,
@@ -213,7 +225,18 @@ export async function signup(formData: FormData) {
     cookieStore.delete('mitra_demo_mode')
 
     revalidatePath('/', 'layout')
-    return redirect('/dashboard')
+
+    // Fetch slug for signup redirect
+    const userGym = await prisma.gymProfile.findFirst({
+        where: { userId: signupResult.userId }
+    })
+    const staffGym = !userGym ? await prisma.staffMember.findFirst({
+        where: { userId: signupResult.userId },
+        include: { gym: true }
+    }) : null
+
+    const finalSlug = userGym?.slug || (staffGym as any)?.gym?.slug || 'gym'
+    return redirect(`/${finalSlug}/dashboard`)
 }
 
 export async function demoLogin() {

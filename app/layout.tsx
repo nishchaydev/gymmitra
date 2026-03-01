@@ -91,7 +91,6 @@ export default function RootLayout({
       <body
         className={`${fontDisplay.variable} ${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-primary-500/10 selection:text-primary-900`}
       >
-        <Navbar />
         <main className="flex-1 bg-gray-50/50">
           {children}
         </main>

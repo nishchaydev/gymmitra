@@ -171,7 +171,7 @@ export async function completeOnboarding(formData: FormData) {
                                 <li><strong>Track Attendance:</strong> Keep an eye on daily footfall.</li>
                             </ul>
                             <br/>
-                            <a href="${baseUrl}/dashboard" style="background-color: #A3E635; color: #1e293b; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Go to your Dashboard</a>
+                            <a href="${baseUrl}/${gymProfile.slug}/dashboard" style="background-color: #A3E635; color: #1e293b; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Go to your Dashboard</a>
                             <br/><br/>
                             <p>If you have any questions, simply reply to this email. We're here to help you grow!</p>
                             <p>Best,<br/>The Gym Mitra Team</p>
@@ -186,5 +186,5 @@ export async function completeOnboarding(formData: FormData) {
         }
     }
 
-    redirect("/dashboard")
+    redirect(`/${gymProfile.slug}/dashboard`)
 }

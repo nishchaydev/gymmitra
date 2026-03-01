@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Dumbbell, Menu, X } from "lucide-react"
@@ -12,6 +13,7 @@ import { User } from "@supabase/supabase-js"
 export function Navbar() {
     const [isScrolled, setIsScrolled] = React.useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+    const router = useRouter()
     const [user, setUser] = React.useState<User | null>(null)
     const { scrollY } = useScroll()
     const supabase = createClient()
@@ -20,15 +22,26 @@ export function Navbar() {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             setUser(user)
+
+            if (user) {
+                const onboardedCookie = document.cookie.split('; ').find(row => row.startsWith('gym_onboarded='))
+                const isOnboarded = onboardedCookie?.split('=')[1] === 'true'
+                router.push(isOnboarded ? '/dashboard' : '/onboarding')
+            }
         }
         getUser()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null)
+            if (session?.user) {
+                const onboardedCookie = document.cookie.split('; ').find(row => row.startsWith('gym_onboarded='))
+                const isOnboarded = onboardedCookie?.split('=')[1] === 'true'
+                router.push(isOnboarded ? '/dashboard' : '/onboarding')
+            }
         })
 
         return () => subscription.unsubscribe()
-    }, [supabase])
+    }, [supabase, router])
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         setIsScrolled(latest > 20)

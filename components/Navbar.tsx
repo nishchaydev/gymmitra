@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useParams, usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -12,6 +12,8 @@ import { LogOut, User as UserIcon, Building2, Menu, X } from "lucide-react"
 export function Navbar() {
     const pathname = usePathname()
     const router = useRouter()
+    const params = useParams()
+    const slug = params?.slug as string
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
     const [isDemo, setIsDemo] = useState(false)
@@ -71,12 +73,12 @@ export function Navbar() {
     if (pathname === "/") return null
 
     const routes = [
-        { href: "/dashboard", label: "Dashboard", active: pathname === "/dashboard" },
-        { href: "/members", label: "Members", active: pathname === "/members" || pathname.startsWith("/members/") },
-        { href: "/products", label: "Products", active: pathname === "/products" || pathname.startsWith("/products/") },
-        { href: "/invoices", label: "Invoices", active: pathname === "/invoices" || pathname.startsWith("/invoices/") },
-        { href: "/attendance", label: "Attendance", active: pathname === "/attendance" },
-        { href: "/settings", label: "Settings", active: pathname === "/settings" },
+        { href: `/${slug}/dashboard`, label: "Dashboard", active: pathname === `/${slug}/dashboard` },
+        { href: `/${slug}/members`, label: "Members", active: pathname === `/${slug}/members` || pathname.startsWith(`/${slug}/members/`) },
+        { href: `/${slug}/products`, label: "Products", active: pathname === `/${slug}/products` || pathname.startsWith(`/${slug}/products/`) },
+        { href: `/${slug}/invoices`, label: "Invoices", active: pathname === `/${slug}/invoices` || pathname.startsWith(`/${slug}/invoices/`) },
+        { href: `/${slug}/attendance`, label: "Attendance", active: pathname === `/${slug}/attendance` },
+        { href: `/${slug}/settings`, label: "Settings", active: pathname === `/${slug}/settings` },
     ]
 
     const closeMenu = () => setIsMobileMenuOpen(false)
@@ -116,7 +118,9 @@ export function Navbar() {
                 </div>
 
                 <div className="hidden md:flex ml-auto items-center space-x-4">
-                    {user || isDemo ? (
+                    {loading ? (
+                        <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-md" />
+                    ) : user || isDemo ? (
                         <div className="flex items-center gap-4">
                             <div className="hidden lg:flex flex-col items-end">
                                 <span className="text-xs font-semibold text-slate-900">
@@ -147,7 +151,13 @@ export function Navbar() {
                             <button onClick={closeMenu} className="p-2 rounded-full hover:bg-slate-100" aria-label="Close mobile menu"><X className="h-5 w-5" /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                            {(user || isDemo) ? (
+                            {loading ? (
+                                <div className="space-y-4 p-2">
+                                    <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+                                    <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+                                    <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+                                </div>
+                            ) : (user || isDemo) ? (
                                 <>
                                     <div className="flex flex-col space-y-2 mb-4 pb-4 border-b">
                                         {routes.map((route) => (
