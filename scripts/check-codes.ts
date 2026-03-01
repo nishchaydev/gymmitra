@@ -16,7 +16,16 @@ async function check() {
             registrationCodeId: true
         }
     });
-    console.log(JSON.stringify(profiles, null, 2));
+
+    // Obfuscate emails to protect PII
+    const safeProfiles = profiles.map(p => ({
+        ...p,
+        email: p.email ? p.email.replace(/^(.)(.*)(@.*)$/, (_, first, middle, rest) =>
+            first + '*'.repeat(middle.length) + rest
+        ) : 'N/A'
+    }));
+
+    console.log(JSON.stringify(safeProfiles, null, 2));
 }
 
 check()

@@ -116,7 +116,7 @@ export const getInvoiceWhatsAppLink = (
     gymName: string,
     amount: number,
     shareToken: string
-) => {
+): string | null => {
     // Normalize baseUrl: trim trailing slash to prevent double-slashes
     const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
     const baseUrl = siteUrl.replace(/\/$/, '')
@@ -127,7 +127,7 @@ export const getInvoiceWhatsAppLink = (
 
     if (!shareToken || typeof shareToken !== 'string' || !shareToken.trim()) {
         console.warn('WhatsApp Link: Invalid or missing shareToken', { shareToken })
-        return '#'
+        return null
     }
 
     const safeToken = encodeURIComponent(shareToken.trim())

@@ -15,8 +15,15 @@ interface InvoiceViewProps {
  * shared links always point to your domain, not gymmitra.vercel.app.
  */
 function getBaseUrl(): string {
-    if (typeof window === 'undefined') return ''
-    return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin
+    if (typeof window !== 'undefined') {
+        const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+        // If we are on a real domain (not localhost) but env says localhost, follow reality
+        if (envUrl && envUrl.includes('localhost') && !window.location.hostname.includes('localhost')) {
+            return window.location.origin
+        }
+        return envUrl || window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || ''
 }
 
 /**
@@ -242,6 +249,11 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         const invoiceUrl = invoice.shareToken
             ? `${getBaseUrl()}/invoice/${invoice.shareToken}`
             : ''
+
+        if (invoice.shareToken === null || (invoice.shareToken && typeof invoice.shareToken === 'string' && !invoice.shareToken.trim())) {
+            import('sonner').then(({ toast }) => toast.error('Invoice link is invalid or missing.'))
+            return
+        }
 
         const formattedTotal = Number(invoice.total).toLocaleString('en-IN', {
             style: 'currency',
