@@ -125,7 +125,13 @@ export const getInvoiceWhatsAppLink = (
         console.warn('WhatsApp Link: NEXT_PUBLIC_APP_URL not set, using fallback.', { siteUrl })
     }
 
-    const url = `${baseUrl}/invoice/${shareToken}`
+    if (!shareToken || typeof shareToken !== 'string' || !shareToken.trim()) {
+        console.warn('WhatsApp Link: Invalid or missing shareToken', { shareToken })
+        return '#'
+    }
+
+    const safeToken = encodeURIComponent(shareToken.trim())
+    const url = `${baseUrl}/invoice/${safeToken}`
     const message = templates.invoiceShare(memberName, gymName, amount, url)
     return getWhatsAppLink(phone, message)
 }

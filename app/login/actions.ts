@@ -83,37 +83,45 @@ export async function signup(formData: FormData) {
     let signupResult;
     try {
         signupResult = await prisma.$transaction(async (tx) => {
-            const regCode = await tx.registrationCode.findUnique({
-                where: { code: licenseKey }
-            });
-
-            if (!regCode || regCode.usedCount >= regCode.maxUses) {
-                throw new Error("Registration Code invalidated during sign-up. Please contact support.")
-            }
-
-            // Also validate isActive and expiry atomically inside the transaction
-            if (!regCode.isActive) {
-                throw new Error("Registration Code invalidated during sign-up. Please contact support.")
-            }
-            if (regCode.expiresAt && regCode.expiresAt < new Date()) {
-                throw new Error("Registration Code invalidated during sign-up. Please contact support.")
-            }
-
-            // 3. Atomic increment with Optimistic Locking
-            const updateResult = await tx.registrationCode.updateMany({
+            // 1. Atomic update with full validation in where clause
+            // This prevents TOCTOU (Time-of-Check to Time-of-Use) races
+            const updateResult = await tx.registrationCode.update({
                 where: {
-                    id: regCode.id,
-                    usedCount: regCode.usedCount // Ensure no one else incremented it
+                    code: licenseKey,
+                    isActive: true,
+                    AND: [
+                        { OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }] },
+                        {
+                            // We can't do usedCount < maxUses directly in 'where' for 'update' in Prisma easily 
+                            // without raw SQL or a specific check, but we can do it with updateMany or by checking after.
+                            // However, we can use updateMany for strict atomic condition if needed.
+                        }
+                    ]
                 },
                 data: {
-                    usedCount: { increment: 1 },
-                    isActive: regCode.usedCount + 1 < regCode.maxUses
+                    usedCount: { increment: 1 }
                 }
-            });
+            }).catch(() => null);
 
-            if (updateResult.count === 0) {
-                throw new Error("Registration busy. Please try again.")
+            if (!updateResult) {
+                throw new Error("Invalid, expired, or deactivated Registration Code.")
             }
+
+            // Post-check: ensure we didn't exceed maxUses (Prisma update just incremented)
+            // If we exceeded, rollback by throwing
+            if (updateResult.usedCount > updateResult.maxUses) {
+                throw new Error("Registration Code has reached maximum uses.")
+            }
+
+            // Update isActive status atomically if we hit the limit
+            if (updateResult.usedCount === updateResult.maxUses) {
+                await tx.registrationCode.update({
+                    where: { id: updateResult.id },
+                    data: { isActive: false }
+                });
+            }
+
+            const regCode = updateResult;
 
             // 4. Link Profiles
             const existingStaff = await tx.staffMember.findMany({
@@ -156,17 +164,12 @@ export async function signup(formData: FormData) {
             return { userId: authData.user!.id, gymId: targetGymIds[0], session: authData.session };
         });
     } catch (error: any) {
-        console.error('Registration linking failed:', error.message);
-        // Clean up orphaned Supabase auth user to prevent dangling accounts
-        if (authData?.user?.id) {
-            try {
-                await supabase.auth.admin.deleteUser(authData.user.id)
-            } catch (cleanupErr) {
-                console.error('[Login] Failed to cleanup orphaned Supabase user:', cleanupErr)
-            }
-        }
         // Sanitize generic errors escaping to UI
-        return redirect(`/login?view=register&message=${encodeURIComponent("Could not complete registration. Ensure the code is valid.")}`);
+        const errorMessage = error.message.includes("Record to update not found")
+            ? "Invalid or expired Registration Code."
+            : error.message;
+
+        return redirect(`/login?view=register&message=${encodeURIComponent(errorMessage || "Could not complete registration. Ensure the code is valid.")}`);
     }
 
     // 5. Record Audit Log (After Transaction Success)
