@@ -79,7 +79,12 @@ export function ClientRegistrationForm() {
 
             await signup(formData)
         } catch (err: any) {
-            console.error(err)
+            // Next.js redirect() throws a 'NEXT_REDIRECT' error. 
+            // We should catch it and do nothing to allow the redirect to happen.
+            if (err.message === 'NEXT_REDIRECT') {
+                return;
+            }
+            console.error('Registration Error:', err)
             setServerError(err.message || "An unexpected error occurred.")
         } finally {
             setIsSubmitting(false)
