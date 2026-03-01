@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
+import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
 
 interface BrandedLayoutProps {
     children: ReactNode;
@@ -41,9 +42,12 @@ export default async function BrandedDashboardLayout({
     return (
         <>
             <Navbar />
-            <div className="flex-1 overflow-y-auto pt-4">
-                {children}
-            </div>
+            <ReactQueryProvider>
+                <div className="flex-1 overflow-y-auto pt-4">
+                    {children}
+                </div>
+            </ReactQueryProvider>
         </>
     );
 }
+

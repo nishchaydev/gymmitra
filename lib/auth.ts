@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { GymProfile, Role } from '@prisma/client'
+import { NextResponse } from 'next/server'
 
 export type AuthContext = {
     gym: GymProfile;
@@ -50,5 +51,19 @@ export async function getAuthGym(): Promise<AuthContext | null> {
         }
     }
 
+    return null
+}
+
+/**
+ * Checks if the authenticated user's role is in the allowed list.
+ * Returns a 403 NextResponse if not authorized, or null if allowed.
+ */
+export function checkRole(auth: AuthContext, allowedRoles: string[]): NextResponse | null {
+    if (!allowedRoles.includes(auth.role)) {
+        return NextResponse.json(
+            { error: 'Forbidden: insufficient permissions' },
+            { status: 403 }
+        )
+    }
     return null
 }

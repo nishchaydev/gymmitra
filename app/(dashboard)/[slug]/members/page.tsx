@@ -106,14 +106,23 @@ export default async function MembersPage({
 
     let members = isDemo
         ? [...allDemoMembers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(skip, skip + take)
-        : await prisma.member.findMany({
-            where: whereClause,
-            orderBy: { createdAt: 'desc' },
-            take: take,
-            skip: skip
-        })
+        : []
 
-    const totalCount = isDemo ? allDemoMembers.length : await prisma.member.count({ where: whereClause })
+    let totalCount = isDemo ? allDemoMembers.length : 0
+
+    if (!isDemo) {
+        const [dbMembers, dbCount] = await Promise.all([
+            prisma.member.findMany({
+                where: whereClause,
+                orderBy: { createdAt: 'desc' },
+                take: take,
+                skip: skip
+            }),
+            prisma.member.count({ where: whereClause })
+        ])
+        members = dbMembers
+        totalCount = dbCount
+    }
     const hasMore = totalCount > page * take
 
     return (

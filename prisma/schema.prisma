@@ -31,6 +31,7 @@ model GymProfile {
   saasPlan           SaaSPlan          @default(BASIC)
   taxPercentage      Decimal           @default(18.0) @db.Decimal(5, 2)
   termsAndConditions String?           @db.Text
+  deletedAt          DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   members            Member[]
@@ -72,6 +73,7 @@ model Member {
   status            MemberStatus         @default(ACTIVE)
   notes             String?
   gymId             String
+  deletedAt         DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   attendance        Attendance[]
@@ -122,6 +124,8 @@ model MemberSubscription {
 
   @@index([gymId])
   @@index([memberId])
+  @@index([gymId, status])
+  @@index([gymId, endDate])
 }
 
 model Product {
@@ -189,10 +193,11 @@ model Invoice {
   walkInEmail         String?
   walkInAddress       String?
   notes               String?
+  deletedAt           DateTime?
   issueDate           DateTime            @default(now())
   dueDate             DateTime?
   createdAt           DateTime            @default(now())
-  gym                 GymProfile          @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym                 GymProfile          @relation(fields: [gymId], references: [id], onDelete: Restrict)
   member              Member?             @relation(fields: [memberId], references: [id])
   sale                Sale?               @relation(fields: [saleId], references: [id])
   subscription        MemberSubscription? @relation(fields: [subscriptionId], references: [id])
@@ -201,6 +206,7 @@ model Invoice {
   @@unique([gymId, invoiceNumber])
   @@index([gymId])
   @@index([memberId])
+  @@index([gymId, paymentStatus])
 }
 
 model InvoiceItem {
@@ -247,6 +253,7 @@ model Attendance {
 
   @@unique([memberId, localDateString])
   @@index([memberId])
+  @@index([gymId])
 }
 
 model RegistrationCode {

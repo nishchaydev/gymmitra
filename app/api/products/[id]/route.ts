@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
 
@@ -63,9 +63,12 @@ export async function PUT(
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        // Lower limit for mutations
         const rl = await guardRateLimit(30, `${auth.userId}:products:put`)
         if (rl) return rl
+
+        // Only OWNER can update products
+        const roleCheck = checkRole(auth, ['OWNER'])
+        if (roleCheck) return roleCheck
 
         const body = await request.json()
         const validatedData = productUpdateSchema.parse(body)
@@ -126,9 +129,12 @@ export async function DELETE(
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        // Lower limit for destructive operations
         const rl = await guardRateLimit(30, `${auth.userId}:products:delete`)
         if (rl) return rl
+
+        // Only OWNER can delete products
+        const roleCheck = checkRole(auth, ['OWNER'])
+        if (roleCheck) return roleCheck
 
         const result = await prisma.product.updateMany({
             where: {

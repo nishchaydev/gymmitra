@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { formatInTimeZone } from 'date-fns-tz'
@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
         if (rateLimitResponse) return rateLimitResponse
 
         const gym = auth.gym
+
+        // STAFF and above can check in members
+        const roleCheck = checkRole(auth, ['OWNER', 'STAFF', 'TRAINER'])
+        if (roleCheck) return roleCheck
 
         const body = await request.json()
         const { memberId } = checkInSchema.parse(body)

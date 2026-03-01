@@ -1,10 +1,65 @@
 import { PrismaClient } from '@prisma/client'
 
+const SOFT_DELETE_MODELS = ['Member', 'Invoice']
+
+function createPrismaClient(): PrismaClient {
+  const client = new PrismaClient()
+
+  // ── Soft-Delete Middleware ──────────────────────────────────────────
+  // Intercepts queries on Member and Invoice to:
+  // 1. Auto-filter out soft-deleted records on reads
+  // 2. Convert delete operations to updates setting deletedAt
+
+  // READ middleware: auto-filter deletedAt = null
+  client.$use(async (params, next) => {
+    if (params.model && SOFT_DELETE_MODELS.includes(params.model)) {
+      if (params.action === 'findUnique' || params.action === 'findFirst') {
+        // findUnique → findFirst so we can add deletedAt filter
+        params.action = 'findFirst'
+        params.args.where = { ...params.args.where, deletedAt: null }
+      }
+      if (params.action === 'findMany') {
+        if (!params.args) params.args = {}
+        if (!params.args.where) params.args.where = {}
+        if (params.args.where.deletedAt === undefined) {
+          params.args.where.deletedAt = null
+        }
+      }
+      if (params.action === 'count') {
+        if (!params.args) params.args = {}
+        if (!params.args.where) params.args.where = {}
+        if (params.args.where.deletedAt === undefined) {
+          params.args.where.deletedAt = null
+        }
+      }
+    }
+    return next(params)
+  })
+
+  // DELETE middleware: convert to soft-delete
+  client.$use(async (params, next) => {
+    if (params.model && SOFT_DELETE_MODELS.includes(params.model)) {
+      if (params.action === 'delete') {
+        params.action = 'update'
+        params.args.data = { deletedAt: new Date() }
+      }
+      if (params.action === 'deleteMany') {
+        params.action = 'updateMany'
+        if (!params.args) params.args = {}
+        params.args.data = { deletedAt: new Date() }
+      }
+    }
+    return next(params)
+  })
+
+  return client
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 

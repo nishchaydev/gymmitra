@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 
 // Validations
@@ -98,6 +98,10 @@ export async function POST(request: NextRequest) {
         }
 
         const gym = auth.gym
+
+        // STAFF and above can create invoices
+        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        if (roleCheck) return roleCheck
 
         let body;
         try {

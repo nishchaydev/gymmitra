@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
 
@@ -75,6 +75,10 @@ export async function PUT(
         const rl = await guardRateLimit(30, `${auth.userId}:members:put`)
         if (rl) return rl
 
+        // STAFF and above can update members
+        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        if (roleCheck) return roleCheck
+
         const { id } = await params
         const body = await request.json()
         const validatedData = memberUpdateSchema.parse(body)
@@ -125,9 +129,12 @@ export async function DELETE(
         const auth = await getAuthGym()
         if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        // Lower limit for destructive operations
         const rl = await guardRateLimit(10, `${auth.userId}:members:delete`)
         if (rl) return rl
+
+        // Only OWNER can delete members
+        const roleCheck = checkRole(auth, ['OWNER'])
+        if (roleCheck) return roleCheck
 
         const { id } = await params
 
