@@ -45,16 +45,36 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url)
         const status = searchParams.get('status')
+        const q = searchParams.get('q') || ''
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+        const take = Math.min(100, Math.max(1, parseInt(searchParams.get('take') || '50', 10)))
+        const skip = (page - 1) * take
 
-        const members = await prisma.member.findMany({
-            where: {
-                gymId: gym.id,
-                ...(status ? { status: status as any } : {}),
-            },
-            orderBy: { createdAt: 'desc' }
-        })
+        const whereClause: any = {
+            gymId: gym.id,
+            ...(status ? { status: status as any } : {}),
+            ...(q
+                ? {
+                    OR: [
+                        { name: { contains: q, mode: 'insensitive' } },
+                        { phone: { contains: q } },
+                        { email: { contains: q, mode: 'insensitive' } },
+                    ],
+                }
+                : {}),
+        }
 
-        return NextResponse.json(members)
+        const [members, totalCount] = await Promise.all([
+            prisma.member.findMany({
+                where: whereClause,
+                orderBy: { createdAt: 'desc' },
+                take,
+                skip,
+            }),
+            prisma.member.count({ where: whereClause }),
+        ])
+
+        return NextResponse.json({ members, totalCount, page, hasMore: totalCount > page * take })
     } catch (error) {
         console.error('Error fetching members:', error)
         return NextResponse.json(

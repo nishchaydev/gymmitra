@@ -4,33 +4,26 @@ import { prisma } from '@/lib/prisma'
 import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Users } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
-import { EmptyState } from '@/components/ui/empty-state'
+import { MembersList } from '@/components/members/MembersList'
 
 export const dynamic = 'force-dynamic'
 
 export default async function MembersPage({
     searchParams,
+    params: routeParams,
 }: {
     searchParams: Promise<{ q?: string; status?: string; page?: string }>
+    params: Promise<{ slug: string }>
 }) {
-    const params = await searchParams
-    const query = params.q || ''
-    const status = params.status
-    const parsedPage = parseInt(params.page || '1', 10)
+    const [resolvedParams, resolvedSearchParams] = await Promise.all([routeParams, searchParams])
+    const { slug } = resolvedParams
+    const query = resolvedSearchParams.q || ''
+    const status = resolvedSearchParams.status
+    const parsedPage = parseInt(resolvedSearchParams.page || '1', 10)
     const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
     const take = 50
     const skip = (page - 1) * take
@@ -132,7 +125,7 @@ export default async function MembersPage({
                     <h1 className="text-3xl font-bold">Members</h1>
                     <p className="text-muted-foreground">Manage your gym members</p>
                 </div>
-                <Link href="/members/new">
+                <Link href={`/${slug}/members/new`}>
                     <Button>
                         <Plus className="mr-2 h-4 w-4" /> Add Member
                     </Button>
@@ -144,113 +137,20 @@ export default async function MembersPage({
                 <MemberFilters />
             </div>
 
-            <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Gym Members</CardTitle>
-                            <CardDescription>
-                                A list of all members in your gym.
-                            </CardDescription>
-                        </div>
-                        <div className="text-xs text-slate-400 font-medium sm:hidden block italic">
-                            Scroll horizontally ↔
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto -mx-6 sm:mx-0 px-6 sm:px-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Member</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Joined Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {members.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-auto p-0 border-0">
-                                            <EmptyState
-                                                icon={Users}
-                                                title="No members yet"
-                                                description="Start building your community by adding your first gym member."
-                                                actionLabel="Add First Member"
-                                                actionHref="/members/new"
-                                                className="border-0 bg-transparent rounded-none"
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    members.map((member: any) => (
-                                        <TableRow key={member.id}>
-                                            <TableCell className="font-medium">
-                                                <Link href={`/members/${member.id}`} className="hover:underline">
-                                                    {member.name}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>{member.phone}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={
-                                                    member.status === 'ACTIVE' ? 'default' :
-                                                        member.status === 'PENDING' ? 'secondary' :
-                                                            member.status === 'EXPIRED' ? 'destructive' : 'secondary'
-                                                }>
-                                                    {member.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {(() => {
-                                                    const date = new Date(member.joiningDate || member.createdAt);
-                                                    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
-                                                })()}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/members/${member.id}`}>View</Link>
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    {totalCount > take && (
-                        <div className="flex items-center justify-between mt-6 px-2">
-                            <p className="text-sm text-muted-foreground">
-                                Showing <span className="font-bold">{(page - 1) * take + 1}</span> to <span className="font-bold">{Math.min(page * take, totalCount)}</span> of <span className="font-bold">{totalCount}</span> members
-                            </p>
-                            {page === 1 ? (
-                                <Button variant="outline" size="sm" disabled>
-                                    Previous
-                                </Button>
-                            ) : (
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={`/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`}>
-                                        Previous
-                                    </Link>
-                                </Button>
-                            )}
-                            {!hasMore ? (
-                                <Button variant="outline" size="sm" disabled>
-                                    Next
-                                </Button>
-                            ) : (
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={`/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`}>
-                                        Next
-                                    </Link>
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            <MembersList
+                slug={slug}
+                query={query}
+                status={status}
+                page={page}
+                take={take}
+                initialData={{
+                    members,
+                    totalCount,
+                    page,
+                    hasMore,
+                }}
+            />
         </div>
     )
 }
+
