@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, subDays, addDays } from 'date-fns'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
         const auth = await getAuth()
         if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const rl = await guardRateLimit(30, `${auth.userId}:reminders:get`)
+        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+        if (roleCheck) return roleCheck
+
+        // Fix 13 request: rate limit 10
+        const rl = await guardRateLimit(10, `${auth.userId}:reminders:get`)
         if (rl) return rl
 
         const gym = auth.gym

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, withRetry } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit, ConflictError } from '@/lib/rate-limit'
 import { Prisma } from '@prisma/client'
 
@@ -20,6 +20,9 @@ export async function GET(request: NextRequest) {
     try {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN', 'TRAINER'])
+        if (roleCheck) return roleCheck
 
         let rl;
         try {
@@ -67,9 +70,12 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN', 'TRAINER'])
+        if (roleCheck) return roleCheck
+
         let rl;
         try {
-            rl = await guardRateLimit(20, `${auth.userId}:schedule:post`)
+            rl = await guardRateLimit(100, `${auth.userId}:schedule:post`)
         } catch (err) {
             console.error('[Schedule POST] Rate limit infra failure:', err)
             return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 })

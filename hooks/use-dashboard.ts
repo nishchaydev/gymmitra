@@ -7,15 +7,18 @@ interface DashboardData {
     activeMembers: number
     revenue: string
     revenueRaw: number
+    lastMonthRevenue: number
+    revenueChange: number
+    pendingRevenue: number
     productSalesCount: number
     dailyCheckins: number
-    recentInvoices: any[]
+    recentInvoices: unknown[]
     todayAttendance: {
         count: number
         recentInitials: string[]
         lastCheckinLabel: string
     }
-    upcomingBirthdays: any[]
+    upcomingBirthdays: unknown[]
     monthlyRevenueData: { name: string; total: number }[]
 }
 
@@ -27,8 +30,9 @@ export function useDashboardQuery(initialData?: DashboardData) {
             if (!res.ok) throw new Error('Failed to fetch dashboard data')
             return res.json()
         },
-        staleTime: 30_000,
-        gcTime: 300_000,
+        staleTime: 300_000, // 5 minutes
+        gcTime: 600_000, // 10 minutes
+        refetchOnWindowFocus: false, // Avoid refetching when switching back to tab
         initialData,
     })
 }

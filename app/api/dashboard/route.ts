@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
-import { startOfToday, endOfToday } from 'date-fns'
+import { startOfToday, endOfToday, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,24 +17,26 @@ export async function GET(req: NextRequest) {
         const gym = auth.gym
         const today = startOfToday()
 
+        const startOfThisMonth = startOfMonth(today)
+        const startOfLastMonth = startOfMonth(subMonths(today, 1))
+        const endOfLastMonth = endOfMonth(subMonths(today, 1))
+
         const [
             totalMembers,
             activeMembers,
-            totalRevenue,
             productSalesCount,
             dailyCheckins,
             invoices,
             attendance,
             birthdays,
             monthlyRevenue,
+            thisMonthInvoicesPaid,
+            thisMonthInvoicesPending,
+            lastMonthInvoicesPaid,
         ] = await Promise.all([
             prisma.member.count({ where: { gymId: gym.id } as any }),
             prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } as any }),
-            prisma.invoice.aggregate({
-                where: { paymentStatus: 'PAID', gymId: gym.id } as any,
-                _sum: { total: true },
-            }),
-            prisma.sale.count({ where: { product: { gymId: gym.id } } as any }),
+            prisma.sale.count({ where: { product: { gymId: gym.id }, saleDate: { gte: startOfThisMonth } } as any }),
             prisma.attendance.count({
                 where: {
                     gymId: gym.id,
@@ -70,10 +72,43 @@ export async function GET(req: NextRequest) {
                 GROUP BY month
                 ORDER BY month
             ` as Promise<{ month: number; total: any }[]>,
+            prisma.invoice.aggregate({
+                where: {
+                    gymId: gym.id,
+                    paymentStatus: 'PAID',
+                    issueDate: { gte: startOfThisMonth },
+                    deletedAt: null
+                } as any,
+                _sum: { total: true }
+            }),
+            prisma.invoice.aggregate({
+                where: {
+                    gymId: gym.id,
+                    paymentStatus: 'PENDING',
+                    issueDate: { gte: startOfThisMonth },
+                    deletedAt: null
+                } as any,
+                _sum: { total: true }
+            }),
+            prisma.invoice.aggregate({
+                where: {
+                    gymId: gym.id,
+                    paymentStatus: 'PAID',
+                    issueDate: { gte: startOfLastMonth, lte: endOfLastMonth },
+                    deletedAt: null
+                } as any,
+                _sum: { total: true }
+            })
         ])
 
         // Process revenue
-        const revenue = Number((totalRevenue as any)._sum.total || 0)
+        const thisMonthRevenue = Number((thisMonthInvoicesPaid as any)._sum.total || 0)
+        const lastMonthRevenue = Number((lastMonthInvoicesPaid as any)._sum.total || 0)
+        const pendingRevenue = Number((thisMonthInvoicesPending as any)._sum.total || 0)
+
+        const revenueChange = lastMonthRevenue > 0
+            ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+            : 100;
 
         // Process attendance widget
         let todayAttendance = {
@@ -91,9 +126,11 @@ export async function GET(req: NextRequest) {
                     minutesAgo < 60
                         ? `Last check-in ${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`
                         : `Last check-in ${Math.round(minutesAgo / 60)}h ago`,
-                recentInitials: attendance.map((a: any) =>
-                    a.member?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) ?? '?'
-                ),
+                recentInitials: attendance.map((a: any) => {
+                    const name = a.member?.name?.trim()
+                    if (!name) return '?'
+                    return name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+                }),
             }
         }
 
@@ -105,7 +142,7 @@ export async function GET(req: NextRequest) {
                 if (!dobString) return null
                 const [year, month, day] = dobString.split('T')[0].split('-').map(Number)
                 const dob = new Date(year, month - 1, day)
-                let next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
+                const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
                 if (next < today) next.setFullYear(today.getFullYear() + 1)
                 const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
                 const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
@@ -131,8 +168,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             totalMembers,
             activeMembers,
-            revenue: revenue.toLocaleString('en-IN'),
-            revenueRaw: revenue,
+            revenue: thisMonthRevenue.toLocaleString('en-IN'),
+            revenueRaw: thisMonthRevenue,
+            lastMonthRevenue,
+            revenueChange: Number(revenueChange.toFixed(2)),
+            pendingRevenue,
             productSalesCount,
             dailyCheckins: dailyCheckins || 0,
             recentInvoices: invoices,

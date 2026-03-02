@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 
 const staffSchema = z.object({
@@ -14,11 +14,12 @@ const staffSchema = z.object({
 export async function GET(request: NextRequest) {
     try {
         const auth = await getAuthGym()
-        if (!auth || auth.role !== 'OWNER') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const rl = await guardRateLimit(100, `${auth.userId}:staff:get`)
+        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+        if (roleCheck) return roleCheck
+
+        const rl = await guardRateLimit(50, `${auth.userId}:staff:get`)
         if (rl) return rl
 
         const staffMembers = await prisma.staffMember.findMany({
@@ -45,9 +46,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const auth = await getAuthGym()
-        if (!auth || auth.role !== 'OWNER') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+        if (roleCheck) return roleCheck
 
         const rl = await guardRateLimit(50, `${auth.userId}:staff:post`)
         if (rl) return rl

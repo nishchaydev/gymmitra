@@ -74,6 +74,7 @@ export function Navbar() {
 
     const routes = [
         { href: `/${slug}/dashboard`, label: "Dashboard", active: pathname === `/${slug}/dashboard` },
+        { href: `/${slug}/renewals`, label: "Renewals", active: pathname === `/${slug}/renewals` || pathname.startsWith(`/${slug}/renewals/`) },
         { href: `/${slug}/members`, label: "Members", active: pathname === `/${slug}/members` || pathname.startsWith(`/${slug}/members/`) },
         { href: `/${slug}/products`, label: "Products", active: pathname === `/${slug}/products` || pathname.startsWith(`/${slug}/products/`) },
         { href: `/${slug}/invoices`, label: "Invoices", active: pathname === `/${slug}/invoices` || pathname.startsWith(`/${slug}/invoices/`) },

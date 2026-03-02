@@ -8,12 +8,14 @@ const fontDisplay = Outfit({
   subsets: ["latin"],
   variable: "--font-display-custom",
   weight: ["400", "500", "600", "700", "800"],
+  display: 'swap',
 });
 
 const fontSans = Inter({
   subsets: ["latin"],
   variable: "--font-sans-custom",
   weight: ["400", "500", "600", "700"],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {

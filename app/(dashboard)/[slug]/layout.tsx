@@ -1,6 +1,7 @@
 import { getAuthGym } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
@@ -15,6 +16,21 @@ export default async function BrandedDashboardLayout({
     params,
 }: BrandedLayoutProps) {
     const { slug } = await params;
+    const cookieStore = await cookies();
+    const isDemoMode = cookieStore.get('mitra_demo_mode')?.value === 'true';
+
+    if (isDemoMode && slug === 'demo') {
+        return (
+            <>
+                <Navbar />
+                <ReactQueryProvider>
+                    <div className="flex-1 overflow-y-auto pt-4">
+                        {children}
+                    </div>
+                </ReactQueryProvider>
+            </>
+        );
+    }
 
     // 1. Verify Gym Slug exists
     const gym = await prisma.gymProfile.findUnique({

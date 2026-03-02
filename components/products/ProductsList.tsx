@@ -21,12 +21,23 @@ interface ProductsListProps {
 }
 
 export function ProductsList({ slug, query, category, lowStock, initialData }: ProductsListProps) {
-    const { data: products, isLoading, isFetching } = useProductsQuery(
+    const { data: products, isLoading, isFetching, error } = useProductsQuery(
         { q: query || undefined, category: category || undefined, lowStock: lowStock || undefined },
         initialData,
     )
 
     const items = products || initialData
+
+    if (error) {
+        return (
+            <Card className="border-red-200 bg-red-50/50">
+                <CardContent className="pt-6 text-center text-red-600">
+                    <p className="font-medium">Failed to load products.</p>
+                    <p className="text-sm mt-1 opacity-80">{error instanceof Error ? error.message : "An unexpected error occurred."}</p>
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <Card className="border-slate-200 relative">
@@ -39,7 +50,7 @@ export function ProductsList({ slug, query, category, lowStock, initialData }: P
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle>Catalog</CardTitle>
-                        <CardDescription>Manage your gym memberships and products.</CardDescription>
+                        <CardDescription>Manage your gym memberships and retail items.</CardDescription>
                     </div>
                     <div className="text-xs text-slate-400 font-medium sm:hidden block italic">
                         Scroll horizontally ↔
@@ -79,7 +90,9 @@ export function ProductsList({ slug, query, category, lowStock, initialData }: P
                                         <TableCell>
                                             <Badge variant="outline">{product.category}</Badge>
                                         </TableCell>
-                                        <TableCell className="text-right">₹{Number(product.price).toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            {product.price != null ? `₹${Number(product.price).toLocaleString()}` : '—'}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             {product.stock === null ? (
                                                 <span className="text-slate-400">∞</span>

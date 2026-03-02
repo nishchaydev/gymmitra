@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 export async function GET(request: NextRequest) {
+    // Basic rate limit for cron to prevent DDOS attempts against the URL
+    // Use IP or a static key since this is server-to-server
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+    const rl = await guardRateLimit(5, `cron:expire:${ip}`)
+    if (rl) return rl
+
     // 1. Verify CRON_SECRET
     const cronSecret = process.env.CRON_SECRET
     if (!cronSecret) {

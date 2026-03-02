@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 
-const SETTINGS_RATE_LIMIT = 50
+// Fix 13 request: rate limit 20
+const SETTINGS_RATE_LIMIT = 20
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -19,10 +20,10 @@ const settingsSchema = z.object({
 export async function GET() {
     try {
         const auth = await getAuthGym()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        if (!auth || auth.role !== 'OWNER') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const roleCheck = checkRole(auth, ['OWNER'])
+        if (roleCheck) return roleCheck
 
         let rl;
         try {
@@ -42,10 +43,10 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
     try {
         const auth = await getAuthGym()
+        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        if (!auth || auth.role !== 'OWNER') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const roleCheck = checkRole(auth, ['OWNER'])
+        if (roleCheck) return roleCheck
 
         let rl;
         try {

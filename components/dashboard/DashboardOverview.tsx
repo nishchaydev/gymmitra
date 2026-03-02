@@ -3,9 +3,23 @@
 import { useDashboardQuery } from '@/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Overview } from '@/components/dashboard/Overview'
-import { AttendanceWidget } from '@/components/dashboard/AttendanceWidget'
-import { UpcomingBirthdays } from '@/components/dashboard/UpcomingBirthdays'
-import { RecentInvoices } from '@/components/dashboard/RecentInvoices'
+import { RevenueSnapshot } from '@/components/dashboard/RevenueSnapshot'
+import { AtRiskMembers } from '@/components/dashboard/AtRiskMembers'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+
+const AttendanceWidget = dynamic(() => import('@/components/dashboard/AttendanceWidget').then(mod => mod.AttendanceWidget), {
+    loading: () => <Skeleton className="w-full h-[150px] rounded-xl" />
+})
+
+const UpcomingBirthdays = dynamic(() => import('@/components/dashboard/UpcomingBirthdays').then(mod => mod.UpcomingBirthdays), {
+    loading: () => <Skeleton className="w-full h-[200px] rounded-xl" />
+})
+
+const RecentInvoices = dynamic(() => import('@/components/dashboard/RecentInvoices').then(mod => mod.RecentInvoices), {
+    loading: () => <Skeleton className="w-full h-[350px] rounded-xl" />
+})
+
 import { Button } from '@/components/ui/button'
 import { DollarSign, Users, ShoppingBag, CalendarCheck, UserPlus, ReceiptText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -18,6 +32,10 @@ interface DashboardOverviewProps {
         totalMembers: number
         activeMembers: number
         revenue: string
+        revenueRaw: number
+        lastMonthRevenue: number
+        revenueChange: number
+        pendingRevenue: number
         productSalesCount: number
         dailyCheckins: number
         recentInvoices: any[]
@@ -54,10 +72,12 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     <CardContent>
                         <div className="space-y-1">
                             <div className="text-3xl font-bold tracking-tight text-slate-900">₹{d.revenue}</div>
-                            <div className="text-xs font-bold text-emerald-600 mt-2 uppercase tracking-widest flex items-center gap-1.5">
-                                <div className="h-1 w-1 rounded-full bg-emerald-600 mr-1.5 animate-pulse" />
-                                LIVE
-                            </div>
+                            {!isDemo && (
+                                <div className="text-xs font-bold text-emerald-600 mt-2 uppercase tracking-widest flex items-center gap-1.5">
+                                    <div className="h-1 w-1 rounded-full bg-emerald-600 mr-1.5 animate-pulse" />
+                                    LIVE
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -106,10 +126,12 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     <CardContent>
                         <div className="space-y-1">
                             <div className="text-3xl font-bold tracking-tight text-slate-900">{d.dailyCheckins}</div>
-                            <div className="text-xs font-bold text-[#4FC3F7] mt-2 uppercase tracking-widest flex items-center gap-1.5">
-                                <div className="h-1 w-1 rounded-full bg-[#4FC3F7] mr-1.5 animate-bounce" />
-                                REAL-TIME LOG
-                            </div>
+                            {!isDemo && (
+                                <div className="text-xs font-bold text-[#4FC3F7] mt-2 uppercase tracking-widest flex items-center gap-1.5">
+                                    <div className="h-1 w-1 rounded-full bg-[#4FC3F7] mr-1.5 animate-bounce" />
+                                    REAL-TIME LOG
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -117,20 +139,23 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
             {/* Charts + Widgets */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-                <Card className="lg:col-span-4 border-slate-200 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">Revenue Insights</CardTitle>
-                        <CardDescription>
-                            Monthly revenue breakdown and trends.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pl-0 sm:pl-2">
-                        <div className="h-[300px] sm:h-[350px]">
-                            <Overview data={d.monthlyRevenueData} />
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="lg:col-span-4 h-full">
+                    <RevenueSnapshot
+                        revenue={d.revenue}
+                        revenueRaw={d.revenueRaw}
+                        lastMonthRevenue={d.lastMonthRevenue}
+                        revenueChange={d.revenueChange}
+                        pendingRevenue={d.pendingRevenue}
+                        monthlyRevenueData={d.monthlyRevenueData}
+                        isDemo={isDemo}
+                    />
+                </div>
                 <div className="lg:col-span-3 space-y-6">
+                    <AtRiskMembers
+                        slug={slug}
+                        gymName={gymName}
+                        isDemo={isDemo}
+                    />
                     <AttendanceWidget
                         isDemo={isDemo}
                         data={d.todayAttendance}

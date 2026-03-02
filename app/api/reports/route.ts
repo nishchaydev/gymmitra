@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMonthOfInterval } from 'date-fns'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 async function getAuthenticatedGym() {
     const auth = await getAuthGym()
-    if (!auth || !auth.gym || typeof auth.userId !== 'string' || auth.role !== 'OWNER') return null
+    if (!auth || !auth.gym || typeof auth.userId !== 'string') return null
+
+    // Check role using standard helper
+    const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+    if (roleCheck) return null
+
     return auth
 }
 

@@ -5,6 +5,7 @@ import { addDays, startOfDay, endOfDay, differenceInDays } from 'date-fns'
 import { CreateEmailOptions } from 'resend'
 import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
+import { guardRateLimit } from '@/lib/rate-limit'
 
 const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
 const BATCH_SIZE = 100
@@ -29,6 +30,11 @@ function formatINR(amount: number): string {
 // ── Batch processor removed (using Resend Batch API instead) ─────────
 
 export async function GET(request: NextRequest) {
+    // Basic rate limit for cron to prevent DDOS attempts against the URL
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+    const rl = await guardRateLimit(5, `cron:reminders:${ip}`)
+    if (rl) return rl
+
     // 1. Timing-safe CRON_SECRET verification
     const cronSecret = process.env.CRON_SECRET
     if (!cronSecret) {

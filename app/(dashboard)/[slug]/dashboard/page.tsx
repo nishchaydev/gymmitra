@@ -105,6 +105,7 @@ export default async function DashboardPage({
             totalMembers: SHOWCASE_STATS.totalMembers,
             activeMembers: SHOWCASE_STATS.activeMembers,
             revenue: SHOWCASE_STATS.totalRevenue.toLocaleString('en-IN'),
+            revenueRaw: SHOWCASE_STATS.totalRevenue,
             productSalesCount: SHOWCASE_STATS.productSales,
             dailyCheckins: 12
         }
@@ -179,6 +180,7 @@ export default async function DashboardPage({
             totalMembers,
             activeMembers,
             revenue: Number((totalRevenue as any)._sum.total || 0).toLocaleString('en-IN'),
+            revenueRaw: Number((totalRevenue as any)._sum.total || 0),
             productSalesCount,
             dailyCheckins: dailyCheckins || 0
         }
@@ -292,6 +294,10 @@ export default async function DashboardPage({
                             totalMembers: dashboardData.totalMembers,
                             activeMembers: dashboardData.activeMembers,
                             revenue: dashboardData.revenue,
+                            revenueRaw: dashboardData.revenueRaw,
+                            lastMonthRevenue: (dashboardData as any).lastMonthRevenue || 0,
+                            revenueChange: (dashboardData as any).revenueChange || 0,
+                            pendingRevenue: (dashboardData as any).pendingRevenue || 0,
                             productSalesCount: dashboardData.productSalesCount,
                             dailyCheckins: dashboardData.dailyCheckins,
                             recentInvoices: JSON.parse(JSON.stringify(recentInvoices)),
