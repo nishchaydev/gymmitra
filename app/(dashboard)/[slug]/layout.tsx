@@ -16,10 +16,9 @@ export default async function BrandedDashboardLayout({
     params,
 }: BrandedLayoutProps) {
     const { slug } = await params;
-    const cookieStore = await cookies();
-    const isDemoMode = cookieStore.get('mitra_demo_mode')?.value === 'true';
 
-    if (isDemoMode && slug === 'demo') {
+    // Demo bypass handled internally or via the root dashboard page
+    if (slug === 'demo') {
         return (
             <>
                 <Navbar />
