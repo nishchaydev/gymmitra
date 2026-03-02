@@ -307,7 +307,7 @@ function ExpiringMembershipsReport() {
                                             Expires: {new Date(sub.endDate).toLocaleDateString()}
                                         </div>
                                         <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600 bg-yellow-50">
-                                            {sub.daysLeft} days left
+                                            {sub.daysLeft ?? 0} days left
                                         </Badge>
                                     </div>
                                     <Button

@@ -68,26 +68,30 @@ export async function GET(request: NextRequest) {
 
         if (expiredMemberIds.length > 0) {
             // Find members from this list who STILL have an active subscription
-            const membersWithActiveSubs = await prisma.memberSubscription.findMany({
-                where: {
-                    memberId: { in: expiredMemberIds },
-                    status: 'ACTIVE',
-                },
-                select: { memberId: true },
-                distinct: ['memberId'],
-            })
-            const activeSubMemberIds = new Set(membersWithActiveSubs.map(s => s.memberId))
-
-            // Members to expire are those who don't have an active sub
-            const membersToUpdate = expiredMemberIds.filter(id => !activeSubMemberIds.has(id))
-
-            if (membersToUpdate.length > 0) {
-                const updateResult = await prisma.member.updateMany({
-                    where: { id: { in: membersToUpdate } },
-                    data: { status: 'EXPIRED' },
+            // and update those without one atomically
+            membersExpired = await prisma.$transaction(async (tx) => {
+                const membersWithActiveSubs = await tx.memberSubscription.findMany({
+                    where: {
+                        memberId: { in: expiredMemberIds },
+                        status: 'ACTIVE',
+                    },
+                    select: { memberId: true },
+                    distinct: ['memberId'],
                 })
-                membersExpired = updateResult.count
-            }
+                const activeSubMemberIds = new Set(membersWithActiveSubs.map(s => s.memberId))
+
+                // Members to expire are those who don't have an active sub
+                const membersToUpdate = expiredMemberIds.filter(id => !activeSubMemberIds.has(id))
+
+                if (membersToUpdate.length > 0) {
+                    const updateResult = await tx.member.updateMany({
+                        where: { id: { in: membersToUpdate } },
+                        data: { status: 'EXPIRED' },
+                    })
+                    return updateResult.count
+                }
+                return 0
+            })
         }
 
         console.log(`[Cron:ExpireSubs] Updated ${membersExpired} member statuses to EXPIRED`)

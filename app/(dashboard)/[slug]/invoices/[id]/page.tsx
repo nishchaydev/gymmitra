@@ -123,8 +123,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         if (!dbInvoice) notFound()
 
         if (!isDemoMode && (dbInvoice as any).gym.userId !== user?.id) {
-            const actualSlug = (dbInvoice as any).gym.slug || 'dashboard';
-            redirect(`/${actualSlug}/dashboard`)
+            const actualSlug = slug && slug !== 'dashboard' ? slug : ((dbInvoice as any).gym.slug || '');
+            redirect(actualSlug ? `/${actualSlug}/dashboard` : `/dashboard`);
         }
 
         invoice = dbInvoice as any

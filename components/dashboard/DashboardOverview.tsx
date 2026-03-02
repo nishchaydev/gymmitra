@@ -142,8 +142,6 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 <div className="lg:col-span-4 h-full">
                     <RevenueSnapshot
                         revenue={d.revenue}
-                        revenueRaw={d.revenueRaw}
-                        lastMonthRevenue={d.lastMonthRevenue}
                         revenueChange={d.revenueChange}
                         pendingRevenue={d.pendingRevenue}
                         monthlyRevenueData={d.monthlyRevenueData}

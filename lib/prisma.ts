@@ -39,10 +39,23 @@ function createPrismaClient(): PrismaClient {
   // DELETE middleware: convert to soft-delete
   client.$use(async (params, next) => {
     if (params.model && SOFT_DELETE_MODELS.includes(params.model)) {
-      if (params.model === 'GymProfile' && params.action === 'delete') {
-        const gymId = params.args?.where?.id
-        if (gymId) {
-          const invoices = await client.invoice.findFirst({ where: { gymId, deletedAt: null } })
+      if (params.model === 'GymProfile' && (params.action === 'delete' || params.action === 'deleteMany')) {
+        const queryWhere = params.args?.where || {}
+
+        // Find exactly which gyms are targeted by this delete/deleteMany
+        const targetedGyms = await client.gymProfile.findMany({
+          where: queryWhere,
+          select: { id: true },
+        })
+        const targetedGymIds = targetedGyms.map(g => g.id)
+
+        if (targetedGymIds.length > 0) {
+          const invoices = await client.invoice.findFirst({
+            where: {
+              gymId: { in: targetedGymIds },
+              deletedAt: null
+            }
+          })
           if (invoices) {
             throw new Error('Cannot delete GymProfile with existing invoices')
           }
