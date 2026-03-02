@@ -40,7 +40,7 @@ const generateDemoRenewals = () => {
 }
 
 export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommandCenterProps) {
-    const { data: realData, isLoading: queryLoading, isError } = useRenewalsQuery()
+    const { data: realData, isLoading: queryLoading, isError } = useRenewalsQuery({ enabled: !isDemo })
 
     // Switch between real and demo data
     const data = isDemo ? generateDemoRenewals() : realData

@@ -14,9 +14,10 @@ interface AtRiskData {
     daysThreshold: number
 }
 
-export function useAtRiskQuery(days: number = 14) {
+export function useAtRiskQuery(days: number = 14, options?: { enabled?: boolean }) {
     return useQuery<AtRiskData>({
         queryKey: ['at-risk', days],
+        enabled: options?.enabled,
         queryFn: async () => {
             const res = await fetch(`/api/members/at-risk?days=${days}`)
             if (!res.ok) throw new Error('Failed to fetch at-risk members')

@@ -21,9 +21,10 @@ interface RenewalsData {
     }
 }
 
-export function useRenewalsQuery() {
+export function useRenewalsQuery(options?: { enabled?: boolean }) {
     return useQuery<RenewalsData>({
         queryKey: ['renewals-dashboard'],
+        enabled: options?.enabled,
         queryFn: async () => {
             const res = await fetch('/api/renewals')
             if (!res.ok) throw new Error('Failed to fetch renewals data')
