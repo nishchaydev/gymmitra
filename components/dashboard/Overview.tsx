@@ -1,16 +1,18 @@
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import { SHOWCASE_STATS } from "@/lib/showcase-data"
 
 const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
 
 
-export function Overview({ data = SHOWCASE_STATS.overviewData }: { data?: any[] }) {
-    if (!data || data.length === 0) {
+export function Overview({ data = [] }: { data?: any[] }) {
+    const hasRevenue = data && data.length > 0 && data.some((d: any) => d.total > 0)
+
+    if (!hasRevenue) {
         return (
-            <div className="h-[300px] w-full flex items-center justify-center bg-slate-50/50 rounded-xl border border-dashed">
-                <p className="text-sm text-muted-foreground">No revenue data available for the selected period.</p>
+            <div className="h-[300px] w-full flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-dashed gap-2">
+                <p className="text-sm text-muted-foreground">No revenue data yet.</p>
+                <p className="text-xs text-muted-foreground/60">Revenue insights will appear here once you start generating invoices.</p>
             </div>
         )
     }

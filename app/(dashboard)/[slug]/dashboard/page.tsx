@@ -107,6 +107,7 @@ export default async function DashboardPage({
     let recentInvoices: any[] = []
     let todayAttendance = { count: 0, recentInitials: [] as string[], lastCheckinLabel: "No check-ins today" }
     let upcomingBirthdays: any[] = []
+    let monthlyRevenueData: { name: string; total: number }[] = []
 
     if (isDemo) {
         dashboardData = {
@@ -135,7 +136,8 @@ export default async function DashboardPage({
             dailyCheckins,
             invoices,
             attendance,
-            birthdays
+            birthdays,
+            monthlyRevenue,
         ] = await Promise.all([
             prisma.member.count({ where: { gymId: gym!.id } as any }),
             prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }),
@@ -168,8 +170,21 @@ export default async function DashboardPage({
                     status: 'ACTIVE',
                 },
                 select: { name: true, phone: true, dateOfBirth: true },
-                take: 50, // We filter in memory for simplicity/speed for small/mid gyms
-            })
+                take: 50,
+            }),
+            // Monthly revenue breakdown for the current year
+            prisma.$queryRaw`
+                SELECT
+                    EXTRACT(MONTH FROM "createdAt")::int AS month,
+                    COALESCE(SUM("total"), 0) AS total
+                FROM "Invoice"
+                WHERE "gymId" = ${gym!.id}
+                    AND "paymentStatus" = 'PAID'
+                    AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW())
+                    AND "deletedAt" IS NULL
+                GROUP BY month
+                ORDER BY month
+            ` as Promise<{ month: number; total: any }[]>,
         ])
 
         dashboardData = {
@@ -212,6 +227,20 @@ export default async function DashboardPage({
             })
             .sort((a: any, b: any) => a.diffDays - b.diffDays)
             .slice(0, 5)
+
+        // Process monthly revenue for chart
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        if (monthlyRevenue && monthlyRevenue.length > 0) {
+            // Fill all 12 months, defaulting to 0
+            const revenueMap = new Map<number, number>()
+            for (const row of monthlyRevenue) {
+                revenueMap.set(row.month, Number(row.total) || 0)
+            }
+            monthlyRevenueData = monthNames.map((name, i) => ({
+                name,
+                total: revenueMap.get(i + 1) || 0,
+            }))
+        }
     }
 
     return (
@@ -361,7 +390,7 @@ export default async function DashboardPage({
                             </CardHeader>
                             <CardContent className="pl-0 sm:pl-2">
                                 <div className="h-[300px] sm:h-[350px]">
-                                    <Overview />
+                                    <Overview data={isDemo ? SHOWCASE_STATS.overviewData : monthlyRevenueData} />
                                 </div>
                             </CardContent>
                         </Card>

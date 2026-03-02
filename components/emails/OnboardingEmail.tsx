@@ -1,14 +1,15 @@
 import {
     Body,
     Button,
+    Column,
     Container,
     Head,
     Heading,
     Hr,
     Html,
-    Img,
     Link,
     Preview,
+    Row,
     Section,
     Text,
     Tailwind,
@@ -32,67 +33,170 @@ export const OnboardingEmail = ({
     serviceAgreementUrl,
     saasPlan,
 }: OnboardingEmailProps) => {
-    const previewText = `Welcome to Gym Mitra ERP - Next Steps for ${gymName}`;
+    const previewText = `Welcome to Gym Mitra, ${ownerName}! Your workspace is ready.`;
+    const year = new Date().getFullYear();
 
     return (
         <Html>
-            <Head />
+            <Head>
+                <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                `}</style>
+            </Head>
             <Preview>{previewText}</Preview>
             <Tailwind>
-                <Body className="bg-white my-auto mx-auto font-sans leading-relaxed text-gray-800">
-                    <Container className="border border-solid border-gray-200 rounded my-[40px] mx-auto p-[20px] max-w-[600px]">
-                        <Section className="mt-[20px]">
-                            {/* Fallback to text if logo image is missing/broken */}
-                            <Heading className="text-blue-600 text-[24px] font-bold text-center p-0 my-[30px] mx-0">
-                                Gym Mitra ERP
+                <Body className="bg-[#f4f4f5] my-0 mx-auto" style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
+                    <Container className="mx-auto py-[40px] max-w-[600px]">
+
+                        {/* Header with gradient */}
+                        <Section className="bg-[#1a1a2e] rounded-t-[12px] px-[40px] pt-[40px] pb-[32px] text-center">
+                            <Text className="text-[28px] font-bold m-0 p-0" style={{ color: '#ffffff' }}>
+                                Gym<span style={{ color: '#3b82f6' }}>Mitra</span>
+                            </Text>
+                            <Text className="text-[11px] tracking-[3px] uppercase m-0 mt-[4px]" style={{ color: '#94a3b8' }}>
+                                Technologies
+                            </Text>
+                        </Section>
+
+                        {/* Main content */}
+                        <Section className="bg-white px-[40px] py-[36px]">
+                            <Heading className="text-[22px] font-semibold text-[#1a1a2e] m-0 mb-[16px]">
+                                Welcome aboard, {ownerName}! 🚀
                             </Heading>
+
+                            <Text className="text-[15px] leading-[26px] text-[#374151] m-0 mb-[20px]">
+                                We are thrilled to have you join Gym Mitra. Your workspace <strong>"{gymName}"</strong> is now fully set up and ready to go.
+                            </Text>
+
+                            <Text className="text-[15px] leading-[26px] text-[#374151] m-0 mb-[8px]">
+                                Here are your next steps to get the most out of Gym Mitra:
+                            </Text>
+
+                            {/* Feature highlights */}
+                            <Section className="bg-[#f8fafc] rounded-[8px] p-[20px] my-[16px] border border-solid border-[#e2e8f0]">
+                                <Row className="mb-[12px]">
+                                    <Column className="w-[32px] align-top">
+                                        <Text className="text-[18px] m-0 p-0">👥</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
+                                            <strong>Add Members</strong> — Start digitizing your member records
+                                        </Text>
+                                    </Column>
+                                </Row>
+                                <Row className="mb-[12px]">
+                                    <Column className="w-[32px] align-top">
+                                        <Text className="text-[18px] m-0 p-0">🧾</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
+                                            <strong>Generate Invoices</strong> — Create professional GST-ready invoices in 1 click
+                                        </Text>
+                                    </Column>
+                                </Row>
+                                <Row className="mb-[12px]">
+                                    <Column className="w-[32px] align-top">
+                                        <Text className="text-[18px] m-0 p-0">📊</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
+                                            <strong>Track Attendance</strong> — Keep an eye on daily footfall with QR check-ins
+                                        </Text>
+                                    </Column>
+                                </Row>
+                                <Row>
+                                    <Column className="w-[32px] align-top">
+                                        <Text className="text-[18px] m-0 p-0">🏪</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
+                                            <strong>Point of Sale</strong> — Manage supplements and merchandise inventory
+                                        </Text>
+                                    </Column>
+                                </Row>
+                            </Section>
+
+                            {/* CTA Button */}
+                            <Section className="text-center mt-[28px] mb-[28px]">
+                                <Button
+                                    className="bg-[#3b82f6] rounded-[8px] text-white text-[15px] font-semibold no-underline text-center px-[32px] py-[14px]"
+                                    href={loginUrl}
+                                    style={{ boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}
+                                >
+                                    Go to your Dashboard →
+                                </Button>
+                            </Section>
+
+                            <Hr className="border-[#e2e8f0] my-[24px]" />
+
+                            {/* Service Agreement */}
+                            <Text className="text-[13px] leading-[22px] text-[#6b7280] m-0 mb-[16px]">
+                                📋 Please review our{' '}
+                                <Link href={serviceAgreementUrl} className="text-[#3b82f6] underline">
+                                    Service Agreement
+                                </Link>{' '}
+                                to complete your onboarding. This protects both your business and your members.
+                            </Text>
+
+                            <Text className="text-[13px] leading-[22px] text-[#6b7280] m-0">
+                                If you have any questions, simply reply to this email. We're here to help you grow!
+                            </Text>
+
+                            <Text className="text-[14px] leading-[22px] text-[#374151] mt-[24px] mb-[0px]">
+                                Best,
+                                <br />
+                                The Gym Mitra Team
+                            </Text>
                         </Section>
 
-                        <Heading className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
-                            Welcome aboard, {ownerName}!
-                        </Heading>
-                        <Text className="text-[14px] leading-[24px]">
-                            We're absolutely thrilled to have <strong>{gymName}</strong> join the Gym Mitra ecosystem. You've taken the first major step toward streamlining your operations and growing your fitness business.
-                        </Text>
+                        {/* Footer */}
+                        <Section className="bg-[#1a1a2e] rounded-b-[12px] px-[40px] py-[28px]">
+                            {/* Legal Links */}
+                            <Row className="mb-[16px]">
+                                <Column className="text-center">
+                                    <Link href={`${baseUrl}/legal/privacy`} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                        Privacy Policy
+                                    </Link>
+                                    <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
+                                    <Link href={`${baseUrl}/legal/terms`} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                        Terms of Service
+                                    </Link>
+                                    <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
+                                    <Link href={serviceAgreementUrl} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                        Service Agreement
+                                    </Link>
+                                    <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
+                                    <Link href={`${baseUrl}/legal/refund`} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                        Refund Policy
+                                    </Link>
+                                </Column>
+                            </Row>
 
-                        <Text className="text-[14px] leading-[24px]">
-                            To complete your onboarding process and protect both your business and your members, please review our official Service Agreement.
-                        </Text>
+                            <Hr className="border-[#2d2d4e] my-[12px]" />
 
-                        <Section className="text-center mt-[32px] mb-[32px]">
-                            <Button
-                                className="bg-blue-600 rounded text-white text-[14px] font-semibold no-underline text-center px-6 py-3"
-                                href={serviceAgreementUrl}
-                            >
-                                Read & Accept Service Agreement
-                            </Button>
+                            {/* Company Info */}
+                            <Text className="text-[11px] text-[#64748b] text-center m-0 mb-[4px]">
+                                © {year} Gym Emitra Technologies Pvt. Ltd. All rights reserved.
+                            </Text>
+                            <Text className="text-[11px] text-[#64748b] text-center m-0 mb-[4px]">
+                                Gym Mitra — India's #1 Gym Management Platform
+                            </Text>
+                            <Text className="text-[11px] text-[#475569] text-center m-0">
+                                <Link href="mailto:support@emitra.dev" className="text-[#64748b] no-underline">
+                                    support@emitra.dev
+                                </Link>
+                                {' '} | {' '}
+                                <Link href="https://gym.emitra.dev" className="text-[#64748b] no-underline">
+                                    gym.emitra.dev
+                                </Link>
+                            </Text>
                         </Section>
 
-                        <Text className="text-[14px] leading-[24px]">
-                            Once you have reviewed the agreement, you can dive straight into your dashboard to start configuring your membership plans, staff, and point-of-sale inventory.
-                        </Text>
-
-                        <Section className="text-center mt-[32px] mb-[32px]">
-                            <Button
-                                className="bg-gray-100 rounded text-gray-800 border border-solid border-gray-300 text-[14px] font-semibold no-underline text-center px-6 py-3"
-                                href={loginUrl}
-                            >
-                                Go to Dashboard
-                            </Button>
-                        </Section>
-
-                        <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
-
-                        <Text className="text-[#666666] text-[12px] leading-[24px]">
-                            If you have any questions, reply directly to this email or contact our support team at support@emitra.dev. We are here to help you succeed!
-                        </Text>
-
-                        <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
-
-                        <Text className="text-[#666666] text-[12px] leading-[24px] text-center">
-                            © {new Date().getFullYear()} eMitra Technologies. All rights reserved.
+                        {/* Unsubscribe */}
+                        <Text className="text-[11px] text-[#9ca3af] text-center mt-[16px]">
+                            You received this email because you signed up for Gym Mitra.
                             <br />
-                            Gym Mitra ERP - The #1 Gym Management Software
+                            If you did not create this account, you can safely ignore this email.
                         </Text>
                     </Container>
                 </Body>
@@ -102,8 +206,8 @@ export const OnboardingEmail = ({
 };
 
 OnboardingEmail.PreviewProps = {
-    ownerName: 'Alex',
-    gymName: 'Titanium Fitness',
+    ownerName: 'Nishchay',
+    gymName: 'Iron Paradise Gym',
     loginUrl: `${baseUrl}/dashboard`,
     serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
     saasPlan: 'BASIC',
