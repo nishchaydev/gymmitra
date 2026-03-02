@@ -87,10 +87,10 @@ export async function GET() {
 
             const formattedSub = {
                 id: sub.id,
-                memberId: sub.member.id,
-                memberName: sub.member.name,
-                phone: sub.member.phone,
-                planName: sub.plan.name,
+                memberId: sub.member?.id || 'unknown',
+                memberName: sub.member?.name || 'Unknown Member',
+                phone: sub.member?.phone || null,
+                planName: sub.plan?.name || 'Unknown Plan',
                 endDate: sub.endDate,
                 daysOffset: diffDays // Negative means missed, positive means upcoming/urgent
             }

@@ -9,15 +9,18 @@ import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const AttendanceWidget = dynamic(() => import('@/components/dashboard/AttendanceWidget').then(mod => mod.AttendanceWidget), {
-    loading: () => <Skeleton className="w-full h-[150px] rounded-xl" />
+    loading: () => <Skeleton className="w-full h-[150px] rounded-xl" />,
+    ssr: false
 })
 
 const UpcomingBirthdays = dynamic(() => import('@/components/dashboard/UpcomingBirthdays').then(mod => mod.UpcomingBirthdays), {
-    loading: () => <Skeleton className="w-full h-[200px] rounded-xl" />
+    loading: () => <Skeleton className="w-full h-[200px] rounded-xl" />,
+    ssr: false
 })
 
 const RecentInvoices = dynamic(() => import('@/components/dashboard/RecentInvoices').then(mod => mod.RecentInvoices), {
-    loading: () => <Skeleton className="w-full h-[350px] rounded-xl" />
+    loading: () => <Skeleton className="w-full h-[350px] rounded-xl" />,
+    ssr: false
 })
 
 import { Button } from '@/components/ui/button'
@@ -137,9 +140,10 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </Card>
             </div>
 
-            {/* Charts + Widgets */}
+            {/* Dashboard Content - Masonry style to prevent vertical overlap anomalies */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-                <div className="lg:col-span-4 h-full">
+                {/* Left Column */}
+                <div className="lg:col-span-4 flex flex-col space-y-6">
                     <RevenueSnapshot
                         revenue={d.revenue}
                         revenueChange={d.revenueChange}
@@ -147,8 +151,38 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         monthlyRevenueData={d.monthlyRevenueData}
                         isDemo={isDemo}
                     />
+                    <div className="overflow-hidden rounded-xl">
+                        <RecentInvoices
+                            isDemo={isDemo}
+                            data={d.recentInvoices}
+                        />
+                    </div>
                 </div>
-                <div className="lg:col-span-3 space-y-6">
+
+                {/* Right Column */}
+                <div className="lg:col-span-3 flex flex-col space-y-6">
+                    <Card className="border-slate-200 shadow-sm">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
+                            <CardDescription>Most frequent operations</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                            <Link href={`/${slug}/members/new`} className="w-full">
+                                <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
+                                    <UserPlus className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add New Member
+                                </Button>
+                            </Link>
+                            <Link href={`/${slug}/products/new`} className="w-full">
+                                <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
+                                    <ShoppingBag className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add Inventory
+                                </Button>
+                            </Link>
+                            <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline" disabled>
+                                <ReceiptText className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Generate Report
+                            </Button>
+                        </CardContent>
+                    </Card>
+
                     <AtRiskMembers
                         slug={slug}
                         gymName={gymName}
@@ -164,37 +198,6 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         data={d.upcomingBirthdays}
                     />
                 </div>
-            </div>
-
-            {/* Recent Invoices + Quick Actions */}
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-                <div className="lg:col-span-4 overflow-hidden rounded-xl">
-                    <RecentInvoices
-                        isDemo={isDemo}
-                        data={d.recentInvoices}
-                    />
-                </div>
-                <Card className="lg:col-span-3 border-slate-200 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
-                        <CardDescription>Most frequent operations</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                        <Link href={`/${slug}/members/new`} className="w-full">
-                            <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
-                                <UserPlus className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add New Member
-                            </Button>
-                        </Link>
-                        <Link href={`/${slug}/products/new`} className="w-full">
-                            <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
-                                <ShoppingBag className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add Inventory
-                            </Button>
-                        </Link>
-                        <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline" disabled>
-                            <ReceiptText className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Generate Report
-                        </Button>
-                    </CardContent>
-                </Card>
             </div>
         </div>
     )
