@@ -40,15 +40,20 @@ export async function GET(request: NextRequest) {
         const gym = auth.gym
 
         const { searchParams } = new URL(request.url)
+        const q = searchParams.get('q')
         const category = searchParams.get('category')
         const lowStock = searchParams.get('lowStock') === 'true'
 
-        const whereClause: { isActive: boolean; category?: any; gymId: string } = {
+        const whereClause: any = {
             isActive: true,
             gymId: gym.id
         }
 
-        if (category) {
+        if (q) {
+            whereClause.name = { contains: q, mode: 'insensitive' }
+        }
+
+        if (category && category !== 'ALL') {
             whereClause.category = category
         }
 

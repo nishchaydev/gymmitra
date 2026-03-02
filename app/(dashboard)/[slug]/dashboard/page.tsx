@@ -1,16 +1,12 @@
 import { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Overview } from "@/components/dashboard/Overview"
 import { Analytics } from "@/components/dashboard/Analytics"
 import { Reports } from "@/components/dashboard/Reports"
 import { RetentionMetrics } from "@/components/dashboard/RetentionMetrics"
-import { Badge } from "@/components/ui/badge"
-import { UpcomingBirthdays } from "@/components/dashboard/UpcomingBirthdays"
-import { RecentInvoices } from "@/components/dashboard/RecentInvoices"
-import { AttendanceWidget } from "@/components/dashboard/AttendanceWidget"
+import { DashboardOverview } from "@/components/dashboard/DashboardOverview"
 import { Button } from "@/components/ui/button"
-import { Activity, CreditCard, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Target, Zap, CheckCircle2, ShoppingBag, ReceiptText, UserPlus, FileText, Dumbbell } from "lucide-react"
+import { UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { startOfToday, endOfToday } from "date-fns"
@@ -34,15 +30,12 @@ export default async function DashboardPage({
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
-    // If user is logged in, FORCIBLY disable demo mode, regardless of cookie.
-    // Demo mode is ONLY for unauthenticated visitors or explicit demo users.
     const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
     if (!user && !isDemo) {
         redirect("/login")
     }
 
-    // Get the gym profile for this user
     let gym = null
     let dbError = false
     try {
@@ -56,7 +49,6 @@ export default async function DashboardPage({
     } catch (error) {
         console.error("Failed to load gym profile:", error)
         dbError = true
-        // Fallback to error UI if db is down
     }
 
     if (dbError) {
@@ -65,7 +57,7 @@ export default async function DashboardPage({
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <CardTitle>System Maintenance</CardTitle>
-                        <CardDescription>We're experiencing temporary database issues.</CardDescription>
+                        <CardDescription>We&apos;re experiencing temporary database issues.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p>We could not load your profile at this time. Please check back in a few minutes.</p>
@@ -83,7 +75,6 @@ export default async function DashboardPage({
     }
 
     if (!gym && !isDemo) {
-        // This shouldn't happen with the new signup flow, but if it does:
         return (
             <div className="flex h-[80vh] items-center justify-center">
                 <Card className="w-full max-w-md">
@@ -126,6 +117,7 @@ export default async function DashboardPage({
             createdAt: new Date(inv.date)
         }))
         upcomingBirthdays = (MOCKUP_DATA as any).birthdays
+        monthlyRevenueData = SHOWCASE_STATS.overviewData
     } else {
         const today = startOfToday()
         const [
@@ -165,14 +157,10 @@ export default async function DashboardPage({
                 take: 3,
             }),
             prisma.member.findMany({
-                where: {
-                    gymId: gym!.id,
-                    status: 'ACTIVE',
-                },
+                where: { gymId: gym!.id, status: 'ACTIVE' },
                 select: { name: true, phone: true, dateOfBirth: true },
                 take: 50,
             }),
-            // Monthly revenue breakdown for the current year
             prisma.$queryRaw`
                 SELECT
                     EXTRACT(MONTH FROM "createdAt")::int AS month,
@@ -212,7 +200,7 @@ export default async function DashboardPage({
             }
         }
 
-        // Process Birthdays (Optimization: JS filtering for now, but in one query)
+        // Process Birthdays
         upcomingBirthdays = birthdays
             .map((m: any) => {
                 const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString();
@@ -231,7 +219,6 @@ export default async function DashboardPage({
         // Process monthly revenue for chart
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         if (monthlyRevenue && monthlyRevenue.length > 0) {
-            // Fill all 12 months, defaulting to 0
             const revenueMap = new Map<number, number>()
             for (const row of monthlyRevenue) {
                 revenueMap.set(row.month, Number(row.total) || 0)
@@ -292,150 +279,27 @@ export default async function DashboardPage({
             <Tabs defaultValue="overview" className="space-y-6">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="analytics">
-                        Analytics
-                    </TabsTrigger>
-                    <TabsTrigger value="insights">
-                        Insights
-                    </TabsTrigger>
-                    <TabsTrigger value="reports">
-                        Reports
-                    </TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                    <TabsTrigger value="insights">Insights</TabsTrigger>
+                    <TabsTrigger value="reports">Reports</TabsTrigger>
                 </TabsList>
                 <TabsContent value="overview" className="space-y-6">
-                    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                    Total Revenue
-                                </CardTitle>
-                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
-                                    <DollarSign className="h-5 w-5 text-primary" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-1">
-                                    <div className="text-3xl font-bold tracking-tight text-slate-900">₹{dashboardData.revenue}</div>
-                                    <div className="flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2">
-                                        <div className="h-1 w-1 rounded-full bg-emerald-600 mr-1.5 animate-pulse" />
-                                        LIVE
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                    Active Members
-                                </CardTitle>
-                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
-                                    <Users className="h-5 w-5 text-primary" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-1">
-                                    <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.activeMembers}</div>
-                                    <div className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest flex items-center gap-1.5">
-                                        {dashboardData.totalMembers} Total
-                                        <span className="h-1 w-1 rounded-full bg-slate-300" />
-                                        {dashboardData.totalMembers > 0 ? Math.round((dashboardData.activeMembers / dashboardData.totalMembers) * 100) : 0}% Active
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Product Sales</CardTitle>
-                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
-                                    <ShoppingBag className="h-5 w-5 text-primary" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-1">
-                                    <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.productSalesCount}</div>
-                                    <div className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">
-                                        All-time items
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                    Today's Attendance
-                                </CardTitle>
-                                <div className="p-2.5 bg-primary/5 rounded-xl group-hover:bg-primary/10 transition-colors">
-                                    <Dumbbell className="h-5 w-5 text-primary" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-1">
-                                    <div className="text-3xl font-bold tracking-tight text-slate-900">{dashboardData.dailyCheckins}</div>
-                                    <div className="text-xs font-bold text-[#4FC3F7] mt-2 uppercase tracking-widest flex items-center gap-1.5">
-                                        <div className="h-1 w-1 rounded-full bg-[#4FC3F7] mr-1.5 animate-bounce" />
-                                        REAL-TIME LOG
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-                        <Card className="lg:col-span-4 border-slate-200 shadow-sm">
-                            <CardHeader>
-                                <CardTitle className="text-lg font-bold">Revenue Insights</CardTitle>
-                                <CardDescription>
-                                    Monthly revenue breakdown and trends.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="pl-0 sm:pl-2">
-                                <div className="h-[300px] sm:h-[350px]">
-                                    <Overview data={isDemo ? SHOWCASE_STATS.overviewData : monthlyRevenueData} />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <div className="lg:col-span-3 space-y-6">
-                            <AttendanceWidget
-                                isDemo={isDemo}
-                                data={todayAttendance}
-                            />
-                            <UpcomingBirthdays
-                                isDemo={isDemo}
-                                gymName={gym?.businessName || gym?.name}
-                                data={upcomingBirthdays}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-                        <div className="lg:col-span-4 overflow-hidden rounded-xl">
-                            <RecentInvoices
-                                isDemo={isDemo}
-                                data={recentInvoices}
-                            />
-                        </div>
-                        <Card className="lg:col-span-3 border-slate-200 shadow-sm">
-                            <CardHeader>
-                                <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
-                                <CardDescription>Most frequent operations</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                                <Link href={`/${slug}/members/new`} className="w-full">
-                                    <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
-                                        <UserPlus className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add New Member
-                                    </Button>
-                                </Link>
-                                <Link href={`/${slug}/products/new`} className="w-full">
-                                    <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
-                                        <ShoppingBag className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add Inventory
-                                    </Button>
-                                </Link>
-                                <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline" disabled>
-                                    <ReceiptText className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Generate Report
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <DashboardOverview
+                        slug={slug}
+                        gymName={(gym as any)?.businessName || gym?.name}
+                        isDemo={isDemo}
+                        initialData={{
+                            totalMembers: dashboardData.totalMembers,
+                            activeMembers: dashboardData.activeMembers,
+                            revenue: dashboardData.revenue,
+                            productSalesCount: dashboardData.productSalesCount,
+                            dailyCheckins: dashboardData.dailyCheckins,
+                            recentInvoices: JSON.parse(JSON.stringify(recentInvoices)),
+                            todayAttendance,
+                            upcomingBirthdays: JSON.parse(JSON.stringify(upcomingBirthdays)),
+                            monthlyRevenueData,
+                        }}
+                    />
                 </TabsContent>
                 <TabsContent value="analytics" className="space-y-4">
                     <Analytics isDemo={isDemo} />
