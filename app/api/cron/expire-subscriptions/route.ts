@@ -64,21 +64,29 @@ export async function GET(request: NextRequest) {
 
         let membersExpired = 0
 
-        for (const sub of expiredMemberSubs) {
-            // Check if this member has any OTHER active subscriptions
-            const activeSubCount = await prisma.memberSubscription.count({
+        const expiredMemberIds = expiredMemberSubs.map(s => s.memberId)
+
+        if (expiredMemberIds.length > 0) {
+            // Find members from this list who STILL have an active subscription
+            const membersWithActiveSubs = await prisma.memberSubscription.findMany({
                 where: {
-                    memberId: sub.memberId,
+                    memberId: { in: expiredMemberIds },
                     status: 'ACTIVE',
                 },
+                select: { memberId: true },
+                distinct: ['memberId'],
             })
+            const activeSubMemberIds = new Set(membersWithActiveSubs.map(s => s.memberId))
 
-            if (activeSubCount === 0) {
-                await prisma.member.update({
-                    where: { id: sub.memberId },
+            // Members to expire are those who don't have an active sub
+            const membersToUpdate = expiredMemberIds.filter(id => !activeSubMemberIds.has(id))
+
+            if (membersToUpdate.length > 0) {
+                const updateResult = await prisma.member.updateMany({
+                    where: { id: { in: membersToUpdate } },
                     data: { status: 'EXPIRED' },
                 })
-                membersExpired++
+                membersExpired = updateResult.count
             }
         }
 

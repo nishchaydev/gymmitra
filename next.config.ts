@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self';",
           },
         ],
       },

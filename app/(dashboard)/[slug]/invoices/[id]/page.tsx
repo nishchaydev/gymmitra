@@ -89,6 +89,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 gym: {
                     select: {
                         userId: true,
+                        slug: true,
                         businessName: true,
                         address: true,
                         city: true,
@@ -122,7 +123,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         if (!dbInvoice) notFound()
 
         if (!isDemoMode && (dbInvoice as any).gym.userId !== user?.id) {
-            redirect(`/${slug}/dashboard`)
+            const actualSlug = (dbInvoice as any).gym.slug || 'dashboard';
+            redirect(`/${actualSlug}/dashboard`)
         }
 
         invoice = dbInvoice as any

@@ -46,8 +46,10 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const status = searchParams.get('status')
         const q = searchParams.get('q') || ''
-        const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
-        const take = Math.min(100, Math.max(1, parseInt(searchParams.get('take') || '50', 10)))
+        const parsedPage = parseInt(searchParams.get('page') || '1', 10)
+        const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
+        const parsedTake = parseInt(searchParams.get('take') || '50', 10)
+        const take = Math.min(100, Math.max(1, isNaN(parsedTake) ? 50 : parsedTake))
         const skip = (page - 1) * take
 
         const whereClause: any = {

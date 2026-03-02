@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
                 const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
                 return { ...m, date: label, diffDays }
             })
-            .filter(Boolean)
+            .filter((m): m is NonNullable<typeof m> => m !== null)
             .sort((a, b) => a.diffDays - b.diffDays)
             .slice(0, 5)
 

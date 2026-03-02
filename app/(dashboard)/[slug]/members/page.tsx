@@ -39,31 +39,43 @@ export default async function MembersPage({
     }
 
     let gymId = 'demo'
+    let hasGymError = false
+    let hasNoGym = false
+
     if (user && !isDemo) {
         try {
             const gym = await prisma.gymProfile.findUnique({
                 where: { userId: user.id }
             })
             if (!gym) {
-                return (
-                    <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 text-center p-8">
-                        <div className="text-destructive font-bold text-xl">Gym Profile Not Found</div>
-                        <p className="text-muted-foreground">Please complete your onboarding to access members.</p>
-                        <Link href="/onboarding">
-                            <Button>Go to Onboarding</Button>
-                        </Link>
-                    </div>
-                )
+                hasNoGym = true
+            } else {
+                gymId = gym.id
             }
-            gymId = gym.id
         } catch (error) {
             console.error("Failed to load gym profile for members:", error)
-            return (
-                <div className="p-8 text-center text-destructive">
-                    System error loading profile. Please try refreshing.
-                </div>
-            )
+            hasGymError = true
         }
+    }
+
+    if (hasNoGym) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 text-center p-8">
+                <div className="text-destructive font-bold text-xl">Gym Profile Not Found</div>
+                <p className="text-muted-foreground">Please complete your onboarding to access members.</p>
+                <Link href="/onboarding">
+                    <Button>Go to Onboarding</Button>
+                </Link>
+            </div>
+        )
+    }
+
+    if (hasGymError) {
+        return (
+            <div className="p-8 text-center text-destructive">
+                System error loading profile. Please try refreshing.
+            </div>
+        )
     }
 
     const whereClause: Prisma.MemberWhereInput = {
@@ -104,17 +116,26 @@ export default async function MembersPage({
     let totalCount = isDemo ? allDemoMembers.length : 0
 
     if (!isDemo) {
-        const [dbMembers, dbCount] = await Promise.all([
-            prisma.member.findMany({
-                where: whereClause,
-                orderBy: { createdAt: 'desc' },
-                take: take,
-                skip: skip
-            }),
-            prisma.member.count({ where: whereClause })
-        ])
-        members = dbMembers
-        totalCount = dbCount
+        try {
+            const [dbMembers, dbCount] = await Promise.all([
+                prisma.member.findMany({
+                    where: whereClause,
+                    orderBy: { createdAt: 'desc' },
+                    take: take,
+                    skip: skip
+                }),
+                prisma.member.count({ where: whereClause })
+            ])
+            members = dbMembers
+            totalCount = dbCount
+        } catch (error) {
+            console.error("Failed to load members:", error)
+            return (
+                <div className="p-8 text-center text-destructive">
+                    System error loading members. Please try refreshing.
+                </div>
+            )
+        }
     }
     const hasMore = totalCount > page * take
 

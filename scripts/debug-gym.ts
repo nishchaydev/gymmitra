@@ -19,7 +19,7 @@ async function main() {
         await raw.gymProfile.delete({ where: { id: gym.id } })
     } catch (e: any) {
         console.log('FULL ERROR:')
-        console.log(JSON.stringify(e, null, 2))
+        console.error(e)
     }
     await raw.$disconnect()
 }

@@ -1,7 +1,7 @@
 import { getAuthGym } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
@@ -16,9 +16,9 @@ export default async function BrandedDashboardLayout({
     params,
 }: BrandedLayoutProps) {
     const { slug } = await params;
-    const headerList = await headers();
+    const cookieStore = await cookies();
     const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true';
-    const isDemoMode = envDemoEnabled && headerList.get('x-demo-mode') === 'true';
+    const isDemoMode = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true';
 
     // Demo Bypass: Intentionally skips DB check and multi-tenancy slug enforcement 
     // to serve isolated showcasing data. True endpoints still maintain RLS.

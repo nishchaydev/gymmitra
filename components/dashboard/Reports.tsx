@@ -39,6 +39,7 @@ interface ExpiringMembership {
     plan: {
         name: string
     }
+    daysLeft?: number
 }
 
 export function Reports({ isDemo = false }: ReportsProps) {
@@ -255,7 +256,11 @@ function ExpiringMembershipsReport() {
         fetch('/api/reports?type=expiring')
             .then(res => res.json())
             .then(data => {
-                setData(Array.isArray(data) ? data : [])
+                const processed = (Array.isArray(data) ? data : []).map(sub => {
+                    const diff = new Date(sub.endDate).getTime() - new Date().getTime();
+                    return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
+                });
+                setData(processed)
                 setLoading(false)
             })
             .catch(err => {
@@ -302,11 +307,7 @@ function ExpiringMembershipsReport() {
                                             Expires: {new Date(sub.endDate).toLocaleDateString()}
                                         </div>
                                         <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600 bg-yellow-50">
-                                            {(() => {
-                                                const diff = new Date(sub.endDate).getTime() - new Date().getTime();
-                                                const days = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
-                                                return `${days} days left`;
-                                            })()}
+                                            {sub.daysLeft} days left
                                         </Badge>
                                     </div>
                                     <Button
@@ -314,11 +315,9 @@ function ExpiringMembershipsReport() {
                                         variant="ghost"
                                         className="text-brand-primary hover:text-emerald-700 hover:bg-emerald-50"
                                         onClick={() => {
-                                            const diff = new Date(sub.endDate).getTime() - new Date().getTime();
-                                            const daysLeft = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
                                             const link = getWhatsAppLink(
                                                 sub.member.phone,
-                                                templates.renewalReminder(sub.member.name, daysLeft, "this gym") // The API pre-generates the real link. We should rely on that instead, but this component is currently fetching its own data and manually constructing the link.
+                                                templates.renewalReminder(sub.member.name, sub.daysLeft || 0, "this gym") // The API pre-generates the real link. We should rely on that instead, but this component is currently fetching its own data and manually constructing the link.
                                             )
                                             window.open(link, '_blank')
                                         }}

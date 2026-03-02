@@ -104,8 +104,19 @@ export async function POST(request: NextRequest) {
                 checkInTime: now,
                 localDateString: localDateString
             },
-            include: {
-                member: true // Include member details in the response
+            select: {
+                id: true,
+                memberId: true,
+                gymId: true,
+                date: true,
+                checkInTime: true,
+                localDateString: true,
+                member: {
+                    select: {
+                        name: true,
+                        phone: true
+                    }
+                }
             }
         })
 

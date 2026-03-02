@@ -228,7 +228,8 @@ export default async function DashboardPage({
         if (attendance.length > 0) {
             const last = attendance[0]
             const checkIn = new Date((last as any).checkInTime)
-            const minutesAgo = Math.max(0, Math.round((Date.now() - checkIn.getTime()) / 60000))
+            const now = new Date().getTime()
+            const minutesAgo = Math.max(0, Math.round((now - checkIn.getTime()) / 60000))
             todayAttendance = {
                 count: dailyCheckins,
                 lastCheckinLabel: minutesAgo < 60

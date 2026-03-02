@@ -319,7 +319,7 @@ CREATE UNIQUE INDEX "InvoiceSequence_gymId_key" ON "InvoiceSequence"("gymId");
 CREATE INDEX "Member_gymId_idx" ON "Member"("gymId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Member_gymId_phone_key" ON "Member"("gymId", "phone");
+CREATE UNIQUE INDEX "Member_gymId_phone_key" ON "Member"("gymId", "phone") WHERE "deletedAt" IS NULL;
 
 -- CreateIndex
 CREATE INDEX "MembershipPlan_gymId_idx" ON "MembershipPlan"("gymId");
@@ -375,8 +375,7 @@ CREATE UNIQUE INDEX "Attendance_memberId_localDateString_key" ON "Attendance"("m
 -- CreateIndex
 CREATE UNIQUE INDEX "RegistrationCode_code_key" ON "RegistrationCode"("code");
 
--- CreateIndex
-CREATE INDEX "RegistrationCode_code_idx" ON "RegistrationCode"("code");
+
 
 -- CreateIndex
 CREATE INDEX "StaffMember_gymId_idx" ON "StaffMember"("gymId");

@@ -20,8 +20,8 @@ async function fetchMembers(params: MembersParams): Promise<MembersResponse> {
     const searchParams = new URLSearchParams()
     if (params.q) searchParams.set('q', params.q)
     if (params.status) searchParams.set('status', params.status)
-    if (params.page) searchParams.set('page', String(params.page))
-    if (params.take) searchParams.set('take', String(params.take))
+    if (params.page !== undefined) searchParams.set('page', String(params.page))
+    if (params.take !== undefined) searchParams.set('take', String(params.take))
 
     const res = await fetch(`/api/members?${searchParams.toString()}`)
     if (!res.ok) throw new Error('Failed to fetch members')

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
-const SOFT_DELETE_MODELS = ['Member', 'Invoice']
+const SOFT_DELETE_MODELS = ['Member', 'Invoice', 'GymProfile']
 
 function createPrismaClient(): PrismaClient {
   const client = new PrismaClient()
@@ -25,7 +25,7 @@ function createPrismaClient(): PrismaClient {
           params.args.where.deletedAt = null
         }
       }
-      if (params.action === 'count') {
+      if (params.action === 'count' || params.action === 'aggregate' || params.action === 'groupBy') {
         if (!params.args) params.args = {}
         if (!params.args.where) params.args.where = {}
         if (params.args.where.deletedAt === undefined) {
@@ -39,6 +39,15 @@ function createPrismaClient(): PrismaClient {
   // DELETE middleware: convert to soft-delete
   client.$use(async (params, next) => {
     if (params.model && SOFT_DELETE_MODELS.includes(params.model)) {
+      if (params.model === 'GymProfile' && params.action === 'delete') {
+        const gymId = params.args?.where?.id
+        if (gymId) {
+          const invoices = await client.invoice.findFirst({ where: { gymId, deletedAt: null } })
+          if (invoices) {
+            throw new Error('Cannot delete GymProfile with existing invoices')
+          }
+        }
+      }
       if (params.action === 'delete') {
         params.action = 'update'
         params.args.data = { deletedAt: new Date() }

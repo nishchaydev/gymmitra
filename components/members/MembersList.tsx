@@ -100,7 +100,7 @@ export function MembersList({ slug, query, status, page, take, initialData }: Me
                                                 {member.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell suppressHydrationWarning>
                                             {(() => {
                                                 const date = new Date(member.joiningDate || member.createdAt);
                                                 return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();

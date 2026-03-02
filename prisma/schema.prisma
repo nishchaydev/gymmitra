@@ -83,7 +83,6 @@ model Member {
   sales             Sale[]
   ptSessions        PTSession[]
 
-  @@unique([gymId, phone])
   @@index([gymId])
 }
 
@@ -269,8 +268,6 @@ model RegistrationCode {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([code])
 }
 
 enum MemberStatus {

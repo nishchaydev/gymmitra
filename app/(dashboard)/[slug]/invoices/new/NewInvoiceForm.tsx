@@ -23,7 +23,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
     const [walkInEmail, setWalkInEmail] = useState('')
     const [walkInAddress, setWalkInAddress] = useState('')
     const [items, setItems] = useState<{ id: string, description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([
-        { id: typeof window !== 'undefined' ? crypto.randomUUID() : 'initial', description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }
+        { id: 'initial', description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }
     ])
     const [discount, setDiscount] = useState(0)
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH')
@@ -299,7 +299,11 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                                 setSuccess(true)
                                                 toast.success("Invoice generated successfully")
                                                 setTimeout(() => {
-                                                    router.push(`/${slug}/invoices/${result.id || ''}`)
+                                                    if (result.id) {
+                                                        router.push(`/${slug}/invoices/${result.id}`)
+                                                    } else {
+                                                        router.push(`/${slug}/invoices`)
+                                                    }
                                                 }, 2000)
                                             }
 
