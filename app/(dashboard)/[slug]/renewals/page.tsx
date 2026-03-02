@@ -3,6 +3,8 @@ import { getAuthGym } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { RenewalCommandCenter } from "@/components/renewals/RenewalCommandCenter"
 import { ShieldAlert } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 
 export const metadata: Metadata = {
     title: "Renewals | Gym Mitra",
@@ -15,13 +17,18 @@ export default async function RenewalsPage({
     params: Promise<{ slug: string }>
 }) {
     const { slug } = await params
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+
     const auth = await getAuthGym()
 
-    if (!auth || auth.gym.slug !== slug) {
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
-    const gym = auth.gym
+    const gymName = auth?.gym?.businessName || auth?.gym?.name || "Gym Mitra Showcase"
 
     return (
         <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -37,7 +44,7 @@ export default async function RenewalsPage({
                 </div>
             </div>
 
-            <RenewalCommandCenter gymName={gym.businessName || gym.name} />
+            <RenewalCommandCenter gymName={gymName} isDemo={isDemo} />
         </div>
     )
 }

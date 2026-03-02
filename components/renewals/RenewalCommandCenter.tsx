@@ -10,15 +10,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useRenewalsQuery, RenewalMember } from '@/hooks/use-renewals'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { Loader2, Send, AlertTriangle, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, addDays, subDays } from 'date-fns'
 
 interface RenewalCommandCenterProps {
     gymName: string
     isDemo?: boolean
 }
 
-export function RenewalCommandCenter({ gymName }: RenewalCommandCenterProps) {
-    const { data, isLoading, isError } = useRenewalsQuery()
+// Generate some fake demo renewals if we are in showcase mode
+const generateDemoRenewals = () => {
+    const today = new Date()
+    return {
+        urgent: [
+            { id: "demor1", memberId: "m1", memberName: "Rahul Sharma", phone: "9876543210", planName: "Gold Annual", endDate: addDays(today, 3).toISOString(), daysOffset: 3 }
+        ],
+        upcoming: [
+            { id: "demor2", memberId: "m2", memberName: "Anjali Gupta", phone: "9123456789", planName: "Black Monthly", endDate: addDays(today, 12).toISOString(), daysOffset: 12 },
+            { id: "demor3", memberId: "m3", memberName: "Priya Verma", phone: "9445566778", planName: "Gold Annual", endDate: addDays(today, 18).toISOString(), daysOffset: 18 }
+        ],
+        missed: [
+            { id: "demor4", memberId: "m4", memberName: "Vikram Singh", phone: "9988776655", planName: "Silver Quarterly", endDate: subDays(today, 5).toISOString(), daysOffset: -5 }
+        ],
+        summary: {
+            urgentCount: 1,
+            upcomingCount: 2,
+            missedCount: 1
+        }
+    }
+}
+
+export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommandCenterProps) {
+    const { data: realData, isLoading: queryLoading, isError } = useRenewalsQuery()
+
+    // Switch between real and demo data
+    const data = isDemo ? generateDemoRenewals() : realData
+    const isLoading = isDemo ? false : queryLoading
+
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [isSending, setIsSending] = useState(false)
     const [sendProgress, setSendProgress] = useState(0)
