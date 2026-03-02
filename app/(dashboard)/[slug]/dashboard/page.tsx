@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { startOfToday, endOfToday } from "date-fns"
+import { startOfToday, endOfToday, startOfMonth, subMonths, endOfMonth } from "date-fns"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { SHOWCASE_STATS, MOCKUP_DATA } from "@/lib/showcase-data"
@@ -121,6 +121,10 @@ export default async function DashboardPage({
         monthlyRevenueData = SHOWCASE_STATS.overviewData
     } else {
         const today = startOfToday()
+        const startOfThisMonth = startOfMonth(today)
+        const startOfLastMonth = startOfMonth(subMonths(today, 1))
+        const endOfLastMonth = endOfMonth(subMonths(today, 1))
+
         const [
             totalMembers,
             activeMembers,
@@ -131,14 +135,16 @@ export default async function DashboardPage({
             attendance,
             birthdays,
             monthlyRevenue,
+            thisMonthInvoicesPending,
+            lastMonthInvoicesPaid,
         ] = await Promise.all([
             prisma.member.count({ where: { gymId: gym!.id } as any }),
             prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }),
             prisma.invoice.aggregate({
-                where: { paymentStatus: 'PAID', gymId: gym!.id } as any,
+                where: { paymentStatus: 'PAID', gymId: gym!.id, issueDate: { gte: startOfThisMonth }, deletedAt: null } as any,
                 _sum: { total: true }
             }),
-            prisma.sale.count({ where: { product: { gymId: gym!.id } } as any }),
+            prisma.sale.count({ where: { product: { gymId: gym!.id }, saleDate: { gte: startOfThisMonth } } as any }),
             prisma.attendance.count({
                 where: {
                     gymId: gym!.id,
@@ -174,13 +180,45 @@ export default async function DashboardPage({
                 GROUP BY month
                 ORDER BY month
             ` as Promise<{ month: number; total: any }[]>,
+            prisma.invoice.aggregate({
+                where: {
+                    gymId: gym!.id,
+                    paymentStatus: 'PENDING',
+                    issueDate: { gte: startOfThisMonth },
+                    deletedAt: null
+                } as any,
+                _sum: { total: true }
+            }),
+            prisma.invoice.aggregate({
+                where: {
+                    gymId: gym!.id,
+                    paymentStatus: 'PAID',
+                    issueDate: { gte: startOfLastMonth, lte: endOfLastMonth },
+                    deletedAt: null
+                } as any,
+                _sum: { total: true }
+            })
         ])
+
+        const thisMonthRev = Number((totalRevenue as any)._sum.total || 0);
+        const lastMonthRev = Number((lastMonthInvoicesPaid as any)._sum.total || 0);
+        const pendingRev = Number((thisMonthInvoicesPending as any)._sum.total || 0);
+
+        let revChange = 0;
+        if (lastMonthRev > 0) {
+            revChange = ((thisMonthRev - lastMonthRev) / lastMonthRev) * 100;
+        } else if (lastMonthRev === 0 && thisMonthRev > 0) {
+            revChange = 100;
+        }
 
         dashboardData = {
             totalMembers,
             activeMembers,
-            revenue: Number((totalRevenue as any)._sum.total || 0).toLocaleString('en-IN'),
-            revenueRaw: Number((totalRevenue as any)._sum.total || 0),
+            revenue: thisMonthRev.toLocaleString('en-IN'),
+            revenueRaw: thisMonthRev,
+            lastMonthRevenue: lastMonthRev,
+            revenueChange: Number(revChange.toFixed(2)),
+            pendingRevenue: pendingRev,
             productSalesCount,
             dailyCheckins: dailyCheckins || 0
         }

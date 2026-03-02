@@ -1,11 +1,11 @@
 import { getAuthGym } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 
 export default async function DashboardRedirect() {
     const auth = await getAuthGym();
-    const cookieStore = await cookies();
-    const isDemoMode = cookieStore.get('mitra_demo_mode')?.value === 'true';
+    const headerList = await headers();
+    const isDemoMode = headerList.get('x-demo-mode') === 'true';
 
     if (isDemoMode) {
         redirect("/demo/dashboard");

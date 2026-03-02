@@ -17,7 +17,7 @@ interface RenewalCommandCenterProps {
     isDemo?: boolean
 }
 
-export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommandCenterProps) {
+export function RenewalCommandCenter({ gymName }: RenewalCommandCenterProps) {
     const { data, isLoading, isError } = useRenewalsQuery()
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [isSending, setIsSending] = useState(false)

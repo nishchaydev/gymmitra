@@ -59,6 +59,11 @@ export async function updateSession(request: NextRequest) {
             url.pathname = '/dashboard'
             return NextResponse.redirect(url)
         }
+
+        if (isDemoMode) {
+            supabaseResponse.headers.set('x-demo-mode', 'true');
+        }
+
         return supabaseResponse
     }
 
@@ -84,6 +89,11 @@ export async function updateSession(request: NextRequest) {
         const url = request.nextUrl.clone()
         url.pathname = '/onboarding'
         return NextResponse.redirect(url)
+    }
+
+    if (isDemoMode) {
+        // Pass the demo mode flag down to the layouts/pages that cannot use cookies() statically
+        supabaseResponse.headers.set('x-demo-mode', 'true');
     }
 
     return supabaseResponse

@@ -22,7 +22,8 @@ export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: A
 
     // Parse ?inactiveDays= from URL, defaulting to 14
     const inactiveDaysParam = searchParams?.get('inactiveDays')
-    const configDays = inactiveDaysParam ? parseInt(inactiveDaysParam) : 14
+    const parsedDays = inactiveDaysParam ? parseInt(inactiveDaysParam, 10) : 14
+    const configDays = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 14
 
     const { data: atRiskData, isLoading, isError } = useAtRiskQuery(configDays)
 
@@ -90,7 +91,21 @@ export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: A
     return renderWidget(atRiskData, configDays, handleDaysChange, slug, gymName, false)
 }
 
-function renderWidget(data: any, days: number, onDaysChange: (v: string) => void, slug: string, gymName: string, isLoading: boolean) {
+interface AtRiskMember {
+    id: string;
+    name: string;
+    phone: string | null;
+    lastVisit: string | null;
+    daysInactive: number;
+}
+
+interface AtRiskData {
+    count: number;
+    members: AtRiskMember[];
+    daysThreshold: number;
+}
+
+function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) => void, slug: string, gymName: string, isLoading: boolean) {
     const { count, members } = data
 
     return (
@@ -138,7 +153,7 @@ function renderWidget(data: any, days: number, onDaysChange: (v: string) => void
                                 <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
                             </div>
                         )}
-                        {members.slice(0, 10).map((member: any) => {
+                        {members.slice(0, 10).map((member) => {
                             const link = member.phone ? getWhatsAppLink(member.phone, templates.inactivityNudge(member.name, member.daysInactive, gymName)) : '';
 
                             return (

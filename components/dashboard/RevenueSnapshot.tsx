@@ -4,8 +4,6 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface RevenueSnapshotProps {
     revenue: string
-    revenueRaw: number
-    lastMonthRevenue: number
     revenueChange: number
     pendingRevenue: number
     monthlyRevenueData: { name: string; total: number }[]
@@ -14,8 +12,6 @@ interface RevenueSnapshotProps {
 
 export function RevenueSnapshot({
     revenue,
-    revenueRaw,
-    lastMonthRevenue,
     revenueChange,
     pendingRevenue,
     monthlyRevenueData,

@@ -17,10 +17,12 @@ export async function GET(req: NextRequest) {
 
         const url = new URL(req.url)
         const daysParam = url.searchParams.get('days')
-        const days = daysParam && !isNaN(parseInt(daysParam)) ? parseInt(daysParam) : 14
+        const parsedDays = daysParam ? parseInt(daysParam, 10) : 14
+        const days = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 14
 
         const cutoffDate = new Date()
         cutoffDate.setDate(cutoffDate.getDate() - days)
+        cutoffDate.setHours(0, 0, 0, 0)
 
         // Find active members whose last attendance was before the cutoff date
         // or who have no attendance but their subscription started before the cutoff date
@@ -73,6 +75,7 @@ export async function GET(req: NextRequest) {
                 },
                 subscriptions: {
                     where: { status: 'ACTIVE' },
+                    orderBy: { startDate: 'desc' },
                     select: { startDate: true },
                     take: 1
                 }

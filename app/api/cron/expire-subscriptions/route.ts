@@ -9,7 +9,11 @@ export const maxDuration = 60
 export async function GET(request: NextRequest) {
     // Basic rate limit for cron to prevent DDOS attempts against the URL
     // Use IP or a static key since this is server-to-server
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+    const forwardedFor = request.headers.get('x-forwarded-for')
+    const realIp = request.headers.get('x-real-ip')
+    const rawIp = realIp || forwardedFor || '127.0.0.1'
+    const ip = rawIp.split(',')[0].trim() || '127.0.0.1'
+
     const rl = await guardRateLimit(5, `cron:expire:${ip}`)
     if (rl) return rl
 

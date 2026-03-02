@@ -6,7 +6,7 @@ import { addDays, subDays } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        const plus7Days = addDays(today, 7)
         const plus30Days = addDays(today, 30)
         const minus30Days = subDays(today, 30)
 
@@ -65,9 +64,19 @@ export async function GET(req: NextRequest) {
             }
         })
 
-        const urgent: any[] = []
-        const upcoming: any[] = []
-        const missed: any[] = []
+        interface RenewalMember {
+            id: string;
+            memberId: string;
+            memberName: string;
+            phone: string | null;
+            planName: string;
+            endDate: Date;
+            daysOffset: number;
+        }
+
+        const urgent: RenewalMember[] = []
+        const upcoming: RenewalMember[] = []
+        const missed: RenewalMember[] = []
 
         subscriptions.forEach(sub => {
             const endDate = new Date(sub.endDate)

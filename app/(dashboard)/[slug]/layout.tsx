@@ -1,7 +1,7 @@
 import { getAuthGym } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
@@ -16,9 +16,13 @@ export default async function BrandedDashboardLayout({
     params,
 }: BrandedLayoutProps) {
     const { slug } = await params;
+    const headerList = await headers();
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true';
+    const isDemoMode = envDemoEnabled && headerList.get('x-demo-mode') === 'true';
 
-    // Demo bypass handled internally or via the root dashboard page
-    if (slug === 'demo') {
+    // Demo Bypass: Intentionally skips DB check and multi-tenancy slug enforcement 
+    // to serve isolated showcasing data. True endpoints still maintain RLS.
+    if (slug === 'demo' || isDemoMode) {
         return (
             <>
                 <Navbar />

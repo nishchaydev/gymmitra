@@ -1,7 +1,6 @@
 import { Metadata } from "next"
-import { createClient } from "@/lib/supabase/server"
+import { getAuthGym } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
 import { RenewalCommandCenter } from "@/components/renewals/RenewalCommandCenter"
 import { ShieldAlert } from "lucide-react"
 
@@ -16,20 +15,13 @@ export default async function RenewalsPage({
     params: Promise<{ slug: string }>
 }) {
     const { slug } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await getAuthGym()
 
-    if (!user) {
+    if (!auth || auth.gym.slug !== slug) {
         redirect("/login")
     }
 
-    const gym = await prisma.gymProfile.findUnique({
-        where: { userId: user.id }
-    })
-
-    if (!gym) {
-        redirect("/onboarding")
-    }
+    const gym = auth.gym
 
     return (
         <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">

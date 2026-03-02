@@ -34,23 +34,23 @@ export async function GET(req: NextRequest) {
             thisMonthInvoicesPending,
             lastMonthInvoicesPaid,
         ] = await Promise.all([
-            prisma.member.count({ where: { gymId: gym.id } as any }),
-            prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } as any }),
-            prisma.sale.count({ where: { product: { gymId: gym.id }, saleDate: { gte: startOfThisMonth } } as any }),
+            prisma.member.count({ where: { gymId: gym.id } }),
+            prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }),
+            prisma.sale.count({ where: { product: { gymId: gym.id }, saleDate: { gte: startOfThisMonth } } }),
             prisma.attendance.count({
                 where: {
                     gymId: gym.id,
                     date: { gte: today, lte: endOfToday() },
-                } as any,
+                },
             }),
             prisma.invoice.findMany({
-                where: { gymId: gym.id } as any,
-                include: { member: { select: { name: true } } } as any,
-                orderBy: { createdAt: 'desc' } as any,
+                where: { gymId: gym.id },
+                include: { member: { select: { name: true } } },
+                orderBy: { createdAt: 'desc' },
                 take: 5,
             }),
             prisma.attendance.findMany({
-                where: { gymId: gym.id, date: { gte: today, lte: endOfToday() } } as any,
+                where: { gymId: gym.id, date: { gte: today, lte: endOfToday() } },
                 include: { member: { select: { name: true } } },
                 orderBy: { checkInTime: 'desc' },
                 take: 3,
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
                     paymentStatus: 'PAID',
                     issueDate: { gte: startOfThisMonth },
                     deletedAt: null
-                } as any,
+                },
                 _sum: { total: true }
             }),
             prisma.invoice.aggregate({
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
                     paymentStatus: 'PENDING',
                     issueDate: { gte: startOfThisMonth },
                     deletedAt: null
-                } as any,
+                },
                 _sum: { total: true }
             }),
             prisma.invoice.aggregate({
@@ -96,19 +96,22 @@ export async function GET(req: NextRequest) {
                     paymentStatus: 'PAID',
                     issueDate: { gte: startOfLastMonth, lte: endOfLastMonth },
                     deletedAt: null
-                } as any,
+                },
                 _sum: { total: true }
             })
         ])
 
         // Process revenue
-        const thisMonthRevenue = Number((thisMonthInvoicesPaid as any)._sum.total || 0)
-        const lastMonthRevenue = Number((lastMonthInvoicesPaid as any)._sum.total || 0)
-        const pendingRevenue = Number((thisMonthInvoicesPending as any)._sum.total || 0)
+        const thisMonthRevenue = Number(thisMonthInvoicesPaid._sum.total || 0)
+        const lastMonthRevenue = Number(lastMonthInvoicesPaid._sum.total || 0)
+        const pendingRevenue = Number(thisMonthInvoicesPending._sum.total || 0)
 
-        const revenueChange = lastMonthRevenue > 0
-            ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-            : 100;
+        let revenueChange = 0;
+        if (lastMonthRevenue > 0) {
+            revenueChange = ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+        } else if (lastMonthRevenue === 0 && thisMonthRevenue > 0) {
+            revenueChange = 100;
+        }
 
         // Process attendance widget
         let todayAttendance = {
@@ -118,7 +121,7 @@ export async function GET(req: NextRequest) {
         }
         if (attendance.length > 0) {
             const last = attendance[0]
-            const checkIn = new Date((last as any).checkInTime)
+            const checkIn = new Date(last.checkInTime)
             const minutesAgo = Math.max(0, Math.round((Date.now() - checkIn.getTime()) / 60000))
             todayAttendance = {
                 count: dailyCheckins,
@@ -126,7 +129,7 @@ export async function GET(req: NextRequest) {
                     minutesAgo < 60
                         ? `Last check-in ${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`
                         : `Last check-in ${Math.round(minutesAgo / 60)}h ago`,
-                recentInitials: attendance.map((a: any) => {
+                recentInitials: attendance.map((a) => {
                     const name = a.member?.name?.trim()
                     if (!name) return '?'
                     return name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
@@ -137,7 +140,7 @@ export async function GET(req: NextRequest) {
         // Process birthdays
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         const upcomingBirthdays = birthdays
-            .map((m: any) => {
+            .map((m) => {
                 const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth?.toISOString()
                 if (!dobString) return null
                 const [year, month, day] = dobString.split('T')[0].split('-').map(Number)
@@ -149,7 +152,7 @@ export async function GET(req: NextRequest) {
                 return { ...m, date: label, diffDays }
             })
             .filter(Boolean)
-            .sort((a: any, b: any) => a.diffDays - b.diffDays)
+            .sort((a, b) => a.diffDays - b.diffDays)
             .slice(0, 5)
 
         // Process monthly revenue chart
