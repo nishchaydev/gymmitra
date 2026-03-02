@@ -8,6 +8,8 @@ import { redirect } from "next/navigation"
 import { headers, cookies } from "next/headers"
 import { recordAuditLog } from "@/lib/audit-logger"
 import { z } from "zod"
+import * as React from 'react'
+import { OnboardingEmail } from '@/components/emails/OnboardingEmail'
 
 const onboardingSchema = z.object({
     businessName: z.string().min(2, "Business name is required"),
@@ -160,23 +162,13 @@ export async function completeOnboarding(formData: FormData) {
                     from: 'Gym Mitra Team <hello@mail.emitra.dev>',
                     to: gymProfile.email,
                     subject: `Welcome to Gym Mitra, ${gymProfile.businessName}! 🎉`,
-                    html: `
-                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2>Welcome aboard, ${gymProfile.businessName}! 🚀</h2>
-                            <p>We are thrilled to have you join Gym Mitra. Your workspace is now fully set up and ready to go.</p>
-                            <p>Here are your next steps to get the most out of Gym Mitra:</p>
-                            <ul>
-                                <li><strong>Add Members:</strong> Start digitizing your member records.</li>
-                                <li><strong>Generate Invoices:</strong> Create professional GST-ready invoices in 1-click.</li>
-                                <li><strong>Track Attendance:</strong> Keep an eye on daily footfall.</li>
-                            </ul>
-                            <br/>
-                            <a href="${baseUrl}/${gymProfile.slug}/dashboard" style="background-color: #A3E635; color: #1e293b; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Go to your Dashboard</a>
-                            <br/><br/>
-                            <p>If you have any questions, simply reply to this email. We're here to help you grow!</p>
-                            <p>Best,<br/>The Gym Mitra Team</p>
-                        </div>
-                    `
+                    react: React.createElement(OnboardingEmail, {
+                        ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName,
+                        gymName: gymProfile.businessName,
+                        loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
+                        serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                        saasPlan: 'FREE' // Could be updated if onboarding includes plan tracking dynamically
+                    })
                 }).catch(emailError => {
                     console.error('[Onboarding] Failed to send welcome email promise:', emailError)
                 })
