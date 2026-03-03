@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { Resend } from 'resend'
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { headers, cookies } from "next/headers"
 import { recordAuditLog } from "@/lib/audit-logger"
 import { z } from "zod"
@@ -26,7 +25,7 @@ const onboardingSchema = z.object({
 
 const ONBOARDING_COMPLETE_STEP = 4
 
-export async function completeOnboarding(formData: FormData) {
+export async function completeOnboarding(formData: FormData): Promise<{ redirectTo: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -184,8 +183,7 @@ export async function completeOnboarding(formData: FormData) {
         redirectSlug = gymProfile.slug
     }
 
-    // redirect() throws NEXT_REDIRECT — must be outside try/catch
-    if (redirectSlug) {
-        redirect(`/${redirectSlug}/dashboard`)
-    }
+    // Return the redirect path — client will navigate via router.push()
+    // This avoids NEXT_REDIRECT errors and ensures email send completes
+    return { redirectTo: redirectSlug ? `/${redirectSlug}/dashboard` : '/dashboard' }
 }

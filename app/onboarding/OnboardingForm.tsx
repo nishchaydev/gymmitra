@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +20,7 @@ const steps = [
 ]
 
 export default function OnboardingForm() {
+    const router = useRouter()
     const [currentStep, setCurrentStep] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formData, setFormData] = useState({
@@ -83,7 +85,6 @@ export default function OnboardingForm() {
 
         setIsSubmitting(true)
         try {
-            // Create a new FormData object and append all state values
             const submissionData = new FormData()
             Object.entries(formData).forEach(([key, value]) => {
                 if (key === 'plans') {
@@ -93,11 +94,12 @@ export default function OnboardingForm() {
                 }
             })
 
-            await completeOnboarding(submissionData)
+            const result = await completeOnboarding(submissionData)
+            toast.success('Onboarding complete! Redirecting...')
+            router.push(result.redirectTo)
         } catch (error) {
             console.error("Onboarding failed:", error)
             toast.error(error instanceof Error ? error.message : "Something went wrong. Please check your inputs.")
-        } finally {
             setIsSubmitting(false)
         }
     }
