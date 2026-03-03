@@ -48,6 +48,7 @@ export async function completeOnboarding(formData: FormData) {
     }
 
     let gymProfile: any;
+    let redirectSlug: string | null = null;
     try {
         const validatedData = onboardingSchema.parse(rawData)
         const updateData = {
@@ -150,15 +151,14 @@ export async function completeOnboarding(formData: FormData) {
             payload: { businessName: gymProfile.name }
         })
 
-        // Send Welcome Email asynchronously
+        // Send Welcome Email — await so it finishes before redirect() kills the context
         try {
             const resendKey = process.env.RESEND_API_KEY
             if (resendKey && gymProfile.email) {
                 const resend = new Resend(resendKey)
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
 
-                // Fire and forget so we don't block the redirect
-                resend.emails.send({
+                const { error: emailError } = await resend.emails.send({
                     from: 'Gym Mitra Team <hello@mail.emitra.dev>',
                     to: gymProfile.email,
                     subject: `Welcome to Gym Mitra, ${gymProfile.businessName}! 🎉`,
@@ -167,16 +167,25 @@ export async function completeOnboarding(formData: FormData) {
                         gymName: gymProfile.businessName,
                         loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
                         serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-                        saasPlan: 'FREE' // Could be updated if onboarding includes plan tracking dynamically
+                        saasPlan: 'FREE'
                     })
-                }).catch(emailError => {
-                    console.error('[Onboarding] Failed to send welcome email promise:', emailError)
                 })
+
+                if (emailError) {
+                    console.error('[Onboarding] Resend API error:', emailError)
+                } else {
+                    console.log(`[Onboarding] Welcome email sent to ${gymProfile.email}`)
+                }
             }
         } catch (emailError) {
-            console.error('[Onboarding] Failed to initiate welcome email:', emailError)
+            console.error('[Onboarding] Failed to send welcome email:', emailError)
         }
+
+        redirectSlug = gymProfile.slug
     }
 
-    redirect(`/${gymProfile.slug}/dashboard`)
+    // redirect() throws NEXT_REDIRECT — must be outside try/catch
+    if (redirectSlug) {
+        redirect(`/${redirectSlug}/dashboard`)
+    }
 }

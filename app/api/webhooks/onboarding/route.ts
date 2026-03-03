@@ -126,8 +126,8 @@ export async function POST(req: NextRequest) {
         }
 
         if (!gymProfile) {
-            console.warn(`Webhook: No associated Gym found for user ${record.id} ([REDACTED])`);
-            return NextResponse.json({ error: 'No associated gym found' }, { status: 503 });
+            console.log(`[Webhook] No GymProfile yet for user ${record.id} — user likely hasn't completed onboarding. Skipping.`);
+            return NextResponse.json({ message: 'No gym profile yet — email will be sent after onboarding' }, { status: 200 });
         }
 
         const ownerEmail = record.email;
