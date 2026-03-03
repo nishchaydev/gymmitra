@@ -7,6 +7,7 @@ import {
     Heading,
     Hr,
     Html,
+    Img,
     Link,
     Preview,
     Row,
@@ -33,146 +34,239 @@ export const OnboardingEmail = ({
     serviceAgreementUrl,
     saasPlan,
 }: OnboardingEmailProps) => {
-    const previewText = `Welcome to Gym Mitra, ${ownerName}! Your workspace is ready.`;
+    const previewText = `Welcome to Gym Mitra, ${ownerName}! Your workspace "${gymName}" is ready.`;
     const year = new Date().getFullYear();
 
     return (
         <Html>
             <Head>
                 <style>{`
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
                 `}</style>
             </Head>
             <Preview>{previewText}</Preview>
             <Tailwind>
-                <Body className="bg-[#f4f4f5] my-0 mx-auto" style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
-                    <Container className="mx-auto py-[40px] max-w-[600px]">
+                <Body className="bg-[#f0f2f5] my-0 mx-auto" style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
+                    <Container className="mx-auto py-[32px] max-w-[600px]">
 
-                        {/* Header with gradient */}
-                        <Section className="bg-[#1a1a2e] rounded-t-[12px] px-[40px] pt-[40px] pb-[32px] text-center">
-                            <Text className="text-[28px] font-bold m-0 p-0" style={{ color: '#ffffff' }}>
-                                Gym<span style={{ color: '#3b82f6' }}>Mitra</span>
+                        {/* ═══════════ HEADER ═══════════ */}
+                        <Section className="bg-[#0f172a] rounded-t-[16px] px-[40px] pt-[36px] pb-[28px] text-center">
+                            <Text className="text-[32px] font-extrabold m-0 p-0 tracking-tight" style={{ color: '#ffffff' }}>
+                                Gym<span style={{ color: '#60a5fa' }}>Mitra</span>
                             </Text>
-                            <Text className="text-[11px] tracking-[3px] uppercase m-0 mt-[4px]" style={{ color: '#94a3b8' }}>
-                                Technologies
+                            <Text className="text-[11px] tracking-[4px] uppercase m-0 mt-[6px] font-medium" style={{ color: '#94a3b8' }}>
+                                Smart Gym Management
                             </Text>
                         </Section>
 
-                        {/* Main content */}
-                        <Section className="bg-white px-[40px] py-[36px]">
-                            <Heading className="text-[22px] font-semibold text-[#1a1a2e] m-0 mb-[16px]">
-                                Welcome aboard, {ownerName}! 🚀
+                        {/* ═══════════ HERO BANNER ═══════════ */}
+                        <Section className="bg-gradient-to-r px-[40px] py-[28px] text-center" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)' }}>
+                            <Text className="text-[14px] font-semibold m-0 mb-[8px] tracking-wide uppercase" style={{ color: '#60a5fa' }}>
+                                🎉 You're All Set
+                            </Text>
+                            <Heading className="text-[26px] font-extrabold m-0 mb-[8px] leading-tight" style={{ color: '#ffffff' }}>
+                                Welcome aboard, {ownerName}!
+                            </Heading>
+                            <Text className="text-[15px] m-0" style={{ color: '#cbd5e1' }}>
+                                Your workspace <strong style={{ color: '#ffffff' }}>"{gymName}"</strong> is live and ready to go.
+                            </Text>
+                        </Section>
+
+                        {/* ═══════════ MAIN CONTENT ═══════════ */}
+                        <Section className="bg-white px-[40px] py-[32px]">
+
+                            {/* Quick-Start Checklist */}
+                            <Heading className="text-[18px] font-bold text-[#0f172a] m-0 mb-[16px]">
+                                🚀 Quick-Start Checklist
                             </Heading>
 
-                            <Text className="text-[15px] leading-[26px] text-[#374151] m-0 mb-[20px]">
-                                We are thrilled to have you join Gym Mitra. Your workspace <strong>"{gymName}"</strong> is now fully set up and ready to go.
+                            <Text className="text-[14px] leading-[24px] text-[#475569] m-0 mb-[20px]">
+                                Complete these 4 steps in the next 10 minutes to fully activate your gym workspace:
                             </Text>
 
-                            <Text className="text-[15px] leading-[26px] text-[#374151] m-0 mb-[8px]">
-                                Here are your next steps to get the most out of Gym Mitra:
-                            </Text>
+                            {/* Checklist Items */}
+                            <Section className="mb-[24px]">
+                                {/* Step 1 */}
+                                <Section className="bg-[#f8fafc] rounded-[10px] p-[16px] mb-[10px] border-l-[4px]" style={{ borderLeftColor: '#3b82f6' }}>
+                                    <Row>
+                                        <Column className="w-[40px] align-top">
+                                            <Text className="text-[20px] m-0 p-0 text-center font-bold" style={{ color: '#3b82f6' }}>1</Text>
+                                        </Column>
+                                        <Column>
+                                            <Text className="text-[14px] font-semibold text-[#1e293b] m-0 mb-[2px]">
+                                                👥 Add Your First Members
+                                            </Text>
+                                            <Text className="text-[13px] text-[#64748b] m-0">
+                                                Import existing members or add them one by one. Each member gets a unique QR code for attendance.
+                                            </Text>
+                                        </Column>
+                                    </Row>
+                                </Section>
 
-                            {/* Feature highlights */}
-                            <Section className="bg-[#f8fafc] rounded-[8px] p-[20px] my-[16px] border border-solid border-[#e2e8f0]">
-                                <Row className="mb-[12px]">
-                                    <Column className="w-[32px] align-top">
-                                        <Text className="text-[18px] m-0 p-0">👥</Text>
-                                    </Column>
-                                    <Column>
-                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
-                                            <strong>Add Members</strong> — Start digitizing your member records
-                                        </Text>
-                                    </Column>
-                                </Row>
-                                <Row className="mb-[12px]">
-                                    <Column className="w-[32px] align-top">
-                                        <Text className="text-[18px] m-0 p-0">🧾</Text>
-                                    </Column>
-                                    <Column>
-                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
-                                            <strong>Generate Invoices</strong> — Create professional GST-ready invoices in 1 click
-                                        </Text>
-                                    </Column>
-                                </Row>
-                                <Row className="mb-[12px]">
-                                    <Column className="w-[32px] align-top">
-                                        <Text className="text-[18px] m-0 p-0">📊</Text>
-                                    </Column>
-                                    <Column>
-                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
-                                            <strong>Track Attendance</strong> — Keep an eye on daily footfall with QR check-ins
-                                        </Text>
-                                    </Column>
-                                </Row>
-                                <Row>
-                                    <Column className="w-[32px] align-top">
-                                        <Text className="text-[18px] m-0 p-0">🏪</Text>
-                                    </Column>
-                                    <Column>
-                                        <Text className="text-[14px] text-[#374151] m-0 p-0">
-                                            <strong>Point of Sale</strong> — Manage supplements and merchandise inventory
-                                        </Text>
-                                    </Column>
-                                </Row>
+                                {/* Step 2 */}
+                                <Section className="bg-[#f8fafc] rounded-[10px] p-[16px] mb-[10px] border-l-[4px]" style={{ borderLeftColor: '#10b981' }}>
+                                    <Row>
+                                        <Column className="w-[40px] align-top">
+                                            <Text className="text-[20px] m-0 p-0 text-center font-bold" style={{ color: '#10b981' }}>2</Text>
+                                        </Column>
+                                        <Column>
+                                            <Text className="text-[14px] font-semibold text-[#1e293b] m-0 mb-[2px]">
+                                                🧾 Create Your First Invoice
+                                            </Text>
+                                            <Text className="text-[13px] text-[#64748b] m-0">
+                                                Generate professional GST-ready invoices in one click. Share via WhatsApp or print instantly.
+                                            </Text>
+                                        </Column>
+                                    </Row>
+                                </Section>
+
+                                {/* Step 3 */}
+                                <Section className="bg-[#f8fafc] rounded-[10px] p-[16px] mb-[10px] border-l-[4px]" style={{ borderLeftColor: '#f59e0b' }}>
+                                    <Row>
+                                        <Column className="w-[40px] align-top">
+                                            <Text className="text-[20px] m-0 p-0 text-center font-bold" style={{ color: '#f59e0b' }}>3</Text>
+                                        </Column>
+                                        <Column>
+                                            <Text className="text-[14px] font-semibold text-[#1e293b] m-0 mb-[2px]">
+                                                📊 Set Up Attendance Kiosk
+                                            </Text>
+                                            <Text className="text-[13px] text-[#64748b] m-0">
+                                                Open the kiosk on any tablet at your entrance. Members scan QR to check in automatically.
+                                            </Text>
+                                        </Column>
+                                    </Row>
+                                </Section>
+
+                                {/* Step 4 */}
+                                <Section className="bg-[#f8fafc] rounded-[10px] p-[16px] border-l-[4px]" style={{ borderLeftColor: '#8b5cf6' }}>
+                                    <Row>
+                                        <Column className="w-[40px] align-top">
+                                            <Text className="text-[20px] m-0 p-0 text-center font-bold" style={{ color: '#8b5cf6' }}>4</Text>
+                                        </Column>
+                                        <Column>
+                                            <Text className="text-[14px] font-semibold text-[#1e293b] m-0 mb-[2px]">
+                                                🏪 Add Products & Supplements
+                                            </Text>
+                                            <Text className="text-[13px] text-[#64748b] m-0">
+                                                Set up your supplement shop, merchandise, and track inventory with the built-in POS system.
+                                            </Text>
+                                        </Column>
+                                    </Row>
+                                </Section>
                             </Section>
 
                             {/* CTA Button */}
-                            <Section className="text-center mt-[28px] mb-[28px]">
+                            <Section className="text-center mt-[12px] mb-[28px]">
                                 <Button
-                                    className="bg-[#3b82f6] rounded-[8px] text-white text-[15px] font-semibold no-underline text-center px-[32px] py-[14px]"
+                                    className="bg-[#2563eb] rounded-[10px] text-white text-[16px] font-bold no-underline text-center px-[40px] py-[16px]"
                                     href={loginUrl}
-                                    style={{ boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}
+                                    style={{ boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)' }}
                                 >
-                                    Go to your Dashboard →
+                                    Open Your Dashboard →
                                 </Button>
                             </Section>
 
                             <Hr className="border-[#e2e8f0] my-[24px]" />
 
+                            {/* ═══════════ WHAT'S INCLUDED ═══════════ */}
+                            <Heading className="text-[16px] font-bold text-[#0f172a] m-0 mb-[16px]">
+                                ✨ What's Included in Your Plan
+                            </Heading>
+
+                            <Section className="bg-[#f0fdf4] rounded-[10px] p-[20px] border border-solid border-[#bbf7d0]">
+                                <Row className="mb-[8px]">
+                                    <Column className="w-[24px] align-top">
+                                        <Text className="text-[14px] m-0 p-0">✅</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[13px] text-[#166534] m-0">Unlimited members & invoices</Text>
+                                    </Column>
+                                </Row>
+                                <Row className="mb-[8px]">
+                                    <Column className="w-[24px] align-top">
+                                        <Text className="text-[14px] m-0 p-0">✅</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[13px] text-[#166534] m-0">QR-based attendance kiosk</Text>
+                                    </Column>
+                                </Row>
+                                <Row className="mb-[8px]">
+                                    <Column className="w-[24px] align-top">
+                                        <Text className="text-[14px] m-0 p-0">✅</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[13px] text-[#166534] m-0">Revenue analytics & reports dashboard</Text>
+                                    </Column>
+                                </Row>
+                                <Row className="mb-[8px]">
+                                    <Column className="w-[24px] align-top">
+                                        <Text className="text-[14px] m-0 p-0">✅</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[13px] text-[#166534] m-0">WhatsApp invoice sharing</Text>
+                                    </Column>
+                                </Row>
+                                <Row>
+                                    <Column className="w-[24px] align-top">
+                                        <Text className="text-[14px] m-0 p-0">✅</Text>
+                                    </Column>
+                                    <Column>
+                                        <Text className="text-[13px] text-[#166534] m-0">Product & supplement POS system</Text>
+                                    </Column>
+                                </Row>
+                            </Section>
+
+                            <Hr className="border-[#e2e8f0] my-[24px]" />
+
+                            {/* ═══════════ SUPPORT SECTION ═══════════ */}
+                            <Section className="bg-[#eff6ff] rounded-[10px] p-[20px] border border-solid border-[#bfdbfe]">
+                                <Text className="text-[14px] font-semibold text-[#1e40af] m-0 mb-[8px]">
+                                    💬 Need Help Getting Started?
+                                </Text>
+                                <Text className="text-[13px] text-[#3b82f6] m-0 mb-[4px]">
+                                    Simply reply to this email and our team will get back to you within 24 hours. We're here to make your gym management effortless.
+                                </Text>
+                            </Section>
+
                             {/* Service Agreement */}
-                            <Text className="text-[13px] leading-[22px] text-[#6b7280] m-0 mb-[16px]">
-                                📋 Please review our{' '}
+                            <Text className="text-[12px] leading-[20px] text-[#94a3b8] m-0 mt-[20px]">
+                                📋 By continuing to use Gym Mitra, you agree to our{' '}
                                 <Link href={serviceAgreementUrl} className="text-[#3b82f6] underline">
                                     Service Agreement
-                                </Link>{' '}
-                                to complete your onboarding. This protects both your business and your members.
-                            </Text>
-
-                            <Text className="text-[13px] leading-[22px] text-[#6b7280] m-0">
-                                If you have any questions, simply reply to this email. We're here to help you grow!
+                                </Link>. Please review it for your records.
                             </Text>
 
                             <Text className="text-[14px] leading-[22px] text-[#374151] mt-[24px] mb-[0px]">
-                                Best,
+                                Best regards,
                                 <br />
-                                The Gym Mitra Team
+                                <strong>The Gym Mitra Team</strong>
                             </Text>
                         </Section>
 
-                        {/* Footer */}
-                        <Section className="bg-[#1a1a2e] rounded-b-[12px] px-[40px] py-[28px]">
+                        {/* ═══════════ FOOTER ═══════════ */}
+                        <Section className="bg-[#0f172a] rounded-b-[16px] px-[40px] py-[28px]">
                             {/* Legal Links */}
                             <Row className="mb-[16px]">
                                 <Column className="text-center">
-                                    <Link href={`${baseUrl}/legal/privacy`} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                    <Link href={`${baseUrl}/legal/privacy`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Privacy Policy
                                     </Link>
                                     <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
-                                    <Link href={`${baseUrl}/legal/terms`} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                    <Link href={`${baseUrl}/legal/terms`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Terms of Service
                                     </Link>
                                     <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
-                                    <Link href={serviceAgreementUrl} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                    <Link href={serviceAgreementUrl} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Service Agreement
                                     </Link>
                                     <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
-                                    <Link href={`${baseUrl}/legal/refund`} className="text-[12px] text-[#94a3b8] no-underline mx-[8px]">
+                                    <Link href={`${baseUrl}/legal/refund`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Refund Policy
                                     </Link>
                                 </Column>
                             </Row>
 
-                            <Hr className="border-[#2d2d4e] my-[12px]" />
+                            <Hr className="border-[#1e293b] my-[12px]" />
 
                             {/* Company Info */}
                             <Text className="text-[11px] text-[#64748b] text-center m-0 mb-[4px]">
@@ -210,7 +304,7 @@ OnboardingEmail.PreviewProps = {
     gymName: 'Iron Paradise Gym',
     loginUrl: `${baseUrl}/dashboard`,
     serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-    saasPlan: 'BASIC',
+    saasPlan: 'FREE',
 } as OnboardingEmailProps;
 
 export default OnboardingEmail;

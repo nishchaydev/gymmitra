@@ -155,7 +155,7 @@ export async function completeOnboarding(formData: FormData) {
             const resendKey = process.env.RESEND_API_KEY
             if (resendKey && gymProfile.email) {
                 const resend = new Resend(resendKey)
-                const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gymmitra.vercel.app'
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
 
                 // Fire and forget so we don't block the redirect
                 resend.emails.send({
