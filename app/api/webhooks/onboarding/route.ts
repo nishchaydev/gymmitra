@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
+import { render } from '@react-email/components';
 import { guardRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
@@ -140,17 +141,19 @@ export async function POST(req: NextRequest) {
 
         // 6. Send Welcome Email using Resend
         try {
+            const emailHtml = await render(OnboardingEmail({
+                ownerName,
+                gymName,
+                loginUrl: gymProfile.slug ? `${baseUrl}/${gymProfile.slug}/dashboard` : `${baseUrl}/login`,
+                serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                saasPlan: (gymProfile as any).saasPlan || 'BASIC',
+            }));
+
             const { data, error } = await resend.emails.send({
                 from: 'Gym Mitra <hello@mail.emitra.dev>',
                 to: [ownerEmail],
                 subject: `Welcome to Gym Mitra, ${ownerName}! 🎉`,
-                react: OnboardingEmail({
-                    ownerName,
-                    gymName,
-                    loginUrl: gymProfile.slug ? `${baseUrl}/${gymProfile.slug}/dashboard` : `${baseUrl}/login`,
-                    serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-                    saasPlan: (gymProfile as any).saasPlan || 'BASIC',
-                }),
+                html: emailHtml,
             });
 
             if (error) {
