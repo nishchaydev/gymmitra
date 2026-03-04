@@ -84,6 +84,9 @@ export default function OnboardingForm() {
         }
 
         setIsSubmitting(true)
+
+        // 1. Call server action
+        let result: { redirectTo: string; warnings?: string[] }
         try {
             const submissionData = new FormData()
             Object.entries(formData).forEach(([key, value]) => {
@@ -93,13 +96,32 @@ export default function OnboardingForm() {
                     submissionData.append(key, value as string)
                 }
             })
-
-            const result = await completeOnboarding(submissionData)
-            toast.success('Onboarding complete! Redirecting...')
-            router.push(result.redirectTo)
+            result = await completeOnboarding(submissionData)
         } catch (error) {
             console.error("Onboarding failed:", error)
             toast.error(error instanceof Error ? error.message : "Something went wrong. Please check your inputs.")
+            setIsSubmitting(false)
+            return
+        }
+
+        // 2. Validate response and navigate
+        if (!result?.redirectTo) {
+            toast.error("Onboarding saved, but we couldn't determine where to redirect. Please go to your dashboard manually.")
+            setIsSubmitting(false)
+            return
+        }
+
+        // Surface any non-fatal warnings (e.g. plan creation failed)
+        if (result.warnings?.length) {
+            result.warnings.forEach(w => toast.warning(w))
+        }
+
+        try {
+            toast.success('Onboarding complete! Redirecting...')
+            router.push(result.redirectTo)
+        } catch (navError) {
+            console.error("Navigation failed:", navError)
+            toast.error("Your profile was saved but navigation failed. Please refresh or go to your dashboard.")
             setIsSubmitting(false)
         }
     }

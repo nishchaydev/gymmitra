@@ -58,7 +58,7 @@ function generateSlug(businessName: string, currentSlug?: string | null): string
 /** Max retries for slug uniqueness conflicts */
 const MAX_SLUG_RETRIES = 3
 
-export async function completeOnboarding(formData: FormData): Promise<{ redirectTo: string }> {
+export async function completeOnboarding(formData: FormData): Promise<{ redirectTo: string; warnings?: string[] }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -81,6 +81,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
     let gymProfile: GymProfile | undefined;
     let redirectSlug: string | null = null;
+    const warnings: string[] = [];
     try {
         const validatedData = onboardingSchema.parse(rawData)
         const updateData = {
@@ -142,6 +143,13 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             }
         }
 
+        // Defensive check — gymProfile must exist after upsert
+        if (!gymProfile) {
+            throw new Error("Failed to create or update your gym profile. Please try again.")
+        }
+
+        const gymId = gymProfile.id;
+
         // Process Plans
         if (validatedData.plans) {
             try {
@@ -159,7 +167,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 if (enabledPlans.length > 0) {
                     await prisma.membershipPlan.createMany({
                         data: enabledPlans.map(p => ({
-                            gymId: gymProfile!.id,
+                            gymId,
                             name: p.name,
                             description: `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''} Membership`,
                             duration: p.durationMonths,
@@ -171,7 +179,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 }
             } catch (planError) {
                 console.error("Failed to parse or create onboarding plans:", planError)
-                // We don't throw here to avoid failing entire onboarding over plan creation
+                warnings.push("Your membership plans could not be saved. You can add them later in Settings.")
             }
         }
 
@@ -248,5 +256,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
     // Return the redirect path — client will navigate via router.push()
     // This avoids NEXT_REDIRECT errors and ensures email send completes
-    return { redirectTo: redirectSlug ? `/${redirectSlug}/dashboard` : '/dashboard' }
+    return {
+        redirectTo: redirectSlug ? `/${redirectSlug}/dashboard` : '/dashboard',
+        ...(warnings.length > 0 && { warnings }),
+    }
 }
