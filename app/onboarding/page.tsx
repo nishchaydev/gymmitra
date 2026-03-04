@@ -3,7 +3,6 @@ import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 
 export const metadata: Metadata = {
     title: 'Gym Onboarding | Gym Mitra',
@@ -22,15 +21,6 @@ export default async function OnboardingPage() {
             })
 
             if (gymProfile && gymProfile.isVerified) {
-                // Already onboarded, sync cookie
-                const cookieStore = await cookies()
-                cookieStore.set('gym_onboarded', 'true', {
-                    maxAge: 30 * 24 * 60 * 60,
-                    path: '/',
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                })
                 shouldRedirect = true
             }
         } catch (error) {
