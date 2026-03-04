@@ -25,6 +25,26 @@ const onboardingSchema = z.object({
 
 const ONBOARDING_COMPLETE_STEP = 4
 
+function toSlug(text: string): string {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+async function generateUniqueSlug(businessName: string): Promise<string> {
+    const baseSlug = toSlug(businessName) || 'gym';
+    let slug = baseSlug;
+    let counter = 1;
+    while (true) {
+        const existing = await prisma.gymProfile.findUnique({ where: { slug } });
+        if (!existing) return slug;
+        slug = `${baseSlug}-${counter++}`;
+    }
+}
+
 export async function completeOnboarding(formData: FormData): Promise<{ redirectTo: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -62,11 +82,15 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             invoicePrefix: validatedData.invoicePrefix,
         }
 
+        // Generate a unique slug from business name
+        const slug = await generateUniqueSlug(validatedData.businessName);
+
         gymProfile = await prisma.gymProfile.upsert({
             where: { userId: user.id },
             update: {
                 ...updateData,
                 name: validatedData.businessName,
+                slug,
                 isVerified: true,
                 onboardingStep: ONBOARDING_COMPLETE_STEP,
             },
@@ -74,6 +98,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 userId: user.id,
                 ...updateData,
                 name: validatedData.businessName,
+                slug,
                 isVerified: true,
                 onboardingStep: ONBOARDING_COMPLETE_STEP,
             }
