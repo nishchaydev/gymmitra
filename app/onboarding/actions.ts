@@ -224,14 +224,19 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         // Send Welcome Email — await so it finishes before redirect() kills the context
         try {
             const resendKey = process.env.RESEND_API_KEY
-            if (resendKey && gymProfile.email) {
+            if (!resendKey) {
+                console.warn('[Onboarding] RESEND_API_KEY not configured — skipping welcome email')
+                warnings.push('Welcome email skipped: email service is not configured.')
+            } else if (!gymProfile.email) {
+                console.warn('[Onboarding] No gym email — skipping welcome email')
+            } else {
                 const resend = new Resend(resendKey)
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
 
                 const { error: emailError } = await resend.emails.send({
                     from: 'Gym Mitra Team <hello@mail.emitra.dev>',
                     to: gymProfile.email,
-                    subject: `Welcome to Gym Mitra, ${gymProfile.businessName}! 🎉`,
+                    subject: `Welcome to Gym Mitra, ${gymProfile.businessName || gymProfile.name}! 🎉`,
                     react: React.createElement(OnboardingEmail, {
                         ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
                         gymName: gymProfile.businessName || gymProfile.name,
@@ -243,12 +248,14 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
                 if (emailError) {
                     console.error('[Onboarding] Resend API error:', emailError)
+                    warnings.push(`Welcome email failed: ${emailError.message}`)
                 } else {
                     console.log(`[Onboarding] Welcome email sent to ${gymProfile.email}`)
                 }
             }
         } catch (emailError) {
             console.error('[Onboarding] Failed to send welcome email:', emailError)
+            warnings.push(`Welcome email failed: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`)
         }
 
         redirectSlug = gymProfile.slug
