@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail';
-import { render } from '@react-email/components';
+import { render } from '@react-email/render';
 import { guardRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';

@@ -10,6 +10,7 @@ import { z } from "zod"
 import { randomBytes } from 'crypto'
 import * as React from 'react'
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail'
+import { render } from '@react-email/render'
 import type { GymProfile } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 
@@ -233,17 +234,19 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 const resend = new Resend(resendKey)
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
 
+                const emailHtml = await render(React.createElement(OnboardingEmail, {
+                    ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
+                    gymName: gymProfile.businessName || gymProfile.name,
+                    loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
+                    serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                    saasPlan: 'FREE'
+                }));
+
                 const { error: emailError } = await resend.emails.send({
                     from: 'Gym Mitra Team <hello@mail.emitra.dev>',
                     to: gymProfile.email,
                     subject: `Welcome to Gym Mitra, ${gymProfile.businessName || gymProfile.name}! 🎉`,
-                    react: React.createElement(OnboardingEmail, {
-                        ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
-                        gymName: gymProfile.businessName || gymProfile.name,
-                        loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
-                        serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-                        saasPlan: 'FREE'
-                    })
+                    html: emailHtml
                 })
 
                 if (emailError) {
