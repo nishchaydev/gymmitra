@@ -7,8 +7,11 @@ import { revalidatePath } from "next/cache"
 import { headers, cookies } from "next/headers"
 import { recordAuditLog } from "@/lib/audit-logger"
 import { z } from "zod"
+import { randomBytes } from 'crypto'
 import * as React from 'react'
 import { OnboardingEmail } from '@/components/emails/OnboardingEmail'
+import type { GymProfile } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 const onboardingSchema = z.object({
     businessName: z.string().min(2, "Business name is required"),
@@ -34,16 +37,26 @@ function toSlug(text: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-async function generateUniqueSlug(businessName: string): Promise<string> {
-    const baseSlug = toSlug(businessName) || 'gym';
-    let slug = baseSlug;
-    let counter = 1;
-    while (true) {
-        const existing = await prisma.gymProfile.findUnique({ where: { slug } });
-        if (!existing) return slug;
-        slug = `${baseSlug}-${counter++}`;
-    }
+function randomSuffix(): string {
+    return randomBytes(3).toString('hex') // 6-char hex, e.g. "a3f1b2"
 }
+
+/**
+ * Generate a slug from the business name.
+ * - If `currentSlug` already matches the base, preserve it (avoids changing URLs on update).
+ * - Otherwise, return the base slug (caller handles conflict via retry).
+ */
+function generateSlug(businessName: string, currentSlug?: string | null): string {
+    const baseSlug = toSlug(businessName) || 'gym';
+    // If the profile already has a slug that starts with the desired base, keep it
+    if (currentSlug && (currentSlug === baseSlug || currentSlug.startsWith(`${baseSlug}-`))) {
+        return currentSlug;
+    }
+    return baseSlug;
+}
+
+/** Max retries for slug uniqueness conflicts */
+const MAX_SLUG_RETRIES = 3
 
 export async function completeOnboarding(formData: FormData): Promise<{ redirectTo: string }> {
     const supabase = await createClient()
@@ -66,7 +79,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         plans: formData.get("plans"),
     }
 
-    let gymProfile: any;
+    let gymProfile: GymProfile | undefined;
     let redirectSlug: string | null = null;
     try {
         const validatedData = onboardingSchema.parse(rawData)
@@ -82,27 +95,52 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             invoicePrefix: validatedData.invoicePrefix,
         }
 
-        // Generate a unique slug from business name
-        const slug = await generateUniqueSlug(validatedData.businessName);
-
-        gymProfile = await prisma.gymProfile.upsert({
+        // Look up existing profile to preserve slug on updates
+        const existingProfile = await prisma.gymProfile.findUnique({
             where: { userId: user.id },
-            update: {
-                ...updateData,
-                name: validatedData.businessName,
-                slug,
-                isVerified: true,
-                onboardingStep: ONBOARDING_COMPLETE_STEP,
-            },
-            create: {
-                userId: user.id,
-                ...updateData,
-                name: validatedData.businessName,
-                slug,
-                isVerified: true,
-                onboardingStep: ONBOARDING_COMPLETE_STEP,
+            select: { slug: true },
+        });
+
+        // Generate slug — preserves existing slug if business name base hasn't changed
+        let slug = generateSlug(validatedData.businessName, existingProfile?.slug);
+
+        // Retry-on-conflict loop to handle TOCTOU race on the unique slug constraint
+        for (let attempt = 0; attempt <= MAX_SLUG_RETRIES; attempt++) {
+            try {
+                gymProfile = await prisma.gymProfile.upsert({
+                    where: { userId: user.id },
+                    update: {
+                        ...updateData,
+                        name: validatedData.businessName,
+                        slug,
+                        isVerified: true,
+                        onboardingStep: ONBOARDING_COMPLETE_STEP,
+                    },
+                    create: {
+                        userId: user.id,
+                        ...updateData,
+                        name: validatedData.businessName,
+                        slug,
+                        isVerified: true,
+                        onboardingStep: ONBOARDING_COMPLETE_STEP,
+                    }
+                })
+                break; // Success — exit retry loop
+            } catch (upsertError) {
+                const isSlugConflict =
+                    upsertError instanceof Prisma.PrismaClientKnownRequestError &&
+                    upsertError.code === 'P2002' &&
+                    (upsertError.meta?.target as string[] | undefined)?.includes('slug');
+
+                if (isSlugConflict && attempt < MAX_SLUG_RETRIES) {
+                    // Append random suffix and retry
+                    const baseSlug = toSlug(validatedData.businessName) || 'gym';
+                    slug = `${baseSlug}-${randomSuffix()}`;
+                    continue;
+                }
+                throw upsertError; // Not a slug conflict or out of retries
             }
-        })
+        }
 
         // Process Plans
         if (validatedData.plans) {
@@ -121,7 +159,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 if (enabledPlans.length > 0) {
                     await prisma.membershipPlan.createMany({
                         data: enabledPlans.map(p => ({
-                            gymId: gymProfile.id,
+                            gymId: gymProfile!.id,
                             name: p.name,
                             description: `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''} Membership`,
                             duration: p.durationMonths,
@@ -187,8 +225,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                     to: gymProfile.email,
                     subject: `Welcome to Gym Mitra, ${gymProfile.businessName}! 🎉`,
                     react: React.createElement(OnboardingEmail, {
-                        ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName,
-                        gymName: gymProfile.businessName,
+                        ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
+                        gymName: gymProfile.businessName || gymProfile.name,
                         loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
                         serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
                         saasPlan: 'FREE'
