@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
     title: 'Gym Onboarding | Gym Mitra',
@@ -29,8 +30,16 @@ export default async function OnboardingPage() {
             console.error('[onboarding] Failed to look up gym profile:', error instanceof Error ? error.message : String(error))
         }
 
-        // redirect() throws NEXT_REDIRECT internally — must be outside try/catch
-        if (shouldRedirect) redirect('/dashboard')
+        // In Next.js, calling redirect() from a Server Component during a Server Action 
+        // re-render causes a 500 error ("Error occurred in Server Components render").
+        // The action already returned `{ redirectTo }` for the client to handle, so we just
+        // shouldn't redirect if this is an action payload request.
+        const headerList = await headers()
+        const isAction = headerList.has('next-action')
+
+        if (shouldRedirect && !isAction) {
+            redirect('/dashboard')
+        }
     }
 
     return (
