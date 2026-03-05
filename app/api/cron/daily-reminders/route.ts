@@ -163,12 +163,13 @@ export async function GET(request: NextRequest) {
                 }
 
                 // ── Birthday Wishes ───────────────────────────────────
+                const kolkataNow = new Date(new Date().toLocaleString("en-US", { timeZone: 'Asia/Kolkata' }))
                 const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: 'numeric', day: 'numeric' })
-                const parts = formatter.formatToParts(new Date())
+                const parts = formatter.formatToParts(kolkataNow)
                 const monthPart = parts.find(p => p.type === 'month')?.value
                 const dayPart = parts.find(p => p.type === 'day')?.value
-                const todayMonth = monthPart ? parseInt(monthPart, 10) : new Date().getMonth() + 1
-                const todayDay = dayPart ? parseInt(dayPart, 10) : new Date().getDate()
+                const todayMonth = monthPart ? parseInt(monthPart, 10) : kolkataNow.getMonth() + 1
+                const todayDay = dayPart ? parseInt(dayPart, 10) : kolkataNow.getDate()
 
                 const birthdayMembers: { id: string; name: string; email: string | null }[] =
                     await prisma.$queryRaw`

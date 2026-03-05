@@ -7,9 +7,11 @@ import { NextResponse, type NextRequest } from 'next/server'
  * 2. Route protection (Auth & Demo mode)
  * 3. Onboarding status enforcement (Cookie-based for Edge compatibility)
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest, mergedHeaders?: Headers) {
     let supabaseResponse = NextResponse.next({
-        request,
+        request: {
+            headers: mergedHeaders || request.headers,
+        },
     })
 
     const supabase = createServerClient(

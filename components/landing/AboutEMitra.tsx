@@ -85,8 +85,8 @@ export function AboutEMitra() {
                     <MotionWrapper delay={0.7} className="mt-20">
                         <p className="text-sm font-black text-slate-400 flex items-center justify-center gap-2 uppercase tracking-[0.1em]">
                             Learn more about our mission at
-                            <a href="https://emitra.tech" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-midnight hover:underline font-black inline-flex items-center transition-colors">
-                                emitra.tech
+                            <a href="https://emitra.dev" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-midnight hover:underline font-black inline-flex items-center transition-colors">
+                                emitra.dev
                                 <ArrowRight className="h-3 w-3 ml-1" aria-hidden="true" />
                             </a>
                         </p>

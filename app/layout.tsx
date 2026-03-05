@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from '@vercel/analytics/next';
+import { headers } from 'next/headers';
 import "./globals.css";
 
 const fontDisplay = Outfit({
@@ -82,12 +83,14 @@ import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from "@/components/Navbar"
 import { PwaSyncProvider } from "@/components/PwaSyncProvider"
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? undefined;
   return (
     <html lang="en" className="scroll-smooth">
       <body
@@ -98,7 +101,7 @@ export default function RootLayout({
         </main>
         <PwaSyncProvider />
         <Toaster />
-        {gaId && <GoogleAnalytics gaId={gaId} />}
+        {gaId && <GoogleAnalytics gaId={gaId} nonce={nonce} />}
         <Analytics />
       </body>
     </html>
