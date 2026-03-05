@@ -163,13 +163,21 @@ export async function GET(request: NextRequest) {
                 }
 
                 // ── Birthday Wishes ───────────────────────────────────
-                const kolkataNow = new Date(new Date().toLocaleString("en-US", { timeZone: 'Asia/Kolkata' }))
                 const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: 'numeric', day: 'numeric' })
-                const parts = formatter.formatToParts(kolkataNow)
-                const monthPart = parts.find(p => p.type === 'month')?.value
-                const dayPart = parts.find(p => p.type === 'day')?.value
-                const todayMonth = monthPart ? parseInt(monthPart, 10) : kolkataNow.getMonth() + 1
-                const todayDay = dayPart ? parseInt(dayPart, 10) : kolkataNow.getDate()
+                let todayMonth: number, todayDay: number
+                try {
+                    const parts = formatter.formatToParts(new Date())
+                    const monthPart = parts.find(p => p.type === 'month')?.value
+                    const dayPart = parts.find(p => p.type === 'day')?.value
+                    if (!monthPart || !dayPart) {
+                        throw new Error(`Failed to extract month or day from formatted parts: ${JSON.stringify(parts)}`)
+                    }
+                    todayMonth = parseInt(monthPart, 10)
+                    todayDay = parseInt(dayPart, 10)
+                } catch (error) {
+                    console.error('[CRON] Failed determining Kolkata date for birthdays', error)
+                    return NextResponse.json({ error: 'Failed determining target timezone date' }, { status: 500 })
+                }
 
                 const birthdayMembers: { id: string; name: string; email: string | null }[] =
                     await prisma.$queryRaw`

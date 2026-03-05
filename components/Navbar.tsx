@@ -85,7 +85,7 @@ export function Navbar() {
     const closeMenu = () => setIsMobileMenuOpen(false)
 
     return (
-        <nav className="border-b bg-white shadow-sm sticky top-0 z-[100]">
+        <nav className="border-b bg-white shadow-sm sticky top-0 z-50">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
                 <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary font-display">
                     <Dumbbell className="h-6 w-6" />

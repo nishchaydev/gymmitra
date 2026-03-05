@@ -97,7 +97,7 @@ export function LiveDemo() {
                             {/* Main Area */}
                             <div className="flex-1 overflow-y-auto">
                                 {/* Mobile Tab Switcher */}
-                                <div className="lg:hidden flex border-b bg-white sticky top-0 z-20" role="tablist" aria-label="Mobile Navigation">
+                                <div className="lg:hidden flex border-b bg-white relative z-0" role="tablist" aria-label="Mobile Navigation">
                                     {(['dashboard', 'members', 'billing'] as const).map((tab) => (
                                         <button
                                             key={tab}

@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
     const cspHeader = `
         default-src 'self';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
-        style-src 'self' 'unsafe-inline';
+        style-src 'self' 'nonce-${nonce}';
         img-src 'self' blob: data: https:;
         font-src 'self';
         connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://sentry.io;
@@ -18,12 +18,13 @@ export async function middleware(request: NextRequest) {
         form-action 'self';
         frame-ancestors 'none';
         upgrade-insecure-requests;
+        report-uri /api/csp-report;
     `.replace(/\s{2,}/g, ' ').trim()
 
     // Clone headers
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-nonce', nonce)
-    requestHeaders.set('Content-Security-Policy', cspHeader)
+    // Removed requestHeaders.set('Content-Security-Policy', cspHeader) because updateSession doesn't use it natively within supabase client logic unless implicitly required by backend handlers fetching cookies, avoiding redundant header bloat.
 
     const response = await updateSession(request, requestHeaders)
 
