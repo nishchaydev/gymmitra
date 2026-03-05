@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
                     const monthPart = parts.find(p => p.type === 'month')?.value
                     const dayPart = parts.find(p => p.type === 'day')?.value
                     if (!monthPart || !dayPart) {
-                        throw new Error(`Failed to extract month or day from formatted parts: ${JSON.stringify(parts)}`)
+                        throw new Error(`Failed to extract month or day from formatted parts for Asia/Kolkata timezone: ${JSON.stringify(parts)}`)
                     }
                     todayMonth = parseInt(monthPart, 10)
                     todayDay = parseInt(dayPart, 10)

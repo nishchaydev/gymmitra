@@ -100,8 +100,8 @@ function AttendanceCard({
                             <p className="text-sm text-slate-500 font-medium">{lastCheckinLabel}</p>
                         </div>
                         <div className="ml-auto">
-                            <Link href="/attendance/kiosk">
-                                <Button size="sm" className="bg-midnight hover:bg-midnight/90 shadow-md text-white">
+                            <Link href="#!">
+                                <Button size="sm" className="bg-midnight hover:bg-midnight/90 shadow-md text-white cursor-pointer" type="button" onClick={() => alert("Kiosk mode is available when logged into a specific gym workspace.")}>
                                     <Clock className="mr-2 h-4 w-4" /> Kiosk Mode
                                 </Button>
                             </Link>

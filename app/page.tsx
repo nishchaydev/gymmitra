@@ -105,7 +105,6 @@ export default function Home() {
                   <li><Link href="#features" className="text-sm hover:text-ocean transition-colors duration-200">Features</Link></li>
                   <li><Link href="#pricing" className="text-sm hover:text-ocean transition-colors duration-200">Pricing</Link></li>
                   <li><Link href="/login?view=register" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</Link></li>
-                  <li><Link href="/attendance/kiosk" className="text-sm hover:text-ocean transition-colors duration-200">Live Kiosk</Link></li>
                 </ul>
               </div>
               <div className="space-y-6">
