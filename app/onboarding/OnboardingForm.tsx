@@ -86,7 +86,7 @@ export default function OnboardingForm() {
         setIsSubmitting(true)
 
         // 1. Call server action
-        let result: { redirectTo: string; warnings?: string[] }
+        let result: { redirectTo?: string; warnings?: string[]; error?: string }
         try {
             const submissionData = new FormData()
             Object.entries(formData).forEach(([key, value]) => {
@@ -97,6 +97,12 @@ export default function OnboardingForm() {
                 }
             })
             result = await completeOnboarding(submissionData)
+
+            if (result.error) {
+                toast.error(result.error)
+                setIsSubmitting(false)
+                return
+            }
         } catch (error) {
             console.error("Onboarding failed:", error)
             toast.error(error instanceof Error ? error.message : "Something went wrong. Please check your inputs.")
@@ -105,7 +111,7 @@ export default function OnboardingForm() {
         }
 
         // 2. Validate response and navigate
-        if (!result?.redirectTo) {
+        if (!result.redirectTo) {
             toast.error("Onboarding saved, but we couldn't determine where to redirect. Please go to your dashboard manually.")
             setIsSubmitting(false)
             return

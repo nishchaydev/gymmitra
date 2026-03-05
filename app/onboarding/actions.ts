@@ -59,12 +59,12 @@ function generateSlug(businessName: string, currentSlug?: string | null): string
 /** Max retries for slug uniqueness conflicts */
 const MAX_SLUG_RETRIES = 3
 
-export async function completeOnboarding(formData: FormData): Promise<{ redirectTo: string; warnings?: string[] }> {
+export async function completeOnboarding(formData: FormData): Promise<{ redirectTo?: string; warnings?: string[], error?: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        throw new Error("Unauthorized")
+        return { error: "Unauthorized" }
     }
 
     const rawData = {
@@ -146,7 +146,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
         // Defensive check — gymProfile must exist after upsert
         if (!gymProfile) {
-            throw new Error("Failed to create or update your gym profile. Please try again.")
+            return { error: "Failed to create or update your gym profile. Please try again." }
         }
 
         const gymId = gymProfile.id;
@@ -187,10 +187,10 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
     } catch (error) {
         if (error instanceof z.ZodError) {
             console.error("Onboarding validation failed:", error.flatten())
-            throw new Error(`Validation Error: ${error.issues[0].message}`)
+            return { error: `Validation Error: ${error.issues[0].message}` }
         }
         console.error("Onboarding logic failed:", error)
-        throw new Error("Failed to save your profile. Please check all fields and try again.")
+        return { error: `Failed to save your profile: ${error instanceof Error ? error.message : String(error)}` }
     }
 
     revalidatePath("/dashboard")
