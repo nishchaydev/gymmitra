@@ -1,5 +1,6 @@
 'use server'
 
+import { getBaseUrl } from '@/lib/utils'
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { Resend } from 'resend'
@@ -190,7 +191,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             return { error: `Validation Error: ${error.issues[0].message}` }
         }
         console.error("Onboarding logic failed:", error)
-        return { error: `Failed to save your profile: ${error instanceof Error ? error.message : String(error)}` }
+        return { error: "An unexpected error occurred while saving your profile" }
     }
 
     revalidatePath("/dashboard")
@@ -232,7 +233,6 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 console.warn('[Onboarding] No gym email — skipping welcome email')
             } else {
                 const resend = new Resend(resendKey)
-                const { getBaseUrl } = await import('@/lib/utils')
                 const baseUrl = getBaseUrl()
 
                 const emailHtml = await render(React.createElement(OnboardingEmail, {

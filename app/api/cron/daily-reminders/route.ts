@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Resend } from 'resend'
 import { addDays, startOfDay, endOfDay, differenceInDays } from 'date-fns'
-import { CreateEmailOptions } from 'resend'
+import { Resend, CreateEmailOptions, CreateEmailResponseSuccess } from 'resend'
 import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
@@ -166,8 +165,10 @@ export async function GET(request: NextRequest) {
                 // ── Birthday Wishes ───────────────────────────────────
                 const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: 'numeric', day: 'numeric' })
                 const parts = formatter.formatToParts(new Date())
-                const todayMonth = parseInt(parts.find(p => p.type === 'month')!.value, 10)
-                const todayDay = parseInt(parts.find(p => p.type === 'day')!.value, 10)
+                const monthPart = parts.find(p => p.type === 'month')?.value
+                const dayPart = parts.find(p => p.type === 'day')?.value
+                const todayMonth = monthPart ? parseInt(monthPart, 10) : new Date().getMonth() + 1
+                const todayDay = dayPart ? parseInt(dayPart, 10) : new Date().getDate()
 
                 const birthdayMembers: { id: string; name: string; email: string | null }[] =
                     await prisma.$queryRaw`
@@ -218,7 +219,7 @@ export async function GET(request: NextRequest) {
                                 results.errors += emailChunk.length
                             } else if (response.data && response.data.data) {
                                 const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
-                                response.data.data.forEach((emailResult: any, idx: number) => {
+                                response.data.data.forEach((emailResult: CreateEmailResponseSuccess | Error | any, idx: number) => {
                                     if (!emailResult || emailResult.error || !emailResult.id) {
                                         results.errors++
                                     } else {

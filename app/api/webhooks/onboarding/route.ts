@@ -6,6 +6,7 @@ import { guardRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { verifyWebhookSignature } from '@/lib/webhook-utils';
+import { getBaseUrl } from '@/lib/utils';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_for_build');
 
@@ -135,7 +136,6 @@ export async function POST(req: NextRequest) {
         const ownerName = record.raw_user_meta_data?.name || gymProfile.name || 'User'; // Generic 'User' if name missing
         const gymName = gymProfile.businessName || gymProfile.name || 'your local gym';
 
-        const { getBaseUrl } = await import('@/lib/utils')
         const baseUrl = getBaseUrl()
 
         console.log(`[Webhook] Event: ${type} | User: ${ownerEmail} | Gym: ${gymName} | Sending Welcome...`);

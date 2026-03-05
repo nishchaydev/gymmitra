@@ -69,7 +69,7 @@ export function InvoiceTemplate({
                         <div className="flex items-center gap-2"><Mail className="w-3 h-3" /> {gymInfo.email}</div>
                     </div>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right text-left">
                     <h2 className="text-4xl font-black text-slate-200 uppercase tracking-widest mb-4">INVOICE</h2>
                     <div className="space-y-1 text-sm">
                         <div className="font-bold text-slate-900">{invoiceNumber}</div>
@@ -105,9 +105,8 @@ export function InvoiceTemplate({
                 </div>
             </div>
 
-            {/* Items Table */}
-            <div className="mb-12 overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse min-w-[500px]">
+            <div className="mb-12 overflow-x-auto w-full print:overflow-visible print:w-auto">
+                <table className="w-full text-left border-collapse min-w-[500px] print:min-w-0 print:w-auto print:table-auto">
                     <thead>
                         <tr className="bg-slate-50 border-y border-slate-200">
                             <th className="py-4 px-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Description</th>
@@ -152,7 +151,7 @@ export function InvoiceTemplate({
                     )}
                 </div>
 
-                <div className="w-[300px] space-y-3">
+                <div className="w-full sm:w-[300px] space-y-3">
                     <div className="flex justify-between text-sm py-2">
                         <span className="text-slate-500 font-medium">Subtotal</span>
                         <span className="text-slate-900 font-bold">₹{subtotal.toLocaleString('en-IN')}</span>

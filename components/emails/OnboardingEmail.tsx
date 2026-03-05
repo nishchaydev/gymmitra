@@ -16,6 +16,7 @@ import {
     Tailwind,
 } from '@react-email/components';
 import * as React from 'react';
+import { getBaseUrl } from '@/lib/utils';
 
 interface OnboardingEmailProps {
     ownerName: string;
@@ -25,9 +26,7 @@ interface OnboardingEmailProps {
     saasPlan: string;
 }
 
-import { getBaseUrl } from '@/lib/utils';
 
-const baseUrl = getBaseUrl();
 
 export const OnboardingEmail = ({
     ownerName,
@@ -38,6 +37,7 @@ export const OnboardingEmail = ({
 }: OnboardingEmailProps) => {
     const previewText = `Welcome to Gym Mitra, ${ownerName}! Your workspace "${gymName}" is ready.`;
     const year = new Date().getFullYear();
+    const baseUrl = getBaseUrl();
 
     return (
         <Html>
@@ -301,11 +301,13 @@ export const OnboardingEmail = ({
     );
 };
 
+const previewBaseUrl = getBaseUrl();
+
 OnboardingEmail.PreviewProps = {
     ownerName: 'Nishchay',
     gymName: 'Iron Paradise Gym',
-    loginUrl: `${baseUrl}/dashboard`,
-    serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+    loginUrl: `${previewBaseUrl}/dashboard`,
+    serviceAgreementUrl: `${previewBaseUrl}/legal/service-agreement`,
     saasPlan: 'FREE',
 } as OnboardingEmailProps;
 

@@ -17,6 +17,10 @@ export function getBaseUrl(): string {
     if (envUrl && envUrl.includes('localhost') && !window.location.hostname.includes('localhost')) {
       return window.location.origin
     }
+    // If we are on localhost but env is set to a real domain, follow reality
+    if (envUrl && !envUrl.includes('localhost') && window.location.hostname.includes('localhost')) {
+      return window.location.origin
+    }
     return envUrl || window.location.origin
   }
 

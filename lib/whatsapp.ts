@@ -127,8 +127,14 @@ export const getInvoiceWhatsAppLink = (
         return null
     }
 
+    if (!Number.isFinite(amount) || amount < 0) {
+        console.warn('WhatsApp Link: Invalid or negative amount', { amount })
+        return null
+    }
+
     const safeToken = encodeURIComponent(shareToken.trim())
+    const formattedAmount = Number(amount.toFixed(2))
     const url = `${baseUrl}/${gymSlug}/invoice/${safeToken}`
-    const message = templates.invoiceShare(memberName, gymName, amount, url)
+    const message = templates.invoiceShare(memberName, gymName, formattedAmount, url)
     return getWhatsAppLink(phone, message)
 }

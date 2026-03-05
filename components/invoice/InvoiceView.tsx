@@ -5,12 +5,12 @@ import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Share2, MessageCircle } from 'lucide-react'
 import { getInvoiceWhatsAppLink } from '@/lib/whatsapp'
+import { getBaseUrl } from '@/lib/utils'
 
 interface InvoiceViewProps {
     invoice: any
 }
 
-import { getBaseUrl } from '@/lib/utils'
 
 /**
  * Builds a standalone, self-contained print-ready HTML page for the invoice.
