@@ -14,6 +14,7 @@ const settingsSchema = z.object({
     address: z.string().optional(),
     gst: z.string().optional(),
     invoicePrefix: z.string().min(1).max(5).optional(),
+    invoiceLinkExpiryDays: z.number().int().min(0).max(365).optional(), // 0 = never expire
     termsAndConditions: z.string().max(1000).optional(),
 })
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getBaseUrl } from '@/lib/utils'
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
@@ -7,7 +8,7 @@ export async function GET(request: Request) {
     const next = searchParams.get('next') ?? '/dashboard'
 
     // Use configured app URL if available, fallback to request origin
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin
+    const baseUrl = getBaseUrl()
 
     if (code) {
         const supabase = await createClient()

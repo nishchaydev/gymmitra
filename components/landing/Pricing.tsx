@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Check } from "lucide-react"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 
+import { getBaseUrl } from "@/lib/utils"
+
 export function Pricing() {
     const plans = [
         {
@@ -128,7 +130,7 @@ export function Pricing() {
                                     ? "bg-primary hover:bg-primary-600 text-white shadow-lg shadow-primary/30 hover:-translate-y-1"
                                     : "border-drift-silver text-slate-600 hover:text-primary hover:border-primary hover:bg-primary/5 bg-transparent"
                                     }`}
-                                onClick={() => window.location.href = plan.price === "Custom" ? `mailto:${process.env.NEXT_PUBLIC_SALES_EMAIL || 'hello@gymmitra.in'}` : `${process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'}/login?view=register`}
+                                onClick={() => window.location.href = plan.price === "Custom" ? `mailto:${process.env.NEXT_PUBLIC_SALES_EMAIL || 'hello@gymmitra.in'}` : `${getBaseUrl()}/login?view=register`}
                             >
                                 {plan.price === "Custom" ? "Contact Sales" : "Start Free Trial"}
                             </Button>

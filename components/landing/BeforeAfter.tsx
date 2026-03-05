@@ -5,6 +5,8 @@ import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
+import { getBaseUrl } from "@/lib/utils"
+
 export function BeforeAfter() {
     return (
         <section className="py-24 bg-midnight text-white relative overflow-hidden">
@@ -106,7 +108,7 @@ export function BeforeAfter() {
                     <p className="text-primary text-2xl font-black mb-8 animate-pulse font-display uppercase tracking-widest">
                         ⚡ Save 90% of your admin time
                     </p>
-                    <Link href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'}/login?view=register`}>
+                    <Link href={`${getBaseUrl()}/login?view=register`}>
                         <Button className="h-14 px-8 md:px-12 text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/25 transition-all active:scale-95 uppercase tracking-widest rounded-2xl">
                             Start Saving Time Now
                         </Button>

@@ -25,7 +25,9 @@ interface OnboardingEmailProps {
     saasPlan: string;
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
+import { getBaseUrl } from '@/lib/utils';
+
+const baseUrl = getBaseUrl();
 
 export const OnboardingEmail = ({
     ownerName,

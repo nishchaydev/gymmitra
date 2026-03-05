@@ -57,7 +57,7 @@ export function InvoiceTemplate({
     return (
         <div className="bg-white p-8 max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid" id="invoice-template">
             {/* Header */}
-            <div className="flex justify-between items-start mb-12">
+            <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 text-primary">
                         <Dumbbell className="w-10 h-10" />
@@ -78,7 +78,7 @@ export function InvoiceTemplate({
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-12 mb-12">
+            <div className="grid sm:grid-cols-2 gap-8 sm:gap-12 mb-12">
                 {/* Bill To */}
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Bill To</h3>
@@ -106,8 +106,8 @@ export function InvoiceTemplate({
             </div>
 
             {/* Items Table */}
-            <div className="mb-12">
-                <table className="w-full text-left border-collapse">
+            <div className="mb-12 overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse min-w-[500px]">
                     <thead>
                         <tr className="bg-slate-50 border-y border-slate-200">
                             <th className="py-4 px-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Description</th>
@@ -130,7 +130,7 @@ export function InvoiceTemplate({
             </div>
 
             {/* Footer Summary */}
-            <div className="flex justify-between items-end">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-8">
                 <div className="space-y-6">
                     {paymentMethod === 'UPI' && upiQrData && (
                         <UpiQrCode value={upiQrData} size={120} />

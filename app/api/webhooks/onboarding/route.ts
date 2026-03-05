@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     try {
         // 1. Rate limit by client IP/fingerprint to prevent email abuse
         const clientId = getClientIdentifier(req)
-        const rl = await guardRateLimit(10, `webhook:onboarding:${clientId}`)
+        const rl = await guardRateLimit(10, `webhook:onboarding:${clientId}`, false)
         if (rl) return rl
 
         // 2. We support two forms of Auth: Bearer token (internal cron) or HMAC signature (Supabase Webhooks)
@@ -135,7 +135,8 @@ export async function POST(req: NextRequest) {
         const ownerName = record.raw_user_meta_data?.name || gymProfile.name || 'User'; // Generic 'User' if name missing
         const gymName = gymProfile.businessName || gymProfile.name || 'your local gym';
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
+        const { getBaseUrl } = await import('@/lib/utils')
+        const baseUrl = getBaseUrl()
 
         console.log(`[Webhook] Event: ${type} | User: ${ownerEmail} | Gym: ${gymName} | Sending Welcome...`);
 

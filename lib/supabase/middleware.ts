@@ -39,7 +39,8 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    const isDemoMode = request.cookies.get('mitra_demo_mode')?.value === 'true'
+    const demoFeatureEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemoMode = demoFeatureEnabled && request.cookies.get('mitra_demo_mode')?.value === 'true'
     const isOnboarded = request.cookies.get('gym_onboarded')?.value === 'true'
     const { pathname } = request.nextUrl
 

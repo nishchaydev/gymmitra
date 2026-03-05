@@ -110,6 +110,8 @@ export const templates = {
     },
 }
 
+import { getBaseUrl } from './utils'
+
 export const getInvoiceWhatsAppLink = (
     phone: string,
     memberName: string,
@@ -118,13 +120,7 @@ export const getInvoiceWhatsAppLink = (
     shareToken: string,
     gymSlug: string
 ): string | null => {
-    // Normalize baseUrl: trim trailing slash to prevent double-slashes
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
-    const baseUrl = siteUrl.replace(/\/$/, '')
-
-    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_APP_URL) {
-        console.warn('WhatsApp Link: NEXT_PUBLIC_APP_URL not set, using fallback.', { siteUrl })
-    }
+    const baseUrl = getBaseUrl()
 
     if (!shareToken || typeof shareToken !== 'string' || !shareToken.trim()) {
         console.warn('WhatsApp Link: Invalid or missing shareToken', { shareToken })

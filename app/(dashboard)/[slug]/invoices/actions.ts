@@ -72,8 +72,10 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             const totalCents = subtotalAfterDiscountCents + taxAmountCents
 
             const shareToken = crypto.randomBytes(32).toString('hex')
-            const shareTokenExpiresAt = new Date()
-            shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
+            const expiryDays = gym.invoiceLinkExpiryDays ?? 30
+            const shareTokenExpiresAt = expiryDays > 0
+                ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
+                : null // 0 = never expire
 
             let remainingTaxCents = taxAmountCents;
             let remainingSubtotalCents = subtotalCents;

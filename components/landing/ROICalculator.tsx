@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { ArrowRight, Calculator } from "lucide-react"
 
+import { getBaseUrl } from "@/lib/utils"
+
 export function ROICalculator() {
     const [adminHours, setAdminHours] = useState([3])
 
@@ -99,7 +101,7 @@ export function ROICalculator() {
                                 </div>
                             </div>
 
-                            <a href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'}/login?view=register`} className="block" target="_blank" rel="noopener noreferrer" aria-label="Open registration page">
+                            <a href={`${getBaseUrl()}/login?view=register`} className="block" target="_blank" rel="noopener noreferrer" aria-label="Open registration page">
                                 <Button className="w-full h-16 text-lg font-black rounded-xl bg-primary hover:bg-primary-600 shadow-xl shadow-primary/20 uppercase tracking-widest transition-all hover:-translate-y-1">
                                     Start Saving Now
                                     <ArrowRight className="ml-2 h-6 w-6" />

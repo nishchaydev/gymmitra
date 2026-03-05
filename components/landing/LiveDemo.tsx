@@ -201,27 +201,31 @@ export function LiveDemo() {
                                                 <Button size="sm" className="bg-primary hover:bg-primary-600 font-bold uppercase tracking-widest text-[10px] px-4">Add Member</Button>
                                             </div>
                                             <div className="bg-white rounded-xl border border-drift-silver shadow-sm overflow-hidden">
-                                                <div className="grid grid-cols-4 p-4 bg-slate-50 border-b border-drift-silver font-black text-slate-400 uppercase tracking-widest text-[10px]">
-                                                    <div className="col-span-2">Name</div>
-                                                    <div>Status</div>
-                                                    <div>Plan</div>
-                                                </div>
-                                                {SHOWCASE_MEMBERS.map((member) => (
-                                                    <div key={member.id} className="grid grid-cols-4 p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center text-sm font-medium">
-                                                        <div className="col-span-2 flex items-center gap-3">
-                                                            <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary font-black text-xs uppercase" aria-hidden="true">
-                                                                {member.name.charAt(0)}
+                                                <div className="overflow-x-auto w-full">
+                                                    <div className="min-w-[500px]">
+                                                        <div className="grid grid-cols-4 p-4 bg-slate-50 border-b border-drift-silver font-black text-slate-400 uppercase tracking-widest text-[10px]">
+                                                            <div className="col-span-2">Name</div>
+                                                            <div>Status</div>
+                                                            <div>Plan</div>
+                                                        </div>
+                                                        {SHOWCASE_MEMBERS.map((member) => (
+                                                            <div key={member.id} className="grid grid-cols-4 p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center text-sm font-medium">
+                                                                <div className="col-span-2 flex items-center gap-3">
+                                                                    <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary font-black text-xs uppercase" aria-hidden="true">
+                                                                        {member.name.charAt(0)}
+                                                                    </div>
+                                                                    <div className="font-bold text-slate-700">{member.name}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${member.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                                        {member.status}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-slate-500 font-bold">{member.planName}</div>
                                                             </div>
-                                                            <div className="font-bold text-slate-700">{member.name}</div>
-                                                        </div>
-                                                        <div>
-                                                            <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${member.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                                                {member.status}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-slate-500 font-bold">{member.planName}</div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </div>
                                             </div>
                                         </div>
                                     )}

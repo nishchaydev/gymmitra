@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const rawIp = realIp || forwardedFor || '127.0.0.1'
     const ip = rawIp.split(',')[0].trim() || '127.0.0.1'
 
-    const rl = await guardRateLimit(5, `cron:reminders:${ip}`)
+    const rl = await guardRateLimit(5, `cron:reminders:${ip}`, false)
     if (rl) return rl
 
     // 1. Timing-safe CRON_SECRET verification

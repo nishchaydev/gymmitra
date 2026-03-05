@@ -232,7 +232,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 console.warn('[Onboarding] No gym email — skipping welcome email')
             } else {
                 const resend = new Resend(resendKey)
-                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev'
+                const { getBaseUrl } = await import('@/lib/utils')
+                const baseUrl = getBaseUrl()
 
                 const emailHtml = await render(React.createElement(OnboardingEmail, {
                     ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,

@@ -124,8 +124,10 @@ export async function POST(request: NextRequest) {
 
         const crypto = await import('crypto')
         const shareToken = crypto.randomBytes(32).toString('hex')
-        const shareTokenExpiresAt = new Date()
-        shareTokenExpiresAt.setDate(shareTokenExpiresAt.getDate() + 30)
+        const expiryDays = (gym as any).invoiceLinkExpiryDays ?? 30
+        const shareTokenExpiresAt = expiryDays > 0
+            ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
+            : null // 0 = never expire
 
         try {
             const invoice = await prisma.invoice.create({

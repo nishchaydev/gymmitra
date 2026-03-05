@@ -10,8 +10,14 @@ interface LegacyInvoicePageProps {
 export default async function LegacyInvoicePage({ params }: LegacyInvoicePageProps) {
     const { token } = await params
 
-    const invoice = await prisma.invoice.findUnique({
-        where: { shareToken: token },
+    const invoice = await prisma.invoice.findFirst({
+        where: {
+            shareToken: token,
+            OR: [
+                { shareTokenExpiresAt: null },
+                { shareTokenExpiresAt: { gt: new Date() } }
+            ]
+        },
         include: { gym: true }
     })
 
