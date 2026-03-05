@@ -26,6 +26,8 @@ const onboardingSchema = z.object({
     upiId: z.string().min(3, "UPI ID is required"),
     invoicePrefix: z.string().min(2, "Prefix is required").max(5, "Max 5 characters"),
     plans: z.string().optional(),
+    termsAndConditions: z.string().optional(),
+    gymRules: z.string().optional(),
 })
 
 const ONBOARDING_COMPLETE_STEP = 4
@@ -79,6 +81,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         upiId: formData.get("upiId"),
         invoicePrefix: formData.get("invoicePrefix")?.toString().toUpperCase(),
         plans: formData.get("plans"),
+        termsAndConditions: formData.get("termsAndConditions"),
+        gymRules: formData.get("gymRules"),
     }
 
     let gymProfile: GymProfile | undefined;
@@ -96,6 +100,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             email: validatedData.email,
             upiId: validatedData.upiId,
             invoicePrefix: validatedData.invoicePrefix,
+            termsAndConditions: validatedData.termsAndConditions,
+            gymRules: validatedData.gymRules,
         }
 
         // Look up existing profile to preserve slug on updates

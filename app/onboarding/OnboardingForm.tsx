@@ -33,6 +33,8 @@ export default function OnboardingForm() {
         phone: '',
         upiId: '',
         invoicePrefix: '',
+        termsAndConditions: '1. Fees once paid are non-refundable.\n2. Management is not responsible for personal belongings.',
+        gymRules: '1. Always wipe down equipment after use.\n2. Re-rack weights after finishing your set.\n3. Appropriate gym attire and closed-toe shoes are mandatory.',
         plans: [
             { name: 'Monthly', durationMonths: 1, price: 1500, enabled: true },
             { name: 'Quarterly', durationMonths: 3, price: 4000, enabled: true },
@@ -357,7 +359,30 @@ export default function OnboardingForm() {
                                                 autoComplete="off"
                                                 required
                                             />
-                                            <p className="text-xs text-muted-foreground">Invoices will look like TF-INV-0001</p>
+                                            <p className="text-xs text-muted-foreground">Invoices will look like {formData.invoicePrefix || 'GM'}-INV-0001</p>
+                                        </div>
+                                        <div className="space-y-2 text-left mt-4">
+                                            <Label htmlFor="termsAndConditions">Invoice Terms & Conditions (Billing Policies)</Label>
+                                            <textarea
+                                                id="termsAndConditions"
+                                                name="termsAndConditions"
+                                                className="flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={formData.termsAndConditions}
+                                                onChange={(e) => handleInputChange(e as any)}
+                                                placeholder="Enter invoice terms here (e.g. Refund policy)..."
+                                            />
+                                        </div>
+                                        <div className="space-y-2 text-left mt-4">
+                                            <Label htmlFor="gymRules">Gym Rules (Member Guidelines)</Label>
+                                            <textarea
+                                                id="gymRules"
+                                                name="gymRules"
+                                                className="flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={formData.gymRules}
+                                                onChange={(e) => handleInputChange(e as any)}
+                                                placeholder="Enter gym rules here (e.g. Dress code, equipment use)..."
+                                            />
+                                            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md font-medium mt-2">🔔 You can edit these terms and rules later anytime from your Dashboard Settings!</p>
                                         </div>
                                         <div className="p-6 bg-slate-50 rounded-xl border-2 border-dashed border-primary/20 mt-8">
                                             <h3 className="font-bold text-primary mb-2">Almost there!</h3>

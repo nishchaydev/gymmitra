@@ -32,6 +32,7 @@ model GymProfile {
   taxPercentage          Decimal           @default(18.0) @db.Decimal(5, 2)
   invoiceLinkExpiryDays  Int               @default(30) // Days before shared invoice links expire (0 = never)
   termsAndConditions     String?           @db.Text
+  gymRules               String?           @db.Text
   deletedAt          DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
