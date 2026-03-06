@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
     const cspHeader = `
         default-src 'self';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
-        style-src 'self' 'nonce-${nonce}';
+        style-src 'self' 'unsafe-inline';
         img-src 'self' blob: data: https:;
         font-src 'self';
         connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://sentry.io;
@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
         frame-ancestors 'none';
         upgrade-insecure-requests;
         report-uri /api/csp-report;
+        report-to csp-endpoint;
     `.replace(/\s{2,}/g, ' ').trim()
 
     // Clone headers
@@ -30,6 +31,8 @@ export async function middleware(request: NextRequest) {
 
     // Ensure the CSP is passed back to the client
     response.headers.set('Content-Security-Policy', cspHeader)
+    // report-to requires the Reporting-Endpoints header so browsers know where to POST
+    response.headers.set('Reporting-Endpoints', 'csp-endpoint="/api/csp-report"')
 
     return response
 }
@@ -41,7 +44,8 @@ export const config = {
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
+         * - manifest.webmanifest (PWA manifest)
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 }

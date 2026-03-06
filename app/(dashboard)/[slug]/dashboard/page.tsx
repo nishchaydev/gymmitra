@@ -266,7 +266,7 @@ export default async function DashboardPage({
             }
             monthlyRevenueData = monthNames.map((name, i) => ({
                 name,
-                total: revenueMap.get(i + 1) || 0,
+                total: Number(revenueMap.get(i + 1)) || 0,
             }))
         }
     }

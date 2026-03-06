@@ -27,7 +27,9 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
                         request.cookies.set(name, value)
                     )
                     supabaseResponse = NextResponse.next({
-                        request,
+                        request: {
+                            headers: mergedHeaders || request.headers,
+                        },
                     })
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, options)
@@ -53,6 +55,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         pathname.startsWith('/auth') ||
         pathname.startsWith('/error') ||
         pathname.startsWith('/invoice/') || // Public invoice sharing
+        pathname === '/manifest.webmanifest' || // PWA manifest
+        pathname === '/api/csp-report' || // CSP Violation Reporting
         pathname.startsWith('/api/webhooks') // External webhooks handle their own auth
 
     if (isPublicRoute) {

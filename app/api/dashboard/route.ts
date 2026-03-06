@@ -62,12 +62,12 @@ export async function GET(req: NextRequest) {
             }),
             prisma.$queryRaw`
                 SELECT
-                    EXTRACT(MONTH FROM "createdAt")::int AS month,
+                    EXTRACT(MONTH FROM "issueDate")::int AS month,
                     COALESCE(SUM("total"), 0) AS total
                 FROM "Invoice"
                 WHERE "gymId" = ${gym.id}
                     AND "paymentStatus" = 'PAID'
-                    AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW())
+                    AND EXTRACT(YEAR FROM "issueDate") = EXTRACT(YEAR FROM NOW())
                     AND "deletedAt" IS NULL
                 GROUP BY month
                 ORDER BY month
@@ -164,7 +164,7 @@ export async function GET(req: NextRequest) {
             }
             monthlyRevenueData = monthNames.map((name, i) => ({
                 name,
-                total: revenueMap.get(i + 1) || 0,
+                total: Number(revenueMap.get(i + 1)) || 0,
             }))
         }
 
@@ -184,7 +184,14 @@ export async function GET(req: NextRequest) {
             monthlyRevenueData,
         })
     } catch (error) {
-        console.error('Dashboard API Error:', error)
+        const err = error instanceof Error ? error : new Error(String(error))
+        console.error(JSON.stringify({
+            route: 'dashboard',
+            action: 'fetch',
+            errorName: err.name,
+            errorMessage: err.message,
+            ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+        }))
         return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 })
     }
 }

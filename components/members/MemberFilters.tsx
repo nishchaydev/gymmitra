@@ -5,15 +5,19 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
 import { useState, useTransition } from 'react'
+import { useOrgSlug } from '@/hooks/use-org-slug'
 
 export function MemberSearch() {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const slug = useOrgSlug()
     const [query, setQuery] = useState(searchParams.get('q') || '')
     const [isPending, startTransition] = useTransition()
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
+        if (!slug) return // guard: no slug → don't navigate
+
         const params = new URLSearchParams(searchParams.toString())
 
         if (query.trim()) {
@@ -23,7 +27,7 @@ export function MemberSearch() {
         }
 
         startTransition(() => {
-            router.push(`/members?${params.toString()}`)
+            router.push(`/${slug}/members?${params.toString()}`)
         })
     }
 
@@ -44,10 +48,13 @@ export function MemberSearch() {
 export function MemberFilters() {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const slug = useOrgSlug()
     const [isPending, startTransition] = useTransition()
     const currentStatus = searchParams.get('status') || 'ALL'
 
     const handleFilter = (status: string) => {
+        if (!slug) return // guard: no slug → don't navigate
+
         const params = new URLSearchParams(searchParams.toString())
 
         if (status === 'ALL') {
@@ -57,7 +64,7 @@ export function MemberFilters() {
         }
 
         startTransition(() => {
-            router.push(`/members?${params.toString()}`)
+            router.push(`/${slug}/members?${params.toString()}`)
         })
     }
 
