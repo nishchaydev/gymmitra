@@ -64,13 +64,13 @@ export const OnboardingEmail = ({
                         {/* ═══════════ HERO BANNER ═══════════ */}
                         <Section className="bg-gradient-to-r px-[40px] py-[28px] text-center" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)' }}>
                             <Text className="text-[14px] font-semibold m-0 mb-[8px] tracking-wide uppercase" style={{ color: '#60a5fa' }}>
-                                🎉 You're All Set
+                                🎉 You&apos;re All Set
                             </Text>
                             <Heading className="text-[26px] font-extrabold m-0 mb-[8px] leading-tight" style={{ color: '#ffffff' }}>
                                 Welcome aboard, {ownerName}!
                             </Heading>
                             <Text className="text-[15px] m-0" style={{ color: '#cbd5e1' }}>
-                                Your workspace <strong style={{ color: '#ffffff' }}>"{gymName}"</strong> is live and ready to go.
+                                Your workspace <strong style={{ color: '#ffffff' }}>&quot;{gymName}&quot;</strong> is live and ready to go.
                             </Text>
                         </Section>
 
@@ -172,7 +172,7 @@ export const OnboardingEmail = ({
 
                             {/* ═══════════ WHAT'S INCLUDED ═══════════ */}
                             <Heading className="text-[16px] font-bold text-[#0f172a] m-0 mb-[16px]">
-                                ✨ What's Included in Your Plan
+                                ✨ What&apos;s Included in Your Plan
                             </Heading>
 
                             <Section className="bg-[#f0fdf4] rounded-[10px] p-[20px] border border-solid border-[#bbf7d0]">
@@ -226,7 +226,7 @@ export const OnboardingEmail = ({
                                     💬 Need Help Getting Started?
                                 </Text>
                                 <Text className="text-[13px] text-[#3b82f6] m-0 mb-[4px]">
-                                    Simply reply to this email and our team will get back to you within 24 hours. We're here to make your gym management effortless.
+                                    Simply reply to this email and our team will get back to you within 24 hours. We&apos;re here to make your gym management effortless.
                                 </Text>
                             </Section>
 
@@ -275,7 +275,7 @@ export const OnboardingEmail = ({
                                 © {year} Gym Emitra Technologies Pvt. Ltd. All rights reserved.
                             </Text>
                             <Text className="text-[11px] text-[#64748b] text-center m-0 mb-[4px]">
-                                Gym Mitra — India's #1 Gym Management Platform
+                                Gym Mitra — India&apos;s #1 Gym Management Platform
                             </Text>
                             <Text className="text-[11px] text-[#475569] text-center m-0">
                                 <Link href="mailto:support@emitra.dev" className="text-[#64748b] no-underline">

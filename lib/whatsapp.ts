@@ -108,6 +108,22 @@ export const templates = {
             `Warm regards,\n${gymName}`
         )
     },
+
+    /**
+     * Sent to follow up with a prospective lead.
+     */
+    leadFollowUp: (name: string, gymName: string, planInterest?: string) => {
+        const planLine = planInterest
+            ? `We understand you were interested in our *${planInterest}* plan. `
+            : ''
+        return (
+            `Dear ${name},\n\n` +
+            `Thank you for your interest in *${gymName}*!\n\n` +
+            `${planLine}We would be delighted to answer any questions and help you get started on your fitness journey.\n\n` +
+            `Please feel free to visit us or reply to this message to schedule a tour of our facilities.\n\n` +
+            `Warm regards,\n${gymName}`
+        )
+    },
 }
 
 import { getBaseUrl } from './utils'

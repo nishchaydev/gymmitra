@@ -13,7 +13,10 @@ export type AuditAction =
     | 'PLAN_UPGRADE'
     | 'CHECKIN_MEMBER'
     | 'UPDATE_PRODUCT'
-    | 'DELETE_PRODUCT';
+    | 'DELETE_PRODUCT'
+    | 'IMPORT_MEMBERS'
+    | 'CREATE_LEAD'
+    | 'CONVERT_LEAD';
 
 export interface AuditLogParams {
     gymId: string;

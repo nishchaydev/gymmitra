@@ -14,9 +14,11 @@ import { OnboardingEmail } from '@/components/emails/OnboardingEmail'
 import { render } from '@react-email/render'
 import type { GymProfile } from '@prisma/client'
 import { Prisma } from '@prisma/client'
+import cryptoLib from 'crypto'
 
 const onboardingSchema = z.object({
     businessName: z.string().min(2, "Business name is required"),
+    ownerName: z.string().min(2, "Owner name is required"),
     address: z.string().min(5, "Address is required"),
     city: z.string().min(2, "City is required"),
     state: z.string().min(2, "State is required"),
@@ -59,8 +61,44 @@ function generateSlug(businessName: string, currentSlug?: string | null): string
     return baseSlug;
 }
 
-/** Max retries for slug uniqueness conflicts */
 const MAX_SLUG_RETRIES = 3
+
+async function uploadToCloudinary(file: File): Promise<string> {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+        throw new Error("Cloudinary configuration is missing");
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = "gym_logos";
+
+    // Create signature
+    const signatureData = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const signature = cryptoLib.createHash('sha1').update(signatureData).digest('hex');
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("signature", signature);
+    formData.append("folder", folder);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to upload image to Cloudinary");
+    }
+
+    const result = await response.json();
+    return result.secure_url;
+}
 
 export async function completeOnboarding(formData: FormData): Promise<{ redirectTo?: string; warnings?: string[], error?: string }> {
     const supabase = await createClient()
@@ -72,6 +110,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
     const rawData = {
         businessName: formData.get("businessName"),
+        ownerName: formData.get("ownerName"),
         address: formData.get("address"),
         city: formData.get("city"),
         state: formData.get("state"),
@@ -92,6 +131,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         const validatedData = onboardingSchema.parse(rawData)
         const updateData = {
             businessName: validatedData.businessName,
+            ownerName: validatedData.ownerName,
             address: validatedData.address,
             city: validatedData.city,
             state: validatedData.state,
@@ -102,6 +142,18 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             invoicePrefix: validatedData.invoicePrefix,
             termsAndConditions: validatedData.termsAndConditions,
             gymRules: validatedData.gymRules,
+            logoUrl: null as string | null,
+        }
+
+        // Handle Logo Upload if present
+        const logoFile = formData.get("logo") as File | null;
+        if (logoFile && logoFile.size > 0) {
+            try {
+                updateData.logoUrl = await uploadToCloudinary(logoFile);
+            } catch (uploadError) {
+                console.error("Cloudinary upload failed:", uploadError);
+                warnings.push("Logo upload failed. Your profile was saved without a logo.");
+            }
         }
 
         // Look up existing profile to preserve slug on updates
@@ -242,25 +294,30 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 const baseUrl = getBaseUrl()
 
                 const emailHtml = await render(React.createElement(OnboardingEmail, {
-                    ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
+                    ownerName: gymProfile.ownerName || user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
                     gymName: gymProfile.businessName || gymProfile.name,
                     loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
                     serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
                     saasPlan: 'FREE'
                 }));
 
-                const { error: emailError } = await resend.emails.send({
-                    from: 'Gym Mitra Team <hello@mail.emitra.dev>',
+                console.log(`[Onboarding] Attempting to send welcome email to ${gymProfile.email} from ${gymProfile.slug}@mail.emitra.dev`)
+                const { data: emailData, error: emailError } = await resend.emails.send({
+                    from: `"${gymProfile.businessName || gymProfile.name} Team" <${gymProfile.slug}@mail.emitra.dev>`,
                     to: gymProfile.email,
                     subject: `Welcome to Gym Mitra, ${gymProfile.businessName || gymProfile.name}! 🎉`,
                     html: emailHtml
                 })
 
                 if (emailError) {
-                    console.error('[Onboarding] Resend API error:', emailError)
+                    console.error('[Onboarding] Resend API error details:', {
+                        name: emailError.name,
+                        message: emailError.message,
+                        type: (emailError as any).type
+                    })
                     warnings.push(`Welcome email failed: ${emailError.message}`)
                 } else {
-                    console.log(`[Onboarding] Welcome email sent to ${gymProfile.email}`)
+                    console.log(`[Onboarding] Welcome email sent successfully! ID: ${emailData?.id}`)
                 }
             }
         } catch (emailError) {

@@ -8,6 +8,14 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { headers } from 'next/headers'
+import { Resend } from 'resend'
+import { WelcomeEmail } from '@/components/emails/WelcomeEmail'
+import { render } from '@react-email/render'
+import React from 'react'
+import { format, parseISO, isValid, addDays } from 'date-fns'
+import { Prisma, PaymentStatus, SubscriptionStatus } from '@prisma/client'
+import { generateInvoiceNumber } from '@/lib/invoice-server-utils'
+import { after } from 'next/server'
 
 const memberSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -19,6 +27,9 @@ const memberSchema = z.object({
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
+    planId: z.string().optional().or(z.literal('none')),
+    paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
+    discount: z.number().nonnegative().optional().default(0),
 })
 
 export const createMember = withAuth(async (context, data: z.input<typeof memberSchema>) => {
@@ -29,24 +40,96 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
 
     const validatedData = parsed.data
     const gymId = context.gym.id
+    const slug = context.gym.slug
 
     try {
-        const member = await prisma.member.create({
-            data: {
-                name: validatedData.name,
-                phone: validatedData.phone,
-                email: validatedData.email || null,
-                dateOfBirth: validatedData.dateOfBirth,
-                gymId,
-                status: 'ACTIVE',
-                emergencyName: validatedData.emergencyName || '',
-                emergencyPhone: validatedData.emergencyPhone || '',
-                emergencyRelation: validatedData.emergencyRelation || '',
+        let finalMemberId: string = ""
+        let finalInvoiceId: string | undefined = undefined
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Create the Member
+            const member = await tx.member.create({
+                data: {
+                    name: validatedData.name,
+                    phone: validatedData.phone,
+                    email: validatedData.email || null,
+                    dateOfBirth: validatedData.dateOfBirth,
+                    gymId,
+                    status: 'ACTIVE',
+                    emergencyName: validatedData.emergencyName || '',
+                    emergencyPhone: validatedData.emergencyPhone || '',
+                    emergencyRelation: validatedData.emergencyRelation || '',
+                }
+            })
+            finalMemberId = member.id
+
+            // 2. If a Plan is Selected, Create Subscription and Invoice
+            if (validatedData.planId && validatedData.planId !== 'none') {
+                const plan = await tx.membershipPlan.findUnique({
+                    where: { id: validatedData.planId }
+                })
+
+                if (!plan) throw new Error("Selected plan not found")
+
+                const startDate = new Date()
+                const endDate = addDays(startDate, plan.duration)
+                const paymentMethod = (validatedData.paymentMethod || 'CASH') as PaymentStatus
+
+                // Create the physical subscription linkage
+                const subscription = await tx.memberSubscription.create({
+                    data: {
+                        memberId: member.id,
+                        planId: plan.id,
+                        gymId,
+                        startDate,
+                        endDate,
+                        price: plan.price,
+                        status: 'ACTIVE' as SubscriptionStatus,
+                        paymentStatus: 'PAID'
+                    }
+                })
+
+                // Generate Invoice
+                const invoiceNumber = await generateInvoiceNumber(gymId, tx)
+                const planPrice = Number(plan.price)
+                const discount = validatedData.discount || 0
+                const total = Math.max(0, planPrice - discount)
+
+                const invoice = await tx.invoice.create({
+                    data: {
+                        invoiceNumber,
+                        gymId,
+                        memberId: member.id,
+                        subscriptionId: subscription.id,
+                        subtotal: planPrice,
+                        taxAmount: 0,
+                        taxPercentage: 0,
+                        discount: discount,
+                        total: total,
+                        paymentStatus: 'PAID',
+                        paymentMethod: (validatedData.paymentMethod || 'CASH') as any,
+                        issueDate: new Date(),
+                        dueDate: new Date(),
+                        type: 'MEMBERSHIP',
+                        items: {
+                            create: [{
+                                description: `${plan.name} Membership (${plan.duration} Months)`,
+                                amount: planPrice,
+                                quantity: 1,
+                                unitPrice: planPrice,
+                                gymId: gymId,
+                            }]
+                        }
+                    }
+                })
+
+                finalInvoiceId = invoice.id
             }
         })
 
-        revalidatePath('/members')
-        revalidatePath('/dashboard')
+        revalidatePath(`/${slug}/members`)
+        revalidatePath(`/${slug}/invoices`)
+        revalidatePath(`/${slug}/dashboard`)
 
         // 4. Audit Log
         const headerList = await headers()
@@ -58,12 +141,61 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
             actorId: context.userId,
             action: 'CREATE_MEMBER',
             entityType: 'MEMBER',
-            entityId: member.id,
+            entityId: finalMemberId,
             ipAddress: ip,
-            payload: { name: validatedData.name } // Phone redacted
+            payload: { name: validatedData.name, planId: validatedData.planId }
         }).catch(err => console.error('recordAuditLog CREATE_MEMBER', err))
 
-        return { success: true, id: member.id }
+        // 5. Send Welcome Email — now only sent if an email is provided
+        after(async () => {
+            if (validatedData.email && validatedData.email.length > 0) {
+                try {
+                    const resendKey = process.env.RESEND_API_KEY
+                    if (!resendKey) {
+                        console.error('[WelcomeEmail] RESEND_API_KEY not set — skipping email')
+                        return
+                    }
+
+                    const resend = new Resend(resendKey)
+                    const gym = context.gym
+
+                    const latestSub = await prisma.memberSubscription.findFirst({
+                        where: { memberId: finalMemberId, gymId },
+                        include: { plan: true },
+                        orderBy: { createdAt: 'desc' }
+                    })
+
+                    const invoiceUrl = finalInvoiceId
+                        ? `https://gymmitra.com/${gym.slug}/invoices/${finalInvoiceId}`
+                        : undefined
+
+                    const emailHtml = await render(React.createElement(WelcomeEmail, {
+                        gymName: gym.name,
+                        gymLogo: gym.logoUrl || gym.logo,
+                        memberName: validatedData.name,
+                        planName: latestSub?.plan.name || 'Pay-as-you-go',
+                        expiryDate: latestSub?.endDate ? format(latestSub.endDate, 'PPP') : 'Contact Gym',
+                        gymAddress: gym.address,
+                        gymContact: gym.phone,
+                        invoiceUrl: invoiceUrl
+                    }))
+
+                    const { error } = await resend.emails.send({
+                        from: `"${gym.name} via GymMitra" <noreply@mail.emitra.dev>`,
+                        to: validatedData.email,
+                        subject: `Welcome to ${gym.name}, ${validatedData.name}!`,
+                        html: emailHtml
+                    })
+
+                    if (error) console.error('[WelcomeEmail] Resend error:', JSON.stringify(error))
+                    else console.log('[WelcomeEmail] Sent successfully to', validatedData.email)
+                } catch (err) {
+                    console.error('[WelcomeEmail] Logic error:', err)
+                }
+            }
+        })
+
+        return { success: true, id: finalMemberId, invoiceId: finalInvoiceId }
     } catch (error: any) {
         console.error('Error creating member:', error)
         if (error.code === 'P2002') {
@@ -103,4 +235,115 @@ export const filterByStatus = withAuth(async (_context, status: string) => {
 
     const slug = _context.gym.slug
     redirect(`/${slug}/members?${params.toString()}`)
+})
+
+export const importMembers = withAuth(async (context, data: any[]) => {
+    const gymId = context.gym.id
+    let imported = 0
+    let skippedDuplicate = 0
+    let skippedPlanNotFound = 0
+    let skippedInvalidData = 0
+
+    try {
+        // 1. Get existing phones to skip duplicates
+        const existingMembers = await prisma.member.findMany({
+            where: { gymId },
+            select: { phone: true }
+        })
+        const existingPhones = new Set(existingMembers.map(m => m.phone))
+
+        // 2. Get existing plans to map by name
+        const existingPlans = await prisma.membershipPlan.findMany({
+            where: { gymId, isActive: true }
+        })
+
+        // 3. Process in a transaction
+        await prisma.$transaction(async (tx) => {
+            for (const row of data) {
+                const phone = String(row.phone || "").trim()
+                const name = String(row.name || "").trim()
+
+                if (!phone || !name) {
+                    skippedInvalidData++
+                    continue
+                }
+
+                if (existingPhones.has(phone)) {
+                    skippedDuplicate++
+                    continue
+                }
+
+                const planName = String(row.planname || "").trim().toLowerCase()
+                const plan = existingPlans.find(p => p.name.toLowerCase() === planName)
+
+                if (!plan && planName) {
+                    skippedPlanNotFound++
+                    continue
+                }
+
+                // Create Member
+                const member = await tx.member.create({
+                    data: {
+                        name: name,
+                        phone: phone,
+                        email: row.email || null,
+                        dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
+                        joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
+                        gymId,
+                        status: 'ACTIVE',
+                        emergencyName: '',
+                        emergencyPhone: '',
+                        emergencyRelation: '',
+                    }
+                })
+
+                // Create Subscription if plan exists
+                if (plan) {
+                    const startDate = row.joindate ? new Date(row.joindate) : new Date()
+                    const expiryDate = row.expirydate ? new Date(row.expirydate) : null
+
+                    if (expiryDate && isValid(new Date(expiryDate))) {
+                        await tx.memberSubscription.create({
+                            data: {
+                                memberId: member.id,
+                                planId: plan.id,
+                                gymId,
+                                startDate: new Date(startDate),
+                                endDate: new Date(expiryDate),
+                                price: plan.price,
+                                status: 'ACTIVE',
+                                paymentStatus: 'PAID'
+                            }
+                        })
+                    }
+                }
+
+                imported++
+                existingPhones.add(phone)
+            }
+        })
+
+        // Audit Log
+        const headerList = await headers()
+        const ipHeader = headerList.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
+
+        await recordAuditLog({
+            gymId,
+            actorId: context.userId,
+            action: 'IMPORT_MEMBERS',
+            entityType: 'MEMBER',
+            entityId: 'batch',
+            ipAddress: ip,
+            payload: { imported, skippedDuplicate, skippedPlanNotFound, totalRows: data.length }
+        }).catch(err => console.error('recordAuditLog IMPORT_MEMBERS', err))
+
+        revalidatePath('/members')
+        revalidatePath('/dashboard')
+
+        return { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData }
+    } catch (error: any) {
+        console.error('Import error:', error)
+        return { error: 'Failed to import members. Ensure CSV format is correct.' }
+    }
 })

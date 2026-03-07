@@ -12,14 +12,21 @@ interface DashboardData {
     pendingRevenue: number
     productSalesCount: number
     dailyCheckins: number
-    recentInvoices: unknown[]
+    recentInvoices: any[]
     todayAttendance: {
         count: number
         recentInitials: string[]
         lastCheckinLabel: string
     }
-    upcomingBirthdays: unknown[]
+    upcomingBirthdays: {
+        name: string
+        phone?: string
+        date: string
+        img?: string
+        diffDays?: number
+    }[]
     monthlyRevenueData: { name: string; total: number }[]
+    outstandingInvoices: any[]
 }
 
 export function useDashboardQuery(initialData?: DashboardData) {

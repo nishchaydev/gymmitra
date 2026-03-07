@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { generateInvoiceNumber } from "@/lib/invoice-utils"
+import { generateInvoiceNumber } from "@/lib/invoice-server-utils"
 import { z } from "zod"
 import { withAuth } from "@/lib/with-auth"
 import { recordAuditLog } from "@/lib/audit-logger"
@@ -24,6 +24,8 @@ const createInvoiceSchema = z.object({
     walkInEmail: z.string().email("Invalid email").optional().or(z.literal('')),
     walkInAddress: z.string().optional(),
     paymentMethod: z.enum(["CASH", "UPI"]),
+    paymentStatus: z.enum(["PAID", "PARTIAL", "PENDING"]).default("PAID"),
+    amountPaid: z.number().min(0).optional(),
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),
     discount: z.number().min(0).default(0),
@@ -97,7 +99,17 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     walkInEmail: validatedData.walkInEmail ?? null,
                     walkInAddress: validatedData.walkInAddress ?? null,
                     paymentMethod: validatedData.paymentMethod,
-                    paymentStatus: "PAID",
+                    paymentStatus: validatedData.paymentStatus ?? "PAID",
+                    amountPaid: validatedData.paymentStatus === 'PARTIAL'
+                        ? (validatedData.amountPaid ?? 0)
+                        : validatedData.paymentStatus === 'PENDING'
+                            ? 0
+                            : totalCents / 100,
+                    balanceDue: validatedData.paymentStatus === 'PARTIAL'
+                        ? Math.max(0, (totalCents / 100) - (validatedData.amountPaid ?? 0))
+                        : validatedData.paymentStatus === 'PENDING'
+                            ? totalCents / 100
+                            : 0,
                     notes: validatedData.notes ?? null,
                     shareToken: shareToken,
                     shareTokenExpiresAt: shareTokenExpiresAt,
@@ -127,9 +139,9 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
             })
         })
 
-        const slug = (gym as any).slug || 'gym'
-        revalidatePath(`/${slug}/dashboard`)
-        revalidatePath(`/${slug}/invoices`)
+        const gymSlug = (gym as { slug?: string }).slug || 'gym'
+        revalidatePath(`/${gymSlug}/dashboard`)
+        revalidatePath(`/${gymSlug}/invoices`)
 
         await recordAuditLog({
             gymId: gym.id,
@@ -142,10 +154,11 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
         }).catch(err => console.error('[Action] Audit logging failed silently:', err))
 
         return { success: true, id: invoice.id }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Invoice Action Error:", error)
-        if (error.code === 'P2002') {
-            const target = error.meta?.target
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+            const errorWithMeta = error as { meta?: { target?: string[] } };
+            const target = errorWithMeta.meta?.target
             if (Array.isArray(target) && target.includes('idempotencyKey') && validatedData.idempotencyKey) {
                 const existingInvoice = await prisma.invoice.findFirst({
                     where: {

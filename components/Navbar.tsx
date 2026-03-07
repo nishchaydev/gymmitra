@@ -75,6 +75,7 @@ export function Navbar() {
     const routes = [
         { href: `/${slug}/dashboard`, label: "Dashboard", active: pathname === `/${slug}/dashboard` },
         { href: `/${slug}/renewals`, label: "Renewals", active: pathname === `/${slug}/renewals` || pathname.startsWith(`/${slug}/renewals/`) },
+        { href: `/${slug}/leads`, label: "Leads", active: pathname === `/${slug}/leads` || pathname.startsWith(`/${slug}/leads/`) },
         { href: `/${slug}/members`, label: "Members", active: pathname === `/${slug}/members` || pathname.startsWith(`/${slug}/members/`) },
         { href: `/${slug}/products`, label: "Products", active: pathname === `/${slug}/products` || pathname.startsWith(`/${slug}/products/`) },
         { href: `/${slug}/invoices`, label: "Invoices", active: pathname === `/${slug}/invoices` || pathname.startsWith(`/${slug}/invoices/`) },
@@ -85,9 +86,9 @@ export function Navbar() {
     const closeMenu = () => setIsMobileMenuOpen(false)
 
     return (
-        <nav className="border-b bg-white shadow-sm sticky top-0 z-50">
+        <nav className="border-b bg-white shadow-sm border-drift-200 sticky top-0 z-50">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
-                <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary font-display">
+                <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary-500 font-display">
                     <Dumbbell className="h-6 w-6" />
                     <span>GymMitra</span>
                 </Link>
@@ -103,14 +104,16 @@ export function Navbar() {
                     {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </Button>
 
-                <div className="hidden md:flex items-center space-x-4 lg:space-x-6 flex-1">
+                <div className="hidden md:flex items-center space-x-4 lg:space-x-6 h-full">
                     {(user || isDemo) && routes.map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "text-sm font-medium transition-colors hover:text-primary",
-                                route.active ? "text-primary font-semibold" : "text-muted-foreground"
+                                "text-sm font-medium transition-all duration-150 h-full flex items-center relative",
+                                route.active
+                                    ? "text-primary-500 font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary-500 after:rounded-full"
+                                    : "text-drift-500 hover:text-drift-900"
                             )}
                         >
                             {route.label}
@@ -120,18 +123,18 @@ export function Navbar() {
 
                 <div className="hidden md:flex ml-auto items-center space-x-4">
                     {loading ? (
-                        <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-md" />
+                        <div className="h-10 w-24 bg-drift-100 animate-pulse rounded-md" />
                     ) : user || isDemo ? (
                         <div className="flex items-center gap-4">
                             <div className="hidden lg:flex flex-col items-end">
-                                <span className="text-xs font-semibold text-slate-900">
+                                <span className="text-xs font-medium text-drift-500">
                                     {user?.email || "showcase@gym-mitra.com"}
                                 </span>
-                                <span className="text-[10px] text-primary uppercase tracking-wider font-bold">
+                                <span className="text-[10px] text-primary-600 uppercase tracking-widest font-bold">
                                     {isDemo ? "Showcase Mode" : "Administrator"}
                                 </span>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-500 hover:text-red-600">
+                            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-drift-500 hover:text-red-600">
                                 <LogOut className="h-5 w-5" />
                             </Button>
                         </div>
@@ -144,32 +147,32 @@ export function Navbar() {
             </div>
 
             <div className={cn("fixed inset-0 z-50 md:hidden transition-all duration-300", isMobileMenuOpen ? "visible" : "invisible")}>
-                <div className={cn("absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300", isMobileMenuOpen ? "opacity-100" : "opacity-0")} onClick={closeMenu} />
+                <div className={cn("absolute inset-0 bg-drift-900/60 backdrop-blur-sm transition-opacity duration-300", isMobileMenuOpen ? "opacity-100" : "opacity-0")} onClick={closeMenu} />
                 <div id="mobile-menu" className={cn("absolute right-0 top-0 h-[100dvh] w-[280px] bg-white shadow-2xl transition-transform duration-300 transform", isMobileMenuOpen ? "translate-x-0" : "translate-x-full")}>
-                    <div className="flex flex-col h-full bg-slate-50/30">
+                    <div className="flex flex-col h-full bg-drift-50/30">
                         <div className="p-6 border-b bg-white flex justify-between items-center">
                             <span className="font-bold text-xl text-primary">GymMitra</span>
-                            <button onClick={closeMenu} className="p-2 rounded-full hover:bg-slate-100" aria-label="Close mobile menu"><X className="h-5 w-5" /></button>
+                            <button onClick={closeMenu} className="p-2 rounded-full hover:bg-drift-100" aria-label="Close mobile menu"><X className="h-5 w-5" /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-2">
                             {loading ? (
                                 <div className="space-y-4 p-2">
-                                    <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
-                                    <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
-                                    <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+                                    <div className="h-10 w-full bg-drift-100 animate-pulse rounded-lg" />
+                                    <div className="h-10 w-full bg-drift-100 animate-pulse rounded-lg" />
+                                    <div className="h-10 w-full bg-drift-100 animate-pulse rounded-lg" />
                                 </div>
                             ) : (user || isDemo) ? (
                                 <>
                                     <div className="flex flex-col space-y-2 mb-4 pb-4 border-b">
                                         {routes.map((route) => (
-                                            <Link key={route.href} href={route.href} onClick={closeMenu} className={cn("text-base font-medium p-3 rounded-lg", route.active ? "bg-primary/5 text-primary font-bold" : "text-muted-foreground hover:bg-slate-50")}>
+                                            <Link key={route.href} href={route.href} onClick={closeMenu} className={cn("text-base font-medium p-3 rounded-lg", route.active ? "bg-primary/5 text-primary font-bold" : "text-muted-foreground hover:bg-drift-50")}>
                                                 {route.label}
                                             </Link>
                                         ))}
                                     </div>
                                     <div className="flex flex-col p-2 space-y-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-slate-900">{user?.email || "showcase@gym-mitra.com"}</span>
+                                            <span className="text-sm font-bold text-drift-900">{user?.email || "showcase@gym-mitra.com"}</span>
                                             <span className="text-xs text-primary uppercase font-bold">{isDemo ? "Showcase Mode" : "Administrator"}</span>
                                         </div>
                                         <Button variant="outline" size="sm" onClick={handleLogout} className="text-red-600 border-red-100 hover:bg-red-50 justify-start w-full">

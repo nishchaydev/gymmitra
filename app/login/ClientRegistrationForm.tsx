@@ -182,7 +182,7 @@ export function ClientRegistrationForm() {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground mt-2">
-                By clicking "Complete Registration", you confirm you are an authorized gym administrator.
+                By clicking &quot;Complete Registration&quot;, you confirm you are an authorized gym administrator.
             </p>
         </form>
     )

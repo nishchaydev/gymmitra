@@ -25,7 +25,17 @@ export function getBaseUrl(): string {
   }
 
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+    const url = process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+    // Don't return localhost if we're in Vercel environment
+    if (url.includes('localhost') && (process.env.VERCEL || process.env.VERCEL_URL)) {
+      if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+        return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      }
+      if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`
+      }
+    }
+    return url
   }
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`

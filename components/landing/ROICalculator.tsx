@@ -36,7 +36,7 @@ export function ROICalculator() {
                         </div>
                         <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-6 leading-tight font-display">
                             See how much <br />
-                            <span className="text-ocean">time & money</span> you'll save.
+                            <span className="text-ocean">time & money</span> you&apos;ll save.
                         </h2>
                         <p className="text-lg text-slate-300 mb-8 leading-relaxed max-w-lg font-medium">
                             Adjust the sliders to match your current gym stats. See exactly what manual work is costing you every single month.

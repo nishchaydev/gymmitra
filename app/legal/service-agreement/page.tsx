@@ -33,7 +33,7 @@ export default function ServiceAgreementPage() {
                     </CardHeader>
                     <CardContent className="prose prose-blue max-w-none dark:prose-invert pt-8 space-y-6 text-gray-600 dark:text-gray-300">
                         <p className="lead text-lg font-medium text-gray-900 dark:text-gray-100">
-                            This Master Subscription Agreement ("Agreement") is entered into by and between eMitra Technologies ("Provider") and the entity or person placing an order for or accessing the Service ("Customer" or "Gym Owner").
+                            This Master Subscription Agreement (&quot;Agreement&quot;) is entered into by and between eMitra Technologies (&quot;Provider&quot;) and the entity or person placing an order for or accessing the Service (&quot;Customer&quot; or &quot;Gym Owner&quot;).
                         </p>
 
                         <section aria-labelledby="section-usage">
@@ -42,7 +42,7 @@ export default function ServiceAgreementPage() {
                                 <strong>1.1 Provision of Service:</strong> Provider will make the Gym Mitra ERP Software-as-a-Service (SaaS) platform available to the Customer pursuant to this Agreement and the applicable Subscription Plan.
                             </p>
                             <p>
-                                <strong>1.2 Customer Responsibilities:</strong> Customer shall (i) be responsible for Users' compliance with this Agreement, (ii) be responsible for the accuracy, quality and legality of Customer Data, and (iii) prevent unauthorized access to or use of the Service.
+                                <strong>1.2 Customer Responsibilities:</strong> Customer shall (i) be responsible for Users&apos; compliance with this Agreement, (ii) be responsible for the accuracy, quality and legality of Customer Data, and (iii) prevent unauthorized access to or use of the Service.
                             </p>
                         </section>
 

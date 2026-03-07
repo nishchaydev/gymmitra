@@ -4,7 +4,7 @@ import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { startOfToday, endOfToday, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export async function GET(req: NextRequest) {
     try {
@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
             thisMonthInvoicesPaid,
             thisMonthInvoicesPending,
             lastMonthInvoicesPaid,
+            outstandingInvoices,
         ] = await Promise.all([
             prisma.member.count({ where: { gymId: gym.id } }),
             prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }),
@@ -98,6 +99,16 @@ export async function GET(req: NextRequest) {
                     deletedAt: null
                 },
                 _sum: { total: true }
+            }),
+            prisma.invoice.findMany({
+                where: {
+                    gymId: gym.id,
+                    paymentStatus: { in: ['PARTIAL', 'PENDING'] },
+                    deletedAt: null
+                },
+                include: { member: { select: { name: true, phone: true } } },
+                orderBy: { issueDate: 'asc' },
+                take: 5
             })
         ])
 
@@ -182,6 +193,7 @@ export async function GET(req: NextRequest) {
             todayAttendance,
             upcomingBirthdays,
             monthlyRevenueData,
+            outstandingInvoices,
         })
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))

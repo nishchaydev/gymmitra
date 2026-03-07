@@ -110,7 +110,18 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
 
                 {/* Invoice Container */}
                 <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <InvoiceView invoice={dbInvoice} />
+                    <InvoiceView invoice={{
+                        ...dbInvoice,
+                        subtotal: Number(dbInvoice.subtotal),
+                        taxAmount: Number(dbInvoice.taxAmount),
+                        discount: Number(dbInvoice.discount),
+                        total: Number(dbInvoice.total),
+                        items: dbInvoice.items.map(item => ({
+                            ...item,
+                            unitPrice: Number(item.unitPrice),
+                            amount: Number(item.amount)
+                        }))
+                    } as any} />
                 </div>
 
                 {/* Footer */}

@@ -17,13 +17,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Loader2, Save, Building2, Users } from "lucide-react"
+import { Loader2, Save, Building2, Users, Upload } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { StaffManagement } from "@/components/settings/StaffManagement"
+import Link from "next/link"
+import { useParams } from "next/navigation"
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
+    ownerName: z.string().min(2, "Owner name is required"),
     email: z.string().email("Invalid email"),
     phone: z.string().min(10, "Phone number is required"),
     address: z.string().optional(),
@@ -34,6 +37,7 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>
 
 export default function SettingsPage() {
+    const { slug } = useParams() as { slug: string }
     const [activeTab, setActiveTab] = useState('profile')
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -42,6 +46,7 @@ export default function SettingsPage() {
         resolver: zodResolver(settingsSchema),
         defaultValues: {
             name: "",
+            ownerName: "",
             email: "",
             phone: "",
             address: "",
@@ -134,6 +139,15 @@ export default function SettingsPage() {
                             <Users className="mr-2 h-4 w-4" />
                             Staff Management
                         </Button>
+                        <Link href={`/${slug}/settings/import`}>
+                            <Button
+                                variant="ghost"
+                                className="justify-start w-full"
+                            >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Import Members
+                            </Button>
+                        </Link>
                     </nav>
                 </aside>
                 <div className="flex-1 lg:max-w-2xl">
@@ -148,22 +162,40 @@ export default function SettingsPage() {
                             <CardContent>
                                 <Form {...form}>
                                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                                        <FormField
-                                            control={form.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Gym Name</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Gym Mitra" {...field} />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        This is your public display name.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Gym Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Gym Mitra" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            This is your public display name.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="ownerName"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Owner Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Nikhil Pal" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Owner/Manager name.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <FormField
                                                 control={form.control}

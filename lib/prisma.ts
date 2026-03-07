@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
-const SOFT_DELETE_MODELS = ['Member', 'Invoice', 'GymProfile']
+const SOFT_DELETE_MODELS = ['Member', 'Invoice', 'GymProfile', 'MemberSubscription', 'Sale']
 
 function createPrismaClient(): PrismaClient {
   const client = new PrismaClient()

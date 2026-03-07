@@ -242,8 +242,8 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-end gap-3 no-print flex-wrap">
+        <div className="space-y-6 w-full max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 no-print">
                 {invoice.shareToken && (
                     <Button variant="outline" size="sm" onClick={copyPublicLink} className="text-primary hover:text-primary">
                         <Share2 className="w-4 h-4 mr-2" /> Copy Public Link
@@ -260,7 +260,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                 </Button>
             </div>
 
-            <div className="bg-slate-50 p-4 md:p-8 rounded-xl overflow-auto flex justify-center border-2 border-dashed border-slate-200">
+            <div className="bg-white sm:bg-slate-50 p-0 sm:p-4 md:p-8 rounded-none sm:rounded-xl overflow-x-auto flex justify-center border-0 sm:border-2 sm:border-dashed sm:border-drift-200">
                 <div ref={componentRef}>
                     <InvoiceTemplate
                         invoiceNumber={invoice.invoiceNumber}

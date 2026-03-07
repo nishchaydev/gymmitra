@@ -87,6 +87,14 @@ export function MemberFilters() {
                 Active
             </Button>
             <Button
+                variant={currentStatus === 'INACTIVE' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFilter('INACTIVE')}
+                disabled={isPending}
+            >
+                Inactive
+            </Button>
+            <Button
                 variant={currentStatus === 'EXPIRED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleFilter('EXPIRED')}

@@ -80,7 +80,7 @@ export function Pricing() {
                     </MotionWrapper>
                     <MotionWrapper delay={0.2}>
                         <p className="text-lg text-slate-500 font-medium">
-                            Choose the plan that fits your gym's size and growth stage.
+                            Choose the plan that fits your gym&apos;s size and growth stage.
                         </p>
                     </MotionWrapper>
                 </div>

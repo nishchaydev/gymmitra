@@ -45,9 +45,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const auth = await getAuth()
-        if (!auth || !auth.gym || typeof auth.userId !== 'string' || !['ADMIN', 'OWNER'].includes(auth.role)) {
+        if (!auth || !auth.gym || typeof auth.userId !== 'string') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
+
+        const roleCheck = await import('@/lib/auth').then(m => m.checkRole(auth, ['OWNER']))
+        if (roleCheck) return roleCheck
 
         const rl = await guardRateLimit(50, `${auth.userId}:plans:post`)
         if (rl) return rl

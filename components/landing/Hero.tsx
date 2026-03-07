@@ -83,7 +83,7 @@ export function Hero() {
 
                     <MotionWrapper delay={0.2}>
                         <h1 className="text-5xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1] font-display">
-                            Automate Your Gym's <br />
+                            Automate Your Gym&apos;s <br />
                             <span className="text-primary relative">
                                 Growth.
                                 <svg className="absolute -bottom-2 left-0 w-full h-2 text-primary/20" viewBox="0 0 100 10" preserveAspectRatio="none">
@@ -97,7 +97,7 @@ export function Hero() {
 
                     <MotionWrapper delay={0.3}>
                         <p className="text-xl text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
-                            The all-in-one platform to manage members, track attendance, and automate billing.
+                            <strong className="font-medium">Gym Mitra</strong> – The all-in-one platform to manage members, track attendance, and automate billing.
                             Used by high-performance gyms to reclaim 20+ hours every month.
                         </p>
                     </MotionWrapper>
@@ -222,9 +222,8 @@ export function Hero() {
                         </div>
                     </MotionWrapper>
 
-                    {/* Trust Badges & Feature Pills */}
                     <MotionWrapper delay={0.45} className="flex flex-wrap justify-center gap-3 mb-8">
-                        {['WhatsApp', 'Member App', 'Biometric', 'Invoicing'].map((pill) => (
+                        {['WhatsApp', 'Attendance', 'Invoicing', 'Auto-Wishes'].map((pill) => (
                             <div key={pill} className="px-4 py-1.5 rounded-full bg-slate-900/5 text-slate-600 text-xs font-bold border border-drift-silver flex items-center gap-1.5 backdrop-blur-sm">
                                 <Zap className="w-3 h-3 text-primary" />
                                 {pill}

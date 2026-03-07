@@ -23,6 +23,8 @@ const RecentInvoices = dynamic(() => import('@/components/dashboard/RecentInvoic
     ssr: false
 })
 
+import { OutstandingBalances } from '@/components/dashboard/OutstandingBalances'
+
 import { Button } from '@/components/ui/button'
 import { DollarSign, Users, ShoppingBag, CalendarCheck, UserPlus, ReceiptText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -45,6 +47,7 @@ interface DashboardOverviewProps {
         todayAttendance: any
         upcomingBirthdays: any[]
         monthlyRevenueData: { name: string; total: number }[]
+        outstandingInvoices: any[]
     }
 }
 
@@ -65,74 +68,82 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
             {/* Stat Cards */}
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-primary bg-white shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Total Revenue
                         </CardTitle>
-                        <DollarSign className="h-5 w-5 text-emerald-500" />
+                        <div className="bg-primary-50 rounded-lg p-2.5">
+                            <DollarSign className="h-5 w-5 text-primary" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-bold tracking-tight text-slate-900">₹{d.revenue}</div>
+                            <div className="text-3xl font-black tracking-tight text-slate-900">₹{d.revenue}</div>
                             {!isDemo && (
-                                <div className="text-xs font-bold text-emerald-600 mt-2 uppercase tracking-widest flex items-center gap-1.5">
-                                    <div className="h-1 w-1 rounded-full bg-emerald-600 mr-1.5 animate-pulse" />
-                                    LIVE
+                                <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">LIVE</span>
                                 </div>
                             )}
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-indigo-500 bg-white shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Active Members
                         </CardTitle>
-                        <Users className="h-5 w-5 text-blue-500" />
+                        <div className="bg-indigo-50 rounded-lg p-2.5">
+                            <Users className="h-5 w-5 text-indigo-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-bold tracking-tight text-slate-900">{d.activeMembers}</div>
-                            <p className="text-xs text-slate-400 mt-2 font-medium uppercase tracking-wider">
+                            <div className="text-3xl font-black tracking-tight text-slate-900">{d.activeMembers}</div>
+                            <p className="text-xs text-drift-400 mt-2 font-medium">
                                 {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
                             </p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-rose-500 bg-white shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Product Sales
                         </CardTitle>
-                        <ShoppingBag className="h-5 w-5 text-orange-500" />
+                        <div className="bg-rose-50 rounded-lg p-2.5">
+                            <ShoppingBag className="h-5 w-5 text-rose-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-bold tracking-tight text-slate-900">{d.productSalesCount}</div>
-                            <p className="text-xs text-slate-400 mt-2 font-medium uppercase tracking-wider">
+                            <div className="text-3xl font-black tracking-tight text-slate-900">{d.productSalesCount}</div>
+                            <p className="text-xs text-drift-400 mt-2 font-medium uppercase tracking-tight">
                                 ALL-TIME ITEMS
                             </p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-slate-200">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-amber-500 bg-white shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Today&apos;s Attendance
                         </CardTitle>
-                        <CalendarCheck className="h-5 w-5 text-[#4FC3F7]" />
+                        <div className="bg-amber-50 rounded-lg p-2.5">
+                            <CalendarCheck className="h-5 w-5 text-amber-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-bold tracking-tight text-slate-900">{d.dailyCheckins}</div>
+                            <div className="text-3xl font-black tracking-tight text-slate-900">{d.dailyCheckins}</div>
                             {!isDemo && (
-                                <div className="text-xs font-bold text-[#4FC3F7] mt-2 uppercase tracking-widest flex items-center gap-1.5">
-                                    <div className="h-1 w-1 rounded-full bg-[#4FC3F7] mr-1.5 animate-bounce" />
-                                    REAL-TIME LOG
+                                <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">REAL-TIME</span>
                                 </div>
                             )}
                         </div>
@@ -155,33 +166,40 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         <RecentInvoices
                             isDemo={isDemo}
                             data={d.recentInvoices}
+                            slug={slug}
                         />
                     </div>
                 </div>
 
                 {/* Right Column */}
                 <div className="lg:col-span-3 flex flex-col space-y-6">
-                    <Card className="border-slate-200 shadow-sm">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
-                            <CardDescription>Most frequent operations</CardDescription>
+                    <Card className="border-drift-200 shadow-sm rounded-xl bg-white overflow-hidden">
+                        <CardHeader className="border-l-4 border-l-primary pl-4 py-4 bg-primary-50/20">
+                            <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>
+                            <CardDescription className="text-xs text-primary-700/70 font-medium tracking-tight">Most frequent operations</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 pt-4">
                             <Link href={`/${slug}/members/new`} className="w-full">
-                                <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
-                                    <UserPlus className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add New Member
+                                <Button className="w-full justify-start h-14 text-sm font-bold bg-drift-50 border-drift-200 text-slate-700 hover:bg-primary-50 hover:border-primary-200 hover:text-primary group transition-all duration-150 rounded-xl" variant="outline">
+                                    <UserPlus className="mr-3 h-5 w-5 text-primary" /> <span className="flex-1">Add New Member</span>
                                 </Button>
                             </Link>
                             <Link href={`/${slug}/products/new`} className="w-full">
-                                <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline">
-                                    <ShoppingBag className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Add Inventory
+                                <Button className="w-full justify-start h-14 text-sm font-bold bg-drift-50 border-drift-200 text-slate-700 hover:bg-primary-50 hover:border-primary-200 hover:text-primary group transition-all duration-150 rounded-xl" variant="outline">
+                                    <ShoppingBag className="mr-3 h-5 w-5 text-primary" /> <span className="flex-1">Add Inventory</span>
                                 </Button>
                             </Link>
-                            <Button className="w-full justify-start h-12 text-sm font-bold shadow-sm" variant="outline" disabled>
-                                <ReceiptText className="mr-3 h-5 w-5 text-[#4FC3F7]" /> Generate Report
+                            <Button className="w-full justify-start h-14 text-sm font-medium bg-drift-50/50 border-drift-100 text-drift-400 cursor-not-allowed rounded-xl" variant="outline" disabled>
+                                <ReceiptText className="mr-3 h-5 w-5 opacity-40" /> Generate Report
                             </Button>
                         </CardContent>
                     </Card>
+
+                    <OutstandingBalances
+                        data={d.outstandingInvoices}
+                        gymName={gymName || 'your gym'}
+                        slug={slug}
+                    />
 
                     <AtRiskMembers
                         slug={slug}
@@ -191,7 +209,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     <AttendanceWidget
                         isDemo={isDemo}
                         data={d.todayAttendance}
+                        slug={slug}
                     />
+
                     <UpcomingBirthdays
                         isDemo={isDemo}
                         gymName={gymName}

@@ -19,6 +19,7 @@ model GymProfile {
   gst                String?
   userId             String            @unique
   businessName       String?
+  ownerName          String?
   city               String?
   state              String?
   pincode            String?
@@ -48,6 +49,7 @@ model GymProfile {
   registrationCode   RegistrationCode? @relation(fields: [registrationCodeId], references: [id], onDelete: SetNull)
   invoiceSequence    InvoiceSequence?
   auditLogs          AuditLog[]
+  leads              Lead[]
 }
 
 model InvoiceSequence {
@@ -113,13 +115,14 @@ model MemberSubscription {
   startDate     DateTime
   endDate       DateTime
   price         Decimal            @db.Decimal(10, 2)
+  deletedAt     DateTime?
   status        SubscriptionStatus @default(ACTIVE)
   paymentStatus PaymentStatus      @default(PENDING)
   autoRenew     Boolean            @default(false)
   notes         String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
-  member        Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member        Member             @relation(fields: [memberId], references: [id], onDelete: Restrict)
   plan          MembershipPlan     @relation(fields: [planId], references: [id])
   invoices      Invoice[]
 
@@ -158,6 +161,7 @@ model Sale {
   totalAmount    Decimal       @db.Decimal(10, 2)
   discount       Decimal?      @db.Decimal(10, 2)
   finalAmount    Decimal       @db.Decimal(10, 2)
+  deletedAt      DateTime?
   paymentMethod  PaymentMethod
   idempotencyKey String?       @unique
   saleDate       DateTime      @default(now())
@@ -184,6 +188,8 @@ model Invoice {
   taxPercentage       Decimal?            @db.Decimal(5, 2)
   discount            Decimal?            @db.Decimal(10, 2)
   total               Decimal             @db.Decimal(10, 2)
+  amountPaid          Decimal             @default(0.0) @db.Decimal(10, 2)
+  balanceDue          Decimal             @default(0.0) @db.Decimal(10, 2)
   shareToken          String?             @unique
   shareTokenExpiresAt DateTime?
   paymentStatus       PaymentStatus       @default(PENDING)
@@ -249,7 +255,7 @@ model Attendance {
   checkOutTime    DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
-  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member          Member     @relation(fields: [memberId], references: [id], onDelete: Restrict)
   gym             GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, localDateString])
@@ -337,6 +343,34 @@ enum SaaSPlan {
   BASIC
   GROWTH
   ENTERPRISE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  CONVERTED
+}
+
+model Lead {
+  id           String     @id @default(cuid())
+  gymId        String
+  name         String
+  phone        String
+  email        String?
+  planInterest String?
+  source       String?
+  status       LeadStatus @default(NEW)
+  notes        String?
+  followUpDate DateTime?
+  convertedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  gym          GymProfile @relation(fields: [gymId], references: [id])
+
+  @@index([gymId])
+  @@index([gymId, status])
 }
 
 model StaffMember {

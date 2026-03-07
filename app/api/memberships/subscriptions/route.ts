@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma, withRetry } from '@/lib/prisma'
 import { z } from 'zod'
 import { addDays } from 'date-fns'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus, MemberStatus } from '@prisma/client'
 import { guardRateLimit } from '@/lib/rate-limit'
 
@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
 
         const rl = await guardRateLimit(20, `${auth.userId}:subscriptions:post`)
         if (rl) return rl
+
+        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        if (roleCheck) return roleCheck
 
         const body = await request.json()
         const validatedData = subscriptionSchema.parse(body)

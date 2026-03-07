@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
 import { MembersList } from '@/components/members/MembersList'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function MembersPage({
     searchParams,
@@ -164,12 +164,6 @@ export default async function MembersPage({
                 status={status}
                 page={page}
                 take={take}
-                initialData={{
-                    members,
-                    totalCount,
-                    page,
-                    hasMore,
-                }}
             />
         </div>
     )

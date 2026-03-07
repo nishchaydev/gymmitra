@@ -55,13 +55,13 @@ export function InvoiceTemplate({
     const upiQrData = gymInfo.upiId ? generateUpiQrData(gymInfo.upiId, total, gymInfo.name, invoiceNumber) : null
 
     return (
-        <div className="bg-white p-8 max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid" id="invoice-template">
+        <div className="bg-white p-4 sm:p-8 w-full max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid text-drift-900" id="invoice-template">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 text-primary">
-                        <Dumbbell className="w-10 h-10" />
-                        <h1 className="text-3xl font-black tracking-tighter uppercase">{gymInfo.name}</h1>
+                        <Dumbbell className="w-8 h-8 sm:w-10 sm:h-10" />
+                        <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase">{gymInfo.name}</h1>
                     </div>
                     <div className="text-sm text-slate-500 space-y-1">
                         <div className="flex items-center gap-2"><MapPin className="w-3 h-3" /> {gymInfo.address}</div>
@@ -69,8 +69,8 @@ export function InvoiceTemplate({
                         <div className="flex items-center gap-2"><Mail className="w-3 h-3" /> {gymInfo.email}</div>
                     </div>
                 </div>
-                <div className="sm:text-right text-left">
-                    <h2 className="text-4xl font-black text-slate-200 uppercase tracking-widest mb-4">INVOICE</h2>
+                <div className="sm:text-right text-left w-full sm:w-auto">
+                    <h2 className="text-2xl sm:text-4xl font-black text-slate-200 uppercase tracking-widest mb-2 sm:mb-4">INVOICE</h2>
                     <div className="space-y-1 text-sm">
                         <div className="font-bold text-slate-900">{invoiceNumber}</div>
                         <div className="text-slate-500">{date}</div>
@@ -105,8 +105,8 @@ export function InvoiceTemplate({
                 </div>
             </div>
 
-            <div className="mb-12 overflow-x-auto w-full print:overflow-visible print:w-auto">
-                <table className="w-full text-left border-collapse min-w-[500px] print:min-w-0 print:w-auto print:table-auto">
+            <div className="mb-12 overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
                     <thead>
                         <tr className="bg-slate-50 border-y border-slate-200">
                             <th className="py-4 px-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Description</th>
@@ -117,11 +117,11 @@ export function InvoiceTemplate({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {items.map((item, idx) => (
-                            <tr key={idx}>
+                            <tr key={idx} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
                                 <td className="py-4 px-4 text-sm font-medium text-slate-900">{item.description}</td>
                                 <td className="py-4 px-4 text-sm text-slate-500 text-center">{item.quantity}</td>
-                                <td className="py-4 px-4 text-sm text-slate-500 text-right">₹{item.unitPrice.toLocaleString('en-IN')}</td>
-                                <td className="py-4 px-4 text-sm font-bold text-slate-900 text-right">₹{item.total.toLocaleString('en-IN')}</td>
+                                <td className="py-4 px-4 text-sm text-slate-500 text-right whitespace-nowrap">₹{item.unitPrice.toLocaleString('en-IN')}</td>
+                                <td className="py-4 px-4 text-sm font-bold text-slate-900 text-right whitespace-nowrap">₹{item.total.toLocaleString('en-IN')}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -169,8 +169,8 @@ export function InvoiceTemplate({
                         </div>
                     )}
                     <div className="flex justify-between items-center py-4 border-t-2 border-slate-900">
-                        <span className="text-lg font-black text-slate-900 uppercase">Grand Total</span>
-                        <span className="text-2xl font-black text-primary underline decoration-primary/20 underline-offset-8">₹{total.toLocaleString('en-IN')}</span>
+                        <span className="text-base sm:text-lg font-black text-slate-900 uppercase">Grand Total</span>
+                        <span className="text-xl sm:text-2xl font-black text-primary underline decoration-primary/20 underline-offset-8">₹{total.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="pt-8 text-right opacity-30">
                         <div className="text-[10px] font-bold uppercase tracking-widest mb-1 italic">Authorized Signatory</div>

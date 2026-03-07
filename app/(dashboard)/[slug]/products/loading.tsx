@@ -12,6 +12,17 @@ export default function ProductsLoading() {
                 <Skeleton className="h-10 w-[140px] rounded-md" />
             </div>
 
+            <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+                <Skeleton className="h-10 flex-1 w-full" />
+                <div className="flex gap-2 w-full md:w-auto">
+                    <Skeleton className="h-8 w-[60px] rounded-md" />
+                    <Skeleton className="h-8 w-[80px] rounded-md" />
+                    <Skeleton className="h-8 w-[100px] rounded-md" />
+                    <Skeleton className="h-8 w-[80px] rounded-md" />
+                    <Skeleton className="h-8 w-[100px] rounded-md" />
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                     <Card key={i} className="overflow-hidden">

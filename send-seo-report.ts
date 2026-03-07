@@ -13,13 +13,13 @@ const resend = new Resend(resendKey);
 async function sendSeoReport() {
     try {
         console.log("Loading HTML template...");
-        const htmlPath = path.join(__dirname, 'seo-email-template.html');
+        const htmlPath = path.resolve(process.cwd(), 'seo-email-template.html');
         const htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
         console.log("Sending email via Resend...");
         const { data, error } = await resend.emails.send({
             from: 'eMitra Team <report@mail.emitra.dev>', // Replace with your exact sender if needed
-            to: ['siakhargone@gmail.com'],
+            to: ['principal.siakhargone@gmail.com'],
             subject: 'siakhargone.in — February 2026 Search Performance Report',
             html: htmlContent,
         });

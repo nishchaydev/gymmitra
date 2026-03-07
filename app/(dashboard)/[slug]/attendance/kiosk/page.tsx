@@ -38,9 +38,10 @@ export default function KioskPage() {
             setMemberId("")
             setShowScanner(false)
             setTimeout(() => setLastCheckIn(null), 5000)
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Handle Offline fallback
-            if (typeof window !== 'undefined' && (!navigator.onLine || error.message?.includes('Failed to fetch'))) {
+            const isFetchError = error instanceof Error && error.message?.includes('Failed to fetch');
+            if (typeof window !== 'undefined' && (!navigator.onLine || isFetchError)) {
                 try {
                     const saved = await saveOfflineAttendance({
                         memberId: id,
@@ -62,6 +63,7 @@ export default function KioskPage() {
                     setMemberId("")
                     setShowScanner(false)
                 } catch (saveError) {
+                    // saveError is handled by the toast below
                     toast.error("Failed to save even offline. System error.")
                 }
                 return;

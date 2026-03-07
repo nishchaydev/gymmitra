@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const roleCheck = await import('@/lib/auth').then(m => m.checkRole(auth, ['OWNER', 'STAFF', 'TRAINER']))
+        if (roleCheck) return roleCheck
+
         let rl;
         try {
             rl = await guardRateLimit(20, `${auth.userId}:sync-offline:post`, false)

@@ -64,7 +64,7 @@ function TestimonialCard({ name, gym, quote, delay }: { name: string, gym: strin
                 </div>
 
                 <p className="text-slate-600 leading-relaxed mb-8 italic flex-1">
-                    "{quote}"
+                    &quot;{quote}&quot;
                 </p>
 
                 <div className="flex items-center gap-4 mt-auto">

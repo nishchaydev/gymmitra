@@ -6,9 +6,10 @@ import { MOCKUP_DATA } from "@/lib/showcase-data"
 
 const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
 
-export function Analytics({ isDemo = false }: { isDemo?: boolean }) {
-    const memberGrowthData = isDemo ? MOCKUP_DATA.analytics.memberGrowth : []
-    const attendanceData = isDemo ? MOCKUP_DATA.analytics.attendance : []
+export function Analytics({ isDemo = false, initialData }: { isDemo?: boolean, initialData?: { memberGrowth: any[], attendance: any[] } }) {
+    const memberGrowthData = isDemo ? MOCKUP_DATA.analytics.memberGrowth : (initialData?.memberGrowth || [])
+    const attendanceData = isDemo ? MOCKUP_DATA.analytics.attendance : (initialData?.attendance || [])
+
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-1 md:col-span-2 lg:col-span-4">

@@ -42,7 +42,7 @@ interface ExpiringMembership {
     daysLeft?: number
 }
 
-export function Reports({ isDemo = false }: ReportsProps) {
+export function Reports({ isDemo = false, initialData }: ReportsProps & { initialData?: any }) {
     return (
         <div className="space-y-4">
             <Tabs defaultValue="revenue" className="space-y-4">
@@ -57,39 +57,49 @@ export function Reports({ isDemo = false }: ReportsProps) {
                 </TabsList>
 
                 <TabsContent value="revenue" className="space-y-4">
-                    <RevenueReport />
+                    <RevenueReport initialData={initialData?.revenue} />
                 </TabsContent>
 
                 <TabsContent value="attendance" className="space-y-4">
-                    <AttendanceReport />
+                    <AttendanceReport initialData={initialData?.attendance} />
                 </TabsContent>
 
                 <TabsContent value="expiring" className="space-y-4">
-                    <ExpiringMembershipsReport />
+                    <ExpiringMembershipsReport initialData={initialData?.expiring} />
                 </TabsContent>
 
                 <TabsContent value="reminders" className="space-y-4">
-                    <RemindersReport isDemo={isDemo} />
+                    <RemindersReport isDemo={isDemo} initialData={initialData?.reminders} />
                 </TabsContent>
             </Tabs>
         </div>
     )
 }
 
-function RemindersReport({ isDemo = false }: { isDemo?: boolean }) {
-    const [data, setData] = useState<any>(null)
-    const [loading, setLoading] = useState(!isDemo)
 
-    useEffect(() => {
+function RemindersReport({ isDemo = false, initialData }: { isDemo?: boolean, initialData?: any }) {
+    const [data, setData] = useState<any>(() => {
+        if (initialData) return initialData
         if (isDemo) {
-            setData({
+            return {
                 birthdays: [{ type: 'BIRTHDAY', memberId: '1', name: 'Rahul Sharma', message: 'Happy Bday!', link: getWhatsAppLink('919876543210', templates.birthdayWish('Rahul Sharma', 'GymMitra Demo')) }],
                 overdue: [{ type: 'OVERDUE', invoiceId: '2', name: 'Priya Singh', amount: 2500, message: 'Overdue!', link: getWhatsAppLink('919876543210', templates.paymentOverdue('Priya Singh', 2500, 'GymMitra Demo')) }],
-                inactive: [{ type: 'INACTIVE', memberId: '3', name: 'Amit Kumar', daysInactive: 18, message: 'Miss you!', link: getWhatsAppLink('919876543210', templates.inactivityNudge('Amit Kumar', 18, 'GymMitra Demo')) }],
+                inactive: [{
+                    type: 'INACTIVE', memberId: '3', name: 'Amit Kumar', daysInactive: 18, message: 'Miss you!', link: getWhatsAppLink('919876543210', templates.inactivityNudge(
+                        'Amit Kumar',
+                        18,
+                        'GymMitra Demo'
+                    ))
+                }],
                 expiring: [{ type: 'EXPIRING', subId: '4', name: 'Neha Gupta', daysLeft: 3, message: 'Expiring!', link: getWhatsAppLink('919876543210', templates.renewalReminder('Neha Gupta', 3, 'GymMitra Demo')) }]
-            })
-            return
+            }
         }
+        return null
+    })
+    const [loading, setLoading] = useState(!isDemo && !initialData)
+
+    useEffect(() => {
+        if (isDemo || initialData || loading === false) return;
 
         fetch('/api/reminders')
             .then(res => res.json())
@@ -101,7 +111,7 @@ function RemindersReport({ isDemo = false }: { isDemo?: boolean }) {
                 console.error(err)
                 setLoading(false)
             })
-    }, [isDemo])
+    }, [isDemo, initialData, loading])
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
 
@@ -163,11 +173,12 @@ function RemindersReport({ isDemo = false }: { isDemo?: boolean }) {
 }
 
 
-function RevenueReport() {
-    const [data, setData] = useState<RevenueData[]>([])
-    const [loading, setLoading] = useState(true)
+function RevenueReport({ initialData }: { initialData?: RevenueData[] }) {
+    const [data, setData] = useState<RevenueData[]>(initialData || [])
+    const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
+        if (initialData) return;
         fetch('/api/reports?type=revenue')
             .then(res => res.json())
             .then(data => {
@@ -178,7 +189,7 @@ function RevenueReport() {
                 console.error(err)
                 setLoading(false)
             })
-    }, [])
+    }, [initialData])
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
 
@@ -206,11 +217,12 @@ function RevenueReport() {
     )
 }
 
-function AttendanceReport() {
-    const [data, setData] = useState<AttendanceData[]>([])
-    const [loading, setLoading] = useState(true)
+function AttendanceReport({ initialData }: { initialData?: AttendanceData[] }) {
+    const [data, setData] = useState<AttendanceData[]>(initialData || [])
+    const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
+        if (initialData) return;
         fetch('/api/reports?type=attendance')
             .then(res => res.json())
             .then(data => {
@@ -221,7 +233,7 @@ function AttendanceReport() {
                 console.error(err)
                 setLoading(false)
             })
-    }, [])
+    }, [initialData])
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
 
@@ -248,11 +260,12 @@ function AttendanceReport() {
     )
 }
 
-function ExpiringMembershipsReport() {
-    const [data, setData] = useState<ExpiringMembership[]>([])
-    const [loading, setLoading] = useState(true)
+function ExpiringMembershipsReport({ initialData }: { initialData?: ExpiringMembership[] }) {
+    const [data, setData] = useState<ExpiringMembership[]>(initialData || [])
+    const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
+        if (initialData) return;
         fetch('/api/reports?type=expiring')
             .then(res => res.json())
             .then(data => {
@@ -267,7 +280,7 @@ function ExpiringMembershipsReport() {
                 console.error(err)
                 setLoading(false)
             })
-    }, [])
+    }, [initialData])
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
 

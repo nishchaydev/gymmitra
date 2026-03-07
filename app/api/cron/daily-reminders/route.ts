@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { addDays, startOfDay, endOfDay, differenceInDays } from 'date-fns'
+import { addDays, startOfDay, endOfDay } from 'date-fns'
 import { Resend, CreateEmailOptions, CreateEmailResponseSuccess } from 'resend'
 import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
@@ -70,10 +70,13 @@ export async function GET(request: NextRequest) {
         errors: 0
     }
 
+    // ── TARGET_DAYS: exact milestone days before expiry ─────────────────
+    // A member expiring in exactly D days gets ONE email today.
+    // This prevents the "email every day for 7 days" spam bug.
+    const TARGET_DAYS = [10, 7, 5, 3, 2, 1]
+
     try {
         const today = new Date()
-        const todayStart = startOfDay(today)
-        const sevenDaysFromNow = endOfDay(addDays(today, 7))
 
         const gyms = await prisma.gymProfile.findMany({
             select: { id: true, name: true, email: true }
@@ -85,43 +88,64 @@ export async function GET(request: NextRequest) {
                 const emailBatch: CreateEmailOptions[] = []
                 const notificationBatch: Prisma.NotificationCreateManyInput[] = []
 
-                // ── Expiring Subscriptions (next 7 days) ──────────────
-                const expiringSubs = await prisma.memberSubscription.findMany({
-                    where: {
-                        gymId: gym.id,
-                        status: 'ACTIVE',
-                        endDate: { gte: todayStart, lte: sevenDaysFromNow }
-                    },
-                    include: {
-                        member: { select: { id: true, name: true, email: true, phone: true } },
-                        plan: { select: { name: true } }
+                // ── Expiring Subscriptions — exact-day countdown ───────
+                // Query each target day separately so a member expiring in
+                // exactly 8 days receives ZERO emails today (not in any window).
+                for (const daysAhead of TARGET_DAYS) {
+                    const windowStart = startOfDay(addDays(today, daysAhead))
+                    const windowEnd = endOfDay(addDays(today, daysAhead))
+
+                    const expiringSubs = await prisma.memberSubscription.findMany({
+                        where: {
+                            gymId: gym.id,
+                            status: 'ACTIVE',
+                            endDate: { gte: windowStart, lte: windowEnd }
+                        },
+                        include: {
+                            member: { select: { id: true, name: true, email: true, phone: true } },
+                            plan: { select: { name: true } }
+                        }
+                    })
+
+                    for (const sub of expiringSubs) {
+                        if (!sub.member.email) continue
+
+                        const isUrgent = daysAhead <= 2
+                        const expiryDateStr = sub.endDate.toLocaleDateString('en-IN', {
+                            day: 'numeric', month: 'long', year: 'numeric'
+                        })
+
+                        const subjectPrefix = isUrgent ? '⚠️ URGENT — ' : ''
+                        const urgencyHtml = isUrgent
+                            ? `<p style="color:#dc2626;font-weight:bold;">⚠️ Your membership expires on <strong>${expiryDateStr}</strong> — just ${daysAhead} day${daysAhead === 1 ? '' : 's'} away. Please renew immediately to avoid interruption!</p>`
+                            : `<p>Your <strong>${sub.plan.name}</strong> membership at <strong>${gym.name}</strong> expires in <strong>${daysAhead} days</strong>.</p>`
+
+                        const actSoonHtml = (daysAhead === 5 || daysAhead === 3)
+                            ? `<p><em>Act soon — spots fill up fast!</em> 🏃</p>`
+                            : ''
+
+                        emailBatch.push({
+                            from: FROM_EMAIL,
+                            to: [sub.member.email],
+                            subject: `${subjectPrefix}${gym.name} - Membership Expiring in ${daysAhead} Day${daysAhead === 1 ? '' : 's'}`,
+                            html: `
+                                <h2>Hi ${sub.member.name},</h2>
+                                ${urgencyHtml}
+                                ${actSoonHtml}
+                                <p>Please visit the gym or contact us to renew and continue your fitness journey! 💪</p>
+                                <br/>
+                                <p>Best regards,<br/>Team ${gym.name}</p>
+                            `
+                        })
+
+                        notificationBatch.push({
+                            type: 'EXPIRY_REMINDER',
+                            title: 'Membership Expiry Reminder',
+                            message: `Sent day-${daysAhead} countdown reminder to memberId=${sub.member.id}`,
+                            userId: gym.id,
+                            gymId: gym.id
+                        })
                     }
-                })
-
-                for (const sub of expiringSubs) {
-                    if (!sub.member.email) continue
-                    const daysLeft = Math.max(0, differenceInDays(sub.endDate, today))
-
-                    emailBatch.push({
-                        from: FROM_EMAIL,
-                        to: [sub.member.email],
-                        subject: `${gym.name} - Membership Expiring in ${daysLeft} Days`,
-                        html: `
-                            <h2>Hi ${sub.member.name},</h2>
-                            <p>Your <strong>${sub.plan.name}</strong> membership at <strong>${gym.name}</strong> expires in <strong>${daysLeft} days</strong>.</p>
-                            <p>Please visit the gym or contact us to renew and continue your fitness journey! 💪</p>
-                            <br/>
-                            <p>Best regards,<br/>Team ${gym.name}</p>
-                        `
-                    })
-
-                    notificationBatch.push({
-                        type: 'EXPIRY_REMINDER',
-                        title: 'Membership Expiry Reminder',
-                        message: `Sent expiry reminder to memberId=${sub.member.id} (${daysLeft} days left)`,
-                        userId: gym.id,
-                        gymId: gym.id
-                    })
                 }
 
                 // ── Overdue Invoices ──────────────────────────────────

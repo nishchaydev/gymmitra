@@ -26,8 +26,8 @@ export function AboutEMitra() {
 
                     <MotionWrapper delay={0.3}>
                         <p className="text-xl text-slate-600 mb-16 leading-relaxed font-medium max-w-2xl mx-auto">
-                            GymMitra is the flagship product of eMitra Technologies, a team obsessed
-                            with solving India's small business challenges through <span className="text-midnight font-black">intelligent automation</span>.
+                            Gym Mitra (GymMitra) is the flagship product of eMitra Technologies – also known as Gym eMitra.
+                            A team obsessed with solving India&apos;s small business challenges through <span className="text-midnight font-black">intelligent automation</span>.
                         </p>
                     </MotionWrapper>
 
@@ -39,9 +39,9 @@ export function AboutEMitra() {
                                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-inner">
                                     <span className="text-3xl" role="img" aria-label="weightlifter emoji">🏋️</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">GymMitra</h3>
+                                <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">Gym Mitra</h3>
                                 <p className="text-slate-600 font-medium mb-6 flex-1 leading-relaxed">
-                                    Complete fitness center management with automated billing and member app.
+                                    Gym Mitra – Complete fitness center management with automated billing, WhatsApp reminders, and member app.
                                 </p>
                                 <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black uppercase tracking-widest w-fit shadow-sm">
                                     Live Now

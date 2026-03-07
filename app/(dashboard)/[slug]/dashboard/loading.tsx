@@ -1,10 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Tabs } from "@/components/ui/tabs"
 
 export default function DashboardLoading() {
     return (
-        <div className="flex-1 space-y-6 p-8 pt-6">
+        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
             <div className="sr-only" role="status">Loading dashboard information...</div>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-2">

@@ -19,7 +19,7 @@ async function populate() {
     console.log(`Found ${gyms.length} gyms without slugs.`);
 
     for (const gym of gyms) {
-        let baseSlug = toSlug(gym.businessName || gym.name || 'gym');
+        const baseSlug = toSlug(gym.businessName || gym.name || 'gym');
         let uniqueSlug = baseSlug;
         let counter = 1;
 

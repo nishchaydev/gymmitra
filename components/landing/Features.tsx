@@ -9,21 +9,21 @@ import { MemberAppMockup } from "@/components/landing/features/MemberAppMockup"
 export function Features() {
     const solutions = [
         {
-            title: "Automate Renewals with WhatsApp",
-            desc: "Stop calling members manually. GymMitra sends automated reminders 7 days, 3 days, and 1 day before expiry via WhatsApp.",
-            points: ["Instant message delivery", "Payment link included", "Professional reminders"],
+            title: "Automate Renewals & Wishes",
+            desc: "Stop calling members manually. GymMitra sends automated renewal reminders and birthday wishes via WhatsApp. Cron-powered, zero manual effort.",
+            points: ["Reliable renewal alerts", "Personalized birthday greetings", "Automated daily delivery"],
             component: <WhatsAppMockup />
         },
         {
-            title: "Biometric & QR Access Control",
-            desc: "Secure your gym. Only active members get in. Integrate seamlessly with your existing biometric hardware or QR scanners.",
-            points: ["Block expired members", "Track peak hours", "Zero unauthorized entry"],
+            title: "Smart Attendance Tracking",
+            desc: "Daily check-in with automated records and attendance analytics. Track peak hours and monitor member consistency with ease.",
+            points: ["Real-time digital logs", "Peak occupancy insights", "Attendance history"],
             component: <AccessControlMockup />
         },
         {
-            title: "Branded Member App",
-            desc: "Give your members a premium experience. They can book slots, check their diet plan, and renew memberships directly from their phone.",
-            points: ["White-label option", "Workout tracking", "Diet plans included"],
+            title: "WhatsApp-Native Communication",
+            desc: "Renewal reminders, birthday wishes, and payment alerts sent directly to members via WhatsApp. Give your gym a professional edge with zero extra cost.",
+            points: ["Zero integration fees", "Higher open rates", "Professional branding"],
             component: <div className="max-w-[280px] mx-auto"><MemberAppMockup /></div>
         }
     ]
@@ -36,7 +36,7 @@ export function Features() {
                         The Complete Operating System
                     </h2>
                     <p className="text-lg text-slate-500 font-medium">
-                        More than just software. It's an automated manager for your gym.
+                        More than just software. It&apos;s an automated manager for your gym.
                     </p>
                 </div>
 

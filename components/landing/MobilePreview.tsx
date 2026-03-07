@@ -25,7 +25,7 @@ export function MobilePreview() {
                             <span className="text-primary">From Anywhere.</span>
                         </h2>
                         <p className="text-xl text-slate-600 mb-10 leading-relaxed font-medium">
-                            Don't be tied to the front desk. Add members, check revenue, and send invoices directly from your phone while you're on the floor or traveling.
+                            Don&apos;t be tied to the front desk. Add members, check revenue, and send invoices directly from your phone while you&apos;re on the floor or traveling.
                         </p>
 
                         <ul className="space-y-4 mb-10">

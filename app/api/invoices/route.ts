@@ -22,6 +22,7 @@ const invoiceCreateSchema = z.object({
     discount: z.number().nonnegative().optional().default(0),
     taxAmount: z.number().nonnegative().optional().default(0),
     idempotencyKey: z.string().optional(),
+    amountPaid: z.number().nonnegative().optional().default(0),
 })
 
 export async function GET(request: NextRequest) {
@@ -44,35 +45,61 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')
         const status = searchParams.get('status')
+        const q = searchParams.get('q') || ''
+        const parsedPage = parseInt(searchParams.get('page') || '1', 10)
+        const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
+        const parsedTake = parseInt(searchParams.get('take') || '50', 10)
+        const take = Math.min(100, Math.max(1, isNaN(parsedTake) ? 50 : parsedTake))
+        const skip = (page - 1) * take
 
         // Validate status if provided
-        const allowedStatuses = ["PAID", "PENDING", "OVERDUE", "PARTIAL"]
+        const allowedStatuses = ["PAID", "PENDING", "OVERDUE", "PARTIAL", "ALL"]
 
-        if (status && !allowedStatuses.includes(status.toUpperCase())) {
-            return NextResponse.json(
-                { error: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}` },
-                { status: 400 }
-            )
+        let validatedStatus: "PAID" | "PENDING" | "OVERDUE" | "PARTIAL" | undefined = undefined
+
+        if (status && status !== 'ALL') {
+            if (!allowedStatuses.includes(status.toUpperCase())) {
+                return NextResponse.json(
+                    { error: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}` },
+                    { status: 400 }
+                )
+            }
+            validatedStatus = status.toUpperCase() as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL"
         }
 
-        const validatedStatus = status ? (status.toUpperCase() as "PAID" | "PENDING" | "OVERDUE" | "PARTIAL") : undefined
+        const whereClause: any = {
+            gymId: gym.id,
+            ...(memberId ? { memberId } : {}),
+            ...(validatedStatus ? { paymentStatus: validatedStatus } : {}),
+            ...(q
+                ? {
+                    OR: [
+                        { invoiceNumber: { contains: q, mode: 'insensitive' } },
+                        { walkInName: { contains: q, mode: 'insensitive' } },
+                        { member: { name: { contains: q, mode: 'insensitive' } } },
+                        { member: { phone: { contains: q } } }
+                    ],
+                }
+                : {}),
+        }
 
-        const invoices = await prisma.invoice.findMany({
-            where: {
-                gymId: gym.id,
-                ...(memberId ? { memberId } : {}),
-                ...(validatedStatus ? { paymentStatus: validatedStatus } : {}),
-            },
-            include: {
-                member: {
-                    select: { name: true, email: true }
+        const [invoices, totalCount] = await Promise.all([
+            prisma.invoice.findMany({
+                where: whereClause,
+                include: {
+                    member: {
+                        select: { name: true, phone: true }
+                    },
+                    items: true
                 },
-                items: true
-            },
-            orderBy: { issueDate: 'desc' }
-        })
+                orderBy: { issueDate: 'desc' },
+                take,
+                skip,
+            }),
+            prisma.invoice.count({ where: whereClause })
+        ])
 
-        return NextResponse.json(invoices)
+        return NextResponse.json({ invoices, totalCount, page, hasMore: totalCount > page * take })
     } catch (error) {
         console.error('Error fetching invoices:', error)
         return NextResponse.json(
@@ -118,8 +145,11 @@ export async function POST(request: NextRequest) {
 
         const total = Math.max(0, subtotal + validatedData.taxAmount - validatedData.discount)
 
+        const amountPaid = validatedData.amountPaid ?? 0
+        const balanceDue = total - amountPaid
+
         // Generate Invoice Number
-        const { generateInvoiceNumber } = await import("@/lib/invoice-utils")
+        const { generateInvoiceNumber } = await import("@/lib/invoice-server-utils")
         const invoiceNumber = await generateInvoiceNumber(gym.id)
 
         const crypto = await import('crypto')
@@ -144,6 +174,8 @@ export async function POST(request: NextRequest) {
                     taxAmount: validatedData.taxAmount,
                     discount: validatedData.discount,
                     total: total,
+                    amountPaid: amountPaid,
+                    balanceDue: balanceDue,
                     idempotencyKey: validatedData.idempotencyKey,
                     shareToken: shareToken,
                     shareTokenExpiresAt: shareTokenExpiresAt,

@@ -30,29 +30,32 @@ interface MemberFrequency {
 
 const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
 
-export function RetentionMetrics({ isDemo = false }: { isDemo?: boolean }) {
-    const [churnData, setChurnData] = useState<ChurnData[]>([])
-    const [retentionRate, setRetentionRate] = useState<number>(0)
-    const [atRiskMembers, setAtRiskMembers] = useState<MemberFrequency[]>([])
-    const [loading, setLoading] = useState(!isDemo)
+export function RetentionMetrics({ isDemo = false, initialData }: { isDemo?: boolean, initialData?: { churnData: ChurnData[], retentionRate: number, atRiskMembers: MemberFrequency[] } }) {
+    const [churnData, setChurnData] = useState<ChurnData[]>(initialData?.churnData || [])
+    const [retentionRate, setRetentionRate] = useState<number>(initialData?.retentionRate || 0)
+    const [atRiskMembers, setAtRiskMembers] = useState<MemberFrequency[]>(initialData?.atRiskMembers || [])
+    const [loading, setLoading] = useState(!isDemo && !initialData)
 
     useEffect(() => {
-        if (isDemo) {
-            // Mock data for showcase
-            setChurnData([
-                { name: 'Oct', churnRate: 5 },
-                { name: 'Nov', churnRate: 8 },
-                { name: 'Dec', churnRate: 12 },
-                { name: 'Jan', churnRate: 4 },
-                { name: 'Feb', churnRate: 2 },
-            ])
-            setRetentionRate(92)
-            setAtRiskMembers([
-                { memberId: '1', memberName: 'Rahul Sharma', phone: '9876543210', visitCount: 1, lastVisit: '2024-02-01' },
-                { memberId: '2', memberName: 'Priya Singh', phone: '9876543211', visitCount: 2, lastVisit: '2024-02-10' },
-            ])
+        if (isDemo || initialData) {
+            // Mock data or initial data already present
+            if (isDemo) {
+                setChurnData([
+                    { name: 'Oct', churnRate: 5 },
+                    { name: 'Nov', churnRate: 8 },
+                    { name: 'Dec', churnRate: 12 },
+                    { name: 'Jan', churnRate: 4 },
+                    { name: 'Feb', churnRate: 2 },
+                ])
+                setRetentionRate(92)
+                setAtRiskMembers([
+                    { memberId: '1', memberName: 'Rahul Sharma', phone: '9876543210', visitCount: 1, lastVisit: '2024-02-01' },
+                    { memberId: '2', memberName: 'Priya Singh', phone: '9876543211', visitCount: 2, lastVisit: '2024-02-10' },
+                ])
+            }
             return
         }
+
 
         async function fetchMetrics() {
             try {

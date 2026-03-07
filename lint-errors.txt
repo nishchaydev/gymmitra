@@ -1,0 +1,532 @@
+﻿
+> gym-mitra-erp@0.1.0 lint
+> eslint
+
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\.agent\scripts\audit-sec04.js
+  1:1   warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  4:5   warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  7:26  warning  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\.agent\scripts\red-team-runner.js
+    1:26  warning  A `require()` style import is forbidden          @typescript-eslint/no-require-imports
+  103:17  warning  'errorCount' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\attendance\kiosk\page.tsx
+  41:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:26  warning  'saveError' is defined but never used     @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\attendance\page.tsx
+  95:34  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\dashboard\loading.tsx
+  2:41  warning  'CardTitle' is defined but never used    @typescript-eslint/no-unused-vars
+  3:10  warning  'Tabs' is defined but never used         @typescript-eslint/no-unused-vars
+  3:16  warning  'TabsContent' is defined but never used  @typescript-eslint/no-unused-vars
+  3:29  warning  'TabsList' is defined but never used     @typescript-eslint/no-unused-vars
+  3:39  warning  'TabsTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\dashboard\page.tsx
+   77:36   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  102:25   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  104:28   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  124:45   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  155:64   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  156:82   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  158:124  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  161:112  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  166:22   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  169:46   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  170:68   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  171:51   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  175:87   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  196:50   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  203:22   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  212:22   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  310:54   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  311:63   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  312:64   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  339:38   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  344:47   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  352:52   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  360:22   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  364:21   error    'next' is never reassigned. Use 'const' instead  prefer-const
+  371:23   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  371:31   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  445:42   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  452:65   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  453:62   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  454:63   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  469:81   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  477:75   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  478:39   warning  'interval' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  490:84   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  490:127  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  505:81   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  506:86   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  511:88   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  515:44   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  521:85   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  528:83   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  532:44   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  543:90   warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\invoices\[id]\page.tsx
+   18:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\invoices\actions.ts
+  142:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  157:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\invoices\new\NewInvoiceForm.tsx
+   9:56  warning  'CreditCard' is defined but never used                 @typescript-eslint/no-unused-vars
+  20:14  warning  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  21:23  warning  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  22:16  warning  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  32:27  warning  'setWalkInAddress' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  52:59  warning  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\invoices\page.tsx
+  51:9   error    'page' is never reassigned. Use 'const' instead  prefer-const
+  69:47  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\leads\page.tsx
+   11:10  warning  'Badge' is defined but never used         @typescript-eslint/no-unused-vars
+   17:14  warning  'Calendar' is defined but never used      @typescript-eslint/no-unused-vars
+   71:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   97:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  323:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\members\[id]\edit\EditMemberForm.tsx
+  83:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\members\[id]\edit\page.tsx
+  35:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\members\[id]\page.tsx
+   67:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\members\actions.ts
+   15:18  warning  'parseISO' is defined but never used                @typescript-eslint/no-unused-vars
+   16:10  warning  'Prisma' is defined but never used                  @typescript-eslint/no-unused-vars
+   76:23  warning  'paymentMethod' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  110:83  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  197:21  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  238:61  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  343:21  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\members\page.tsx
+   94:40  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   97:59  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  129:13  warning  'members' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  140:11  warning  'hasMore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\products\loading.tsx
+  2:41  warning  'CardTitle' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\products\new\page.tsx
+  89:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\products\page.tsx
+  58:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\renewals\page.tsx
+  19:13  warning  'slug' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\settings\import\page.tsx
+  10:23  warning  'Upload' is defined but never used              @typescript-eslint/no-unused-vars
+  21:20  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  30:11  warning  'router' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  32:12  warning  'file' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  33:44  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  34:12  warning  'isParsing' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  65:18  warning  'error' is defined but never used               @typescript-eslint/no-unused-vars
+  89:18  warning  'error' is defined but never used               @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\(dashboard)\[slug]\settings\page.tsx
+  98:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\[slug]\invoice\[token]\page.tsx
+  124:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\attendance\route.ts
+  129:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\attendance\sync-offline\route.ts
+   62:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+   82:26  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  108:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\cron\daily-reminders\route.ts
+  255:111  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\dashboard\route.ts
+   9:27  warning  'req' is defined but never used           @typescript-eslint/no-unused-vars
+  74:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\invoices\route.ts
+   38:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+   69:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  135:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  192:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\leads\[id]\route.ts
+  77:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\leads\route.ts
+   42:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\members\[id]\route.ts
+  166:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\members\route.ts
+  10:7   warning  'memberCreateSchema' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  34:25  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  57:28  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  59:46  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\memberships\plans\route.ts
+  21:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+  37:14  warning  'error' is defined but never used    @typescript-eslint/no-unused-vars
+  58:18  warning  'e' is defined but never used        @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\memberships\subscriptions\route.ts
+  61:19  warning  'isRenewal' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\products\route.ts
+   29:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  121:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\reminders\route.ts
+  15:27  warning  'request' is defined but never used       @typescript-eslint/no-unused-vars
+  39:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\renewals\route.ts
+  1:10  warning  'NextRequest' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\schedule\[id]\route.ts
+  5:10  warning  'SessionStatus' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\schedule\route.ts
+  41:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  88:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\staff\[id]\route.ts
+  42:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\staff\route.ts
+  14:27  warning  'request' is defined but never used       @typescript-eslint/no-unused-vars
+  84:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\api\webhooks\onboarding\route.ts
+   24:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   83:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+   83:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\auth\callback\route.ts
+   6:27  warning  'origin' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  21:19  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\layout.tsx
+  83:10  warning  'Navbar' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\legal\service-agreement\page.tsx
+  36:65   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:75   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:130  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:139  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:214  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:223  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:228  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:238  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  45:124  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\login\ClientRegistrationForm.tsx
+   81:23  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  185:29  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  185:51  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\login\actions.ts
+   48:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\login\page.tsx
+  1:17  warning  'signup' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\onboarding\OnboardingForm.tsx
+  220:61  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  279:96  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  460:89  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  471:89  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\onboarding\actions.ts
+  316:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\app\page.tsx
+  6:10  warning  'ShieldCheck' is defined but never used  @typescript-eslint/no-unused-vars
+  6:23  warning  'Zap' is defined but never used          @typescript-eslint/no-unused-vars
+  6:28  warning  'Award' is defined but never used        @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\Navbar.tsx
+  10:26  warning  'UserIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\PwaSyncProvider.tsx
+  35:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\Analytics.tsx
+  9:110  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  9:129  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\AtRiskMembers.tsx
+  6:10  warning  'Badge' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\AttendanceWidget.tsx
+  5:52  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  9:10  warning  'MOCKUP_DATA' is defined but never used      @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\DashboardOverview.tsx
+   5:10  warning  'Overview' is defined but never used      @typescript-eslint/no-unused-vars
+  44:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\Overview.tsx
+  13:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\RecentInvoices.tsx
+  10:10  warning  'Badge' is defined but never used         @typescript-eslint/no-unused-vars
+  19:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\Reports.tsx
+   45:89   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+   80:93   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+   81:38   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+   87:17   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\Reports.tsx:87:17
+  85 |         if (isDemo || initialData) {
+  86 |             if (isDemo && !initialData) {
+> 87 |                 setData({
+     |                 ^^^^^^^ Avoid calling setState() directly within an effect
+  88 |                     birthdays: [{ type: 'BIRTHDAY', memberId: '1', name: 'Rahul Sharma', message: 'Happy Bday!', link: getWhatsAppLink('919876543210', templates.birthdayWish('Rahul Sharma', 'GymMitra Demo')) }],
+  89 |                     overdue: [{ type: 'OVERDUE', invoiceId: '2', name: 'Priya Singh', amount: 2500, message: 'Overdue!', link: getWhatsAppLink('919876543210', templates.paymentOverdue('Priya Singh', 2500, 'GymMitra Demo')) }],
+  90 |                     inactive: [{  react-hooks/set-state-in-effect
+  113:8    warning  React Hook useEffect has a missing dependency: 'initialData'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+  135:53   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  135:66   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  135:112  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  207:48   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\RetentionMetrics.tsx
+   10:10  warning  'MOCKUP_DATA' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+   91:8   warning  React Hook useEffect has a missing dependency: 'initialData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  200:30  warning  Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\ScheduleCalendar.tsx
+   27:67  warning  'MapPin' is defined but never used         @typescript-eslint/no-unused-vars
+   27:75  warning  'Trash2' is defined but never used         @typescript-eslint/no-unused-vars
+   27:96  warning  'XCircle' is defined but never used        @typescript-eslint/no-unused-vars
+   28:10  warning  'Badge' is defined but never used          @typescript-eslint/no-unused-vars
+   53:42  warning  'currentUserId' is defined but never used  @typescript-eslint/no-unused-vars
+   87:18  warning  'error' is defined but never used          @typescript-eslint/no-unused-vars
+  104:50  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  157:25  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  175:18  warning  'e' is defined but never used              @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\dashboard\UpcomingBirthdays.tsx
+   7:16  warning  'MessageCircle' is defined but never used            @typescript-eslint/no-unused-vars
+  50:9   error    'birthday' is never reassigned. Use 'const' instead  prefer-const
+  64:37  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\emails\OnboardingEmail.tsx
+   10:5    warning  'Img' is defined but never used                                  @typescript-eslint/no-unused-vars
+   36:5    warning  'saasPlan' is defined but never used                             @typescript-eslint/no-unused-vars
+   67:39   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   73:85   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   73:95   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  175:39   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  229:117  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  278:50   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\emails\WelcomeEmail.tsx
+  65:92  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\invoice\InvoiceTemplate.tsx
+  4:10  warning  'Card' is defined but never used         @typescript-eslint/no-unused-vars
+  4:16  warning  'CardContent' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\invoice\InvoiceView.tsx
+   11:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\invoice\InvoicesList.tsx
+   24:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\AboutEMitra.tsx
+  30:47  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\Advantage.tsx
+  38:55  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  38:76  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\BentoGrid.tsx
+  9:5  warning  'Clock' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\Contact.tsx
+  37:30  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  40:26  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\FAQ.tsx
+  45:40  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\Features.tsx
+  39:52  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\Hero.tsx
+    9:10  warning  'useEffect' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    9:21  warning  'useState' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   86:46  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  199:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\LiveDemo.tsx
+   4:22  warning  'PlayCircle' is defined but never used                           @typescript-eslint/no-unused-vars
+   9:53  warning  'YAxis' is defined but never used                                @typescript-eslint/no-unused-vars
+  29:32  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\MobilePreview.tsx
+   6:8    warning  'Image' is defined but never used                                @typescript-eslint/no-unused-vars
+  28:32   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  28:142  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\Pricing.tsx
+  83:63  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\ROICalculator.tsx
+  39:81  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\SocialProof.tsx
+  3:10  warning  'MotionWrapper' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\Testimonials.tsx
+   4:16  warning  'Play' is defined but never used                                 @typescript-eslint/no-unused-vars
+  53:12  warning  'isPlaying' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+  53:23  warning  'setIsPlaying' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  67:21  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  67:29  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\features\AccessControlMockup.tsx
+   3:24  warning  'XCircle' is defined but never used                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   3:39  warning  'User' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  65:41  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  70:55  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  90:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\features\MemberAppMockup.tsx
+   3:18  warning  'Dumbbell' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   3:28  warning  'Calendar' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   3:38  warning  'User' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   7:34  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  24:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\features\WhatsAppMockup.tsx
+  3:22  warning  'MoreVertical' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\landing\ui\MotionWrapper.tsx
+  46:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\members\MemberForm.tsx
+   51:28  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   52:54  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   71:52  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  106:57  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  320:30  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\members\MemberForm.tsx:320:30
+  318 |                             />
+  319 |
+> 320 |                             {form.watch('planId') && form.watch('planId') !== 'none' && (
+      |                              ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  321 |                                 <FormField
+  322 |                                     control={form.control}
+  323 |                                     name="paymentMethod"  react-hooks/incompatible-library
+  375:84  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\members\MembersList.tsx
+  94:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\members\check-in-button.tsx
+  34:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\products\ProductsList.tsx
+  20:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\components\settings\StaffManagement.tsx
+   93:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  122:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\hooks\use-leads.ts
+  13:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\hooks\useMembers.ts
+  13:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\lib\prisma.ts
+  98:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\lib\showcase-data.ts
+  35:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\lib\webhook-utils.ts
+  17:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\lib\with-auth.ts
+  14:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\lib\with-plan.ts
+  18:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\middleware.ts
+  1:10  warning  'NextResponse' is defined but never used  @typescript-eslint/no-unused-vars
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\scripts\generate-codes.ts
+  46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+N:\PROGRAMS\GIT and GITHUB\github Desktop\EMITRA\GYM MITRA\gym-mitra-erp\scripts\populate-slugs.ts
+  22:13  error  'baseSlug' is never reassigned. Use 'const' instead  prefer-const
+
+Γ£û 298 problems (39 errors, 259 warnings)
+  4 errors and 0 warnings potentially fixable with the `--fix` option.
+

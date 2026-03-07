@@ -21,8 +21,14 @@ const fontSans = Inter({
 
 export const metadata: Metadata = {
   title: 'Gym Mitra - #1 Gym Management Software in India | WhatsApp Automation',
-  description: 'Automate your gym with WhatsApp reminders, instant invoicing, and member app. India\'s most advanced Gym ERP. Trusted by 50+ gyms across India. Free 14-day trial.',
+  description: 'Gym Mitra (GymMitra) by eMitra Technologies – India\'s #1 gym management software. Automate your gym with WhatsApp reminders, instant invoicing, and member app. Trusted by 50+ gyms across India. Free 14-day trial. Also known as Gym eMitra.',
   keywords: [
+    'gym mitra',
+    'gymmitra',
+    'gym emitra',
+    'gym mitra software',
+    'gym mitra app',
+    'gym mitra erp',
     'gym management software India',
     'gym management system',
     'WhatsApp automation',
@@ -31,15 +37,18 @@ export const metadata: Metadata = {
     'member management',
     'gym attendance tracking',
     'gym erp india',
-    'gym software for small gym'
+    'gym software for small gym',
+    'emitra gym software',
+    'gym mitra india',
+    'best gym software india'
   ],
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://gymmitra.vercel.app'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Gym Mitra - Automate Your Gym\'s Growth',
-    description: 'Save 20 hours/month with automated billing, WhatsApp reminders & instant invoicing',
+    title: 'Gym Mitra (GymMitra) - Automate Your Gym\'s Growth',
+    description: 'Gym Mitra by eMitra – Save 20 hours/month with automated billing, WhatsApp reminders & instant invoicing. India\'s best gym management software.',
     url: 'https://gymmitra.vercel.app',
     siteName: 'Gym Mitra',
     images: [{
@@ -53,8 +62,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gym Mitra - #1 Gym Management Software in India',
-    description: 'Save 20 hours/month with India\'s most advanced gym management platform.',
+    title: 'Gym Mitra (GymMitra) - #1 Gym Management Software in India',
+    description: 'Gym Mitra by eMitra – Save 20 hours/month with India\'s most advanced gym management platform. Also known as Gym eMitra.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -83,6 +92,8 @@ import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from "@/components/Navbar"
 import { PwaSyncProvider } from "@/components/PwaSyncProvider"
 
+import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider"
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -96,13 +107,15 @@ export default async function RootLayout({
       <body
         className={`${fontDisplay.variable} ${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-primary-500/10 selection:text-primary-900`}
       >
-        <main className="flex-1 bg-gray-50/50">
-          {children}
-        </main>
-        <PwaSyncProvider />
-        <Toaster />
-        {gaId && <GoogleAnalytics gaId={gaId} nonce={nonce} />}
-        <Analytics />
+        <ReactQueryProvider>
+          <main className="flex-1 bg-gray-50/50">
+            {children}
+          </main>
+          <PwaSyncProvider />
+          <Toaster />
+          {gaId && <GoogleAnalytics gaId={gaId} nonce={nonce} />}
+          <Analytics />
+        </ReactQueryProvider>
       </body>
     </html>
   );

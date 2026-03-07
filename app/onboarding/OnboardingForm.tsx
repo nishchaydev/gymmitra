@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Building2, MapPin, Contact, CreditCard, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Building2, MapPin, Contact, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, ImagePlus, X } from 'lucide-react'
 import { completeOnboarding } from './actions'
 
 const steps = [
@@ -23,8 +23,11 @@ export default function OnboardingForm() {
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [logoFile, setLogoFile] = useState<File | null>(null)
+    const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [formData, setFormData] = useState({
         businessName: '',
+        ownerName: '',
         email: '',
         address: '',
         city: '',
@@ -65,6 +68,27 @@ export default function OnboardingForm() {
         })
     }
 
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error("Logo size must be less than 2MB")
+                return
+            }
+            setLogoFile(file)
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setLogoPreview(reader.result as string)
+            }
+            reader.readAsDataURL(file)
+        }
+    }
+
+    const removeLogo = () => {
+        setLogoFile(null)
+        setLogoPreview(null)
+    }
+
     const nextStep = () => {
         const form = document.querySelector('form')
         if (currentStep === 3 && !formData.plans.some(p => p.enabled)) {
@@ -98,6 +122,9 @@ export default function OnboardingForm() {
                     submissionData.append(key, value as string)
                 }
             })
+            if (logoFile) {
+                submissionData.append('logo', logoFile)
+            }
             result = await completeOnboarding(submissionData)
 
             if (result.error) {
@@ -138,29 +165,35 @@ export default function OnboardingForm() {
         <div className="min-h-[80vh] flex items-center justify-center p-4">
             <Card className="w-full max-w-2xl overflow-hidden">
                 <div className="bg-primary/5 p-6 border-b">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-6 px-2">
                         {steps.map((step, idx) => {
                             const Icon = step.icon
                             const isActive = idx === currentStep
                             const isCompleted = idx < currentStep
                             return (
-                                <div key={step.title} className="flex flex-col items-center gap-2 relative">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 z-10 ${isActive ? 'bg-primary text-white scale-110 shadow-lg' :
+                                <div key={step.title} className="flex flex-col items-center gap-2 relative flex-1">
+                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors duration-300 z-10 ${isActive ? 'bg-primary text-white scale-110 shadow-lg' :
                                         isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
                                         }`}>
-                                        {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-5 h-5" />}
+                                        {isCompleted ? <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> : <Icon className="w-4 h-4 md:w-5 md:h-5" />}
                                     </div>
-                                    <span className={`text-[10px] uppercase tracking-wider font-bold ${isActive ? 'text-primary' : 'text-slate-400'
+                                    <span className={`text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-center hidden sm:block ${isActive ? 'text-primary' : 'text-slate-400'
                                         }`}>
                                         {step.title}
                                     </span>
                                     {idx < steps.length - 1 && (
-                                        <div className={`absolute top-5 left-10 w-full h-[2px] -z-0 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'
+                                        <div className={`absolute top-4 md:top-5 left-[50%] w-full h-[2px] -z-0 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'
                                             }`} />
                                     )}
                                 </div>
                             )
                         })}
+                    </div>
+                    {/* Current step label for mobile only */}
+                    <div className="sm:hidden text-center">
+                        <span className="text-xs font-black uppercase text-primary tracking-widest">
+                            Step {currentStep + 1}: {steps[currentStep].title}
+                        </span>
                     </div>
                 </div>
 
@@ -176,32 +209,88 @@ export default function OnboardingForm() {
                                 className="space-y-6"
                             >
                                 {currentStep === 0 && (
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="businessName">Gym/Business Name</Label>
-                                            <Input
-                                                id="businessName"
-                                                name="businessName"
-                                                value={formData.businessName}
-                                                onChange={handleInputChange}
-                                                placeholder="e.g. Gym Name"
-                                                autoComplete="organization"
-                                                required
-                                            />
-                                            <p className="text-xs text-muted-foreground">This name will appear on all your invoices.</p>
+                                    <div className="space-y-6">
+                                        {/* Logo Upload Section */}
+                                        <div className="space-y-3">
+                                            <Label className="text-sm font-bold text-drift-700">Gym Logo (Optional)</Label>
+                                            <div className="flex items-center gap-6">
+                                                <div className="relative group">
+                                                    <div className={`w-28 h-28 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${logoPreview ? 'border-ion-500 bg-white' : 'border-drift-200 bg-drift-50 hover:bg-drift-100 hover:border-ion-300'}`}>
+                                                        {logoPreview ? (
+                                                            <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-contain" />
+                                                        ) : (
+                                                            <div className="flex flex-col items-center gap-1 text-drift-400">
+                                                                <ImagePlus className="w-8 h-8" />
+                                                                <span className="text-[10px] font-bold uppercase">Upload</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {logoPreview && (
+                                                        <button
+                                                            onClick={removeLogo}
+                                                            type="button"
+                                                            className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-lg hover:bg-rose-600 transition-colors"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleLogoChange}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        title="Upload Gym Logo"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <h4 className="text-sm font-bold text-drift-900">Brand Identity</h4>
+                                                    <p className="text-xs text-drift-500 leading-relaxed font-medium">
+                                                        Add your professional logo. This will be featured on member invoices and dashboard. Max 2MB.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="email">Public/Business Email</Label>
-                                            <Input
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                value={formData.email}
-                                                onChange={handleInputChange}
-                                                placeholder="contact@gymname.com"
-                                                autoComplete="email"
-                                                required
-                                            />
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="businessName">Gym/Business Name</Label>
+                                                <Input
+                                                    id="businessName"
+                                                    name="businessName"
+                                                    value={formData.businessName}
+                                                    onChange={handleInputChange}
+                                                    placeholder="e.g. Gym Name"
+                                                    autoComplete="organization"
+                                                    required
+                                                />
+                                                <p className="text-xs text-muted-foreground">This name will appear on all your invoices.</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="ownerName">Owner Name</Label>
+                                                <Input
+                                                    id="ownerName"
+                                                    name="ownerName"
+                                                    value={formData.ownerName}
+                                                    onChange={handleInputChange}
+                                                    placeholder="e.g. Nikhil Pal"
+                                                    autoComplete="name"
+                                                    required
+                                                />
+                                                <p className="text-xs text-muted-foreground">We&apos;ll use this name for personalized communication.</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="email">Public/Business Email</Label>
+                                                <Input
+                                                    id="email"
+                                                    name="email"
+                                                    type="email"
+                                                    value={formData.email}
+                                                    onChange={handleInputChange}
+                                                    placeholder="contact@gymname.com"
+                                                    autoComplete="email"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 )}

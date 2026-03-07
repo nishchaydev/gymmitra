@@ -12,7 +12,15 @@ import { SuccessCheckmark } from '@/components/ui/success-animation'
 import { toast } from 'sonner'
 import { useRouter, useParams } from 'next/navigation'
 
-export default function NewInvoiceForm({ members, taxPercentage = 18 }: { members: any[], taxPercentage?: number }) {
+export default function NewInvoiceForm({
+    members,
+    membershipPlans = [],
+    products = []
+}: {
+    members: any[],
+    membershipPlans?: any[],
+    products?: any[]
+}) {
     const router = useRouter()
     const params = useParams()
     const slug = params?.slug as string || 'gym'
@@ -21,29 +29,51 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
     const [walkInName, setWalkInName] = useState('')
     const [walkInPhone, setWalkInPhone] = useState('')
     const [walkInEmail, setWalkInEmail] = useState('')
-    const [walkInAddress, setWalkInAddress] = useState('')
-    const [items, setItems] = useState<{ id: string, description: string, quantity: number, unitPrice: number, type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER' }[]>([
+    const [walkInAddress] = useState('') // walkInAddress is used for initial state but setter is unused
+    const [items, setItems] = useState<{
+        id: string,
+        description: string,
+        quantity: number,
+        unitPrice: number,
+        type: 'MEMBERSHIP' | 'PRODUCT' | 'OTHER',
+        referenceId?: string
+    }[]>([
         { id: 'initial', description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }
     ])
     const [discount, setDiscount] = useState(0)
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH')
+    const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PARTIAL' | 'PENDING'>('PAID')
+    const [amountPaid, setAmountPaid] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
 
     const addItem = () => setItems([...items, { id: crypto.randomUUID(), description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
     const removeItem = (id: string) => setItems(items.filter((item) => item.id !== id))
-    const updateItem = (id: string, field: string, value: string | number) => {
-        setItems(items.map(item =>
-            item.id === id ? { ...item, [field]: value } : item
-        ))
+    const updateItem = (id: string, field: string, value: any) => {
+        setItems(items.map(item => {
+            if (item.id !== id) return item;
+
+            if (field === 'type') {
+                return { ...item, type: value, description: '', unitPrice: 0, referenceId: undefined };
+            }
+
+            if (field === 'referenceId') {
+                if (item.type === 'MEMBERSHIP') {
+                    const plan = membershipPlans.find(p => p.id === value);
+                    return { ...item, referenceId: value, description: plan?.name || '', unitPrice: Number(plan?.price || 0) };
+                }
+                if (item.type === 'PRODUCT') {
+                    const product = products.find(p => p.id === value);
+                    return { ...item, referenceId: value, description: product?.name || '', unitPrice: Number(product?.price || 0) };
+                }
+            }
+
+            return { ...item, [field]: value };
+        }))
     }
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-    const subtotalAfterDiscount = Math.max(0, subtotal - discount)
-
-    const clampedTaxPercentage = Math.max(0, Math.min(100, taxPercentage))
-    const taxAmount = (subtotalAfterDiscount * clampedTaxPercentage) / 100
-    const total = subtotalAfterDiscount + taxAmount
+    const total = Math.max(0, subtotal - discount)
 
     // Client-side validation
     const hasItems = items.length > 0 && items.every(item =>
@@ -73,12 +103,12 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
             <div className="max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#4FC3F7]/10 flex items-center justify-center text-[#4FC3F7]">
+                        <div className="w-12 h-12 rounded-xl bg-ion-100 flex items-center justify-center text-ion-600">
                             <ReceiptText className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-white">Create New Invoice</h1>
-                            <p className="text-slate-400 text-sm font-medium">Generate professional invoices for members and products</p>
+                            <h1 className="text-2xl font-black text-drift-900">Create New Invoice</h1>
+                            <p className="text-drift-500 text-sm font-medium">Generate professional invoices for members and products</p>
                         </div>
                     </div>
                 </div>
@@ -86,20 +116,20 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="md:col-span-2 space-y-8">
                         {/* Member Selection */}
-                        <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+                        <Card className="bg-white border-drift-200 shadow-sm border-t-4 border-t-ion-500">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-white">
-                                    <User className="w-5 h-5 text-[#4FC3F7]" />
+                                <CardTitle className="flex items-center gap-2 text-drift-900">
+                                    <User className="w-5 h-5 text-ion-500" />
                                     Member (Optional)
                                 </CardTitle>
-                                <CardDescription className="text-slate-400">Select a member to associate this invoice with</CardDescription>
+                                <CardDescription className="text-drift-500">Select a member to associate this invoice with</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Select value={selectedMember} onValueChange={setSelectedMember}>
-                                    <SelectTrigger className="bg-slate-950 border-slate-700 text-white h-12">
+                                    <SelectTrigger className="bg-drift-50 border-drift-200 text-drift-900 h-12 focus:ring-ion-500">
                                         <SelectValue placeholder="Walk-in Customer" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                    <SelectContent className="bg-white border-drift-200 text-drift-900">
                                         <SelectItem value="WALK-IN">Walk-in Customer</SelectItem>
                                         {members.map(member => (
                                             <SelectItem key={member.id} value={member.id}>{member.name} ({member.memberId})</SelectItem>
@@ -108,110 +138,151 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                 </Select>
 
                                 {selectedMember === 'WALK-IN' && (
-                                    <div className="mt-6 p-4 bg-slate-950/50 rounded-xl border border-slate-800 space-y-4">
-                                        <h4 className="text-sm font-bold text-slate-300">Walk-in Customer Details</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-slate-500 uppercase font-bold">Name <span className="text-red-400">*</span></Label>
+                                    <div className="mt-6 p-4 bg-drift-50 rounded-xl border border-drift-200 space-y-4">
+                                        <div className="flex-1 space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-bold text-drift-600 uppercase">Customer Name</Label>
                                                 <Input
-                                                    value={walkInName} onChange={(e) => setWalkInName(e.target.value)}
+                                                    value={walkInName}
+                                                    onChange={(e) => setWalkInName(e.target.value)}
                                                     placeholder="John Doe"
-                                                    className="bg-slate-900 border-slate-700 text-white"
+                                                    className="bg-white border-drift-200 focus:ring-ion-500"
                                                 />
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-slate-500 uppercase font-bold">Phone Number <span className="text-red-400">*</span></Label>
-                                                <Input
-                                                    type="tel"
-                                                    value={walkInPhone} onChange={(e) => setWalkInPhone(e.target.value)}
-                                                    placeholder="9998887776"
-                                                    className="bg-slate-900 border-slate-700 text-white"
-                                                />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-bold text-drift-600 uppercase">Phone Number</Label>
+                                                    <Input
+                                                        value={walkInPhone}
+                                                        onChange={(e) => setWalkInPhone(e.target.value)}
+                                                        placeholder="9876543210"
+                                                        className="bg-white border-drift-200 focus:ring-ion-500"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-bold text-drift-600 uppercase">Email Address</Label>
+                                                    <Input
+                                                        value={walkInEmail}
+                                                        onChange={(e) => setWalkInEmail(e.target.value)}
+                                                        placeholder="john@example.com"
+                                                        className="bg-white border-drift-200 focus:ring-ion-500"
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-slate-500 uppercase font-bold">Email Address</Label>
-                                                <Input
-                                                    value={walkInEmail} onChange={(e) => setWalkInEmail(e.target.value)}
-                                                    placeholder="john@example.com" type="email"
-                                                    className="bg-slate-900 border-slate-700 text-white"
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-slate-500 uppercase font-bold">Address</Label>
-                                                <Input
-                                                    value={walkInAddress} onChange={(e) => setWalkInAddress(e.target.value)}
-                                                    placeholder="123 Main St, City"
-                                                    className="bg-slate-900 border-slate-700 text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </div>                </div>
                                 )}
                             </CardContent>
                         </Card>
 
                         {/* Items Section */}
-                        <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+                        <Card className="bg-white border-drift-200 shadow-sm border-t-4 border-t-ion-500">
                             <CardHeader className="flex flex-row items-center justify-between pb-4">
                                 <div>
-                                    <CardTitle className="flex items-center gap-2 text-white">
-                                        <ShoppingBag className="w-5 h-5 text-[#4FC3F7]" />
+                                    <CardTitle className="flex items-center gap-2 text-drift-900">
+                                        <ShoppingBag className="w-5 h-5 text-ion-500" />
                                         Invoice Items
                                     </CardTitle>
-                                    <CardDescription className="text-slate-400">Add memberships, products or other items</CardDescription>
+                                    <CardDescription className="text-drift-500">Add memberships, products or other items</CardDescription>
                                 </div>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={addItem}
-                                    className="border-[#4FC3F7] text-[#4FC3F7] hover:bg-[#4FC3F7] hover:text-slate-900 font-bold"
+                                    className="border-ion-500 text-ion-600 hover:bg-ion-50 font-bold"
                                 >
                                     <Plus className="w-4 h-4 mr-1" /> Add Item
                                 </Button>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-6 px-4 md:px-6">
                                 {items.map((item) => (
-                                    <div key={item.id} className="grid grid-cols-12 gap-4 items-end p-4 bg-slate-950/50 rounded-2xl border border-slate-800/50 group">
-                                        <div className="col-span-12 md:col-span-5 space-y-1.5">
-                                            <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Description</Label>
-                                            <Input
-                                                placeholder="e.g., Monthly Membership"
-                                                value={item.description}
-                                                onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                                                className="bg-slate-900 border-slate-700 text-white h-11"
-                                            />
-                                        </div>
-                                        <div className="col-span-4 md:col-span-2 space-y-1.5">
-                                            <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Qty</Label>
-                                            <Input
-                                                type="number"
-                                                value={item.quantity}
-                                                onChange={(e) => updateItem(item.id, 'quantity', Math.max(1, parseInt(e.target.value) || 0))}
-                                                className="bg-slate-900 border-slate-700 text-white h-11"
-                                            />
-                                        </div>
-                                        <div className="col-span-5 md:col-span-3 space-y-1.5">
-                                            <Label className="text-xs text-slate-500 uppercase font-bold tracking-wider">Unit Price</Label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
-                                                <Input
-                                                    type="number"
-                                                    value={item.unitPrice}
-                                                    onChange={(e) => updateItem(item.id, 'unitPrice', Math.max(0, parseFloat(e.target.value) || 0))}
-                                                    className="bg-slate-900 border-slate-700 text-white pl-8 h-11"
-                                                />
+                                    <div key={item.id} className="p-4 bg-drift-50/50 rounded-2xl border border-drift-200 group space-y-4 relative">
+                                        <div className="flex flex-col md:grid md:grid-cols-12 gap-4">
+                                            <div className="md:col-span-4 space-y-1.5">
+                                                <Label className="text-[10px] text-drift-500 uppercase font-black tracking-wider">Item Category</Label>
+                                                <Select
+                                                    value={item.type}
+                                                    onValueChange={(val) => updateItem(item.id, 'type', val)}
+                                                >
+                                                    <SelectTrigger className="bg-white border-drift-200 h-10">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="MEMBERSHIP">Membership Plan</SelectItem>
+                                                        <SelectItem value="PRODUCT">Inventory Product</SelectItem>
+                                                        <SelectItem value="OTHER">Generic / Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="md:col-span-8 space-y-1.5">
+                                                <Label className="text-[10px] text-drift-500 uppercase font-black tracking-wider">
+                                                    {item.type === 'MEMBERSHIP' ? 'Select Plan' : item.type === 'PRODUCT' ? 'Select Product' : 'Description'}
+                                                </Label>
+                                                {item.type === 'OTHER' ? (
+                                                    <Input
+                                                        placeholder="e.g., Personal Training Session"
+                                                        value={item.description}
+                                                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                                                        className="bg-white border-drift-200 h-10"
+                                                    />
+                                                ) : (
+                                                    <Select
+                                                        value={item.referenceId}
+                                                        onValueChange={(val) => updateItem(item.id, 'referenceId', val)}
+                                                    >
+                                                        <SelectTrigger className="bg-white border-drift-200 h-10">
+                                                            <SelectValue placeholder={item.type === 'MEMBERSHIP' ? "Choose Plan" : "Choose Product"} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {item.type === 'MEMBERSHIP' ? (
+                                                                membershipPlans.map(p => (
+                                                                    <SelectItem key={p.id} value={p.id}>{p.name} - ₹{Number(p.price)}</SelectItem>
+                                                                ))
+                                                            ) : (
+                                                                products.map(p => (
+                                                                    <SelectItem key={p.id} value={p.id}>{p.name} (Stock: {p.stock}) - ₹{Number(p.price)}</SelectItem>
+                                                                ))
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="col-span-3 md:col-span-2 flex justify-end">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeItem(item.id)}
-                                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-11 w-11 rounded-xl"
-                                                disabled={items.length === 1}
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </Button>
+
+                                        <div className="flex flex-row md:grid md:grid-cols-12 gap-4 items-end">
+                                            <div className="flex-1 md:col-span-3 space-y-1.5">
+                                                <Label className="text-[10px] text-drift-500 uppercase font-black tracking-wider">Qty</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateItem(item.id, 'quantity', Math.max(1, parseInt(e.target.value) || 0))}
+                                                    className="bg-white border-drift-200 h-10 font-bold"
+                                                />
+                                            </div>
+                                            <div className="flex-[2] md:col-span-5 space-y-1.5">
+                                                <Label className="text-[10px] text-drift-500 uppercase font-black tracking-wider">Unit Price (₹)</Label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-drift-400 font-bold">₹</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={item.unitPrice}
+                                                        onChange={(e) => updateItem(item.id, 'unitPrice', Math.max(0, parseFloat(e.target.value) || 0))}
+                                                        className="bg-white border-drift-200 pl-8 h-10 font-black text-ion-600"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="md:col-span-4 flex justify-end">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => removeItem(item.id)}
+                                                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 font-bold h-10 px-3 md:px-4 rounded-xl transition-colors shrink-0"
+                                                    disabled={items.length === 1}
+                                                >
+                                                    <Trash2 className="w-4 h-4 md:mr-2" />
+                                                    <span className="hidden md:inline">Remove</span>
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -220,42 +291,91 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                     </div>
 
                     <div className="space-y-8">
-                        <Card className="bg-slate-900 border-slate-800 shadow-2xl sticky top-24">
+                        <Card className="bg-white border-drift-200 shadow-sm border-t-4 border-t-ion-500 sticky top-24">
                             <CardHeader>
-                                <CardTitle className="text-white">Summary</CardTitle>
+                                <CardTitle className="text-drift-900">Summary</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-slate-400 font-medium">
-                                        <span>Subtotal</span>
-                                        <span>₹{subtotal.toLocaleString()}</span>
+                                <div className="space-y-4 pt-4 border-t border-drift-100">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-drift-500 font-medium">Subtotal</span>
+                                        <span className="text-drift-900 font-bold">₹{subtotal.toLocaleString()}</span>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs text-slate-500 uppercase font-bold">Discount (₹)</Label>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-drift-500 uppercase tracking-wider">Discount (₹)</Label>
                                         <Input
                                             type="number"
                                             value={discount}
-                                            onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                                            className="bg-slate-950 border-slate-700 text-white h-10"
+                                            onChange={(e) => setDiscount(Number(e.target.value))}
+                                            className="bg-drift-50 border-drift-200 focus:ring-ion-500 h-10 font-bold text-ion-600"
                                         />
                                     </div>
-                                    <div className="flex justify-between text-slate-400 font-medium pt-1">
-                                        <span>GST ({clampedTaxPercentage}%)</span>
-                                        <span>₹{taxAmount.toLocaleString()}</span>
+                                    <div className="flex justify-between items-center pt-4 border-t border-drift-200">
+                                        <span className="text-drift-900 font-black uppercase tracking-tight">Total Amount</span>
+                                        <span className="text-2xl font-black text-ion-600">₹{total.toLocaleString()}</span>
                                     </div>
-                                    <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
-                                        <span className="text-lg font-bold text-white">Total Amount</span>
-                                        <span className="text-2xl font-black text-[#4FC3F7]">₹{total.toLocaleString()}</span>
-                                    </div>
-                                </div>
 
+                                    {/* Payment Status */}
+                                    <div className="space-y-2 pt-4 border-t border-drift-100">
+                                        <Label className="text-[10px] font-bold text-drift-500 uppercase tracking-wider">Payment Status</Label>
+                                        <Select value={paymentStatus} onValueChange={(val: 'PAID' | 'PARTIAL' | 'PENDING') => {
+                                            setPaymentStatus(val)
+                                            if (val === 'PAID') setAmountPaid(total)
+                                            if (val === 'PENDING') setAmountPaid(0)
+                                        }}>
+                                            <SelectTrigger className="bg-drift-50 border-drift-200 h-10 font-bold">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="PAID">Paid in Full</SelectItem>
+                                                <SelectItem value="PARTIAL">Partial Payment</SelectItem>
+                                                <SelectItem value="PENDING">Pending</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {paymentStatus === 'PARTIAL' && (
+                                        <div className="space-y-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Amount Paid Now (₹)</Label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500 font-bold">₹</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={amountPaid}
+                                                        onChange={(e) => setAmountPaid(Math.min(total, Math.max(0, Number(e.target.value))))}
+                                                        className="bg-white border-amber-200 pl-8 h-10 font-black text-amber-700 focus:ring-amber-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-amber-600 font-medium">Balance Due</span>
+                                                <span className="text-amber-700 font-black text-lg">₹{Math.max(0, total - amountPaid).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {paymentStatus === 'PENDING' && (
+                                        <div className="p-3 bg-rose-50 rounded-xl border border-rose-200">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-rose-600 font-medium">Full Amount Pending</span>
+                                                <span className="text-rose-700 font-black text-lg">₹{total.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-white border-drift-200 shadow-sm border-t-4 border-t-ion-500">
+                            <CardContent className="pt-6 space-y-6">
                                 <div className="space-y-3">
-                                    <Label className="text-xs font-bold text-slate-500 uppercase">Payment Method</Label>
+                                    <Label className="text-xs font-bold text-drift-500 uppercase">Payment Method</Label>
                                     <div className="grid grid-cols-2 gap-3">
                                         <Button
                                             type="button"
                                             variant={paymentMethod === 'CASH' ? 'default' : 'outline'}
-                                            className={paymentMethod === 'CASH' ? 'bg-[#4FC3F7] text-slate-900 hover:bg-[#4FC3F7]/90' : 'border-slate-700 hover:bg-slate-800 text-white'}
+                                            className={paymentMethod === 'CASH' ? 'bg-ion-500 text-white hover:bg-ion-600' : 'border-drift-200 hover:bg-drift-50 text-drift-700'}
                                             onClick={() => setPaymentMethod('CASH')}
                                         >
                                             Cash
@@ -263,7 +383,7 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                         <Button
                                             type="button"
                                             variant={paymentMethod === 'UPI' ? 'default' : 'outline'}
-                                            className={paymentMethod === 'UPI' ? 'bg-[#4FC3F7] text-slate-900 hover:bg-[#4FC3F7]/90' : 'border-slate-700 hover:bg-slate-800 text-white'}
+                                            className={paymentMethod === 'UPI' ? 'bg-ion-500 text-white hover:bg-ion-600' : 'border-drift-200 hover:bg-drift-50 text-drift-700'}
                                             onClick={() => setPaymentMethod('UPI')}
                                         >
                                             UPI
@@ -272,22 +392,28 @@ export default function NewInvoiceForm({ members, taxPercentage = 18 }: { member
                                 </div>
 
                                 <Button
-                                    className="w-full bg-[#4FC3F7] hover:bg-[#4FC3F7]/90 text-slate-900 font-bold h-12 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-ion-500 hover:bg-ion-600 text-white font-black h-12 text-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
                                     disabled={isSubmitting || !isValid}
                                     onClick={async () => {
                                         setIsSubmitting(true)
                                         try {
                                             const result = await createInvoice({
-                                                memberId: selectedMember === 'WALK-IN' ? undefined : (selectedMember || undefined),
-                                                walkInName: selectedMember === 'WALK-IN' ? walkInName.trim() || undefined : undefined,
-                                                walkInPhone: selectedMember === 'WALK-IN' ? walkInPhone.trim() || undefined : undefined,
-                                                walkInEmail: selectedMember === 'WALK-IN' ? walkInEmail.trim() || undefined : undefined,
-                                                walkInAddress: selectedMember === 'WALK-IN' ? walkInAddress.trim() || undefined : undefined,
+                                                memberId: selectedMember === 'WALK-IN' || !selectedMember ? undefined : selectedMember,
+                                                walkInName: (selectedMember === 'WALK-IN' || !selectedMember) ? walkInName.trim() || "Walk-in Customer" : undefined,
+                                                walkInPhone: (selectedMember === 'WALK-IN' || !selectedMember) ? walkInPhone.trim() || undefined : undefined,
+                                                walkInEmail: (selectedMember === 'WALK-IN' || !selectedMember) ? walkInEmail.trim() || undefined : undefined,
+                                                walkInAddress: (selectedMember === 'WALK-IN' || !selectedMember) ? walkInAddress.trim() || undefined : undefined,
                                                 paymentMethod,
-                                                items,
+                                                paymentStatus,
+                                                amountPaid: paymentStatus === 'PARTIAL' ? amountPaid : undefined,
+                                                items: items.map(item => ({
+                                                    description: item.description,
+                                                    quantity: item.quantity,
+                                                    unitPrice: item.unitPrice,
+                                                    type: item.type
+                                                })),
                                                 discount,
-                                                taxPercentage: clampedTaxPercentage,
-                                                // taxAmount is intentionally omitted: server recomputes from taxPercentage
+                                                taxPercentage: 0,
                                             }) as { success: boolean, id?: string, error?: string }
 
                                             if (result?.error) {

@@ -1,57 +1,55 @@
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 export default function AttendanceLoading() {
     return (
-        <div
-            className="container mx-auto p-8 space-y-6"
-            aria-busy="true"
-            aria-live="polite"
-        >
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="space-y-2">
-                    <Skeleton className="h-10 w-[200px]" />
-                    <Skeleton className="h-4 w-[300px]" />
+        <div className="flex-1 space-y-4 p-8 pt-6" aria-busy="true" aria-live="polite">
+            <div className="flex items-center justify-between space-y-2">
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-10 rounded-md" />
+                    <Skeleton className="h-9 w-[150px]" />
                 </div>
-                <Skeleton className="h-10 w-[160px] rounded-md" />
+                <div className="flex items-center space-x-2">
+                    <Skeleton className="h-10 w-[160px] rounded-md" />
+                </div>
             </div>
 
-            {/* Search bar skeleton */}
-            <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
-                <Skeleton className="h-10 flex-1" />
-                <Skeleton className="h-10 w-[120px]" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Skeleton className="h-5 w-[120px]" />
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-8 w-[60px] mb-2" />
+                        <Skeleton className="h-4 w-[150px]" />
+                    </CardContent>
+                </Card>
             </div>
 
-            {/* Table skeleton */}
-            <div className="rounded-md border bg-white overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="bg-slate-50/50">
-                            <TableHead><Skeleton className="h-4 w-[100px]" /></TableHead>
-                            <TableHead><Skeleton className="h-4 w-[100px]" /></TableHead>
-                            <TableHead><Skeleton className="h-4 w-[120px]" /></TableHead>
-                            <TableHead><Skeleton className="h-4 w-[80px]" /></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-[150px]" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-[140px]" /></TableCell>
-                                <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
-                            </TableRow>
+            <Card className="col-span-4">
+                <CardHeader>
+                    <Skeleton className="h-6 w-[150px]" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                                <div className="flex items-center gap-4">
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-5 w-[140px]" />
+                                        <Skeleton className="h-4 w-[100px]" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Skeleton className="h-6 w-[70px] rounded-full" />
+                                </div>
+                            </div>
                         ))}
-                    </TableBody>
-                </Table>
-            </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             <span className="sr-only">Loading attendance records...</span>
         </div>

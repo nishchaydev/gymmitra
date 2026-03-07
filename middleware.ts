@@ -5,13 +5,16 @@ import { updateSession } from '@/lib/supabase/middleware'
 export async function middleware(request: NextRequest) {
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
+    const isDev = process.env.NODE_ENV === 'development';
+    const scriptSrc = `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ""}`;
+
     // Create CSP header
     const cspHeader = `
         default-src 'self';
-        script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
-        style-src 'self' 'unsafe-inline';
+        ${scriptSrc};
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         img-src 'self' blob: data: https:;
-        font-src 'self';
+        font-src 'self' https://fonts.gstatic.com;
         connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://sentry.io;
         object-src 'none';
         base-uri 'self';

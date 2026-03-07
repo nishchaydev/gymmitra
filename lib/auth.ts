@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { GymProfile, Role } from '@prisma/client'
 import { NextResponse } from 'next/server'
+import { cache } from 'react'
 
 export type AuthContext = {
     gym: GymProfile;
@@ -13,8 +14,9 @@ export type AuthContext = {
 /**
  * Gets the current authenticated user's context (Gym and Role).
  * Required for all API endpoints and protected pages.
+ * Wrapped in React cache() to memoize result per-request.
  */
-export async function getAuthGym(): Promise<AuthContext | null> {
+export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.getUser()
 
@@ -52,7 +54,7 @@ export async function getAuthGym(): Promise<AuthContext | null> {
     }
 
     return null
-}
+})
 
 /**
  * Checks if the authenticated user's role is in the allowed list.
@@ -67,3 +69,4 @@ export function checkRole(auth: AuthContext, allowedRoles: string[]): NextRespon
     }
     return null
 }
+

@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 
+// No force-dynamic
+
 // Schema for member creation
 const memberCreateSchema = z.object({
     name: z.string().min(2, "Name is required"),

@@ -8,6 +8,7 @@ import { useAtRiskQuery } from '@/hooks/use-at-risk'
 import { AlertCircle, CalendarClock, MessageCircle, Loader2 } from 'lucide-react'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
 interface AtRiskMembersProps {
@@ -109,28 +110,35 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
     const { count, members } = data
 
     return (
-        <Card className="h-full border-slate-200 shadow-sm flex flex-col">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+        <Card className="h-full border-drift-200 shadow-sm flex flex-col bg-white rounded-xl overflow-hidden">
+            <CardHeader className="pb-3 border-b border-drift-100 flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle className="text-lg font-bold flex items-center gap-2 text-rose-600">
-                        <AlertCircle className="h-5 w-5" />
-                        At Risk Members
-                    </CardTitle>
-                    <CardDescription>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="w-1 h-5 bg-red-500 rounded-full" />
+                        <CardTitle className="text-base font-semibold text-red-500">
+                            At Risk Members
+                        </CardTitle>
+                        {count > 0 && (
+                            <span className="bg-red-50 text-red-500 rounded-full px-2 py-0.5 text-xs font-medium">
+                                {count}
+                            </span>
+                        )}
+                    </div>
+                    <CardDescription className="text-sm text-drift-400">
                         {count > 0 ? (
-                            <span className="font-semibold text-rose-600">{count} member{count !== 1 ? 's' : ''} at risk this week</span>
-                        ) : (
                             <span>Active members missing for {days}+ days</span>
+                        ) : (
+                            <span>All members are active</span>
                         )}
                     </CardDescription>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <Select value={days.toString()} onValueChange={onDaysChange}>
-                        <SelectTrigger className="w-[110px] h-8 text-xs font-medium">
+                        <SelectTrigger className="w-[110px] h-9 text-xs font-medium border-drift-200 bg-drift-50/50">
                             <SelectValue placeholder="Days" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl border-drift-200 shadow-xl">
                             <SelectItem value="7">7 Days</SelectItem>
                             <SelectItem value="14">14 Days</SelectItem>
                             <SelectItem value="21">21 Days</SelectItem>
@@ -139,49 +147,58 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
                 </div>
             </CardHeader>
 
-            <CardContent className="p-0 flex-grow max-h-[350px] overflow-y-auto custom-scrollbar">
+            <CardContent className="p-0 flex-grow max-h-[400px] overflow-y-auto custom-scrollbar">
                 {count === 0 ? (
-                    <div className="h-full min-h-[250px] flex flex-col items-center justify-center text-center p-6 text-slate-500">
-                        <CalendarClock className="h-10 w-10 text-emerald-100 mb-3" />
-                        <p className="font-medium text-slate-900">All good!</p>
-                        <p className="text-sm">No active members have been absent for over {days} days.</p>
+                    <div className="h-full min-h-[250px] flex flex-col items-center justify-center text-center p-6 text-drift-400">
+                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+                            <CalendarClock className="h-8 w-8 text-emerald-400" />
+                        </div>
+                        <p className="font-semibold text-drift-900">System Healthy</p>
+                        <p className="text-xs max-w-[200px] mx-auto mt-1">No active members have been absent for over {days} days.</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-100 relative">
+                    <div className="divide-y divide-drift-100 relative">
                         {isLoading && (
-                            <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-ion-500" />
                             </div>
                         )}
                         {members.slice(0, 10).map((member) => {
                             const link = member.phone ? getWhatsAppLink(member.phone, templates.inactivityNudge(member.name, member.daysInactive, gymName)) : '';
 
+                            // Urgency-based badge colors
+                            const badgeStyle = member.daysInactive >= 300
+                                ? "bg-red-50 text-red-500"
+                                : member.daysInactive >= 30
+                                    ? "bg-amber-50 text-amber-600"
+                                    : "bg-drift-100 text-drift-500";
+
                             return (
-                                <div key={member.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+                                <div key={member.id} className="p-4 flex items-center justify-between hover:bg-drift-50/80 transition-all duration-150 group">
                                     <div className="space-y-1">
-                                        <Link href={`/${slug}/members/${member.id}`} className="font-medium text-sm text-slate-900 hover:text-primary transition-colors line-clamp-1">
+                                        <Link href={`/${slug}/members/${member.id}`} className="font-semibold text-sm text-drift-900 hover:text-ion-500 transition-colors line-clamp-1 block">
                                             {member.name}
                                         </Link>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-[10px] font-bold text-rose-600 bg-rose-50 border-rose-200 uppercase tracking-widest px-1.5 py-0 h-4">
+                                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium transition-all duration-300", badgeStyle)}>
                                                 {member.daysInactive}d ago
-                                            </Badge>
+                                            </span>
                                             {member.lastVisit && (
-                                                <span className="text-[10px] text-slate-400">
-                                                    Last check-in: {new Date(member.lastVisit).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                <span className="text-[10px] text-drift-400 font-medium">
+                                                    Check-in: {new Date(member.lastVisit).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
                                     {link ? (
-                                        <Button size="sm" variant="outline" className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800" asChild>
+                                        <Button size="sm" variant="outline" className="h-9 border-ion-500 text-ion-500 hover:bg-ion-50 hover:text-ion-600 rounded-lg text-sm px-4 font-medium transition-all duration-150" asChild>
                                             <a href={link} target="_blank" rel="noopener noreferrer">
-                                                <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Nudge
+                                                <MessageCircle className="h-4 w-4 mr-2" /> Nudge
                                             </a>
                                         </Button>
                                     ) : (
-                                        <Badge variant="secondary" className="text-[10px] uppercase font-bold text-slate-400">No Phone</Badge>
+                                        <div className="px-2 py-1 rounded bg-drift-50 text-[10px] font-bold text-drift-300 uppercase tracking-widest">No Phone</div>
                                     )}
                                 </div>
                             )

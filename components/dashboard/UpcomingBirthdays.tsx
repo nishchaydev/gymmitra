@@ -47,7 +47,7 @@ function getDaysUntil(dateStr: string, diffDaysFallback?: number): string | null
     if (isNaN(dayInt)) return null
 
     const today = new Date(); today.setHours(0, 0, 0, 0)
-    let birthday = new Date(today.getFullYear(), months[monthName], dayInt)
+    const birthday = new Date(today.getFullYear(), months[monthName], dayInt)
     birthday.setHours(0, 0, 0, 0)
     if (birthday < today) birthday.setFullYear(today.getFullYear() + 1)
 
@@ -57,7 +57,7 @@ function getDaysUntil(dateStr: string, diffDaysFallback?: number): string | null
     return `In ${diffDaysVal} days`
 }
 
-export async function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: Props) {
+export function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: Props) {
     let birthdays: BirthdayEntry[] = data || []
 
     if (isDemo && (!data || data.length === 0)) {
@@ -65,49 +65,48 @@ export async function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: 
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Cake className="h-5 w-5 text-primary" />
+        <Card className="border-drift-200 shadow-sm rounded-xl overflow-hidden bg-white">
+            <CardHeader className="border-l-4 border-l-indigo-500 pl-4 bg-indigo-50/30">
+                <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                    <Cake className="h-5 w-5 text-indigo-500" />
                     Upcoming Birthdays
                 </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
                 {birthdays.length === 0 ? (
-                    <p className="text-sm text-slate-400 font-medium py-4 text-center">No upcoming birthdays</p>
+                    <div className="py-8 text-center bg-drift-50/50 rounded-xl border border-dashed border-drift-200">
+                        <p className="text-sm text-drift-400 font-medium">No upcoming birthdays</p>
+                    </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         {birthdays.map((birthday, idx) => (
-                            <div key={idx} className="flex items-center">
-                                <Avatar className="h-9 w-9">
+                            <div key={idx} className="flex items-center group">
+                                <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-drift-100">
                                     {birthday.img && <AvatarImage src={birthday.img} alt={birthday.name} />}
-                                    <AvatarFallback>{(() => { const trimmed = birthday.name?.trim(); return trimmed ? trimmed.split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2) : '?' })()} </AvatarFallback>
+                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-sm">
+                                        {(() => { const trimmed = birthday.name?.trim(); return trimmed ? trimmed.split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2) : '?' })()}
+                                    </AvatarFallback>
                                 </Avatar>
-                                <div className="ml-4 space-y-1">
-                                    <p className="text-sm font-medium leading-none">{birthday.name}</p>
-                                    <p className="text-sm text-muted-foreground">
+                                <div className="ml-3 space-y-0.5">
+                                    <p className="text-sm font-bold text-slate-900 leading-none">{birthday.name}</p>
+                                    <p className="text-[10px] text-drift-400 font-bold uppercase tracking-tight">
                                         Member • {birthday.date}
                                     </p>
                                 </div>
-                                <div className="ml-auto flex items-center gap-3">
-                                    <div className="font-medium text-primary text-xs text-right hidden sm:block">
+                                <div className="ml-auto flex flex-col items-end gap-1.5">
+                                    <div className="text-indigo-600 font-bold text-[10px] uppercase tracking-wider whitespace-nowrap">
                                         {getDaysUntil(birthday.date, birthday.diffDays)}
                                     </div>
-                                    {birthday.phone ? (
+                                    {birthday.phone && (
                                         <Link
                                             href={getWhatsAppLink(birthday.phone, templates.birthdayWish(birthday.name, gymName))}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
-                                            <Button size="sm" className="h-7 px-2 text-xs bg-[#25D366] hover:bg-[#128C7E] text-white">
-                                                <MessageCircle className="h-3 w-3 mr-1" />
-                                                Wish!
+                                            <Button size="sm" className="h-7 px-4 text-[10px] rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition-all duration-150 shadow-sm active:scale-95 uppercase tracking-wider">
+                                                Wish! 🎂
                                             </Button>
                                         </Link>
-                                    ) : (
-                                        <div className="font-medium text-primary text-xs text-right sm:hidden">
-                                            {getDaysUntil(birthday.date, birthday.diffDays)}
-                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -34,9 +34,10 @@ export default function MembersLoading() {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-slate-50/50 dark:bg-slate-800/10">
-                            <TableHead><Skeleton className="h-4 w-[100px]" /></TableHead>
-                            <TableHead><Skeleton className="h-4 w-[100px]" /></TableHead>
+                            <TableHead><Skeleton className="h-4 w-[150px]" /></TableHead>
+                            <TableHead><Skeleton className="h-4 w-[120px]" /></TableHead>
                             <TableHead><Skeleton className="h-4 w-[80px]" /></TableHead>
+                            <TableHead><Skeleton className="h-4 w-[100px]" /></TableHead>
                             <TableHead><Skeleton className="h-4 w-[120px]" /></TableHead>
                             <TableHead className="text-right"><Skeleton className="h-4 w-[60px] ml-auto" /></TableHead>
                         </TableRow>
@@ -48,6 +49,7 @@ export default function MembersLoading() {
                                 <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
                                 <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-[140px]" /></TableCell>
                                 <TableCell className="text-right">
                                     <Skeleton className="h-8 w-[60px] ml-auto rounded-md" />
                                 </TableCell>

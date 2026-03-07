@@ -26,7 +26,7 @@ export function LiveDemo() {
                     </MotionWrapper>
                     <MotionWrapper delay={0.1}>
                         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-4 font-display">
-                            Don't just take our word for it. <span className="text-primary">Try it.</span>
+                            Don&apos;t just take our word for it. <span className="text-primary">Try it.</span>
                         </h2>
                     </MotionWrapper>
                     <MotionWrapper delay={0.2}>

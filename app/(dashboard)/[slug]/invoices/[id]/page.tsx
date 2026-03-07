@@ -15,7 +15,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
     if (!user && !isDemoMode) redirect("/login")
 
-    let invoice: any;
+    let invoice: any; // Using any for large combined object, but could be refined
 
     if (id.startsWith("demo-")) {
         const demoId = id.replace("demo-", "")
@@ -122,12 +122,25 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
         if (!dbInvoice) notFound()
 
-        if (!isDemoMode && (dbInvoice as any).gym.userId !== user?.id) {
-            const actualSlug = slug && slug !== 'dashboard' ? slug : ((dbInvoice as any).gym.slug || '');
+        const gymData = dbInvoice.gym as any;
+        if (!isDemoMode && gymData.userId !== user?.id) {
+            const actualSlug = slug && slug !== 'dashboard' ? slug : (gymData.slug || '');
             redirect(actualSlug ? `/${actualSlug}/dashboard` : `/dashboard`);
         }
 
-        invoice = dbInvoice as any
+        invoice = {
+            ...dbInvoice,
+            subtotal: Number(dbInvoice.subtotal),
+            taxAmount: Number(dbInvoice.taxAmount || 0),
+            taxPercentage: Number(dbInvoice.taxPercentage || 0),
+            discount: Number(dbInvoice.discount || 0),
+            total: Number(dbInvoice.total),
+            items: dbInvoice.items.map(item => ({
+                ...item,
+                unitPrice: Number(item.unitPrice),
+                amount: Number(item.amount),
+            }))
+        } as any
     }
 
     return (

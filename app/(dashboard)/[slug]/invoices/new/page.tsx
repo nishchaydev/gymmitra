@@ -16,6 +16,12 @@ export default async function NewInvoicePage() {
     if (!gym) redirect("/onboarding")
 
     const members = await prisma.member.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } })
+    const dbMembershipPlans = await prisma.membershipPlan.findMany({ where: { gymId: gym.id, isActive: true }, orderBy: { name: 'asc' } })
+    const dbProducts = await prisma.product.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } })
+
+    // Convert Decimals to numbers for client components
+    const membershipPlans = dbMembershipPlans.map(p => ({ ...p, price: Number(p.price) }))
+    const products = dbProducts.map(p => ({ ...p, price: Number(p.price) }))
 
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
@@ -27,7 +33,8 @@ export default async function NewInvoicePage() {
             </div>
             <NewInvoiceForm
                 members={members}
-                taxPercentage={gym.taxPercentage != null ? Number(gym.taxPercentage) : 18}
+                membershipPlans={membershipPlans}
+                products={products}
             />
         </div>
     )

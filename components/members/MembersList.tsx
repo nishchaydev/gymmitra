@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Users, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
+import MembersLoading from '@/app/(dashboard)/[slug]/members/loading'
 
 interface MembersListProps {
     slug: string
@@ -17,24 +18,31 @@ interface MembersListProps {
     status?: string
     page: number
     take: number
-    initialData: {
-        members: any[]
-        totalCount: number
-        page: number
-        hasMore: boolean
-    }
 }
 
-export function MembersList({ slug, query, status, page, take, initialData }: MembersListProps) {
-    const { data, isLoading, isFetching } = useMembers({
+export function MembersList({ slug, query, status, page, take }: MembersListProps) {
+    const { data, isLoading, isFetching, error } = useMembers({
         q: query || undefined,
         status: status || undefined,
         page,
         take,
     })
 
-    const result = data || initialData
-    const { members, totalCount, hasMore } = result
+    if (isLoading) {
+        return <MembersLoading />
+    }
+
+    if (error) {
+        return (
+            <Card className="border-red-200 bg-red-50/50">
+                <CardContent className="pt-6 text-center text-red-600">
+                    <p className="font-medium">Failed to load members.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    const { members = [], totalCount = 0, hasMore = false } = data || {}
 
     return (
         <Card className="border-slate-200 relative">
@@ -72,14 +80,40 @@ export function MembersList({ slug, query, status, page, take, initialData }: Me
                             {members.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="h-auto p-0 border-0">
-                                        <EmptyState
-                                            icon={Users}
-                                            title="No members yet"
-                                            description="Start building your community by adding your first gym member."
-                                            actionLabel="Add First Member"
-                                            actionHref={`/${slug}/members/new`}
-                                            className="border-0 bg-transparent rounded-none"
-                                        />
+                                        {(() => {
+                                            let emptyTitle = "No members yet"
+                                            let emptyDescription = "Start building your community by adding your first gym member."
+                                            let showAction = true
+
+                                            if (query) {
+                                                emptyTitle = "No results found"
+                                                emptyDescription = `No members match "${query}". Try a different search term.`
+                                                showAction = false
+                                            } else if (status === 'ACTIVE') {
+                                                emptyTitle = "No active members"
+                                                emptyDescription = "There are currently no members with an active membership."
+                                                showAction = false
+                                            } else if (status === 'EXPIRED') {
+                                                emptyTitle = "No expired memberships"
+                                                emptyDescription = "Great news! No members have an expired membership right now."
+                                                showAction = false
+                                            } else if (status === 'INACTIVE') {
+                                                emptyTitle = "No inactive members"
+                                                emptyDescription = "There are no members currently marked as inactive."
+                                                showAction = false
+                                            }
+
+                                            return (
+                                                <EmptyState
+                                                    icon={Users}
+                                                    title={emptyTitle}
+                                                    description={emptyDescription}
+                                                    actionLabel={showAction ? "Add First Member" : undefined}
+                                                    actionHref={showAction ? `/${slug}/members/new` : undefined}
+                                                    className="border-0 bg-transparent rounded-none"
+                                                />
+                                            )
+                                        })()}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -93,9 +127,7 @@ export function MembersList({ slug, query, status, page, take, initialData }: Me
                                         <TableCell>{member.phone}</TableCell>
                                         <TableCell>
                                             <Badge variant={
-                                                member.status === 'ACTIVE' ? 'default' :
-                                                    member.status === 'PENDING' ? 'secondary' :
-                                                        member.status === 'EXPIRED' ? 'destructive' : 'secondary'
+                                                member.status === 'ACTIVE' ? 'default' : 'destructive'
                                             }>
                                                 {member.status}
                                             </Badge>

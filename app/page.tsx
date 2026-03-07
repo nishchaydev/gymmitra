@@ -19,8 +19,80 @@ const Contact = dynamic(() => import("@/components/landing/Contact").then(m => m
 const AboutEMitra = dynamic(() => import("@/components/landing/AboutEMitra").then(m => m.AboutEMitra), { loading: () => <div className="min-h-[400px] animate-pulse bg-slate-900 w-full" /> })
 
 export default function Home() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        name: 'Gym Mitra',
+        alternateName: ['GymMitra', 'Gym eMitra', 'Gym Mitra ERP'],
+        url: 'https://gym.emitra.dev',
+        description: 'Gym Mitra (GymMitra) by eMitra Technologies – India\'s #1 gym management software with WhatsApp automation, billing, and member management.',
+        parentOrganization: {
+          '@type': 'Organization',
+          name: 'eMitra Technologies',
+          url: 'https://emitra.dev',
+        },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: 'Gym Mitra',
+        alternateName: ['GymMitra', 'Gym eMitra'],
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'INR',
+          description: '14-day free trial',
+        },
+        description: 'Gym Mitra – India\'s #1 gym management software. Automate billing, WhatsApp reminders, attendance tracking, and member management.',
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: '4.9',
+          ratingCount: '50',
+        },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What is Gym Mitra (GymMitra)?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Gym Mitra, also known as GymMitra or Gym eMitra, is India\'s #1 gym management software built by eMitra Technologies. It automates member management, billing, WhatsApp reminders, attendance tracking, and invoicing – helping gym owners save 20+ hours every month.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Do I need to pay a setup fee?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'No. There are no hidden setup fees. You only pay the subscription price associated with your membership tier.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Does Gym Mitra work with my biometric machine?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'GymMitra is compatible with most standard essl and Realtime biometric devices. Contact our support to verify your specific model.',
+            },
+          },
+        ],
+      },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-primary-100 selection:text-primary-900">
+      {/* JSON-LD Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <Navbar />
       <main>
         {/* 1. The Hook - Problem & Promise */}
@@ -79,7 +151,7 @@ export default function Home() {
                   </div>
                 </Link>
                 <p className="mt-6 text-slate-400 leading-relaxed max-w-sm font-medium">
-                  The most advanced ERP solution for modern gyms in India.
+                  Gym Mitra (Gym eMitra) – The most advanced ERP solution for modern gyms in India.
                   Streamlining operations and accelerating growth for 50+ fitness businesses.
                 </p>
               </div>

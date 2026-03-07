@@ -35,7 +35,7 @@ export function Advantage() {
                     </MotionWrapper>
                     <MotionWrapper delay={0.1}>
                         <p className="text-xl text-slate-600 font-medium leading-relaxed">
-                            Running a gym manually isn't just hard work. It's expensive.
+                            Running a gym manually isn&apos;t just hard work. It&apos;s expensive.
                         </p>
                     </MotionWrapper>
                 </div>
