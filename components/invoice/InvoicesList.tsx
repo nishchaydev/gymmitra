@@ -34,7 +34,8 @@ export function InvoicesList({ slug, query, status, page, take, isDemo, initialD
         status: status || undefined,
         page,
         take,
-    })
+        initialData,
+    } as any)
 
     const isPendingAndNoData = isLoading && !initialData
 
@@ -115,7 +116,7 @@ export function InvoicesList({ slug, query, status, page, take, isDemo, initialD
                                                 {invoice.paymentStatus}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>{format(new Date(invoice.issueDate), 'MMM d, yyyy')}</TableCell>
+                                        <TableCell>{invoice.issueDate ? format(new Date(invoice.issueDate), 'MMM d, yyyy') : '-'}</TableCell>
                                         <TableCell className="text-right font-bold">
                                             ₹{parseFloat(Number(invoice.total || 0).toString()).toLocaleString()}
                                         </TableCell>

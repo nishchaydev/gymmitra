@@ -88,7 +88,7 @@ export async function PUT(
             message: error.message,
             stack: error.stack
         })
-        return NextResponse.json({ error: 'Failed to update lead', details: error.message }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 })
     }
 }
 
@@ -132,6 +132,6 @@ export async function DELETE(
             message: error.message,
             stack: error.stack
         })
-        return NextResponse.json({ error: 'Failed to delete lead', details: error.message }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 })
     }
 }

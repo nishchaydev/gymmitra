@@ -227,7 +227,9 @@ export default async function MemberDetailPage({
                             ) : (
                                 <div className="text-center py-6">
                                     <p className="text-slate-500 mb-4 font-medium italic">No active subscription</p>
-                                    <Button size="sm" className="bg-primary hover:bg-primary-600 text-white font-bold rounded-full px-6">Assign Plan</Button>
+                                    <Button size="sm" asChild className="bg-primary hover:bg-primary-600 text-white font-bold rounded-full px-6">
+                                        <Link href={`/${slug}/invoices/new?memberId=${member.id}`}>Assign Plan</Link>
+                                    </Button>
                                 </div>
                             )}
                         </CardContent>

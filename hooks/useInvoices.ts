@@ -15,8 +15,8 @@ export function useInvoices(options: UseInvoicesOptions = {}) {
             const params = new URLSearchParams()
             if (options.q) params.set('q', options.q)
             if (options.status && options.status !== 'ALL') params.set('status', options.status)
-            if (options.page) params.set('page', options.page.toString())
-            if (options.take) params.set('take', options.take.toString())
+            if (options.page !== undefined) params.set('page', options.page.toString())
+            if (options.take !== undefined) params.set('take', options.take.toString())
             if (options.memberId) params.set('memberId', options.memberId)
 
             const response = await fetch(`/api/invoices?${params.toString()}`)

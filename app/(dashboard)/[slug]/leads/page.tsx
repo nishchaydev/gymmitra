@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useLeads } from '@/hooks/use-leads'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -60,11 +60,10 @@ export default function LeadsPage() {
     })
 
     // Search debounce
-    const handleSearch = (value: string) => {
-        setSearch(value)
-        const timeout = setTimeout(() => setDebouncedSearch(value), 300)
+    useEffect(() => {
+        const timeout = setTimeout(() => setDebouncedSearch(search), 300)
         return () => clearTimeout(timeout)
-    }
+    }, [search])
 
     // Create lead mutation
     const createMutation = useMutation({
@@ -75,8 +74,14 @@ export default function LeadsPage() {
                 body: JSON.stringify(data),
             })
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.error || 'Failed to create lead')
+                let errText = 'Failed to create lead'
+                try {
+                    const err = await res.json()
+                    errText = err.error || errText
+                } catch {
+                    try { errText = await res.text() || errText } catch { }
+                }
+                throw new Error(errText)
             }
             return res.json()
         },
@@ -101,8 +106,14 @@ export default function LeadsPage() {
                 body: JSON.stringify(data),
             })
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.error || 'Failed to update lead')
+                let errText = 'Failed to update lead'
+                try {
+                    const err = await res.json()
+                    errText = err.error || errText
+                } catch {
+                    try { errText = await res.text() || errText } catch { }
+                }
+                throw new Error(errText)
             }
             return res.json()
         },
@@ -118,8 +129,14 @@ export default function LeadsPage() {
         mutationFn: async (id: string) => {
             const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' })
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.error || 'Failed to delete lead')
+                let errText = 'Failed to delete lead'
+                try {
+                    const err = await res.json()
+                    errText = err.error || errText
+                } catch {
+                    try { errText = await res.text() || errText } catch { }
+                }
+                throw new Error(errText)
             }
             return res.json()
         },
@@ -160,7 +177,7 @@ export default function LeadsPage() {
     }
 
     const handleWhatsApp = (lead: any) => {
-        const gymName = 'your gym' // Will use gym context
+        const gymName = String(slug).split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
         const message = templates.leadFollowUp(lead.name, gymName, lead.planInterest || undefined)
         const link = getWhatsAppLink(lead.phone, message)
         window.open(link, '_blank')
@@ -265,7 +282,7 @@ export default function LeadsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-drift-400" />
                     <Input
                         value={search}
-                        onChange={(e) => handleSearch(e.target.value)}
+                        onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search by name, phone, email..."
                         className="pl-10 bg-white border-drift-200 h-10 md:h-11 w-full"
                     />

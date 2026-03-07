@@ -61,8 +61,9 @@ export function OutstandingBalances({ data, gymName, slug }: OutstandingBalances
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleWhatsApp(inv)}
-                                    className="h-9 w-9 text-green-600 hover:bg-green-50 rounded-full border border-green-100 shadow-sm"
+                                    className="h-9 w-9 text-green-600 hover:bg-green-50 rounded-full border border-green-100 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Send WhatsApp Nudge"
+                                    disabled={!(inv.member?.phone || inv.walkInPhone)}
                                 >
                                     <MessageCircle className="w-4 h-4" />
                                 </Button>

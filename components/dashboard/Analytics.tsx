@@ -6,7 +6,7 @@ import { MOCKUP_DATA } from "@/lib/showcase-data"
 
 const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
 
-export function Analytics({ isDemo = false, initialData }: { isDemo?: boolean, initialData?: { memberGrowth: any[], attendance: any[] } }) {
+export function Analytics({ isDemo = false, initialData }: { isDemo?: boolean, initialData?: { memberGrowth: any[], attendance: any[], isEstimated?: boolean } }) {
     const memberGrowthData = isDemo ? MOCKUP_DATA.analytics.memberGrowth : (initialData?.memberGrowth || [])
     const attendanceData = isDemo ? MOCKUP_DATA.analytics.attendance : (initialData?.attendance || [])
 
@@ -14,7 +14,12 @@ export function Analytics({ isDemo = false, initialData }: { isDemo?: boolean, i
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-1 md:col-span-2 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle>Member Growth</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        Member Growth
+                        {initialData?.isEstimated && !isDemo && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">Estimated</span>
+                        )}
+                    </CardTitle>
                     <CardDescription>
                         Total active members over the last 7 months.
                     </CardDescription>
@@ -35,7 +40,12 @@ export function Analytics({ isDemo = false, initialData }: { isDemo?: boolean, i
             </Card>
             <Card className="col-span-1 md:col-span-2 lg:col-span-3">
                 <CardHeader>
-                    <CardTitle>Peak Attendance</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        Peak Attendance
+                        {initialData?.isEstimated && !isDemo && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">Estimated</span>
+                        )}
+                    </CardTitle>
                     <CardDescription>
                         Average gym usage by time of day.
                     </CardDescription>

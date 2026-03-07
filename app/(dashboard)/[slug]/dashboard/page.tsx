@@ -215,16 +215,24 @@ export default async function DashboardPage({
             }),
             // Churn Raw Query
             prisma.$queryRaw`
+                WITH MonthlyActive AS (
+                    SELECT 
+                        date_trunc('month', "createdAt") as create_month,
+                        COUNT(*) as count
+                    FROM "Member"
+                    WHERE "gymId" = ${gym!.id} AND status NOT IN ('INACTIVE', 'EXPIRED')
+                    GROUP BY 1
+                )
                 SELECT 
-                    to_char(date_trunc('month', "updatedAt"), 'YYYY-MM-DD') as month,
-                    COUNT(*)::bigint as churned,
-                    (SELECT COUNT(*) FROM "Member" m2 WHERE m2."gymId" = ${gym!.id} AND m2."createdAt" <= date_trunc('month', "updatedAt") + interval '1 month')::bigint as total_active
-                FROM "Member"
-                WHERE "gymId" = ${gym!.id}
-                    AND status IN ('INACTIVE', 'EXPIRED')
-                    AND "updatedAt" >= ${startDate5Months}
-                GROUP BY 1
-                ORDER BY 1 ASC
+                    to_char(date_trunc('month', m."updatedAt"), 'YYYY-MM-DD') as month,
+                    COUNT(m.id)::bigint as churned,
+                    (SELECT COALESCE(SUM(count), 0)::bigint FROM MonthlyActive WHERE create_month <= date_trunc('month', m."updatedAt") + interval '1 month') as total_active
+                FROM "Member" m
+                WHERE m."gymId" = ${gym!.id}
+                    AND m.status IN ('INACTIVE', 'EXPIRED')
+                    AND m."updatedAt" >= ${startDate5Months}
+                GROUP BY date_trunc('month', m."updatedAt")
+                ORDER BY month ASC
             ` as Promise<{ month: string; churned: bigint; total_active: bigint }[]>,
             // Retention Raw Query
             prisma.$queryRaw`
@@ -478,6 +486,7 @@ export default async function DashboardPage({
                     <Analytics
                         isDemo={isDemo}
                         initialData={isDemo ? undefined : {
+                            isEstimated: true,
                             memberGrowth: monthlyRevenueData.map(d => ({ name: d.name, members: Math.floor(d.total / 1000) })), // Fallback logic as real member growth isn't fully implemented yet, but we'll pass something useful
                             attendance: dashboardData.weeklyAttendance?.map((a: any) => ({ name: a.day, morning: Number(a.count), evening: Math.floor(Number(a.count) / 2) })) || []
                         }}

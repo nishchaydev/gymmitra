@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 export default function AttendanceLoading() {
     return (
         <div className="flex-1 space-y-4 p-8 pt-6" aria-busy="true" aria-live="polite">
-            <div className="flex items-center justify-between space-y-2">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Skeleton className="h-10 w-10 rounded-md" />
                     <Skeleton className="h-9 w-[150px]" />
@@ -27,7 +27,7 @@ export default function AttendanceLoading() {
                 </Card>
             </div>
 
-            <Card className="col-span-4">
+            <Card>
                 <CardHeader>
                     <Skeleton className="h-6 w-[150px]" />
                 </CardHeader>

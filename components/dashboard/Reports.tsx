@@ -178,7 +178,11 @@ function RevenueReport({ initialData }: { initialData?: RevenueData[] }) {
     const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
-        if (initialData) return;
+        if (initialData) {
+            setData(Array.isArray(initialData) ? initialData : [])
+            setLoading(false)
+            return;
+        }
         fetch('/api/reports?type=revenue')
             .then(res => res.json())
             .then(data => {
@@ -222,7 +226,11 @@ function AttendanceReport({ initialData }: { initialData?: AttendanceData[] }) {
     const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
-        if (initialData) return;
+        if (initialData) {
+            setData(Array.isArray(initialData) ? initialData : [])
+            setLoading(false)
+            return;
+        }
         fetch('/api/reports?type=attendance')
             .then(res => res.json())
             .then(data => {
@@ -265,7 +273,15 @@ function ExpiringMembershipsReport({ initialData }: { initialData?: ExpiringMemb
     const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
-        if (initialData) return;
+        if (initialData) {
+            const processed = (Array.isArray(initialData) ? initialData : []).map(sub => {
+                const diff = new Date(sub.endDate).getTime() - new Date().getTime();
+                return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
+            });
+            setData(processed)
+            setLoading(false)
+            return;
+        }
         fetch('/api/reports?type=expiring')
             .then(res => res.json())
             .then(data => {

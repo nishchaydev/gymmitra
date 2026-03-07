@@ -4,7 +4,7 @@ import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { startOfToday, endOfToday, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
     try {

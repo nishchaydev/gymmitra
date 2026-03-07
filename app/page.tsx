@@ -49,8 +49,10 @@ export default function Home() {
         description: 'Gym Mitra – India\'s #1 gym management software. Automate billing, WhatsApp reminders, attendance tracking, and member management.',
         aggregateRating: {
           '@type': 'AggregateRating',
-          ratingValue: '4.9',
-          ratingCount: '50',
+          ratingValue: "4.9",
+          reviewCount: "50",
+          bestRating: "5",
+          worstRating: "1",
         },
       },
       {

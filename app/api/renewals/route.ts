@@ -4,7 +4,7 @@ import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { addDays, subDays } from 'date-fns'
 
-// No force-dynamic
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {

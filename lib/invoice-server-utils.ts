@@ -39,7 +39,7 @@ export async function generateInvoiceNumber(gymId: string, tx?: Prisma.Transacti
 
         // Safety check for overflow
         if (sequence.currentValue > 9999) {
-            console.warn(`[INVOICE_COUNTER_WARNING] Gym ${gymId} has exceeded 9999 invoices.`)
+            throw new Error(`Invoice counter for gym ${gymId} has exceeded 9999.`);
         }
 
         return `${prefix}-INV-${counter}`

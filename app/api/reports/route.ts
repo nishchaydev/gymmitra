@@ -4,7 +4,7 @@ import { startOfMonth, subMonths, format, startOfDay, subDays, endOfDay, eachMon
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 async function getAuthenticatedGym() {
     const auth = await getAuthGym()

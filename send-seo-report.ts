@@ -13,7 +13,7 @@ const resend = new Resend(resendKey);
 async function sendSeoReport() {
     try {
         console.log("Loading HTML template...");
-        const htmlPath = path.resolve(process.cwd(), 'seo-email-template.html');
+        const htmlPath = path.resolve(__dirname, 'seo-email-template.html');
         const htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
         console.log("Sending email via Resend...");

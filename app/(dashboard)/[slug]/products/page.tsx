@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { Plus, Search, AlertTriangle } from 'lucide-react'
 import { ProductsList } from '@/components/products/ProductsList'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'

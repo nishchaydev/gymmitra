@@ -43,6 +43,11 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
     const slug = context.gym.slug
 
     try {
+        const existingMember = await prisma.member.findFirst({
+            where: { phone: validatedData.phone, gymId }
+        })
+        if (existingMember) return { error: 'Member with this phone number already exists in your gym.' }
+
         let finalMemberId: string = ""
         let finalInvoiceId: string | undefined = undefined
 

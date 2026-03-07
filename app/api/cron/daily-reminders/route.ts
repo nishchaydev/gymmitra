@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { addDays, startOfDay, endOfDay } from 'date-fns'
+import { addDays } from 'date-fns'
 import { Resend, CreateEmailOptions, CreateEmailResponseSuccess } from 'resend'
 import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
@@ -76,7 +76,13 @@ export async function GET(request: NextRequest) {
     const TARGET_DAYS = [10, 7, 5, 3, 2, 1]
 
     try {
-        const today = new Date()
+        // Timezone normalization for India Standard Time (IST)
+        const now = new Date()
+        const istDateStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: 'numeric', day: 'numeric' }).format(now)
+        const [month, day, year] = istDateStr.split('/').map(Number)
+
+        // Midnight IST mapped to UTC (IST is UTC+5:30, so 00:00 IST = 18:30 UTC the previous day)
+        const istMidnightUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0, 0))
 
         const gyms = await prisma.gymProfile.findMany({
             select: { id: true, name: true, email: true }
@@ -92,8 +98,8 @@ export async function GET(request: NextRequest) {
                 // Query each target day separately so a member expiring in
                 // exactly 8 days receives ZERO emails today (not in any window).
                 for (const daysAhead of TARGET_DAYS) {
-                    const windowStart = startOfDay(addDays(today, daysAhead))
-                    const windowEnd = endOfDay(addDays(today, daysAhead))
+                    const windowStart = new Date(istMidnightUTC.getTime() + daysAhead * 24 * 60 * 60 * 1000)
+                    const windowEnd = new Date(istMidnightUTC.getTime() + (daysAhead + 1) * 24 * 60 * 60 * 1000 - 1)
 
                     const expiringSubs = await prisma.memberSubscription.findMany({
                         where: {

@@ -10,21 +10,7 @@ import { toast } from "sonner"
 import { ChevronLeft, Upload, Loader2, Check, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { importMembers } from "../../members/actions"
-
-// Helper to parse CSV (Basic implementation)
-function parseCSV(text: string) {
-    const lines = text.split(/\r?\n/).filter(line => line.trim())
-    if (lines.length === 0) return []
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-    return lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim())
-        const obj: any = {}
-        headers.forEach((header, i) => {
-            obj[header] = values[i] || ""
-        })
-        return obj
-    })
-}
+import Papa from "papaparse"
 
 export default function MemberImportPage() {
     const router = useRouter()
@@ -53,20 +39,39 @@ export default function MemberImportPage() {
         setIsParsing(true)
         setResult(null)
 
-        try {
-            const text = await selectedFile.text()
-            const data = parseCSV(text)
-            if (data.length > 1000) {
-                toast.error("Maximum 1000 rows allowed")
-                setPreview([])
-            } else {
-                setPreview(data)
+        const REQUIRED_HEADERS = ['name', 'phone', 'email', 'joindate', 'planname', 'expirydate']
+
+        Papa.parse(selectedFile, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (header) => header.trim().toLowerCase(),
+            complete: function (results) {
+                const data = results.data as any[]
+
+                // Header Validation
+                const headers = results.meta.fields || []
+                const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h))
+
+                if (missingHeaders.length > 0) {
+                    toast.error(`Missing required headers: ${missingHeaders.join(', ')}`)
+                    setPreview([])
+                    setIsParsing(false)
+                    return
+                }
+
+                if (data.length > 1000) {
+                    toast.error("Maximum 1000 rows allowed")
+                    setPreview([])
+                } else {
+                    setPreview(data)
+                }
+                setIsParsing(false)
+            },
+            error: function (error: any) {
+                toast.error("Failed to parse CSV: " + error.message)
+                setIsParsing(false)
             }
-        } catch (error) {
-            toast.error("Failed to parse CSV")
-        } finally {
-            setIsParsing(false)
-        }
+        })
     }
 
     const handleImport = async () => {

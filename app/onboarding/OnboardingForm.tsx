@@ -237,6 +237,7 @@ export default function OnboardingForm() {
                                                     <input
                                                         type="file"
                                                         accept="image/*"
+                                                        value=""
                                                         onChange={handleLogoChange}
                                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                                         title="Upload Gym Logo"

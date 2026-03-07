@@ -109,17 +109,15 @@ function AttendanceCard({
                             </div>
                         </div>
 
-                        <Link href="#!">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="border border-ion-500 text-ion-500 hover:bg-ion-50 bg-white rounded-lg transition-all duration-150 h-10 px-4 font-semibold shadow-sm"
-                                type="button"
-                                onClick={() => alert("Kiosk mode is available when logged into a specific gym workspace.")}
-                            >
-                                <Clock className="mr-2 h-4 w-4" /> Kiosk Mode
-                            </Button>
-                        </Link>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="border border-ion-500 text-ion-500 hover:bg-ion-50 bg-white rounded-lg transition-all duration-150 h-10 px-4 font-semibold shadow-sm"
+                            type="button"
+                            onClick={() => alert("Kiosk mode is available when logged into a specific gym workspace.")}
+                        >
+                            <Clock className="mr-2 h-4 w-4" /> Kiosk Mode
+                        </Button>
                     </div>
                 </div>
             </CardContent>

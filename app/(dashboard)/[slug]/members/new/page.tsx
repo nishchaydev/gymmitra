@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
+import { notFound } from "next/navigation"
 
 export default async function NewMemberPage({
     params,
@@ -15,6 +16,8 @@ export default async function NewMemberPage({
     const gym = await prisma.gymProfile.findUnique({
         where: { slug }
     })
+
+    if (!gym) notFound()
 
     const rawPlans = gym ? await prisma.membershipPlan.findMany({
         where: { gymId: gym.id, isActive: true },

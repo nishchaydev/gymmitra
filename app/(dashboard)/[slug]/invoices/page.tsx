@@ -69,8 +69,21 @@ export default async function InvoicesPage({
         whereClause.paymentStatus = status as any
     }
 
+    let demoInvoices = SHOWCASE_INVOICES;
+    if (isDemo) {
+        if (query) {
+            demoInvoices = demoInvoices.filter(i =>
+                `INV-${i.id}`.toLowerCase().includes(query.toLowerCase()) ||
+                String(i.member?.name || '').toLowerCase().includes(query.toLowerCase())
+            );
+        }
+        if (status && status !== 'ALL') {
+            demoInvoices = demoInvoices.filter(i => i.status === status);
+        }
+    }
+
     const [invoices, totalCount] = isDemo ? [
-        SHOWCASE_INVOICES.slice(skip, skip + take).map(i => ({
+        demoInvoices.slice(skip, skip + take).map(i => ({
             id: i.id,
             invoiceNumber: `INV-${i.id}`,
             member: i.member,
@@ -78,7 +91,7 @@ export default async function InvoicesPage({
             issueDate: i.date,
             total: i.amount
         })),
-        SHOWCASE_INVOICES.length
+        demoInvoices.length
     ] : await Promise.all([
         prisma.invoice.findMany({
             where: whereClause,

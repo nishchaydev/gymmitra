@@ -35,6 +35,17 @@ const createInvoiceSchema = z.object({
 }).refine(data => data.memberId || data.walkInName, {
     message: "Customer identification is required (Member or Walk-in Name)",
     path: ["walkInName"]
+}).superRefine((data, ctx) => {
+    if (data.paymentStatus === 'PARTIAL') {
+        if (data.amountPaid === undefined || data.amountPaid <= 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Amount paid must be greater than 0 for partial payments",
+                path: ["amountPaid"]
+            });
+        }
+        // Note: Upper bound validation (total) is done inside the action directly since tax dynamically affects total
+    }
 })
 
 // Secure Server Action wrapped in withAuth
@@ -99,17 +110,17 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
                     walkInEmail: validatedData.walkInEmail ?? null,
                     walkInAddress: validatedData.walkInAddress ?? null,
                     paymentMethod: validatedData.paymentMethod,
-                    paymentStatus: validatedData.paymentStatus ?? "PAID",
-                    amountPaid: validatedData.paymentStatus === 'PARTIAL'
-                        ? (validatedData.amountPaid ?? 0)
+                    paymentStatus: validatedData.paymentStatus,
+                    amountPaid: (validatedData.paymentStatus === 'PARTIAL'
+                        ? Math.min((validatedData.amountPaid ?? 0), totalCents / 100)
                         : validatedData.paymentStatus === 'PENDING'
                             ? 0
-                            : totalCents / 100,
-                    balanceDue: validatedData.paymentStatus === 'PARTIAL'
-                        ? Math.max(0, (totalCents / 100) - (validatedData.amountPaid ?? 0))
+                            : totalCents / 100) as any,
+                    balanceDue: (validatedData.paymentStatus === 'PARTIAL'
+                        ? Math.max(0, (totalCents / 100) - Math.min((validatedData.amountPaid ?? 0), totalCents / 100))
                         : validatedData.paymentStatus === 'PENDING'
                             ? totalCents / 100
-                            : 0,
+                            : 0) as any,
                     notes: validatedData.notes ?? null,
                     shareToken: shareToken,
                     shareTokenExpiresAt: shareTokenExpiresAt,

@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
 import { MembersList } from '@/components/members/MembersList'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function MembersPage({
     searchParams,

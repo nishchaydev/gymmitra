@@ -49,8 +49,7 @@ export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: A
             configDays,
             handleDaysChange,
             slug,
-            gymName,
-            false
+            gymName
         )
     }
 
@@ -89,7 +88,7 @@ export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: A
         )
     }
 
-    return renderWidget(atRiskData, configDays, handleDaysChange, slug, gymName, false)
+    return renderWidget(atRiskData, configDays, handleDaysChange, slug, gymName)
 }
 
 interface AtRiskMember {
@@ -106,7 +105,7 @@ interface AtRiskData {
     daysThreshold: number;
 }
 
-function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) => void, slug: string, gymName: string, isLoading: boolean) {
+function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) => void, slug: string, gymName: string) {
     const { count, members } = data
 
     return (
@@ -158,11 +157,6 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
                     </div>
                 ) : (
                     <div className="divide-y divide-drift-100 relative">
-                        {isLoading && (
-                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                                <Loader2 className="h-6 w-6 animate-spin text-ion-500" />
-                            </div>
-                        )}
                         {members.slice(0, 10).map((member) => {
                             const link = member.phone ? getWhatsAppLink(member.phone, templates.inactivityNudge(member.name, member.daysInactive, gymName)) : '';
 

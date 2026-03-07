@@ -18,18 +18,22 @@ export const convertToMember = withAuth(async (context, leadId: string) => {
         return { error: 'Lead not found' }
     }
 
-    if (lead.status === 'CONVERTED') {
-        return { error: 'Lead is already converted' }
-    }
-
-    // 2. Set lead to converted
-    await (prisma as any).lead.update({
-        where: { id: leadId },
+    // 2. Set lead to converted atomically
+    const updateResult = await (prisma as any).lead.updateMany({
+        where: {
+            id: leadId,
+            gymId,
+            NOT: { status: 'CONVERTED' }
+        },
         data: {
             status: 'CONVERTED',
             convertedAt: new Date(),
         }
     })
+
+    if (updateResult.count === 0) {
+        return { error: 'Lead is already converted' }
+    }
 
     revalidatePath(`/${slug}/leads`)
 

@@ -29,7 +29,7 @@ export default function NewInvoiceForm({
     const [walkInName, setWalkInName] = useState('')
     const [walkInPhone, setWalkInPhone] = useState('')
     const [walkInEmail, setWalkInEmail] = useState('')
-    const [walkInAddress] = useState('') // walkInAddress is used for initial state but setter is unused
+    const [walkInAddress, setWalkInAddress] = useState('')
     const [items, setItems] = useState<{
         id: string,
         description: string,
@@ -74,6 +74,14 @@ export default function NewInvoiceForm({
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const total = Math.max(0, subtotal - discount)
+
+    React.useEffect(() => {
+        if (paymentStatus === 'PAID') {
+            setAmountPaid(total)
+        } else if (paymentStatus === 'PENDING') {
+            setAmountPaid(0)
+        }
+    }, [total, paymentStatus])
 
     // Client-side validation
     const hasItems = items.length > 0 && items.every(item =>
@@ -168,6 +176,15 @@ export default function NewInvoiceForm({
                                                         className="bg-white border-drift-200 focus:ring-ion-500"
                                                     />
                                                 </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-bold text-drift-600 uppercase">Address</Label>
+                                                <Input
+                                                    value={walkInAddress}
+                                                    onChange={(e) => setWalkInAddress(e.target.value)}
+                                                    placeholder="123 Main St, City"
+                                                    className="bg-white border-drift-200 focus:ring-ion-500"
+                                                />
                                             </div>
                                         </div>                </div>
                                 )}
@@ -318,11 +335,7 @@ export default function NewInvoiceForm({
                                     {/* Payment Status */}
                                     <div className="space-y-2 pt-4 border-t border-drift-100">
                                         <Label className="text-[10px] font-bold text-drift-500 uppercase tracking-wider">Payment Status</Label>
-                                        <Select value={paymentStatus} onValueChange={(val: 'PAID' | 'PARTIAL' | 'PENDING') => {
-                                            setPaymentStatus(val)
-                                            if (val === 'PAID') setAmountPaid(total)
-                                            if (val === 'PENDING') setAmountPaid(0)
-                                        }}>
+                                        <Select value={paymentStatus} onValueChange={(val: 'PAID' | 'PARTIAL' | 'PENDING') => setPaymentStatus(val)}>
                                             <SelectTrigger className="bg-drift-50 border-drift-200 h-10 font-bold">
                                                 <SelectValue />
                                             </SelectTrigger>

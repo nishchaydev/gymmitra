@@ -145,8 +145,17 @@ export async function POST(request: NextRequest) {
 
         const total = Math.max(0, subtotal + validatedData.taxAmount - validatedData.discount)
 
-        const amountPaid = validatedData.amountPaid ?? 0
-        const balanceDue = total - amountPaid
+        const amountPaid = validatedData.paymentStatus === 'PARTIAL'
+            ? Math.min(validatedData.amountPaid ?? 0, total)
+            : validatedData.paymentStatus === 'PENDING'
+                ? 0
+                : total
+
+        const balanceDue = validatedData.paymentStatus === 'PARTIAL'
+            ? Math.max(0, total - Math.min(validatedData.amountPaid ?? 0, total))
+            : validatedData.paymentStatus === 'PENDING'
+                ? total
+                : 0
 
         // Generate Invoice Number
         const { generateInvoiceNumber } = await import("@/lib/invoice-server-utils")
@@ -174,8 +183,8 @@ export async function POST(request: NextRequest) {
                     taxAmount: validatedData.taxAmount,
                     discount: validatedData.discount,
                     total: total,
-                    amountPaid: amountPaid,
-                    balanceDue: balanceDue,
+                    amountPaid: amountPaid as any,
+                    balanceDue: balanceDue as any,
                     idempotencyKey: validatedData.idempotencyKey,
                     shareToken: shareToken,
                     shareTokenExpiresAt: shareTokenExpiresAt,
@@ -188,7 +197,7 @@ export async function POST(request: NextRequest) {
                             gymId: gym.id, // Mandatory for multi-tenancy
                         }))
                     }
-                },
+                } as any,
                 include: {
                     items: true
                 }

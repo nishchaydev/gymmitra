@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym } from '@/lib/auth'
+import { getAuthGym, checkRole } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 import { guardRateLimit } from '@/lib/rate-limit'
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const roleCheck = await import('@/lib/auth').then(m => m.checkRole(auth, ['OWNER']))
+        const roleCheck = checkRole(auth, ['OWNER'])
         if (roleCheck) return roleCheck
 
         const rl = await guardRateLimit(50, `${auth.userId}:plans:post`)

@@ -21,9 +21,9 @@ export function Features() {
             component: <AccessControlMockup />
         },
         {
-            title: "WhatsApp-Native Communication",
-            desc: "Renewal reminders, birthday wishes, and payment alerts sent directly to members via WhatsApp. Give your gym a professional edge with zero extra cost.",
-            points: ["Zero integration fees", "Higher open rates", "Professional branding"],
+            title: "Branded Member Experience",
+            desc: "Provide your members with a premium, white-labeled portal. Empower them to track their own attendance, view active plans, and download invoices securely.",
+            points: ["Self-service portal", "Clean digital interface", "Professional branding"],
             component: <div className="max-w-[280px] mx-auto"><MemberAppMockup /></div>
         }
     ]

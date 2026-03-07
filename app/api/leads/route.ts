@@ -79,10 +79,7 @@ export async function GET(request: NextRequest) {
             stack: error.stack,
             code: error.code
         })
-        return NextResponse.json({
-            error: 'Failed to fetch leads',
-            details: error.message
-        }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 })
     }
 }
 
@@ -105,7 +102,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Database client sync required' }, { status: 500 })
         }
 
-        const body = await request.json()
+        let body
+        try {
+            body = await request.json()
+        } catch (e) {
+            return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 })
+        }
         const validatedData = leadCreateSchema.parse(body)
 
         const lead = await (prisma as any).lead.create({
@@ -139,6 +141,6 @@ export async function POST(request: NextRequest) {
             message: error.message,
             stack: error.stack
         })
-        return NextResponse.json({ error: 'Failed to create lead', details: error.message }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 })
     }
 }

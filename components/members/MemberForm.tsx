@@ -284,8 +284,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                             <div className="pt-4 border-t mt-8">
                                 <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting
-                                        ? (member ? "Updating..." : "Creating...")
-                                        : (member ? "Update Member" : "Create Member")}
+                                        ? "Saving..."
+                                        : "Save Member"}
                                 </Button>
                             </div>
                         )}
@@ -311,7 +311,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-base font-semibold text-slate-800">Choose Membership</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger className="h-12 bg-white">
                                                     <SelectValue placeholder="No Plan (Skip Billing)" />
@@ -324,7 +324,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                                         <div className="flex items-center justify-between w-full">
                                                             <span className="font-medium">{plan.name}</span>
                                                             <span className="text-muted-foreground tabular-nums ml-4">
-                                                                ₹{Number(plan.price).toFixed(2)} · {plan.duration} Month{plan.duration !== 1 ? 's' : ''}
+                                                                ₹{Number(plan.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · {plan.duration} Month{plan.duration !== 1 ? 's' : ''}
                                                             </span>
                                                         </div>
                                                     </SelectItem>
@@ -343,7 +343,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                     render={({ field }) => (
                                         <FormItem className="animate-in fade-in duration-300">
                                             <FormLabel className="text-base font-semibold text-slate-800">Payment Secured Via</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger className="h-12 bg-white">
                                                         <SelectValue placeholder="Select payment method" />
