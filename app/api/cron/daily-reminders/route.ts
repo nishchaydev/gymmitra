@@ -250,8 +250,8 @@ export async function GET(request: NextRequest) {
 
                 // ── Daily Briefing Email ──────────────────────────────
                 try {
-                    const todayStart = new Date(year, month - 1, day)
-                    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1)
+                    const todayStart = istMidnightUTC
+                    const todayEnd = new Date(istMidnightUTC.getTime() + 24 * 60 * 60 * 1000 - 1)
 
                     const followUpsToday = await prisma.lead.findMany({
                         where: { gymId: gym.id, followUpDate: { gte: todayStart, lte: todayEnd }, status: { notIn: ['CONVERTED', 'NOT_INTERESTED'] } }

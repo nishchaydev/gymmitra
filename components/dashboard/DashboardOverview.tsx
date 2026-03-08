@@ -80,8 +80,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </div>
             )}
 
-            {/* Stat Cards */}
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {/* Stat Cards - 2x2 on mobile for better density */}
+            <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-primary bg-white shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">

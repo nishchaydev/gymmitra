@@ -105,12 +105,17 @@ export function InvoiceTemplate({
                         </div>
                         <div className="flex justify-between">
                             <span className="text-slate-500">Status:</span>
-                            <span className={`font-bold transition-colors ${paymentStatus === 'PAID' ? 'text-emerald-600' :
-                                paymentStatus === 'PARTIAL' ? 'text-amber-600' :
-                                    'text-rose-600'
-                                }`}>
-                                {paymentStatus || 'PAID'}
-                            </span>
+                            {(() => {
+                                const computedStatus = paymentStatus || 'PAID';
+                                return (
+                                    <span className={`font-bold transition-colors ${computedStatus === 'PAID' ? 'text-emerald-600' :
+                                        computedStatus === 'PARTIAL' ? 'text-amber-600' :
+                                            'text-rose-600'
+                                        }`}>
+                                        {computedStatus}
+                                    </span>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { QrCode, Download, Copy, Check, ExternalLink } from "lucide-react"
+import { QRCodeSVG } from 'qrcode.react'
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
@@ -12,36 +13,22 @@ interface QRPosterSectionProps {
 
 const BASE_URL = "https://gym.emitra.dev"
 
-function QRCodeSVG({ value, size = 200 }: { value: string; size?: number }) {
-    // Simple QR code using the Google Charts API (no extra package)
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&bgcolor=000000&color=FFFFFF&format=svg`
+function QRCodeContainer({ value, size = 200, bgColor = "#000000", fgColor = "#FFFFFF" }: { value: string; size?: number; bgColor?: string; fgColor?: string }) {
     return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-            src={url}
-            alt="Check-In QR Code"
-            width={size}
-            height={size}
-            className="rounded-xl"
-            style={{ imageRendering: "pixelated" }}
-        />
+        <div className="rounded-xl overflow-hidden" style={{ background: bgColor, padding: '4px' }}>
+            <QRCodeSVG
+                value={value}
+                size={size}
+                bgColor={bgColor}
+                fgColor={fgColor}
+                level="M"
+                includeMargin={false}
+            />
+        </div>
     )
 }
 
-function QRCodeSVGLight({ value, size = 200 }: { value: string; size?: number }) {
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&bgcolor=FFFFFF&color=0EA5E9&format=svg`
-    return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-            src={url}
-            alt="Check-In QR Code"
-            width={size}
-            height={size}
-            className="rounded-xl"
-            style={{ imageRendering: "pixelated" }}
-        />
-    )
-}
+// Removed QRCodeSVGLight and unified into QRCodeContainer
 
 export function QRPosterSection({ slug, gymName }: QRPosterSectionProps) {
     const [posterStyle, setPosterStyle] = useState<"dark" | "light">("dark")
@@ -264,10 +251,12 @@ function PosterContent({
                 alignItems: "center",
                 gap: isPreview ? "12px" : "24px",
             }}>
-                {isDark
-                    ? <QRCodeSVG value={checkInUrl} size={qrSize} />
-                    : <QRCodeSVGLight value={checkInUrl} size={qrSize} />
-                }
+                <QRCodeContainer
+                    value={checkInUrl}
+                    size={qrSize}
+                    bgColor={isDark ? "#0f172a" : "#FFFFFF"}
+                    fgColor={isDark ? "#FFFFFF" : "#0EA5E9"}
+                />
                 <p style={{
                     fontSize: isPreview ? "13px" : "22px",
                     fontWeight: 700,

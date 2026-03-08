@@ -90,7 +90,7 @@ export function ExpenseForm({ slug }: { slug: string }) {
                             id="date"
                             name="date"
                             type="date"
-                            defaultValue={new Date().toISOString().split('T')[0]}
+                            defaultValue={new Date().toLocaleDateString('en-CA')}
                             required
                         />
                     </div>
