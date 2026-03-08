@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
             }).catch(() => ({} as any))
         ])
 
-        const birthdayCount = birthdaysToday.filter(m => {
+        const birthdayCount = birthdaysToday.filter((m: any) => {
             if (!m.dateOfBirth) return false
             const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString()
             const [, month, day] = dobString.split('T')[0].split('-').map(Number)
@@ -183,7 +183,7 @@ export async function GET(req: NextRequest) {
                     minutesAgo < 60
                         ? `Last check-in ${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`
                         : `Last check-in ${Math.round(minutesAgo / 60)}h ago`,
-                recentInitials: attendance.map((a) => {
+                recentInitials: attendance.map((a: any) => {
                     const name = a.member?.name?.trim()
                     if (!name) return '?'
                     return name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
@@ -194,7 +194,7 @@ export async function GET(req: NextRequest) {
         // Process birthdays
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         const upcomingBirthdays = birthdays
-            .map((m) => {
+            .map((m: any) => {
                 const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth?.toISOString()
                 if (!dobString) return null
                 const [year, month, day] = dobString.split('T')[0].split('-').map(Number)
@@ -205,8 +205,8 @@ export async function GET(req: NextRequest) {
                 const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
                 return { ...m, date: label, diffDays }
             })
-            .filter((m): m is NonNullable<typeof m> => m !== null)
-            .sort((a, b) => a.diffDays - b.diffDays)
+            .filter((m: any): m is NonNullable<typeof m> => m !== null)
+            .sort((a: any, b: any) => a.diffDays - b.diffDays)
             .slice(0, 5)
 
         // Process monthly revenue chart
