@@ -71,8 +71,8 @@ export function Navbar() {
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-drift-700">
-                    <Link href="#products" className="hover:text-primary transition-colors relative group">
-                        Products
+                    <Link href="#features" className="hover:text-primary transition-colors relative group">
+                        Features
                         <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full rounded-full" />
                     </Link>
                     <Link href="#pricing" className="hover:text-primary transition-colors relative group">

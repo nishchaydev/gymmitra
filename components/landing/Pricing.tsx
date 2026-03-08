@@ -9,59 +9,33 @@ import { getBaseUrl } from "@/lib/utils"
 export function Pricing() {
     const plans = [
         {
-            name: "Basic",
-            price: "₹25,000",
-            description: "Up to 200 members",
+            name: "Standard",
+            price: "₹15,000",
+            description: "Full automation for your gym",
+            isPopular: true,
             features: [
                 "Member management",
                 "Billing & invoicing",
                 "Attendance tracking",
-                "Automated renewal reminders",
-                "SMS notifications (2,000/month)",
-                "Email support"
-            ]
-        },
-        {
-            name: "Pro",
-            price: "₹50,000",
-            description: "201-500 members",
-            isPopular: true,
-            features: [
-                "Everything in Basic, plus:",
-                "Member mobile app",
-                "Workout plans & scheduling",
-                "PT Management",
-                "Inventory management",
-                "Nutrition tracking",
-                "SMS notifications (5,000/month)",
-                "Phone + email support"
-            ]
-        },
-        {
-            name: "Elite",
-            price: "₹1,00,000",
-            description: "501-1,000 members",
-            features: [
-                "Everything in Pro, plus:",
-                "Multi-branch support",
-                "Advanced analytics & insights",
-                "Custom integrations",
-                "Priority support",
-                "White-label mobile app option",
-                "Unlimited SMS notifications"
+                "WhatsApp renewal reminders",
+                "WhatsApp birthday wishes",
+                "Expense tracking",
+                "Lead management (CRM)",
+                "Daily briefing emails",
+                "Branded dashboard"
             ]
         },
         {
             name: "Enterprise",
             price: "Custom",
-            description: "Franchises & chains",
+            description: "For gym chains & custom needs",
             features: [
-                "Everything in Elite, plus:",
-                "Global headquarters dashboard",
-                "Custom branding & white-label",
-                "API access via dedicated gateway",
-                "Dedicated server infrastructure",
-                "24/7 Priority support manager"
+                "Everything in Standard, plus:",
+                "Multi-branch support",
+                "Advanced analytics & insights",
+                "Custom integrations",
+                "Priority support",
+                "API access"
             ]
         }
     ]

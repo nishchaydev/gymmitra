@@ -32,8 +32,8 @@ export function FinalCTA() {
 
                 <MotionWrapper delay={0.2}>
                     <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
-                        Join 50+ smart gym owners who have reclaimed their time.
-                        Start your <span className="text-white font-bold">14-day free trial</span> today.
+                        Elevate your gym management and reclaim your time.
+                        Start your <span className="text-white font-bold">free trial</span> today.
                     </p>
                 </MotionWrapper>
 

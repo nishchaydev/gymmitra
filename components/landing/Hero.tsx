@@ -31,7 +31,7 @@ export function Hero() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Now</p>
-                            <p className="text-sm font-black text-slate-900">124 Members</p>
+                            <p className="text-sm font-black text-slate-900">Live Dashboard</p>
                         </div>
                     </div>
                 </motion.div>
@@ -167,22 +167,22 @@ export function Hero() {
                                     <div key={i} className="flex items-center gap-8 text-xs font-bold text-slate-500">
                                         <span className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                            Iron Pump Gym just added <span className="text-slate-900">12 new members</span>
+                                            TRI-STAR FITNESS just added <span className="text-slate-900">new members</span>
                                         </span>
                                         <span>•</span>
                                         <span className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" style={{ animationDelay: '75ms' }} />
-                                            FitZone collected <span className="text-slate-900">₹45k fees</span> today
+                                            Fees collected successfully
                                         </span>
                                         <span>•</span>
                                         <span className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" style={{ animationDelay: '150ms' }} />
-                                            Urban Fitness sent <span className="text-slate-900">150+ WhatsApp alerts</span>
+                                            WhatsApp alerts delivered
                                         </span>
                                         <span>•</span>
                                         <span className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '300ms' }} />
-                                            Spartan Gym is now <span className="text-slate-900">Live</span>
+                                            New leads updated
                                         </span>
                                         <span>•</span>
                                     </div>
@@ -216,7 +216,7 @@ export function Hero() {
                                     {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
                                 </div>
                                 <div className="text-xs text-slate-600 font-bold">
-                                    Trusted by 50+ Gyms
+                                    Trusted by <span className="text-primary">TRI-STAR FITNESS</span>
                                 </div>
                             </div>
                         </div>
@@ -249,9 +249,9 @@ export function Hero() {
                     {/* Stats Section with better hierarchy */}
                     <div className="w-full max-w-4xl mx-auto pt-12 border-t border-drift-silver/50">
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-12 md:gap-24 text-center">
-                            <StatCounter value={50} suffix="+" label="Gym Partners" />
-                            <StatCounter value={10000} suffix="+" label="Daily Active Members" />
-                            <StatCounter value={50} suffix="Cr+" label="Fees Processed" />
+                            <StatCounter value={1} suffix="" label="Live Gym" />
+                            <StatCounter value={500} suffix="+" label="Members Managed" />
+                            <StatCounter value={100} suffix="%" label="Automation Uptime" />
                         </div>
                     </div>
 

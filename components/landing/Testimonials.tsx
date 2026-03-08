@@ -13,35 +13,23 @@ export function Testimonials() {
             <div className="container px-4 md:px-6 mx-auto">
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <MotionWrapper>
-                        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4">
-                            Gym Owners <span className="text-[#4FC3F7]">Love</span> It.
+                        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4 font-display">
+                            Built for Gym Owners, <span className="text-[#4FC3F7]">By</span> Tech Experts.
                         </h2>
                     </MotionWrapper>
                     <MotionWrapper delay={0.1}>
                         <p className="text-lg text-slate-500">
-                            Join 50+ gym owners who have automated their business.
+                            Powering growth for leading fitness clubs.
                         </p>
                     </MotionWrapper>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div className="flex justify-center max-w-2xl mx-auto">
                     <TestimonialCard
-                        name="Rajesh Kumar"
-                        gym="City Fitness, Mumbai"
-                        quote="Saved 2 hours every day. Invoice generation is instant! Best decision for my gym."
+                        name="Mr Nikhil Verma"
+                        gym="TRI-STAR FITNESS, Indore"
+                        quote="Best decision for my gym. WhatsApp reminders and instant billing have changed the way we work."
                         delay={0.2}
-                    />
-                    <TestimonialCard
-                        name="Anita Singh"
-                        gym="Power House Gym, Delhi"
-                        quote="My members love the WhatsApp reminders. Revenue increased by 20% in just 2 months."
-                        delay={0.3}
-                    />
-                    <TestimonialCard
-                        name="Vikram Mehta"
-                        gym="Urban Crossfit, Bangalore"
-                        quote="The biometric integration is seamless. No more unauthorized entries. Highly recommended!"
-                        delay={0.4}
                     />
                 </div>
             </div>
