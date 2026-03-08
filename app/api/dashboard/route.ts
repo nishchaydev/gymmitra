@@ -35,33 +35,33 @@ export async function GET(req: NextRequest) {
             lastMonthInvoicesPaid,
             outstandingInvoices,
         ] = await Promise.all([
-            prisma.member.count({ where: { gymId: gym.id } }),
-            prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }),
-            prisma.sale.count({ where: { product: { gymId: gym.id }, saleDate: { gte: startOfThisMonth } } }),
+            prisma.member.count({ where: { gymId: gym.id } }).catch(() => 0),
+            prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }).catch(() => 0),
+            prisma.sale.count({ where: { product: { gymId: gym.id }, saleDate: { gte: startOfThisMonth } } }).catch(() => 0),
             prisma.attendance.count({
                 where: {
                     gymId: gym.id,
                     date: { gte: today, lte: endOfToday() },
                 },
-            }),
+            }).catch(() => 0),
             prisma.invoice.findMany({
                 where: { gymId: gym.id },
                 include: { member: { select: { name: true } } },
                 orderBy: { createdAt: 'desc' },
                 take: 5,
-            }),
+            }).catch(() => []),
             prisma.attendance.findMany({
                 where: { gymId: gym.id, date: { gte: today, lte: endOfToday() } },
                 include: { member: { select: { name: true } } },
                 orderBy: { checkInTime: 'desc' },
                 take: 3,
-            }),
+            }).catch(() => []),
             prisma.member.findMany({
                 where: { gymId: gym.id, status: 'ACTIVE' },
                 select: { name: true, phone: true, dateOfBirth: true },
                 take: 50,
-            }),
-            prisma.$queryRaw`
+            }).catch(() => []),
+            (prisma.$queryRaw`
                 SELECT
                     EXTRACT(MONTH FROM "issueDate")::int AS month,
                     COALESCE(SUM("total"), 0) AS total
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
                     AND "deletedAt" IS NULL
                 GROUP BY month
                 ORDER BY month
-            ` as Promise<{ month: number; total: any }[]>,
+            ` as Promise<{ month: number; total: any }[]>).catch(() => []),
             prisma.invoice.aggregate({
                 where: {
                     gymId: gym.id,
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
                     deletedAt: null
                 },
                 _sum: { total: true }
-            }),
+            }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.aggregate({
                 where: {
                     gymId: gym.id,
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
                     deletedAt: null
                 },
                 _sum: { total: true }
-            }),
+            }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.aggregate({
                 where: {
                     gymId: gym.id,
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
                     deletedAt: null
                 },
                 _sum: { total: true }
-            }),
+            }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.findMany({
                 where: {
                     gymId: gym.id,
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
                 include: { member: { select: { name: true, phone: true } } },
                 orderBy: { issueDate: 'asc' },
                 take: 5
-            })
+            }).catch(() => [])
         ])
 
         // Process revenue

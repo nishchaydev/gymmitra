@@ -144,7 +144,6 @@ export default async function DashboardPage({
             monthlyRevenue,
             thisMonthInvoicesPending,
             lastMonthInvoicesPaid,
-            // New consolidated fetches
             churnResult,
             retentionResult,
             frequencyResult,
@@ -153,37 +152,37 @@ export default async function DashboardPage({
             weeklyAttendanceResult,
             outstandingInvoices,
         ] = await Promise.all([
-            prisma.member.count({ where: { gymId: gym!.id } as any }),
-            prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }),
+            prisma.member.count({ where: { gymId: gym!.id } as any }).catch(() => 0),
+            prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }).catch(() => 0),
             prisma.invoice.aggregate({
                 where: { paymentStatus: 'PAID', gymId: gym!.id, issueDate: { gte: startOfThisMonth }, deletedAt: null } as any,
                 _sum: { total: true }
-            }),
-            prisma.sale.count({ where: { product: { gymId: gym!.id }, saleDate: { gte: startOfThisMonth } } as any }),
+            }).catch(() => ({ _sum: { total: null } })),
+            prisma.sale.count({ where: { product: { gymId: gym!.id }, saleDate: { gte: startOfThisMonth } } as any }).catch(() => 0),
             prisma.attendance.count({
                 where: {
                     gymId: gym!.id,
                     date: { gte: today, lte: endOfToday() }
                 } as any
-            }),
+            }).catch(() => 0),
             prisma.invoice.findMany({
                 where: { gymId: gym!.id } as any,
                 include: { member: { select: { name: true } } } as any,
                 orderBy: { createdAt: 'desc' } as any,
                 take: 5
-            }),
+            }).catch(() => []),
             prisma.attendance.findMany({
                 where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } as any,
                 include: { member: { select: { name: true } } },
                 orderBy: { checkInTime: 'desc' },
                 take: 3,
-            }),
+            }).catch(() => []),
             prisma.member.findMany({
                 where: { gymId: gym!.id, status: 'ACTIVE' },
                 select: { name: true, phone: true, dateOfBirth: true },
                 take: 50,
-            }),
-            prisma.$queryRaw`
+            }).catch(() => []),
+            (prisma.$queryRaw`
                 SELECT
                     EXTRACT(MONTH FROM "createdAt")::int AS month,
                     COALESCE(SUM("total"), 0) AS total
@@ -194,7 +193,7 @@ export default async function DashboardPage({
                     AND "deletedAt" IS NULL
                 GROUP BY month
                 ORDER BY month
-            ` as Promise<{ month: number; total: any }[]>,
+            ` as Promise<{ month: number; total: any }[]>).catch(() => []),
             prisma.invoice.aggregate({
                 where: {
                     gymId: gym!.id,
@@ -203,7 +202,7 @@ export default async function DashboardPage({
                     deletedAt: null
                 } as any,
                 _sum: { total: true }
-            }),
+            }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.aggregate({
                 where: {
                     gymId: gym!.id,
@@ -212,9 +211,9 @@ export default async function DashboardPage({
                     deletedAt: null
                 } as any,
                 _sum: { total: true }
-            }),
+            }).catch(() => ({ _sum: { total: null } })),
             // Churn Raw Query
-            prisma.$queryRaw`
+            (prisma.$queryRaw`
                 WITH MonthlyActive AS (
                     SELECT 
                         date_trunc('month', "createdAt") as create_month,
@@ -233,9 +232,9 @@ export default async function DashboardPage({
                     AND m."updatedAt" >= ${startDate5Months}
                 GROUP BY date_trunc('month', m."updatedAt")
                 ORDER BY month ASC
-            ` as Promise<{ month: string; churned: bigint; total_active: bigint }[]>,
+            ` as Promise<{ month: string; churned: bigint; total_active: bigint }[]>).catch(() => []),
             // Retention Raw Query
-            prisma.$queryRaw`
+            (prisma.$queryRaw`
                 SELECT 
                     to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month,
                     SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END)::bigint as renewed,
@@ -246,9 +245,9 @@ export default async function DashboardPage({
                   AND "endDate" <= ${today}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            ` as Promise<{ month: string; renewed: bigint; expired: bigint }[]>,
+            ` as Promise<{ month: string; renewed: bigint; expired: bigint }[]>).catch(() => []),
             // Member Frequency
-            prisma.$queryRaw`
+            (prisma.$queryRaw`
                 SELECT 
                     m.id as member_id,
                     m.name as member_name,
@@ -262,7 +261,7 @@ export default async function DashboardPage({
                 GROUP BY m.id
                 ORDER BY visit_count DESC, last_visit DESC NULLS FIRST
                 LIMIT 50
-            ` as Promise<{ member_id: string; member_name: string; phone: string; visit_count: bigint; last_visit: string | null }[]>,
+            ` as Promise<{ member_id: string; member_name: string; phone: string; visit_count: bigint; last_visit: string | null }[]>).catch(() => []),
             // Expiring Soon
             prisma.memberSubscription.findMany({
                 where: {
@@ -289,21 +288,20 @@ export default async function DashboardPage({
                     }
                 },
                 orderBy: { endDate: 'asc' }
-            }),
-            // Reminders - This one is complex so we'll do the specific parts in Promise.all or keep part and filter
-            // Let's just fetch the core data for reminders
+            }).catch(() => []),
+            // Reminders core data
             Promise.all([
                 prisma.member.findMany({
                     where: { gymId: gym!.id, status: 'ACTIVE' },
                     select: { id: true, name: true, phone: true, dateOfBirth: true }
-                }),
+                }).catch(() => []),
                 prisma.invoice.findMany({
                     where: { gymId: gym!.id, paymentStatus: 'OVERDUE', memberId: { not: null } },
                     select: { id: true, invoiceNumber: true, total: true, member: { select: { name: true, phone: true } } }
-                })
-            ]),
+                }).catch(() => [])
+            ]).catch(() => [[], []]),
             // Weekly Footfall
-            prisma.$queryRaw`
+            (prisma.$queryRaw`
                 SELECT
                     to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day,
                     COUNT(*)::bigint as count
@@ -313,7 +311,7 @@ export default async function DashboardPage({
                   AND "checkInTime" <= ${endOfToday()}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            ` as Promise<{ day: string; count: bigint }[]>,
+            ` as Promise<{ day: string; count: bigint }[]>).catch(() => []),
             prisma.invoice.findMany({
                 where: {
                     gymId: gym!.id,
@@ -323,12 +321,12 @@ export default async function DashboardPage({
                 include: { member: { select: { name: true, phone: true } } },
                 orderBy: { issueDate: 'asc' },
                 take: 5
-            })
+            }).catch(() => [])
         ])
 
-        const thisMonthRev = Number((totalRevenue as any)._sum.total || 0);
-        const lastMonthRev = Number((lastMonthInvoicesPaid as any)._sum.total || 0);
-        const pendingRev = Number((thisMonthInvoicesPending as any)._sum.total || 0);
+        const thisMonthRev = Number(totalRevenue?._sum?.total || 0);
+        const lastMonthRev = Number(lastMonthInvoicesPaid?._sum?.total || 0);
+        const pendingRev = Number(thisMonthInvoicesPending?._sum?.total || 0);
 
         let revChange = 0;
         if (lastMonthRev > 0) {
@@ -338,15 +336,15 @@ export default async function DashboardPage({
         }
 
         dashboardData = {
-            totalMembers,
-            activeMembers,
+            totalMembers: Number(totalMembers || 0),
+            activeMembers: Number(activeMembers || 0),
             revenue: thisMonthRev.toLocaleString('en-IN'),
             revenueRaw: thisMonthRev,
             lastMonthRevenue: lastMonthRev,
             revenueChange: Number(revChange.toFixed(2)),
             pendingRevenue: pendingRev,
-            productSalesCount,
-            dailyCheckins: dailyCheckins || 0,
+            productSalesCount: Number(productSalesCount || 0),
+            dailyCheckins: Number(dailyCheckins || 0),
             // Pass the rest of the results
             churnData: churnResult,
             retentionData: retentionResult,
@@ -393,14 +391,19 @@ export default async function DashboardPage({
 
         // Process monthly revenue for chart
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        if (monthlyRevenue && monthlyRevenue.length > 0) {
+        if (monthlyRevenue && Array.isArray(monthlyRevenue)) {
             const revenueMap = new Map<number, number>()
             for (const row of monthlyRevenue) {
-                revenueMap.set(row.month, Number(row.total) || 0)
+                // Ensure row.month and row.total are handled as numbers
+                const m = Number(row.month)
+                const t = Number(row.total?.toString() || row.total || 0)
+                if (!isNaN(m)) {
+                    revenueMap.set(m, t)
+                }
             }
             monthlyRevenueData = monthNames.map((name, i) => ({
                 name,
-                total: Number(revenueMap.get(i + 1)) || 0,
+                total: revenueMap.get(i + 1) || 0,
             }))
         }
     }
@@ -497,22 +500,22 @@ export default async function DashboardPage({
                         isDemo={isDemo}
                         initialData={isDemo ? undefined : {
                             churnData: dashboardData.churnData?.map((row: any) => {
-                                const monthName = format(new Date(row.month), 'MMM')
-                                const churned = Number(row.churned)
-                                const totalActive = Number(row.total_active) || 1
+                                const monthName = row.month ? format(new Date(row.month), 'MMM') : '???'
+                                const churned = Number(row.churned || 0)
+                                const totalActive = Number(row.total_active || 0) || 1
                                 return { name: monthName, churnRate: Math.min(100, Math.round((churned / totalActive) * 100)) }
                             }) || [],
                             retentionRate: dashboardData.retentionData?.length ? (() => {
                                 const last = dashboardData.retentionData[dashboardData.retentionData.length - 1]
-                                const renewed = Number(last.renewed)
-                                const expired = Number(last.expired)
+                                const renewed = Number(last.renewed || 0)
+                                const expired = Number(last.expired || 0)
                                 return (renewed + expired) > 0 ? Math.round((renewed / (renewed + expired)) * 100) : 100
                             })() : 0,
-                            atRiskMembers: dashboardData.frequencyData?.filter((m: any) => Number(m.visit_count) < 4).map((m: any) => ({
+                            atRiskMembers: dashboardData.frequencyData?.filter((m: any) => Number(m.visit_count || 0) < 4).map((m: any) => ({
                                 memberId: m.member_id,
                                 memberName: m.member_name,
                                 phone: m.phone,
-                                visitCount: Number(m.visit_count),
+                                visitCount: Number(m.visit_count || 0),
                                 lastVisit: m.last_visit ? format(new Date(m.last_visit), 'yyyy-MM-dd') : null
                             })) || []
                         }}
@@ -523,7 +526,7 @@ export default async function DashboardPage({
                         isDemo={isDemo}
                         initialData={isDemo ? undefined : {
                             revenue: monthlyRevenueData,
-                            attendance: dashboardData.weeklyAttendance?.map((a: any) => ({ name: format(new Date(a.day), 'EEE'), total: Number(a.count) })) || [],
+                            attendance: dashboardData.weeklyAttendance?.map((a: any) => ({ name: a.day ? format(new Date(a.day), 'EEE') : '?', total: Number(a.count || 0) })) || [],
                             expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
                                 const diff = new Date(sub.endDate).getTime() - new Date().getTime();
                                 return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
@@ -531,7 +534,8 @@ export default async function DashboardPage({
                             reminders: {
                                 birthdays: dashboardData.remindersRaw?.[0]?.filter((m: any) => {
                                     const today = new Date()
-                                    const dob = new Date(m.dateOfBirth!)
+                                    if (!m.dateOfBirth) return false
+                                    const dob = new Date(m.dateOfBirth)
                                     return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
                                 }).map((m: any) => ({
                                     type: 'BIRTHDAY',

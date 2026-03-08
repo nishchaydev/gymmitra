@@ -58,34 +58,38 @@ export default async function ProductsPage({
         whereClause.category = category as any
     }
 
-    let products = isDemo ? SHOWCASE_PRODUCTS.map((p: any) => ({
+    const productsData = (isDemo ? SHOWCASE_PRODUCTS.map((p: any) => ({
         ...p,
         isActive: true,
         lowStockAlert: 10,
         createdAt: new Date(),
         updatedAt: new Date(),
         gymId: 'demo',
-        price: new Prisma.Decimal(p.price),
+        price: Number(p.price || 0),
         image: null,
         description: null
     })) : await prisma.product.findMany({
         where: whereClause,
         orderBy: { name: 'asc' }
-    })
+    }).catch(() => [])).map((p: any) => ({
+        ...p,
+        price: Number(p.price?.toString() || p.price || 0)
+    }))
 
+    let finalProducts = productsData
     if (isDemo) {
         if (query) {
             const lowQuery = query.toLowerCase()
-            products = products.filter(p => p.name.toLowerCase().includes(lowQuery))
+            finalProducts = finalProducts.filter(p => p.name.toLowerCase().includes(lowQuery))
         }
         if (category && category !== 'ALL') {
-            products = products.filter(p => p.category === category)
+            finalProducts = finalProducts.filter(p => p.category === category)
         }
-        products.sort((a, b) => a.name.localeCompare(b.name))
+        finalProducts.sort((a, b) => a.name.localeCompare(b.name))
     }
 
     if (showLowStock) {
-        products = products.filter(p => p.stock <= p.lowStockAlert)
+        finalProducts = finalProducts.filter(p => p.stock <= p.lowStockAlert)
     }
 
     return (
@@ -133,7 +137,7 @@ export default async function ProductsPage({
                 query={query}
                 category={category}
                 lowStock={sParams.lowStock}
-                initialData={JSON.parse(JSON.stringify(products))}
+                initialData={finalProducts}
             />
         </div>
     )

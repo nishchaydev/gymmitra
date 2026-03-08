@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
                     }
                 },
                 orderBy: { endDate: 'asc' }
-            })
+            }).catch(() => [])
             return NextResponse.json(expiringSubscriptions)
         }
 
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
             const startDate = startOfMonth(subMonths(new Date(), 5))
 
             // Raw SQL for efficient monthly aggregation
-            const revenueResult = await prisma.$queryRaw<RevenueRow[]>`
+            const revenueResult = await (prisma.$queryRaw<RevenueRow[]>`
                 SELECT 
                     to_char(date_trunc('month', "issueDate"), 'YYYY-MM-DD') as month,
                     SUM(total) as total
@@ -109,9 +109,10 @@ export async function GET(request: NextRequest) {
                 WHERE "gymId" = ${gym.id}
                   AND "issueDate" >= ${startDate}
                   AND "paymentStatus" = 'PAID'
+                  AND "deletedAt" IS NULL
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `
+            `.catch(() => []))
 
             const interval = eachMonthOfInterval({
                 start: startDate,
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
             revenueResult.forEach(row => {
                 const key = row.month
                 if (revenueMap.has(key)) {
-                    revenueMap.get(key)!.total = Number(row.total || 0)
+                    revenueMap.get(key)!.total = Number(row.total?.toString() || row.total || 0)
                 }
             })
 
@@ -139,7 +140,7 @@ export async function GET(request: NextRequest) {
             const lastWeek = startOfDay(subDays(new Date(), 6))
 
             // Optimized single-query aggregation
-            const attendanceResult = await prisma.$queryRaw<AttendanceRow[]>`
+            const attendanceResult = await (prisma.$queryRaw<AttendanceRow[]>`
                 SELECT
                     to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day,
                     COUNT(*) as count
@@ -149,11 +150,11 @@ export async function GET(request: NextRequest) {
                   AND "checkInTime" <= ${today}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `
+            `.catch(() => []))
 
             const attendanceMap = new Map<string, number>()
             attendanceResult.forEach(row => {
-                attendanceMap.set(row.day, Number(row.count))
+                attendanceMap.set(row.day, Number(row.count || 0))
             })
 
             const attendanceData = []
@@ -172,7 +173,7 @@ export async function GET(request: NextRequest) {
             const startDate = startOfMonth(subMonths(new Date(), 5))
 
             // Improved Churn: Members whose status changed to INACTIVE/EXPIRED in that month
-            const churnResult = await prisma.$queryRaw<ChurnRow[]>`
+            const churnResult = await (prisma.$queryRaw<ChurnRow[]>`
                 SELECT 
                     to_char(date_trunc('month', "updatedAt"), 'YYYY-MM-DD') as month,
                     COUNT(*) as churned,
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
                     AND "updatedAt" >= ${startDate}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `
+            `.catch(() => []))
 
             const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
             const churnMap = new Map(
@@ -193,8 +194,8 @@ export async function GET(request: NextRequest) {
             churnResult.forEach(row => {
                 const key = row.month
                 if (churnMap.has(key)) {
-                    const churned = Number(row.churned)
-                    const totalActive = Number(row.total_active) || 1
+                    const churned = Number(row.churned || 0)
+                    const totalActive = Number(row.total_active || 0) || 1
                     const rate = Math.min(100, Math.round((churned / totalActive) * 100))
                     churnMap.get(key)!.churnRate = rate
                 }
@@ -206,7 +207,7 @@ export async function GET(request: NextRequest) {
         if (type === 'retention') {
             const startDate = startOfMonth(subMonths(new Date(), 5))
 
-            const retentionResult = await prisma.$queryRaw<RetentionRow[]>`
+            const retentionResult = await (prisma.$queryRaw<RetentionRow[]>`
                 SELECT 
                     to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month,
                     SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END) as renewed,
@@ -217,7 +218,7 @@ export async function GET(request: NextRequest) {
                   AND "endDate" <= ${new Date()}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `
+            `.catch(() => []))
 
             const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
             const retentionMap = new Map(
@@ -227,8 +228,8 @@ export async function GET(request: NextRequest) {
             retentionResult.forEach(row => {
                 const key = row.month
                 if (retentionMap.has(key)) {
-                    const renewed = Number(row.renewed)
-                    const expired = Number(row.expired)
+                    const renewed = Number(row.renewed || 0)
+                    const expired = Number(row.expired || 0)
                     const total = renewed + expired
                     const rate = total > 0 ? Math.round((renewed / total) * 100) : 100
                     retentionMap.get(key)!.retentionRate = rate
@@ -241,7 +242,7 @@ export async function GET(request: NextRequest) {
         if (type === 'member-frequency') {
             const thirtyDaysAgo = startOfDay(subDays(new Date(), 30))
 
-            const frequencyResult = await prisma.$queryRaw<MemberFrequencyRow[]>`
+            const frequencyResult = await (prisma.$queryRaw<MemberFrequencyRow[]>`
                 SELECT 
                     m.id as member_id,
                     m.name as member_name,
@@ -255,13 +256,13 @@ export async function GET(request: NextRequest) {
                 GROUP BY m.id
                 ORDER BY visit_count DESC, last_visit DESC NULLS FIRST
                 LIMIT 50
-            `
+            `.catch(() => []))
 
             return NextResponse.json(frequencyResult.map(row => ({
                 memberId: row.member_id,
                 memberName: row.member_name,
                 phone: row.phone ? row.phone.replace(/(\d{2})(\d+)(\d{4})/, "$1******$3") : null,
-                visitCount: Number(row.visit_count),
+                visitCount: Number(row.visit_count || 0),
                 lastVisit: row.last_visit ? format(new Date(row.last_visit), 'yyyy-MM-dd') : null
             })))
         }
@@ -275,12 +276,12 @@ export async function GET(request: NextRequest) {
                 recentSales
             ] = await Promise.all([
                 prisma.invoice.aggregate({
-                    where: { gymId: gym.id, paymentStatus: 'PAID' },
+                    where: { gymId: gym.id, paymentStatus: 'PAID', deletedAt: null },
                     _sum: { total: true }
-                }),
-                prisma.member.count({ where: { gymId: gym.id } }),
-                prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }),
-                prisma.product.count({ where: { gymId: gym.id, isActive: true } }),
+                }).catch(() => ({ _sum: { total: null } })),
+                prisma.member.count({ where: { gymId: gym.id } }).catch(() => 0),
+                prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }).catch(() => 0),
+                prisma.product.count({ where: { gymId: gym.id, isActive: true } }).catch(() => 0),
                 prisma.sale.findMany({
                     where: { gymId: gym.id },
                     take: 10,
@@ -293,16 +294,17 @@ export async function GET(request: NextRequest) {
                         product: { select: { name: true, category: true } },
                         member: { select: { name: true } }
                     }
-                })
+                }).catch(() => [])
             ])
 
             return NextResponse.json({
-                totalRevenue: Number(totalRevenue._sum.total || 0),
-                totalMembers,
-                activeMembers,
-                totalProducts,
-                recentSales: recentSales.map(s => ({
+                totalRevenue: Number(totalRevenue._sum.total?.toString() || totalRevenue._sum.total || 0),
+                totalMembers: Number(totalMembers || 0),
+                activeMembers: Number(activeMembers || 0),
+                totalProducts: Number(totalProducts || 0),
+                recentSales: (recentSales as any[]).map(s => ({
                     ...s,
+                    finalAmount: Number(s.finalAmount?.toString() || s.finalAmount || 0),
                     productName: s.product?.name || 'Unknown',
                     category: s.product?.category || 'Uncategorized',
                     memberName: s.member?.name || 'Walk-in'
