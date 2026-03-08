@@ -139,20 +139,12 @@ export default function SettingsPage() {
                             Gym Profile
                         </Button>
                         <Button
-                            variant={activeTab === 'staff' ? "secondary" : "ghost"}
+                            variant={activeTab === 'qr-poster' ? "secondary" : "ghost"}
                             className="justify-start"
-                            onClick={() => setActiveTab('staff')}
+                            onClick={() => setActiveTab('qr-poster')}
                         >
-                            <Users className="mr-2 h-4 w-4" />
-                            Staff Management
-                        </Button>
-                        <Button
-                            variant={activeTab === 'plans' ? "secondary" : "ghost"}
-                            className="justify-start"
-                            onClick={() => setActiveTab('plans')}
-                        >
-                            <ClipboardList className="mr-2 h-4 w-4" />
-                            Membership Plans
+                            <QrCode className="mr-2 h-4 w-4" />
+                            QR Poster
                         </Button>
                         <Link href={`/${slug}/settings/import`}>
                             <Button
@@ -163,14 +155,6 @@ export default function SettingsPage() {
                                 Import Members
                             </Button>
                         </Link>
-                        <Button
-                            variant={activeTab === 'qr-poster' ? "secondary" : "ghost"}
-                            className="justify-start"
-                            onClick={() => setActiveTab('qr-poster')}
-                        >
-                            <QrCode className="mr-2 h-4 w-4" />
-                            QR Poster
-                        </Button>
                     </nav>
                 </aside>
                 <div className="flex-1 lg:max-w-2xl">
@@ -303,14 +287,6 @@ export default function SettingsPage() {
                                 </Form>
                             </CardContent>
                         </Card>
-                    ) : activeTab === 'staff' ? (
-                        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
-                            <StaffManagement />
-                        </div>
-                    ) : activeTab === 'plans' ? (
-                        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
-                            <PlanManagement />
-                        </div>
                     ) : (
                         <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
                             <QRPosterSection slug={slug} gymName={gymName} />

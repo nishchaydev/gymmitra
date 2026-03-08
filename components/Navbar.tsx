@@ -81,6 +81,8 @@ export function Navbar() {
         { href: `/${slug}/invoices`, label: "Invoices", active: pathname === `/${slug}/invoices` || pathname.startsWith(`/${slug}/invoices/`) },
         { href: `/${slug}/expenses`, label: "Expenses", active: pathname === `/${slug}/expenses` || pathname.startsWith(`/${slug}/expenses/`) },
         { href: `/${slug}/attendance`, label: "Attendance", active: pathname === `/${slug}/attendance` },
+        { href: `/${slug}/plans`, label: "Plans", active: pathname === `/${slug}/plans` || pathname.startsWith(`/${slug}/plans/`) },
+        { href: `/${slug}/staff`, label: "Staff", active: pathname === `/${slug}/staff` || pathname.startsWith(`/${slug}/staff/`) },
         { href: `/${slug}/settings`, label: "Settings", active: pathname === `/${slug}/settings` },
     ]
 

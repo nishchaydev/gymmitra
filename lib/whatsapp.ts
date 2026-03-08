@@ -32,12 +32,10 @@ export const templates = {
      */
     renewalReminder: (name: string, daysLeft: number, gymName: string) => {
         return (
-            `Dear ${name},\n\n` +
-            `This is a courteous reminder from ${gymName}.\n\n` +
-            `Your membership is due to expire in *${daysLeft} day${daysLeft === 1 ? '' : 's'}*. ` +
-            `We kindly request you to renew your membership at the earliest to ensure uninterrupted access to our facilities.\n\n` +
-            `Please visit us at the front desk or contact our team for assistance.\n\n` +
-            `Warm regards,\n${gymName}`
+            `Hi ${name}!\n\n` +
+            `Reminder from *${gymName}*: Aapki membership ${daysLeft === 0 ? 'aaj' : daysLeft === 1 ? 'kal' : `agli ${daysLeft} dino mein`} khatam ho rahi hai.\n\n` +
+            `Please front desk pe aake renew karwa lein taaki aapka workout continue rahe. 💪\n\n` +
+            `See you soon!\n${gymName}`
         )
     },
 
@@ -45,15 +43,12 @@ export const templates = {
      * Sent upon successful new member registration.
      */
     welcomeMessage: (name: string, gymName: string, invoiceUrl?: string) => {
-        const invoiceLine = invoiceUrl ? `\n\nYou can access your joining invoice here: ${invoiceUrl}` : ''
+        const invoiceLine = invoiceUrl ? `\n\nAapka joining invoice yahan hai: ${invoiceUrl}` : ''
         return (
-            `Dear ${name},\n\n` +
-            `Welcome to *${gymName}*!\n\n` +
-            `We are pleased to have you as a member of our fitness community. ` +
-            `Your digital membership pass has been activated and is ready for use.${invoiceLine}\n\n` +
-            `Should you have any questions or require assistance, please do not hesitate to reach out to our team.\n\n` +
-            `We wish you a rewarding fitness journey ahead.\n\n` +
-            `Warm regards,\n${gymName}`
+            `Welcome to *${gymName}*, ${name}! 🎉\n\n` +
+            `Hume khushi hai ki aap hamari community ka hissa bane. Aapka digital pass active ho gaya hai.${invoiceLine}\n\n` +
+            `Koi bhi help chahiye ho toh front desk pe batayein. Let's start the fitness journey! 💪🏋️‍♂️\n\n` +
+            `Regards,\n${gymName}`
         )
     },
 
@@ -63,12 +58,10 @@ export const templates = {
     invoiceShare: (name: string, gymName: string, amount: number, url: string) => {
         const formattedAmount = formatCurrency(amount)
         return (
-            `Dear ${name},\n\n` +
-            `Thank you for your payment of *${formattedAmount}* to *${gymName}*. ` +
-            `Your transaction has been successfully recorded.\n\n` +
-            `Please find your official invoice at the link below:\n${url}\n\n` +
-            `We appreciate your continued patronage.\n\n` +
-            `Warm regards,\n${gymName}`
+            `Hi ${name}, thank you for the payment of *${formattedAmount}* to *${gymName}*.\n\n` +
+            `Payment record update ho gaya hai. Aapka invoice link yahan hai:\n${url}\n\n` +
+            `Keep crushing it! 🔥\n\n` +
+            `Regards,\n${gymName}`
         )
     },
 
@@ -90,11 +83,10 @@ export const templates = {
     paymentOverdue: (name: string, amount: number, gymName: string) => {
         const formattedAmount = formatCurrency(amount)
         return (
-            `Dear ${name},\n\n` +
-            `This is a gentle reminder from *${gymName}* that a payment of *${formattedAmount}* is currently outstanding on your membership account.\n\n` +
-            `We request you to kindly settle the dues at your earliest convenience to avoid any interruption to your membership.\n\n` +
-            `If you have already made the payment, please disregard this message.\n\n` +
-            `Warm regards,\n${gymName}`
+            `Hi ${name}, *${gymName}* se reminder:\n\n` +
+            `Aapka *${formattedAmount}* pending balance hai. Please use clear kar dein taaki koi interruption na ho.\n\n` +
+            `Agar aapne pehle hi pay kar diya hai toh please ignore this message. Thanks! 🙏\n\n` +
+            `Regards,\n${gymName}`
         )
     },
 

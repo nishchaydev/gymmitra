@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { CheckCircle2, Loader2, UserCheck, WifiOff } from "lucide-react"
+import { CheckCircle2, Loader2, UserCheck, WifiOff, ArrowRight } from "lucide-react"
 import { saveOfflineAttendance } from "@/lib/offlineSync"
 
 export default function KioskPage() {
@@ -91,71 +91,93 @@ export default function KioskPage() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-md space-y-8">
-                <div className="text-center space-y-2">
-                    <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Gym Mitra</h1>
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 sm:p-12">
+            {/* Minimalist Background elements - only subtle gradients, no AI glows */}
+            <div className="fixed inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
+
+            <div className="w-full max-w-lg space-y-12 relative z-10">
+                <div className="text-center space-y-3">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-xl shadow-blue-200 mb-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                        <span className="text-white text-2xl font-black italic tracking-tighter">GM</span>
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter">GymMitra</h1>
                     <div className="flex items-center justify-center gap-2">
-                        <p className="text-slate-500 font-medium">Station Check-In Kiosk</p>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Self Check-In Station</p>
                         {!isOnline && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
-                                <WifiOff className="h-3 w-3" /> Offline Mode
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full border border-amber-200 shadow-sm">
+                                <WifiOff className="h-3 w-3" /> Offline
                             </span>
                         )}
                     </div>
                 </div>
 
-                <Card className="border-0 shadow-xl overflow-hidden bg-white rounded-2xl">
-                    <CardHeader className="bg-slate-50 border-b border-slate-100 pb-6">
-                        <CardTitle className="text-center text-2xl font-bold text-slate-800">Welcome</CardTitle>
-                        <CardDescription className="text-center text-base">
-                            Enter your Member Card Number
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                        {lastCheckIn ? (
-                            <div className="text-center space-y-4 py-8 animate-in fade-in zoom-in duration-500">
-                                <div className="mx-auto h-24 w-24 bg-emerald-100 rounded-full flex items-center justify-center shadow-inner">
-                                    <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+                <div className="bg-slate-50/50 backdrop-blur-sm p-1 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-100 animate-in fade-in zoom-in duration-1000 delay-150">
+                    <Card className="border-0 shadow-none overflow-hidden bg-white rounded-[2.2rem]">
+                        <CardHeader className="pt-10 pb-6 text-center">
+                            <CardTitle className="text-3xl font-black text-slate-800 tracking-tight">Welcome Back!</CardTitle>
+                            <CardDescription className="text-slate-400 font-medium text-lg">
+                                Scan or Enter Card Number
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-10 pt-0">
+                            {lastCheckIn ? (
+                                <div className="text-center space-y-6 py-4 animate-in fade-in zoom-in duration-500">
+                                    <div className="mx-auto h-32 w-32 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.05),0_10px_20px_rgba(37,99,235,0.1)]">
+                                        <CheckCircle2 className="h-16 w-16 stroke-[2.5]" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-3xl font-black text-slate-900 tracking-tight">Access Granted</h3>
+                                        <p className="text-lg font-bold text-blue-600 uppercase tracking-wide">{lastCheckIn.name}</p>
+                                        <p className="text-sm font-medium text-slate-400">Entry time: {lastCheckIn.time}</p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        className="mt-8 font-black uppercase tracking-widest text-xs h-14 w-full rounded-2xl border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95 transition-all shadow-sm"
+                                        onClick={() => setLastCheckIn(null)}
+                                    >
+                                        Dismiss
+                                    </Button>
                                 </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-2xl font-bold text-emerald-700">Welcome In!</h3>
-                                    <p className="text-sm font-medium text-slate-500">Access Granted at {lastCheckIn.time}</p>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    className="mt-6 font-semibold shadow-sm w-full h-12"
-                                    onClick={() => setLastCheckIn(null)}
-                                >
-                                    Dismiss Screen
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <form onSubmit={(e) => { e.preventDefault(); handleCheckIn(memberId) }} className="space-y-6">
-                                    <div className="relative">
-                                        <UserCheck className="absolute left-4 top-3.5 h-6 w-6 text-slate-400" />
+                            ) : (
+                                <form onSubmit={(e) => { e.preventDefault(); handleCheckIn(memberId) }} className="space-y-8">
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                                            <UserCheck className="h-7 w-7 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                        </div>
                                         <Input
-                                            placeholder="Ex: 98765432"
-                                            className="pl-14 h-14 text-xl font-medium tracking-wider bg-slate-50 border-slate-200 focus-visible:ring-emerald-500 rounded-xl"
+                                            placeholder="Card Number"
+                                            className="pl-16 h-20 text-3xl font-black tracking-[0.2em] bg-slate-50 border-slate-200 focus-visible:ring-blue-600 focus-visible:bg-white rounded-[1.5rem] transition-all"
                                             value={memberId}
                                             onChange={(e) => setMemberId(e.target.value)}
                                             autoFocus
                                             autoComplete="off"
                                         />
                                     </div>
-                                    <Button type="submit" className="w-full h-14 text-lg font-bold bg-emerald-600 hover:bg-emerald-700 shadow-md rounded-xl" disabled={loading}>
-                                        {loading ? <Loader2 className="mr-2 h-6 w-6 animate-spin flex-none" /> : "Verify Identity"}
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-20 text-xl font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-100 hover:shadow-2xl hover:shadow-blue-200 active:scale-[0.98] transition-all rounded-[1.5rem] group"
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <Loader2 className="h-8 w-8 animate-spin" />
+                                        ) : (
+                                            <>
+                                                Verify Entry
+                                                <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                                            </>
+                                        )}
                                     </Button>
                                 </form>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
 
-                <p className="text-center font-medium text-sm text-slate-400">
-                    Need help? Ask a staff member.
-                </p>
+                <div className="text-center pt-4">
+                    <p className="font-bold text-xs uppercase tracking-[0.2em] text-slate-300">
+                        Powered by GymMitra AI
+                    </p>
+                </div>
             </div>
         </div>
     )

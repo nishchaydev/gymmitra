@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, Edit, CreditCard, Activity, Calendar, Clock, MessageCircle } from 'lucide-react'
+import { ChevronLeft, Edit, CreditCard, Activity, Calendar, Clock, MessageCircle, ReceiptText } from 'lucide-react'
 import { CheckInButton } from '@/components/members/check-in-button'
 import { MemberQR } from '@/components/members/MemberQR'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { cn } from '@/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -131,63 +132,65 @@ export default async function MemberDetailPage({
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                {/* Profile Card */}
+                {/* Profile Information (Always visible or sidebar) */}
                 <div className="col-span-1 space-y-6">
                     <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
-                        <CardHeader className="bg-drift-50/50 border-b border-drift-100">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-600">Profile Details</CardTitle>
+                        <CardHeader className="bg-drift-50/50 border-b border-drift-100 py-4">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Profile Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-6">
-                            <div>
-                                <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Phone</p>
-                                <p className="font-bold text-slate-900">{member.phone}</p>
+                            <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Phone</p>
+                                    <p className="font-bold text-slate-900">{member.phone}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Joined</p>
+                                    <p className="font-bold text-slate-900">{new Date(member.joiningDate).toLocaleDateString()}</p>
+                                </div>
                             </div>
                             {member.email && (
-                                <div>
+                                <div className="pt-2">
                                     <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Email</p>
-                                    <p className="font-bold text-slate-900">{member.email}</p>
+                                    <p className="font-bold text-slate-900 truncate">{member.email}</p>
                                 </div>
                             )}
-                            <div>
-                                <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Joined Date</p>
-                                <p className="font-bold text-slate-900">{new Date(member.joiningDate).toLocaleDateString()}</p>
-                            </div>
                             {member.emergencyName && (
                                 <div className="pt-4 border-t border-drift-100 mt-4">
-                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Emergency Contact</p>
-                                    <p className="font-bold text-slate-900">{member.emergencyName} ({member.emergencyRelation})</p>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Emergency</p>
+                                    <p className="font-bold text-slate-900">{member.emergencyName}</p>
                                     <p className="text-sm font-medium text-slate-600">{member.emergencyPhone}</p>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
 
-                    <MemberQR memberId={member.id} memberName={member.name} />
+                    <div className="hidden md:block">
+                        <MemberQR memberId={member.id} memberName={member.name} />
+                    </div>
 
                     {totalOutstanding > 0 && (
-                        <Card className="border-t-4 border-t-amber-500 bg-amber-50/50 rounded-2xl overflow-hidden shadow-sm">
+                        <Card className="border-t-4 border-t-rose-500 bg-rose-50/30 rounded-2xl overflow-hidden shadow-sm">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
-                                    <CreditCard className="w-4 h-4" />
-                                    Total Outstanding
+                                <CardTitle className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                                    <CreditCard className="w-3 h-3" />
+                                    Outstanding balance
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
-                                    <div className="text-3xl font-black text-slate-900 whitespace-nowrap">₹{totalOutstanding.toLocaleString()}</div>
-                                    <p className="text-xs text-amber-700 font-medium">
-                                        Due from {outstandingInvoices.length} {outstandingInvoices.length === 1 ? 'invoice' : 'invoices'}.
-                                    </p>
+                                <div className="space-y-3">
+                                    <div className="text-3xl font-black text-slate-900">₹{totalOutstanding.toLocaleString()}</div>
                                     <Button
                                         asChild
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase tracking-wider gap-2 h-11 rounded-xl shadow-md active:scale-95 transition-all"
+                                        size="sm"
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase tracking-wider gap-2 h-10 rounded-xl shadow-sm"
                                     >
                                         <Link
                                             href={getWhatsAppLink(member.phone, templates.paymentOverdue(member.name, totalOutstanding, gymName))}
                                             target="_blank"
                                         >
                                             <MessageCircle className="w-4 h-4" />
-                                            Send Reminder
+                                            Remind
                                         </Link>
                                     </Button>
                                 </div>
@@ -196,116 +199,140 @@ export default async function MemberDetailPage({
                     )}
                 </div>
 
-                <div className="col-span-1 md:col-span-2 space-y-6">
-                    {/* Subscription Card */}
-                    <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-primary-50/20 border-l-4 border-l-primary">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-primary-700">
-                                Current Subscription
-                            </CardTitle>
-                            <Activity className="h-4 w-4 text-primary" />
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            {activeSubscription ? (
-                                <div className="space-y-4">
-                                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-                                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">{activeSubscription.plan.name}</h3>
-                                        <Badge className={cn(
-                                            "rounded-full font-black text-[10px] uppercase px-3 w-fit",
-                                            activeSubscription.status === 'ACTIVE' ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-rose-500 hover:bg-rose-600 text-white"
-                                        )}>
-                                            {activeSubscription.status}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-sm text-slate-600 font-bold bg-drift-50 p-3 rounded-xl border border-drift-100">
-                                        <Calendar className="h-4 w-4 text-primary" />
-                                        <span>
-                                            {new Date(activeSubscription.startDate).toLocaleDateString()} — {new Date(activeSubscription.endDate).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center py-6">
-                                    <p className="text-slate-500 mb-4 font-medium italic">No active subscription</p>
-                                    <Button size="sm" asChild className="bg-primary hover:bg-primary-600 text-white font-bold rounded-full px-6">
-                                        <Link href={`/${slug}/invoices/new?memberId=${member.id}`}>Assign Plan</Link>
-                                    </Button>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                {/* Subscriptions, Attendance, and Invoices in Tabs */}
+                <div className="col-span-1 md:col-span-2">
+                    <Tabs defaultValue="membership" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 mb-6 h-12 p-1 bg-slate-100/50 rounded-xl">
+                            <TabsTrigger value="membership" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Plan</TabsTrigger>
+                            <TabsTrigger value="attendance" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Log</TabsTrigger>
+                            <TabsTrigger value="billing" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Bills</TabsTrigger>
+                        </TabsList>
 
-                    {/* Recent Attendance */}
-                    <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-amber-50/20 border-l-4 border-l-amber-500">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-amber-700">
-                                Recent Attendance
-                            </CardTitle>
-                            <Clock className="h-4 w-4 text-amber-500" />
-                        </CardHeader>
-                        <CardContent className="pt-6 px-0">
-                            {member.attendance.length > 0 ? (
-                                <div className="space-y-1">
-                                    {member.attendance.map((record: any) => (
-                                        <div key={record.id} className="flex justify-between items-center border-b border-drift-50 px-6 py-4 hover:bg-drift-50/30 transition-colors last:border-0">
-                                            <div>
-                                                <p className="font-black text-slate-900">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+                        <TabsContent value="membership" className="space-y-6 outline-none">
+                            <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-primary-50/20 border-l-4 border-l-primary">
+                                    <CardTitle className="text-xs font-black uppercase tracking-widest text-primary-700">
+                                        Current Plan
+                                    </CardTitle>
+                                    <Activity className="h-4 w-4 text-primary" />
+                                </CardHeader>
+                                <CardContent className="pt-6">
+                                    {activeSubscription ? (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{activeSubscription.plan.name}</h3>
+                                                <Badge className={cn(
+                                                    "rounded-full font-black text-[10px] uppercase px-3 h-6",
+                                                    activeSubscription.status === 'ACTIVE' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+                                                )}>
+                                                    {activeSubscription.status}
+                                                </Badge>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-xs font-black text-primary uppercase tracking-tighter bg-primary-50 px-2 py-1 rounded-lg">Checked in at {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            <div className="flex items-center gap-3 text-xs text-slate-600 font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <Calendar className="h-4 w-4 text-primary" />
+                                                <span>
+                                                    {new Date(activeSubscription.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(activeSubscription.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-slate-400 italic text-center py-8">No recent check-ins recorded</p>
-                            )}
-                        </CardContent>
-                    </Card>
+                                    ) : (
+                                        <div className="text-center py-10">
+                                            <p className="text-slate-500 mb-6 font-medium italic">No active membership plan found</p>
+                                            <Button size="lg" asChild className="bg-primary hover:bg-primary-600 text-white font-black uppercase tracking-widest h-12 px-8 rounded-xl shadow-lg shadow-primary/20">
+                                                <Link href={`/${slug}/invoices/new?memberId=${member.id}`}>Activate Plan</Link>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                    {/* Recent Invoices */}
-                    <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-slate-50 border-l-4 border-l-slate-900 text-slate-900 border-b border-slate-100">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest">
-                                Transaction History
-                            </CardTitle>
-                            <CreditCard className="h-4 w-4" />
-                        </CardHeader>
-                        <CardContent className="pt-6 px-0">
-                            {member.invoices.length > 0 ? (
-                                <div className="space-y-0">
-                                    {member.invoices.map((invoice: any) => (
-                                        <div key={invoice.id} className="flex justify-between items-center border-b border-drift-50 px-6 py-4 hover:bg-drift-50 transition-colors last:border-0 group">
-                                            <div>
-                                                <p className="font-black text-slate-900 text-sm">#{invoice.invoiceNumber}</p>
-                                                <p className="text-[10px] font-black text-drift-400 uppercase tracking-widest">{new Date(invoice.issueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                                            </div>
-                                            <div className="text-right flex flex-col items-end gap-1">
-                                                <p className="font-black text-slate-900">₹{Number(invoice.total).toLocaleString('en-IN')}</p>
-                                                <div className="flex items-center gap-2">
-                                                    {invoice.balanceDue > 0 && (
-                                                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
-                                                            Due: ₹{Number(invoice.balanceDue).toLocaleString('en-IN')}
-                                                        </span>
-                                                    )}
-                                                    <Badge className={cn(
-                                                        "text-[10px] font-black uppercase px-2 shadow-none border-0",
-                                                        invoice.paymentStatus === 'PAID' && "bg-emerald-100 text-emerald-700",
-                                                        invoice.paymentStatus === 'PARTIAL' && "bg-amber-100 text-amber-700",
-                                                        invoice.paymentStatus === 'PENDING' && "bg-rose-100 text-rose-700",
-                                                    )} variant="outline">
-                                                        {invoice.paymentStatus}
-                                                    </Badge>
+                            <div className="md:hidden">
+                                <MemberQR memberId={member.id} memberName={member.name} />
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="attendance" className="outline-none">
+                            <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-amber-50/20 border-l-4 border-l-amber-500">
+                                    <CardTitle className="text-xs font-black uppercase tracking-widest text-amber-700">
+                                        Recent Check-ins
+                                    </CardTitle>
+                                    <Clock className="h-4 w-4 text-amber-500" />
+                                </CardHeader>
+                                <CardContent className="pt-0 px-0">
+                                    {member.attendance.length > 0 ? (
+                                        <div className="divide-y divide-slate-50">
+                                            {member.attendance.map((record: any) => (
+                                                <div key={record.id} className="flex justify-between items-center px-6 py-4 hover:bg-slate-50/50 transition-colors">
+                                                    <p className="font-bold text-slate-900 text-sm">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                                                    <p className="text-[10px] font-black text-primary uppercase tracking-tighter bg-primary-50 px-2.5 py-1 rounded-lg">
+                                                        {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
                                                 </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-slate-400 italic text-center py-8">No transaction history found</p>
-                            )}
-                        </CardContent>
-                    </Card>
+                                    ) : (
+                                        <div className="text-center py-16 px-6">
+                                            <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Activity className="h-6 w-6 text-slate-300" />
+                                            </div>
+                                            <p className="text-sm text-slate-400 font-medium italic">No recent check-ins recorded</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="billing" className="outline-none">
+                            <Card className="border-drift-200 shadow-sm rounded-2xl overflow-hidden">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-slate-50 border-l-4 border-l-slate-900 border-b border-slate-100">
+                                    <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900">
+                                        Transaction History
+                                    </CardTitle>
+                                    <CreditCard className="h-4 w-4 text-slate-900" />
+                                </CardHeader>
+                                <CardContent className="pt-0 px-0">
+                                    {member.invoices.length > 0 ? (
+                                        <div className="divide-y divide-slate-50">
+                                            {member.invoices.map((invoice: any) => (
+                                                <div key={invoice.id} className="flex justify-between items-center px-6 py-5 hover:bg-slate-50 transition-colors group">
+                                                    <div className="space-y-1">
+                                                        <p className="font-black text-slate-900 text-sm">#{invoice.invoiceNumber}</p>
+                                                        <p className="text-[10px] font-black text-drift-400 uppercase tracking-widest">{new Date(invoice.issueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                                                    </div>
+                                                    <div className="text-right space-y-2">
+                                                        <p className="font-black text-slate-900 text-sm">₹{Number(invoice.total).toLocaleString('en-IN')}</p>
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {invoice.balanceDue > 0 && (
+                                                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-tight">
+                                                                    Due: ₹{Number(invoice.balanceDue).toLocaleString('en-IN')}
+                                                                </span>
+                                                            )}
+                                                            <Badge className={cn(
+                                                                "text-[9px] font-black uppercase px-2 h-5 shadow-none border-0",
+                                                                invoice.paymentStatus === 'PAID' && "bg-emerald-50 text-emerald-700",
+                                                                invoice.paymentStatus === 'PARTIAL' && "bg-amber-50 text-amber-700",
+                                                                invoice.paymentStatus === 'PENDING' && "bg-rose-50 text-rose-700",
+                                                            )} variant="outline">
+                                                                {invoice.paymentStatus}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-16 px-6">
+                                            <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <ReceiptText className="h-6 w-6 text-slate-300" />
+                                            </div>
+                                            <p className="text-sm text-slate-400 font-medium italic">No transaction history found</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </div>
