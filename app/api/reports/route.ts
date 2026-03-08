@@ -93,7 +93,10 @@ export async function GET(request: NextRequest) {
                     }
                 },
                 orderBy: { endDate: 'asc' }
-            }).catch(() => [])
+            }).catch((err) => {
+                console.error('Failed to fetch expiring subscriptions:', err);
+                throw err;
+            })
             return NextResponse.json(expiringSubscriptions)
         }
 
@@ -112,7 +115,10 @@ export async function GET(request: NextRequest) {
                   AND "deletedAt" IS NULL
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `.catch(() => []))
+            `.catch((err) => {
+                console.error('Failed to fetch revenue report data:', err);
+                throw err;
+            }))
 
             const interval = eachMonthOfInterval({
                 start: startDate,
@@ -150,7 +156,10 @@ export async function GET(request: NextRequest) {
                   AND "checkInTime" <= ${today}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `.catch(() => []))
+            `.catch((err) => {
+                console.error('Failed to fetch attendance report data:', err);
+                throw err;
+            }))
 
             const attendanceMap = new Map<string, number>()
             attendanceResult.forEach(row => {
@@ -184,7 +193,10 @@ export async function GET(request: NextRequest) {
                     AND "updatedAt" >= ${startDate}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `.catch(() => []))
+            `.catch((err) => {
+                console.error('Failed to fetch churn report data:', err);
+                throw err;
+            }))
 
             const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
             const churnMap = new Map(
@@ -218,7 +230,10 @@ export async function GET(request: NextRequest) {
                   AND "endDate" <= ${new Date()}
                 GROUP BY 1
                 ORDER BY 1 ASC
-            `.catch(() => []))
+            `.catch((err) => {
+                console.error('Failed to fetch retention report data:', err);
+                throw err;
+            }))
 
             const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
             const retentionMap = new Map(
@@ -256,7 +271,10 @@ export async function GET(request: NextRequest) {
                 GROUP BY m.id
                 ORDER BY visit_count DESC, last_visit DESC NULLS FIRST
                 LIMIT 50
-            `.catch(() => []))
+            `.catch((err) => {
+                console.error('Failed to fetch member frequency report data:', err);
+                throw err;
+            }))
 
             return NextResponse.json(frequencyResult.map(row => ({
                 memberId: row.member_id,
@@ -278,10 +296,21 @@ export async function GET(request: NextRequest) {
                 prisma.invoice.aggregate({
                     where: { gymId: gym.id, paymentStatus: 'PAID', deletedAt: null },
                     _sum: { total: true }
-                }).catch(() => ({ _sum: { total: null } })),
-                prisma.member.count({ where: { gymId: gym.id } }).catch(() => 0),
-                prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }).catch(() => 0),
-                prisma.product.count({ where: { gymId: gym.id, isActive: true } }).catch(() => 0),
+                }).catch((err) => { console.error('Failed to fetch totalRevenue:', err); return { _sum: { total: null } } }),
+                prisma.member.count({
+                    where: {
+                        gymId: gym.id,
+                        NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
+                    }
+                }).catch((err) => { console.error('Failed to fetch totalMembers:', err); return 0 }),
+                prisma.member.count({
+                    where: {
+                        gymId: gym.id,
+                        status: 'ACTIVE',
+                        NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
+                    }
+                }).catch((err) => { console.error('Failed to fetch activeMembers:', err); return 0 }),
+                prisma.product.count({ where: { gymId: gym.id, isActive: true } }).catch((err) => { console.error('Failed to fetch totalProducts:', err); return 0 }),
                 prisma.sale.findMany({
                     where: { gymId: gym.id },
                     take: 10,
@@ -294,7 +323,10 @@ export async function GET(request: NextRequest) {
                         product: { select: { name: true, category: true } },
                         member: { select: { name: true } }
                     }
-                }).catch(() => [])
+                }).catch((err) => {
+                    console.error('Failed to fetch summary data (recentSales):', err);
+                    return []; // Only recent sales is allowed to be empty for summary
+                })
             ])
 
             return NextResponse.json({

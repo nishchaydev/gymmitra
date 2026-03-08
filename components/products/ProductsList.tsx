@@ -65,6 +65,8 @@ export function ProductsList({ slug, query, category, lowStock, initialData }: P
                                 <TableHead>Name</TableHead>
                                 <TableHead>Category</TableHead>
                                 <TableHead className="text-right">Price</TableHead>
+                                <TableHead className="text-right">Cost</TableHead>
+                                <TableHead className="text-right">Margin</TableHead>
                                 <TableHead className="text-right">Stock</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
@@ -75,8 +77,8 @@ export function ProductsList({ slug, query, category, lowStock, initialData }: P
                                     <TableCell colSpan={5} className="h-auto p-0 border-0">
                                         <EmptyState
                                             icon={ShoppingBag}
-                                            title="No products yet"
-                                            description="Add memberships or retail items to start selling."
+                                            title="No inventory items."
+                                            description="Use the button above to add your first product."
                                             actionLabel="Add Product"
                                             actionHref={`/${slug}/products/new`}
                                             className="border-0 bg-transparent rounded-none"
@@ -92,6 +94,15 @@ export function ProductsList({ slug, query, category, lowStock, initialData }: P
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {product.price != null ? `₹${Number(product.price).toLocaleString()}` : '—'}
+                                        </TableCell>
+                                        <TableCell className="text-right text-muted-foreground text-xs italic">
+                                            {product.purchasePrice != null ? `₹${Number(product.purchasePrice).toLocaleString()}` : '—'}
+                                        </TableCell>
+                                        <TableCell className="text-right font-medium text-emerald-600">
+                                            {(product.price != null && product.purchasePrice != null)
+                                                ? `₹${(Number(product.price) - Number(product.purchasePrice)).toLocaleString()}`
+                                                : '—'
+                                            }
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {product.stock === null ? (

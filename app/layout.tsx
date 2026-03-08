@@ -77,7 +77,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  manifest: '/manifest.webmanifest',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

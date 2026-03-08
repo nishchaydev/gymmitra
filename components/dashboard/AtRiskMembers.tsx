@@ -109,32 +109,32 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
     const { count, members } = data
 
     return (
-        <Card className="h-full border-drift-200 shadow-sm flex flex-col bg-white rounded-xl overflow-hidden">
-            <CardHeader className="pb-3 border-b border-drift-100 flex flex-row items-center justify-between">
-                <div>
+        <Card className="border-drift-200 shadow-sm flex flex-col bg-white rounded-xl overflow-hidden h-fit">
+            <CardHeader className="pb-3 border-b border-drift-100 flex flex-row items-center justify-between bg-drift-50/5">
+                <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <div className="w-1 h-5 bg-red-500 rounded-full" />
-                        <CardTitle className="text-base font-semibold text-red-500">
-                            At Risk Members
+                        <div className="w-1.5 h-4 bg-red-500 rounded-full" />
+                        <CardTitle className="text-base font-bold text-slate-900">
+                            At-Risk Members
                         </CardTitle>
                         {count > 0 && (
-                            <span className="bg-red-50 text-red-500 rounded-full px-2 py-0.5 text-xs font-medium">
+                            <Badge variant="destructive" className="h-5 px-1.5 text-[10px] font-bold">
                                 {count}
-                            </span>
+                            </Badge>
                         )}
                     </div>
-                    <CardDescription className="text-sm text-drift-400">
+                    <CardDescription className="text-xs font-medium text-drift-400">
                         {count > 0 ? (
-                            <span>Active members missing for {days}+ days</span>
+                            <span>Missing {days}+ days since check-in</span>
                         ) : (
-                            <span>All members are active</span>
+                            <span>All members active</span>
                         )}
                     </CardDescription>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <Select value={days.toString()} onValueChange={onDaysChange}>
-                        <SelectTrigger className="w-[110px] h-9 text-xs font-medium border-drift-200 bg-drift-50/50">
+                        <SelectTrigger className="w-[90px] h-8 text-[10px] font-bold border-drift-200 bg-white">
                             <SelectValue placeholder="Days" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-drift-200 shadow-xl">
@@ -146,53 +146,53 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
                 </div>
             </CardHeader>
 
-            <CardContent className="p-0 flex-grow max-h-[400px] overflow-y-auto custom-scrollbar">
+            <CardContent className="p-0 overflow-y-auto custom-scrollbar max-h-[450px]">
                 {count === 0 ? (
-                    <div className="h-full min-h-[250px] flex flex-col items-center justify-center text-center p-6 text-drift-400">
+                    <div className="min-h-[200px] flex flex-col items-center justify-center text-center p-6 text-drift-400">
                         <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
                             <CalendarClock className="h-8 w-8 text-emerald-400" />
                         </div>
                         <p className="font-semibold text-drift-900">System Healthy</p>
-                        <p className="text-xs max-w-[200px] mx-auto mt-1">No active members have been absent for over {days} days.</p>
+                        <p className="text-xs max-w-[200px] mx-auto mt-1">No active members haven&apos;t checked in for {days} days.</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-drift-100 relative">
-                        {members.slice(0, 10).map((member) => {
+                        {members.slice(0, 15).map((member) => {
                             const link = member.phone ? getWhatsAppLink(member.phone, templates.inactivityNudge(member.name, member.daysInactive, gymName)) : '';
 
                             // Urgency-based badge colors
-                            const badgeStyle = member.daysInactive >= 300
-                                ? "bg-red-50 text-red-500"
-                                : member.daysInactive >= 30
-                                    ? "bg-amber-50 text-amber-600"
-                                    : "bg-drift-100 text-drift-500";
+                            const badgeStyle = member.daysInactive >= 30
+                                ? "bg-rose-50 text-rose-600 border-rose-100"
+                                : member.daysInactive >= 14
+                                    ? "bg-amber-50 text-amber-600 border-amber-100"
+                                    : "bg-blue-50 text-blue-600 border-blue-100";
 
                             return (
-                                <div key={member.id} className="p-4 flex items-center justify-between hover:bg-drift-50/80 transition-all duration-150 group">
-                                    <div className="space-y-1">
-                                        <Link href={`/${slug}/members/${member.id}`} className="font-semibold text-sm text-drift-900 hover:text-ion-500 transition-colors line-clamp-1 block">
+                                <div key={member.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-all duration-150 group">
+                                    <div className="space-y-1.5 flex-1 min-w-0 pr-2">
+                                        <Link href={`/${slug}/members/${member.id}`} className="font-bold text-sm text-slate-900 hover:text-primary transition-colors truncate block">
                                             {member.name}
                                         </Link>
-                                        <div className="flex items-center gap-2">
-                                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium transition-all duration-300", badgeStyle)}>
-                                                {member.daysInactive}d ago
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border", badgeStyle)}>
+                                                {member.daysInactive}d inactive
                                             </span>
                                             {member.lastVisit && (
-                                                <span className="text-[10px] text-drift-400 font-medium">
-                                                    Check-in: {new Date(member.lastVisit).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                                                    Visit: {new Date(member.lastVisit).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
                                     {link ? (
-                                        <Button size="sm" variant="outline" className="h-9 border-ion-500 text-ion-500 hover:bg-ion-50 hover:text-ion-600 rounded-lg text-sm px-4 font-medium transition-all duration-150" asChild>
+                                        <Button size="sm" variant="outline" className="h-8 bg-white border-primary/20 text-primary hover:bg-primary hover:text-white rounded-lg text-xs px-3 font-bold transition-all duration-200" asChild>
                                             <a href={link} target="_blank" rel="noopener noreferrer">
-                                                <MessageCircle className="h-4 w-4 mr-2" /> Nudge
+                                                <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Nudge
                                             </a>
                                         </Button>
                                     ) : (
-                                        <div className="px-2 py-1 rounded bg-drift-50 text-[10px] font-bold text-drift-300 uppercase tracking-widest">No Phone</div>
+                                        <Badge variant="outline" className="h-6 text-[9px] text-slate-400 border-dashed border-slate-200">No Phone</Badge>
                                     )}
                                 </div>
                             )
@@ -200,11 +200,14 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
                     </div>
                 )}
             </CardContent>
-            {count > 10 && (
-                <div className="p-3 border-t border-slate-100 bg-slate-50 text-center">
-                    <span className="text-xs font-medium text-slate-500">+ {count - 10} more at-risk members</span>
-                </div>
-            )}
+            <div className="p-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                    {count > 15 ? `+ ${count - 15} others` : 'End of list'}
+                </span>
+                <Link href={`/${slug}/members?status=ACTIVE`} className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter">
+                    View All Members →
+                </Link>
+            </div>
         </Card>
     )
 }

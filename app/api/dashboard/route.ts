@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
-import { startOfToday, endOfToday, subMonths, startOfMonth, endOfMonth } from 'date-fns'
+import { startOfToday, endOfToday, subMonths, startOfMonth, endOfMonth, addDays } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,9 +34,23 @@ export async function GET(req: NextRequest) {
             thisMonthInvoicesPending,
             lastMonthInvoicesPaid,
             outstandingInvoices,
+            urgentCount,
+            birthdaysToday,
+            totalExpensesResult,
         ] = await Promise.all([
-            prisma.member.count({ where: { gymId: gym.id } }).catch(() => 0),
-            prisma.member.count({ where: { gymId: gym.id, status: 'ACTIVE' } }).catch(() => 0),
+            prisma.member.count({
+                where: {
+                    gymId: gym.id,
+                    NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
+                }
+            }).catch(() => 0),
+            prisma.member.count({
+                where: {
+                    gymId: gym.id,
+                    status: 'ACTIVE',
+                    NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
+                }
+            }).catch(() => 0),
             prisma.sale.count({ where: { product: { gymId: gym.id }, saleDate: { gte: startOfThisMonth } } }).catch(() => 0),
             prisma.attendance.count({
                 where: {
@@ -57,7 +71,11 @@ export async function GET(req: NextRequest) {
                 take: 3,
             }).catch(() => []),
             prisma.member.findMany({
-                where: { gymId: gym.id, status: 'ACTIVE' },
+                where: {
+                    gymId: gym.id,
+                    status: 'ACTIVE',
+                    NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
+                },
                 select: { name: true, phone: true, dateOfBirth: true },
                 take: 50,
             }).catch(() => []),
@@ -109,8 +127,33 @@ export async function GET(req: NextRequest) {
                 include: { member: { select: { name: true, phone: true } } },
                 orderBy: { issueDate: 'asc' },
                 take: 5
-            }).catch(() => [])
+            }).catch(() => []),
+            prisma.memberSubscription.count({
+                where: {
+                    gymId: gym.id,
+                    endDate: { gte: today, lte: addDays(today, 3) },
+                    status: 'ACTIVE'
+                }
+            }).catch(() => 0),
+            prisma.member.findMany({
+                where: {
+                    gymId: gym.id,
+                    status: 'ACTIVE'
+                },
+                select: { dateOfBirth: true }
+            }).catch(() => []),
+            prisma.expense.aggregate({
+                where: { gymId: gym.id, date: { gte: startOfThisMonth } },
+                _sum: { amount: true }
+            }).catch(() => ({} as any))
         ])
+
+        const birthdayCount = birthdaysToday.filter(m => {
+            if (!m.dateOfBirth) return false
+            const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString()
+            const [, month, day] = dobString.split('T')[0].split('-').map(Number)
+            return day === today.getDate() && month === today.getMonth() + 1
+        }).length
 
         // Process revenue
         const thisMonthRevenue = Number(thisMonthInvoicesPaid._sum.total || 0)
@@ -194,6 +237,9 @@ export async function GET(req: NextRequest) {
             upcomingBirthdays,
             monthlyRevenueData,
             outstandingInvoices,
+            urgentCount,
+            birthdayCount,
+            totalExpenses: Number(totalExpensesResult?._sum?.amount || 0),
         })
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))

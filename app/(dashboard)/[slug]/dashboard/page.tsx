@@ -21,8 +21,32 @@ import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 export const revalidate = 60
 
 export const metadata: Metadata = {
-    title: "Dashboard | Gym Mitra",
     description: "Manage your gym's members, revenue, and attendance with ease.",
+}
+
+function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName }: { ownerName: string, urgentCount: number, birthdayCount: number, gymName: string }) {
+    const hour = new Date().getHours()
+    const greeting = hour < 12 ? 'Good morning'
+        : hour < 17 ? 'Good afternoon' : 'Good evening'
+
+    return (
+        <div>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">{gymName}</h2>
+            <p className="text-slate-500 mt-1 font-medium flex flex-wrap items-center gap-1.5 text-sm md:text-base">
+                <span>{greeting}, {ownerName}.</span>
+                {urgentCount > 0 && (
+                    <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md text-xs md:text-sm animate-pulse">
+                        {urgentCount} renewals need attention.
+                    </span>
+                )}
+                {birthdayCount > 0 && (
+                    <span className="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md text-xs md:text-sm">
+                        🎂 {birthdayCount} {birthdayCount === 1 ? 'birthday' : 'birthdays'} today!
+                    </span>
+                )}
+            </p>
+        </div>
+    )
 }
 
 export default async function DashboardPage({
@@ -74,7 +98,11 @@ export default async function DashboardPage({
         )
     }
 
-    if (!isDemo && gym && !(gym as any).isVerified) {
+    if (!isDemo && gym && gym.slug !== slug) {
+        redirect("/login")
+    }
+
+    if (!isDemo && gym && !gym.isVerified) {
         redirect("/onboarding")
     }
 
@@ -111,7 +139,9 @@ export default async function DashboardPage({
             revenue: SHOWCASE_STATS.totalRevenue.toLocaleString('en-IN'),
             revenueRaw: SHOWCASE_STATS.totalRevenue,
             productSalesCount: SHOWCASE_STATS.productSales,
-            dailyCheckins: 12
+            dailyCheckins: 12,
+            urgentCount: 3,
+            birthdayCount: 1,
         }
         recentInvoices = SHOWCASE_STATS.recentInvoices.map((inv, idx) => ({
             ...inv,
@@ -148,12 +178,35 @@ export default async function DashboardPage({
             retentionResult,
             frequencyResult,
             expiringSubscriptions,
+            followUpsToday,
+            partialInvoices,
+            lowStockProducts,
             remindersResult,
-            weeklyAttendanceResult,
-            outstandingInvoices,
+            outstandingInvoicesResult,
+            urgentCountResult,
+            memberGrowthRaw,
+            attendanceRaw,
+            birthdayDataRaw,
+            totalExpensesResult,
+            membersBeforeWindow,
         ] = await Promise.all([
-            prisma.member.count({ where: { gymId: gym!.id } as any }).catch(() => 0),
-            prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } as any }).catch(() => 0),
+            prisma.member.count({
+                where: {
+                    gymId: gym!.id,
+                    NOT: {
+                        name: { contains: 'Seed', mode: 'insensitive' as any }
+                    }
+                } as any
+            }).catch(() => 0),
+            prisma.member.count({
+                where: {
+                    gymId: gym!.id,
+                    status: 'ACTIVE',
+                    NOT: {
+                        name: { contains: 'Seed', mode: 'insensitive' as any }
+                    }
+                } as any
+            }).catch(() => 0),
             prisma.invoice.aggregate({
                 where: { paymentStatus: 'PAID', gymId: gym!.id, issueDate: { gte: startOfThisMonth }, deletedAt: null } as any,
                 _sum: { total: true }
@@ -289,7 +342,31 @@ export default async function DashboardPage({
                 },
                 orderBy: { endDate: 'asc' }
             }).catch(() => []),
-            // Reminders core data
+            // Daily briefing queries
+            prisma.lead.findMany({
+                where: {
+                    gymId: gym!.id,
+                    followUpDate: { gte: today, lte: endOfToday() },
+                    status: { notIn: ['CONVERTED', 'NOT_INTERESTED'] }
+                },
+                select: { id: true, name: true, phone: true, planInterest: true }
+            }).catch(() => []),
+            prisma.invoice.findMany({
+                where: {
+                    gymId: gym!.id,
+                    paymentStatus: 'PARTIAL',
+                    deletedAt: null
+                },
+                select: { id: true, invoiceNumber: true, balanceDue: true, member: { select: { name: true } } }
+            }).catch(() => []),
+            prisma.product.findMany({
+                where: {
+                    gymId: gym!.id,
+                    stock: { lte: 5 }
+                },
+                select: { id: true, name: true, stock: true, category: true }
+            }).catch(() => []),
+            // End daily briefing queries
             Promise.all([
                 prisma.member.findMany({
                     where: { gymId: gym!.id, status: 'ACTIVE' },
@@ -300,18 +377,6 @@ export default async function DashboardPage({
                     select: { id: true, invoiceNumber: true, total: true, member: { select: { name: true, phone: true } } }
                 }).catch(() => [])
             ]).catch(() => [[], []]),
-            // Weekly Footfall
-            (prisma.$queryRaw`
-                SELECT
-                    to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day,
-                    COUNT(*)::bigint as count
-                FROM "Attendance"
-                WHERE "gymId" = ${gym!.id}
-                  AND "checkInTime" >= ${lastWeekStart}
-                  AND "checkInTime" <= ${endOfToday()}
-                GROUP BY 1
-                ORDER BY 1 ASC
-            ` as Promise<{ day: string; count: bigint }[]>).catch(() => []),
             prisma.invoice.findMany({
                 where: {
                     gymId: gym!.id,
@@ -321,8 +386,116 @@ export default async function DashboardPage({
                 include: { member: { select: { name: true, phone: true } } },
                 orderBy: { issueDate: 'asc' },
                 take: 5
-            }).catch(() => [])
+            }).catch(() => []),
+            prisma.memberSubscription.count({
+                where: {
+                    gymId: gym!.id,
+                    endDate: { gte: today, lte: addDays(today, 3) },
+                    status: 'ACTIVE'
+                }
+            }).catch(() => 0),
+            // REAL Member Growth query
+            (prisma.$queryRaw`
+                SELECT 
+                    to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month,
+                    COUNT(*)::bigint as count
+                FROM "Member"
+                WHERE "gymId" = ${gym!.id}
+                  AND "createdAt" >= ${startDate5Months}
+                  AND "name" NOT ILIKE '%Seed%'
+                  AND "name" NOT ILIKE '%Demo%'
+                GROUP BY 1
+                ORDER BY 1 ASC
+            ` as Promise<{ month: string; count: bigint }[]>).catch(() => []),
+            // SEGMENTED Attendance query
+            (prisma.$queryRaw`
+                SELECT
+                    to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day,
+                    COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") < 12 THEN 1 END)::bigint as morning,
+                    COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") >= 12 THEN 1 END)::bigint as evening
+                FROM "Attendance"
+                WHERE "gymId" = ${gym!.id}
+                  AND "checkInTime" >= ${lastWeekStart}
+                  AND "checkInTime" <= ${endOfToday()}
+                GROUP BY 1
+                ORDER BY 1 ASC
+            ` as Promise<{ day: string; morning: bigint; evening: bigint }[]>).catch(() => []),
+            prisma.member.findMany({
+                where: { gymId: gym!.id, status: 'ACTIVE' },
+                select: { dateOfBirth: true }
+            }).catch(() => []),
+            // Safely fetch expenses if model exists
+            (async () => {
+                const model = (prisma as any).expense
+                if (model && typeof model.aggregate === 'function') {
+                    try {
+                        return await model.aggregate({
+                            where: { gymId: gym!.id, date: { gte: startOfThisMonth } },
+                            _sum: { amount: true }
+                        })
+                    } catch (e) {
+                        return { _sum: { amount: null } }
+                    }
+                }
+                return { _sum: { amount: null } }
+            })(),
+            prisma.member.count({
+                where: {
+                    gymId: gym!.id,
+                    createdAt: { lt: startDate5Months },
+                    NOT: [
+                        { name: { contains: 'Seed', mode: 'insensitive' as any } },
+                        { name: { contains: 'Demo', mode: 'insensitive' as any } }
+                    ]
+                } as any
+            }).catch(() => 0)
         ])
+
+        const birthdayCount = (birthdayDataRaw as any[]).filter((m: any) => {
+            if (!m.dateOfBirth) return false
+            const dob = new Date(m.dateOfBirth)
+            return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
+        }).length
+
+        // Process REAL Member Growth data
+        const growthMap = new Map<string, number>()
+        memberGrowthRaw.forEach(row => {
+            growthMap.set(row.month, Number(row.count || 0))
+        })
+        const growthData = []
+        // membersBeforeWindow comes from prisma.member.count earlier in the Promise.all
+        // totalMembers is also fetched, maybe we need to double check how membersBeforeWindow is assigned.
+        // It's assigned from the result of the Promise.all at the end.
+        let cumulative = Number(membersBeforeWindow || 0)
+        for (let i = 5; i >= 0; i--) {
+            const date = startOfMonth(subMonths(today, i))
+            const key = format(date, 'yyyy-MM-01')
+            const count = growthMap.get(key) || 0
+            cumulative += count
+            growthData.push({
+                name: format(date, 'MMM'),
+                members: cumulative
+            })
+        }
+
+        // Process SEGMENTED Attendance data
+        const attMap = new Map<string, { morning: number; evening: number }>()
+        attendanceRaw.forEach(row => {
+            attMap.set(row.day, { morning: Number(row.morning || 0), evening: Number(row.evening || 0) })
+        })
+        const weeklyAttendanceData = []
+        for (let i = 6; i >= 0; i--) {
+            const date = subDays(today, i)
+            const key = format(date, 'yyyy-MM-dd')
+            const vals = attMap.get(key) || { morning: 0, evening: 0 }
+            weeklyAttendanceData.push({
+                name: format(date, 'EEE'),
+                fullDate: key,
+                morning: vals.morning,
+                evening: vals.evening,
+                total: vals.morning + vals.evening
+            })
+        }
 
         const thisMonthRev = Number(totalRevenue?._sum?.total || 0);
         const lastMonthRev = Number(lastMonthInvoicesPaid?._sum?.total || 0);
@@ -351,8 +524,15 @@ export default async function DashboardPage({
             frequencyData: frequencyResult,
             expiringSubscriptions,
             remindersRaw: remindersResult,
-            weeklyAttendance: weeklyAttendanceResult,
-            outstandingInvoices,
+            weeklyAttendance: weeklyAttendanceData,
+            growthData: growthData,
+            outstandingInvoices: JSON.parse(JSON.stringify(outstandingInvoicesResult || [])),
+            urgentCount: Number(urgentCountResult || 0),
+            birthdayCount: birthdayCount,
+            followUps: JSON.parse(JSON.stringify(followUpsToday || [])),
+            partialPayments: JSON.parse(JSON.stringify(partialInvoices || [])),
+            lowStockItems: JSON.parse(JSON.stringify(lowStockProducts || [])),
+            totalExpenses: Number(totalExpensesResult?._sum?.amount || 0),
         }
         recentInvoices = invoices as any[]
 
@@ -428,20 +608,12 @@ export default async function DashboardPage({
                 </div>
             )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">{gym?.name}</h2>
-                        {isDemo && (
-                            <div className="px-2.5 py-1 rounded-full bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 flex items-center gap-1.5 animate-in fade-in zoom-in duration-500">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#4FC3F7] animate-pulse" />
-                                <span className="text-[10px] font-bold text-[#1a365d] uppercase tracking-wider">Showcase</span>
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-slate-500 mt-1 font-medium flex items-center gap-2 text-sm md:text-base">
-                        Manage your gym operations in one place.
-                    </p>
-                </div>
+                <DashboardGreeting
+                    gymName={gym?.name || "Your Gym"}
+                    ownerName={gym?.ownerName || "Owner"}
+                    urgentCount={dashboardData.urgentCount}
+                    birthdayCount={dashboardData.birthdayCount}
+                />
                 <div className="flex items-center space-x-2">
                     <Link href={`/${slug}/members/new`}>
                         <Button className="bg-primary hover:bg-primary-600 shadow-md w-full md:w-auto">
@@ -482,6 +654,9 @@ export default async function DashboardPage({
                             upcomingBirthdays: JSON.parse(JSON.stringify(upcomingBirthdays)),
                             monthlyRevenueData,
                             outstandingInvoices: JSON.parse(JSON.stringify(dashboardData.outstandingInvoices || [])),
+                            urgentCount: dashboardData.urgentCount,
+                            birthdayCount: dashboardData.birthdayCount,
+                            totalExpenses: (dashboardData as any).totalExpenses || 0,
                         }}
                     />
                 </TabsContent>
@@ -489,9 +664,9 @@ export default async function DashboardPage({
                     <Analytics
                         isDemo={isDemo}
                         initialData={isDemo ? undefined : {
-                            isEstimated: true,
-                            memberGrowth: monthlyRevenueData.map(d => ({ name: d.name, members: Math.floor(d.total / 1000) })), // Fallback logic as real member growth isn't fully implemented yet, but we'll pass something useful
-                            attendance: dashboardData.weeklyAttendance?.map((a: any) => ({ name: a.day, morning: Number(a.count), evening: Math.floor(Number(a.count) / 2) })) || []
+                            isEstimated: false,
+                            memberGrowth: dashboardData.growthData || [],
+                            attendance: dashboardData.weeklyAttendance || []
                         }}
                     />
                 </TabsContent>
@@ -524,9 +699,10 @@ export default async function DashboardPage({
                 <TabsContent value="reports" className="space-y-4">
                     <Reports
                         isDemo={isDemo}
+                        gymName={gym?.name || "Gym Mitra"}
                         initialData={isDemo ? undefined : {
                             revenue: monthlyRevenueData,
-                            attendance: dashboardData.weeklyAttendance?.map((a: any) => ({ name: a.day ? format(new Date(a.day), 'EEE') : '?', total: Number(a.count || 0) })) || [],
+                            attendance: dashboardData.weeklyAttendance || [],
                             expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
                                 const diff = new Date(sub.endDate).getTime() - new Date().getTime();
                                 return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
@@ -583,6 +759,6 @@ export default async function DashboardPage({
                 </TabsContent>
             </Tabs>
 
-        </div>
+        </div >
     )
 }

@@ -130,73 +130,143 @@ export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommand
             members.some(m => m.phone); // At least one selectable
 
         return (
-            <div className="border rounded-md mt-4 overflow-x-auto bg-white">
-                <Table>
-                    <TableHeader className="bg-slate-50">
-                        <TableRow>
-                            <TableHead className="w-[50px]">
-                                <Checkbox
-                                    checked={isAllSelected}
-                                    onCheckedChange={() => handleSelectAll(members.filter(m => m.phone))}
-                                    aria-label="Select all"
-                                />
-                            </TableHead>
-                            <TableHead>Member</TableHead>
-                            <TableHead>Plan</TableHead>
-                            <TableHead>Expiry Date</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Action</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {members.map((member) => {
-                            const hasPhone = !!member.phone
-                            const isMissed = member.daysOffset < 0
-                            const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
-                            const link = hasPhone ? getWhatsAppLink(member.phone, msg) : ''
+            <div className="mt-4">
+                {/* Desktop Table View */}
+                <div className="hidden md:block border rounded-md overflow-x-auto bg-white">
+                    <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow>
+                                <TableHead className="w-[50px]">
+                                    <Checkbox
+                                        checked={isAllSelected}
+                                        onCheckedChange={() => handleSelectAll(members.filter(m => m.phone))}
+                                        aria-label="Select all"
+                                    />
+                                </TableHead>
+                                <TableHead>Member</TableHead>
+                                <TableHead>Plan</TableHead>
+                                <TableHead>Expiry Date</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Action</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {members.map((member) => {
+                                const hasPhone = !!member.phone
+                                const isMissed = member.daysOffset < 0
+                                const isUrgent = !isMissed && member.daysOffset <= 7
+                                const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
+                                const link = hasPhone ? getWhatsAppLink(member.phone, msg) : ''
 
-                            return (
-                                <TableRow key={member.id} className={selectedIds.has(member.id) ? 'bg-blue-50/50' : ''}>
-                                    <TableCell>
+                                return (
+                                    <TableRow
+                                        key={member.id}
+                                        className={`
+                                            ${selectedIds.has(member.id) ? 'bg-blue-50/50' : ''}
+                                            ${isMissed ? 'hover:bg-rose-50/30' : isUrgent ? 'hover:bg-amber-50/30' : 'hover:bg-emerald-50/30'}
+                                        `}
+                                    >
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={selectedIds.has(member.id)}
+                                                onCheckedChange={() => toggleSelection(member.id)}
+                                                disabled={!hasPhone}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="font-medium">
+                                            {member.memberName}
+                                            <div className="text-xs text-slate-500">{hasPhone ? member.phone : 'No Phone'}</div>
+                                        </TableCell>
+                                        <TableCell className="text-sm">{member.planName}</TableCell>
+                                        <TableCell className="text-sm">
+                                            {format(new Date(member.endDate), 'dd MMM yyyy')}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={`
+                                                ${isMissed ? 'text-rose-600 bg-rose-50 border-rose-200' : ''}
+                                                ${isUrgent ? 'text-amber-600 bg-amber-50 border-amber-200' : ''}
+                                                ${!isMissed && !isUrgent ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : ''}
+                                            `}>
+                                                {isMissed ? `Missed ${Math.abs(member.daysOffset)}d ago` : `Expires in ${member.daysOffset}d`}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {hasPhone ? (
+                                                <Button size="sm" variant="outline" className="h-8 gap-1.5" asChild>
+                                                    <a href={link} target="_blank" rel="noopener noreferrer">
+                                                        <Send className="h-3 w-3" /> Remind
+                                                    </a>
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic">No WhatsApp</span>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                    {members.map((member) => {
+                        const hasPhone = !!member.phone
+                        const isMissed = member.daysOffset < 0
+                        const isUrgent = !isMissed && member.daysOffset <= 7
+                        const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
+                        const link = hasPhone ? getWhatsAppLink(member.phone, msg) : ''
+
+                        return (
+                            <div
+                                key={member.id}
+                                className={`
+                                    p-4 rounded-xl border-2 transition-all
+                                    ${isMissed ? 'bg-rose-50/50 border-rose-100' : isUrgent ? 'bg-amber-50/50 border-amber-100' : 'bg-emerald-50/50 border-emerald-100'}
+                                    ${selectedIds.has(member.id) ? 'ring-2 ring-blue-500 border-blue-200 shadow-md' : 'shadow-sm'}
+                                `}
+                            >
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex gap-3">
                                         <Checkbox
                                             checked={selectedIds.has(member.id)}
                                             onCheckedChange={() => toggleSelection(member.id)}
                                             disabled={!hasPhone}
+                                            className="mt-1"
                                         />
-                                    </TableCell>
-                                    <TableCell className="font-medium">
-                                        {member.memberName}
-                                        <div className="text-xs text-slate-500">{hasPhone ? member.phone : 'No Phone'}</div>
-                                    </TableCell>
-                                    <TableCell className="text-sm">{member.planName}</TableCell>
-                                    <TableCell className="text-sm">
-                                        {format(new Date(member.endDate), 'dd MMM yyyy')}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={`
-                                            ${isMissed ? 'text-rose-600 bg-rose-50 border-rose-200' : ''}
-                                            ${!isMissed && member.daysOffset <= 7 ? 'text-amber-600 bg-amber-50 border-amber-200' : ''}
-                                            ${!isMissed && member.daysOffset > 7 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : ''}
-                                        `}>
-                                            {isMissed ? `Missed ${Math.abs(member.daysOffset)}d ago` : `Expires in ${member.daysOffset}d`}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {hasPhone ? (
-                                            <Button size="sm" variant="outline" className="h-8 gap-1.5" asChild>
-                                                <a href={link} target="_blank" rel="noopener noreferrer">
-                                                    <Send className="h-3 w-3" /> Remind
-                                                </a>
-                                            </Button>
-                                        ) : (
-                                            <span className="text-xs text-slate-400 italic">No WhatsApp</span>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
+                                        <div>
+                                            <p className="font-bold text-slate-900 leading-tight">{member.memberName}</p>
+                                            <p className="text-xs text-slate-500">{member.planName}</p>
+                                        </div>
+                                    </div>
+                                    <Badge variant="outline" className={`
+                                        text-[10px] uppercase font-bold
+                                        ${isMissed ? 'text-rose-600 bg-white border-rose-200' : isUrgent ? 'text-amber-600 bg-white border-amber-200' : 'text-emerald-600 bg-white border-emerald-200'}
+                                    `}>
+                                        {isMissed ? `Missed ${Math.abs(member.daysOffset)}d` : `In ${member.daysOffset}d`}
+                                    </Badge>
+                                </div>
+
+                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/50">
+                                    <div className="text-[11px] text-slate-500">
+                                        <p className="font-medium uppercase tracking-wider">Expiry</p>
+                                        <p className="text-slate-900 font-bold">{format(new Date(member.endDate), 'dd MMM')}</p>
+                                    </div>
+
+                                    {hasPhone ? (
+                                        <Button size="sm" className="h-8 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
+                                            <a href={link} target="_blank" rel="noopener noreferrer">
+                                                <Send className="h-3 w-3 mr-1.5" /> Remind
+                                            </a>
+                                        </Button>
+                                    ) : (
+                                        <span className="text-[10px] text-slate-400 italic">No WhatsApp</span>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
             </div>
         )
     }

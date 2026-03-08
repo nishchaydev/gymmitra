@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Loader2, Save } from 'lucide-react'
+import { Loader2, Save, Trash2 } from 'lucide-react'
 
 interface Member {
     id: string
@@ -45,6 +45,29 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
     })
 
     const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }))
+
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this member? This action cannot be undone.')) return
+
+        setSaving(true)
+        try {
+            const res = await fetch(`/api/members/${member.id}`, {
+                method: 'DELETE',
+            })
+
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || 'Failed to delete member')
+            }
+
+            toast.success('Member deleted successfully')
+            router.push(`/${gymSlug}/members`)
+            router.refresh()
+        } catch (err: any) {
+            toast.error(err.message || 'An error occurred while deleting')
+            setSaving(false)
+        }
+    }
 
     const handleSave = async () => {
         if (!form.name.trim() || !form.phone.trim()) {
@@ -160,10 +183,16 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
                 </CardContent>
             </Card>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
+            <div className="flex gap-4 pt-4">
+                <Button variant="destructive" type="button" onClick={handleDelete} disabled={saving} className="w-1/3" size="lg">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                </Button>
+                <Button onClick={handleSave} disabled={saving} className="w-2/3" size="lg">
+                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+            </div>
         </div>
     )
 }

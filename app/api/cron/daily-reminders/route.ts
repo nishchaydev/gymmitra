@@ -5,6 +5,7 @@ import { Resend, CreateEmailOptions, CreateEmailResponseSuccess } from 'resend'
 import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
+import React from 'react'
 
 const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
 const BATCH_SIZE = 100
@@ -85,7 +86,10 @@ export async function GET(request: NextRequest) {
         const istMidnightUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0, 0))
 
         const gyms = await prisma.gymProfile.findMany({
-            select: { id: true, name: true, email: true }
+            select: {
+                id: true, name: true, email: true, ownerName: true, slug: true,
+                createdAt: true, isVerified: true
+            }
         })
 
         for (const gym of gyms) {
@@ -242,6 +246,114 @@ export async function GET(request: NextRequest) {
                         userId: gym.id,
                         gymId: gym.id
                     })
+                }
+
+                // ── Daily Briefing Email ──────────────────────────────
+                try {
+                    const todayStart = new Date(year, month - 1, day)
+                    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1)
+
+                    const followUpsToday = await prisma.lead.findMany({
+                        where: { gymId: gym.id, followUpDate: { gte: todayStart, lte: todayEnd }, status: { notIn: ['CONVERTED', 'NOT_INTERESTED'] } }
+                    })
+                    const partialInvoices = await prisma.invoice.findMany({
+                        where: { gymId: gym.id, paymentStatus: 'PARTIAL', memberId: { not: null } },
+                        include: { member: { select: { name: true } } }
+                    })
+                    const lowStockProducts = await prisma.product.findMany({
+                        where: { gymId: gym.id, isActive: true, stock: { lte: 5 } }
+                    })
+                    const urgentRenewals = await prisma.memberSubscription.findMany({
+                        where: { gymId: gym.id, status: 'ACTIVE', endDate: { gte: todayStart, lte: new Date(todayStart.getTime() + 2 * 24 * 60 * 60 * 1000) } },
+                        include: { member: { select: { name: true } }, plan: { select: { name: true } } }
+                    })
+
+                    const Component = (await import('@/components/emails/DailyBriefingEmail')).DailyBriefingEmail
+                    emailBatch.push({
+                        from: FROM_EMAIL,
+                        to: [gym.email],
+                        subject: `☀️ Good morning, ${gym.ownerName?.split(' ')[0] || 'Admin'} — ${gym.name} Briefing`,
+                        react: React.createElement(Component, {
+                            ownerName: gym.ownerName?.split(' ')[0] || 'Admin',
+                            gymName: gym.name,
+                            date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+                            slug: gym.slug || 'demo',
+                            urgentRenewals: urgentRenewals.map(u => ({
+                                id: u.id,
+                                name: u.member.name,
+                                planName: u.plan.name || 'Membership',
+                                daysLeft: Math.floor((u.endDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24))
+                            })),
+                            followUps: followUpsToday.map((l: any) => ({
+                                id: l.id, name: l.name, phone: l.phone, planInterest: l.planInterest
+                            })),
+                            partialPayments: partialInvoices.map((p: any) => ({
+                                id: p.id, memberName: p.member?.name || 'Unknown', amountDue: Number(p.balanceDue), invoiceNumber: p.invoiceNumber
+                            })),
+                            overdueInvoices: [], // Overdue logic handled by separate overdue block
+                            lowStockItems: lowStockProducts.map((p: any) => ({
+                                id: p.id, name: p.name, stock: p.stock, category: p.category
+                            }))
+                        }) as React.ReactElement
+                    })
+
+                    notificationBatch.push({
+                        type: 'MONTHLY_SUMMARY',
+                        title: 'Daily Briefing Sent',
+                        message: `Sent daily briefing email with ${urgentRenewals.length} urgent renewals and ${followUpsToday.length} follow-ups`,
+                        userId: gym.id,
+                        gymId: gym.id
+                    })
+                } catch (e) {
+                    console.error('[CRON] Failed to generate Daily Briefing for gym:', gym.slug, e)
+                }
+
+                // ── Onboarding / Welcome Sequence Emails ──────────────
+                if (gym.isVerified && gym.email) {
+                    const daysSinceCreated = Math.floor((now.getTime() - gym.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+
+                    // Day 3 Email
+                    if (daysSinceCreated === 3) {
+                        emailBatch.push({
+                            from: FROM_EMAIL,
+                            to: [gym.email],
+                            subject: `Your GymMitra check-in poster is ready!`,
+                            html: `
+                                <h2>Hi ${gym.ownerName?.split(' ')[0] || 'Gym Owner'},</h2>
+                                <p>It's been 3 days since you joined GymMitra. How are things going?</p>
+                                <p>We wanted to remind you that your members can check in using the self-service page. Have you printed your check-in poster yet?</p>
+                                <p>Your check-in URL is: <strong>https://gym.emitra.dev/${gym.slug}/checkin</strong></p>
+                                <p>If you'd like a laminated copy of your QR poster delivered to your gym, just reply to this email.</p>
+                                <br/>
+                                <p>Best regards,<br/>The GymMitra Team</p>
+                            `
+                        })
+                    }
+
+                    // Day 7 Email
+                    if (daysSinceCreated === 7) {
+                        const membersAdded = await prisma.member.count({
+                            where: { gymId: gym.id, createdAt: { gte: gym.createdAt } }
+                        })
+                        const invoicesAgg = await prisma.invoice.aggregate({
+                            where: { gymId: gym.id, createdAt: { gte: gym.createdAt } },
+                            _sum: { amountPaid: true }
+                        })
+
+                        emailBatch.push({
+                            from: FROM_EMAIL,
+                            to: [gym.email],
+                            subject: `How is ${gym.name}'s first week jumping in?`,
+                            html: `
+                                <h2>Hi ${gym.ownerName?.split(' ')[0] || 'Gym Owner'},</h2>
+                                <p>Congratulations on completing your first week with GymMitra!</p>
+                                <p>So far, you've added <strong>${membersAdded}</strong> members and collected <strong>Rs. ${Number(invoicesAgg._sum?.amountPaid || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong> in payments.</p>
+                                <p>If you need any help scaling up your usage or have any technical issues, book a quick call with us.</p>
+                                <br/>
+                                <p>Best,<br/>The GymMitra Team</p>
+                            `
+                        })
+                    }
                 }
 
                 // ── Dispatch Batch APIs ───────────────────────────────

@@ -1,22 +1,34 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactNode, useState } from 'react'
+import { ReactNode } from 'react'
+
+function makeQueryClient() {
+    return new QueryClient({
+        defaultOptions: {
+            queries: {
+                staleTime: 30_000,
+                gcTime: 5 * 60 * 1000,
+                refetchOnWindowFocus: false,
+                retry: 1,
+            },
+        },
+    })
+}
+
+let browserQueryClient: QueryClient | undefined = undefined
+
+function getQueryClient() {
+    if (typeof window === 'undefined') {
+        return makeQueryClient()
+    } else {
+        if (!browserQueryClient) browserQueryClient = makeQueryClient()
+        return browserQueryClient
+    }
+}
 
 export function ReactQueryProvider({ children }: { children: ReactNode }) {
-    const [queryClient] = useState(
-        () =>
-            new QueryClient({
-                defaultOptions: {
-                    queries: {
-                        staleTime: 30_000,       // 30 seconds — data stays fresh after tab switch
-                        gcTime: 5 * 60 * 1000,   // 5 minutes — garbage collect after this
-                        refetchOnWindowFocus: false, // Don't refetch just because user switched tabs
-                        retry: 1,
-                    },
-                },
-            })
-    )
+    const queryClient = getQueryClient()
 
     return (
         <QueryClientProvider client={queryClient}>

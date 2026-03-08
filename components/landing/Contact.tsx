@@ -100,7 +100,7 @@ export function Contact() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-900 tracking-tight font-display">WhatsApp Support</p>
-                                        <p className="text-sm font-medium">+91 97709 98624</p>
+                                        <p className="text-sm font-medium">+91 62618 54014</p>
                                     </div>
                                 </div>
                             </div>

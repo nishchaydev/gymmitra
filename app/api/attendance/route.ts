@@ -58,19 +58,34 @@ export async function POST(request: NextRequest) {
         const { memberId } = checkInSchema.parse(body)
 
         // Check if member exists AND belongs to gym
-        const member = await prisma.member.findFirst({
+        let member = await prisma.member.findFirst({
             where: {
                 id: memberId,
                 gymId: gym.id // Enforce ownership
             }
         })
 
+        let staffMember = null;
         if (!member) {
-            return NextResponse.json({ error: 'Member not found in this gym. Please check the ID.' }, { status: 404 })
+            // Try fallback to Staff Member
+            staffMember = await prisma.staffMember.findFirst({
+                where: {
+                    id: memberId,
+                    gymId: gym.id
+                }
+            })
         }
 
-        if (member.status !== 'ACTIVE') {
+        if (!member && !staffMember) {
+            return NextResponse.json({ error: 'Member or Staff not found in this gym. Please check the ID.' }, { status: 404 })
+        }
+
+        if (member && member.status !== 'ACTIVE') {
             return NextResponse.json({ error: `Check-in denied. Member status is ${member.status}.` }, { status: 400 })
+        }
+
+        if (staffMember && !staffMember.isActive) {
+            return NextResponse.json({ error: `Check-in denied. Staff member is inactive.` }, { status: 400 })
         }
 
         // UTC naive logic removed. Shift to Gym's physical timezone.
@@ -83,30 +98,49 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: `Invalid timezone configuration: ${timezone}` }, { status: 400 })
         }
 
-        const existingAttendance = await prisma.attendance.findUnique({
-            where: {
-                memberId_localDateString: {
-                    memberId,
-                    localDateString
+        let existingAttendance;
+        if (member) {
+            existingAttendance = await prisma.attendance.findUnique({
+                where: {
+                    memberId_localDateString: {
+                        memberId: member.id,
+                        localDateString
+                    }
                 }
-            }
-        })
-
-        if (existingAttendance) {
-            return NextResponse.json({ error: 'Member already checked in today' }, { status: 400 })
+            })
+        } else if (staffMember) {
+            existingAttendance = await prisma.attendance.findFirst({
+                where: {
+                    staffId: staffMember.id,
+                    localDateString: localDateString
+                }
+            })
         }
 
-        const attendance = await prisma.attendance.create({
-            data: {
-                member: { connect: { id: memberId } },
-                gym: { connect: { id: gym.id } },
-                date: now,
-                checkInTime: now,
-                localDateString: localDateString
-            },
+        if (existingAttendance) {
+            return NextResponse.json({ error: `${member ? 'Member' : 'Staff'} already checked in today` }, { status: 400 })
+        }
+
+        const createData: any = {
+            gym: { connect: { id: gym.id } },
+            date: now,
+            checkInTime: now,
+            localDateString: localDateString
+        }
+
+        if (member) {
+            createData.member = { connect: { id: member.id } }
+        }
+        if (staffMember) {
+            createData.staff = { connect: { id: staffMember.id } }
+        }
+
+        const attendance = await (prisma as any).attendance.create({
+            data: createData,
             select: {
                 id: true,
                 memberId: true,
+                staffId: true,
                 gymId: true,
                 date: true,
                 checkInTime: true,
@@ -116,9 +150,18 @@ export async function POST(request: NextRequest) {
                         name: true,
                         phone: true
                     }
+                },
+                staff: {
+                    select: {
+                        name: true,
+                        phone: true,
+                        role: true
+                    }
                 }
             }
         })
+
+        const userName = member ? member.name : staffMember ? staffMember.name : "Unknown"
 
         // Audit Log (Manual Check-in)
         const ipHeader = request.headers.get('x-forwarded-for')
@@ -130,10 +173,16 @@ export async function POST(request: NextRequest) {
             entityType: 'ATTENDANCE',
             entityId: attendance.id,
             ipAddress: ip,
-            payload: { memberId, localDateString }
+            payload: { scannedId: memberId, name: userName, isStaff: !!staffMember, localDateString }
         }).catch(err => console.error('Audit Log failed for CHECKIN_MEMBER', err))
 
-        return NextResponse.json(attendance, { status: 201 })
+        // Return uniform structure to client
+        const payload = {
+            ...attendance,
+            member: member ? attendance.member : { name: `${attendance.staff?.name} (${attendance.staff?.role})`, phone: attendance.staff?.phone || "" }
+        }
+
+        return NextResponse.json(payload, { status: 201 })
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })

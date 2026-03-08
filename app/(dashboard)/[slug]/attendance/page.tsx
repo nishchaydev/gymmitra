@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Clock, MonitorPlay, Users } from "lucide-react"
+import { ArrowLeft, Clock, MonitorPlay, Users, Download } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { SHOWCASE_MEMBERS } from "@/lib/showcase-data"
@@ -59,7 +59,8 @@ export default async function AttendancePage({
             }
         },
         include: {
-            member: true
+            member: true,
+            staff: true
         },
         orderBy: {
             checkInTime: 'desc'
@@ -80,6 +81,11 @@ export default async function AttendancePage({
                     <h2 className="text-3xl font-bold tracking-tight">Attendance</h2>
                 </div>
                 <div className="flex items-center space-x-2">
+                    <a href={`/api/reports/download?type=attendance`} download>
+                        <Button variant="outline">
+                            <Download className="mr-2 h-4 w-4" /> Download CSV
+                        </Button>
+                    </a>
                     <Link href={`/${slug}/attendance/kiosk`}>
                         <Button>
                             <MonitorPlay className="mr-2 h-4 w-4" /> Launch Kiosk Mode
@@ -112,16 +118,23 @@ export default async function AttendancePage({
                 <CardContent>
                     {todaysAttendance.length > 0 ? (
                         <div className="space-y-4">
-                            {todaysAttendance.map((record) => (
+                            {todaysAttendance.map((record: any) => (
                                 <div key={record.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                                     <div className="flex items-center gap-4">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                                             <Clock className="h-5 w-5 text-gray-500" />
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="font-medium leading-none">{record.member.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium leading-none">
+                                                    {record.member?.name || record.staff?.name || "Unknown"}
+                                                </p>
+                                                {record.staffId && (
+                                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">Staff</Badge>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-gray-500">
-                                                {isDemo ? (record.member.phone || "").substring(0, 5) + "*****" : record.member.phone}
+                                                {isDemo ? ((record.member?.phone || record.staff?.phone || "").substring(0, 5) + "*****") : (record.member?.phone || record.staff?.phone)}
                                             </p>
                                         </div>
                                     </div>
@@ -134,8 +147,12 @@ export default async function AttendancePage({
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            No check-ins recorded today.
+                        <div className="text-center py-12 space-y-3">
+                            <Users className="w-12 h-12 text-slate-200 mx-auto" />
+                            <div className="space-y-1">
+                                <p className="text-slate-900 font-extrabold text-lg">No check-ins today yet.</p>
+                                <p className="text-slate-500 font-medium italic">The gym hasn&apos;t seen any check-ins today yet. Motivation is coming!</p>
+                            </div>
                         </div>
                     )}
                 </CardContent>

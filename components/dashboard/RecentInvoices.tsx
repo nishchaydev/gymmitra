@@ -47,14 +47,14 @@ export function RecentInvoices({ isDemo, data, slug }: { isDemo?: boolean, data?
                 </Link>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[450px] overflow-y-auto custom-scrollbar">
                     <Table>
-                        <TableHeader>
+                        <TableHeader className="sticky top-0 z-10 bg-white shadow-sm">
                             <TableRow className="hover:bg-transparent border-b border-drift-100 bg-drift-50/30">
-                                <TableHead className="w-[120px] text-xs font-semibold uppercase tracking-widest text-drift-400 py-3">Invoice</TableHead>
-                                <TableHead className="text-xs font-semibold uppercase tracking-widest text-drift-400 py-3">Status</TableHead>
-                                <TableHead className="text-xs font-semibold uppercase tracking-widest text-drift-400 py-3">Member</TableHead>
-                                <TableHead className="text-right text-xs font-semibold uppercase tracking-widest text-drift-400 py-3">Amount</TableHead>
+                                <TableHead className="w-[120px] text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Invoice</TableHead>
+                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Status</TableHead>
+                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Member</TableHead>
+                                <TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Amount</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -74,14 +74,14 @@ export function RecentInvoices({ isDemo, data, slug }: { isDemo?: boolean, data?
                             ) : (
                                 invoices.map((invoice: any) => (
                                     <TableRow key={invoice.id} className="hover:bg-drift-50/50 transition-colors border-b border-drift-100 last:border-0">
-                                        <TableCell className="font-semibold text-ion-500 py-4">
+                                        <TableCell className="font-semibold text-ion-500 py-4 text-xs">
                                             <Link href={`/${slug}/invoices/${invoice.id}`} className="hover:underline hover:text-ion-600 transition-all underline-offset-4 decoration-2">
                                                 {invoice.invoiceNumber}
                                             </Link>
                                         </TableCell>
                                         <TableCell className="py-4">
                                             <span className={cn(
-                                                "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border",
+                                                "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border",
                                                 invoice.paymentStatus === 'PAID'
                                                     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                     : invoice.paymentStatus === 'PENDING'
@@ -91,10 +91,10 @@ export function RecentInvoices({ isDemo, data, slug }: { isDemo?: boolean, data?
                                                 {invoice.paymentStatus}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="max-w-[150px] truncate py-4 font-medium text-drift-700">
+                                        <TableCell className="max-w-[150px] truncate py-4 font-medium text-drift-700 text-xs text-nowrap">
                                             {invoice.member?.name || 'Walk-in'}
                                         </TableCell>
-                                        <TableCell className="text-right font-bold tracking-tight text-drift-900 py-4">
+                                        <TableCell className="text-right font-bold tracking-tight text-drift-900 py-4 text-xs">
                                             ₹{Number(invoice.total).toLocaleString('en-IN')}
                                         </TableCell>
                                     </TableRow>

@@ -1,3 +1,5 @@
+import { getBaseUrl } from './utils'
+
 /**
  * WhatsApp Utility for GymMitra
  * Generates wa.me links for zero-cost messaging
@@ -42,12 +44,13 @@ export const templates = {
     /**
      * Sent upon successful new member registration.
      */
-    welcomeMessage: (name: string, gymName: string) => {
+    welcomeMessage: (name: string, gymName: string, invoiceUrl?: string) => {
+        const invoiceLine = invoiceUrl ? `\n\nYou can access your joining invoice here: ${invoiceUrl}` : ''
         return (
             `Dear ${name},\n\n` +
             `Welcome to *${gymName}*!\n\n` +
             `We are pleased to have you as a member of our fitness community. ` +
-            `Your digital membership pass has been activated and is ready for use.\n\n` +
+            `Your digital membership pass has been activated and is ready for use.${invoiceLine}\n\n` +
             `Should you have any questions or require assistance, please do not hesitate to reach out to our team.\n\n` +
             `We wish you a rewarding fitness journey ahead.\n\n` +
             `Warm regards,\n${gymName}`
@@ -126,7 +129,7 @@ export const templates = {
     },
 }
 
-import { getBaseUrl } from './utils'
+
 
 export const getInvoiceWhatsAppLink = (
     phone: string,

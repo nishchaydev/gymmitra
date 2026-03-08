@@ -36,7 +36,6 @@ export default function KioskPage() {
                 time: data.checkInTime ? new Date(data.checkInTime).toLocaleTimeString() : new Date().toLocaleTimeString()
             })
             setMemberId("")
-            setShowScanner(false)
             setTimeout(() => setLastCheckIn(null), 5000)
         } catch (error: unknown) {
             // Handle Offline fallback
@@ -61,7 +60,6 @@ export default function KioskPage() {
                         time: new Date().toLocaleTimeString()
                     })
                     setMemberId("")
-                    setShowScanner(false)
                 } catch (saveError) {
                     // saveError is handled by the toast below
                     toast.error("Failed to save even offline. System error.")
@@ -93,95 +91,69 @@ export default function KioskPage() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-md space-y-8">
                 <div className="text-center space-y-2">
-                    <h1 className="text-4xl font-bold text-white tracking-tight">Gym Mitra</h1>
+                    <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Gym Mitra</h1>
                     <div className="flex items-center justify-center gap-2">
-                        <p className="text-slate-400">Self Check-In Kiosk</p>
+                        <p className="text-slate-500 font-medium">Station Check-In Kiosk</p>
                         {!isOnline && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">
-                                <WifiOff className="h-2 w-2" /> Offline Mode
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                                <WifiOff className="h-3 w-3" /> Offline Mode
                             </span>
                         )}
                     </div>
                 </div>
 
-                <Card className="border-0 shadow-2xl overflow-hidden">
-                    <CardHeader>
-                        <CardTitle className="text-center text-2xl">Check In</CardTitle>
-                        <CardDescription className="text-center">
-                            {showScanner ? "Scan your digital QR pass" : "Enter your Member ID or scan QR"}
+                <Card className="border-0 shadow-xl overflow-hidden bg-white rounded-2xl">
+                    <CardHeader className="bg-slate-50 border-b border-slate-100 pb-6">
+                        <CardTitle className="text-center text-2xl font-bold text-slate-800">Welcome</CardTitle>
+                        <CardDescription className="text-center text-base">
+                            Enter your Member Card Number
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6">
+                    <CardContent className="p-8">
                         {lastCheckIn ? (
                             <div className="text-center space-y-4 py-8 animate-in fade-in zoom-in duration-500">
-                                <div className="mx-auto h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
-                                    <CheckCircle2 className="h-10 w-10 text-green-600" />
+                                <div className="mx-auto h-24 w-24 bg-emerald-100 rounded-full flex items-center justify-center shadow-inner">
+                                    <CheckCircle2 className="h-12 w-12 text-emerald-600" />
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-green-700">Welcome In!</h3>
-                                    <p className="text-sm text-gray-500">Checked in at {lastCheckIn.time}</p>
+                                <div className="space-y-1">
+                                    <h3 className="text-2xl font-bold text-emerald-700">Welcome In!</h3>
+                                    <p className="text-sm font-medium text-slate-500">Access Granted at {lastCheckIn.time}</p>
                                 </div>
                                 <Button
                                     variant="outline"
-                                    className="mt-4"
+                                    className="mt-6 font-semibold shadow-sm w-full h-12"
                                     onClick={() => setLastCheckIn(null)}
                                 >
-                                    Next Member
-                                </Button>
-                            </div>
-                        ) : showScanner ? (
-                            <div className="space-y-4">
-                                <div className="aspect-square bg-black rounded-lg overflow-hidden border-2 border-slate-800">
-                                    <Scanner
-                                        onScan={(result) => result[0]?.rawValue && handleCheckIn(result[0].rawValue)}
-                                        onError={(error: unknown) => console.error(error instanceof Error ? error.message : "Scanner error")}
-                                    />
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    className="w-full text-slate-500"
-                                    onClick={() => setShowScanner(false)}
-                                >
-                                    Back to Manual Input
+                                    Dismiss Screen
                                 </Button>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                <form onSubmit={(e) => { e.preventDefault(); handleCheckIn(memberId) }} className="space-y-4">
+                            <div className="space-y-6">
+                                <form onSubmit={(e) => { e.preventDefault(); handleCheckIn(memberId) }} className="space-y-6">
                                     <div className="relative">
-                                        <UserCheck className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                        <UserCheck className="absolute left-4 top-3.5 h-6 w-6 text-slate-400" />
                                         <Input
-                                            placeholder="Member ID..."
-                                            className="pl-10 h-12 text-lg"
+                                            placeholder="Ex: 98765432"
+                                            className="pl-14 h-14 text-xl font-medium tracking-wider bg-slate-50 border-slate-200 focus-visible:ring-emerald-500 rounded-xl"
                                             value={memberId}
                                             onChange={(e) => setMemberId(e.target.value)}
                                             autoFocus
+                                            autoComplete="off"
                                         />
                                     </div>
-                                    <Button type="submit" className="w-full h-12 text-lg" disabled={loading}>
-                                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Manual Check In"}
+                                    <Button type="submit" className="w-full h-14 text-lg font-bold bg-emerald-600 hover:bg-emerald-700 shadow-md rounded-xl" disabled={loading}>
+                                        {loading ? <Loader2 className="mr-2 h-6 w-6 animate-spin flex-none" /> : "Verify Identity"}
                                     </Button>
                                 </form>
-                                <div className="relative py-4">
-                                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200" /></div>
-                                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">OR</span></div>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    className="w-full h-12 text-lg gap-2 border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-                                    onClick={() => setShowScanner(true)}
-                                >
-                                    Scan QR Member Pass
-                                </Button>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                <p className="text-center text-sm text-slate-500">
+                <p className="text-center font-medium text-sm text-slate-400">
                     Need help? Ask a staff member.
                 </p>
             </div>

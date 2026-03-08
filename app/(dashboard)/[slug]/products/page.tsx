@@ -5,7 +5,7 @@ import { SHOWCASE_PRODUCTS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { Plus, Search, AlertTriangle } from 'lucide-react'
+import { Plus, Search, AlertTriangle, Upload, Download } from 'lucide-react'
 import { ProductsList } from '@/components/products/ProductsList'
 
 export const dynamic = 'force-dynamic'
@@ -71,7 +71,14 @@ export default async function ProductsPage({
     })) : await prisma.product.findMany({
         where: whereClause,
         orderBy: { name: 'asc' }
-    }).catch(() => [])).map((p: any) => ({
+    }).catch((err) => {
+        console.error('Failed to fetch products:', {
+            error: err,
+            whereClause,
+            gymId
+        });
+        throw err;
+    })).map((p: any) => ({
         ...p,
         price: Number(p.price?.toString() || p.price || 0)
     }))
@@ -99,11 +106,23 @@ export default async function ProductsPage({
                     <h1 className="text-3xl font-bold">Products & Inventory</h1>
                     <p className="text-muted-foreground">Manage gym merchandise and supplements</p>
                 </div>
-                <Link href={`/${slug}/products/new`}>
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Add Product
-                    </Button>
-                </Link>
+                <div className="flex gap-2">
+                    <a href={`/api/reports/download?type=inventory`} download>
+                        <Button variant="outline">
+                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        </Button>
+                    </a>
+                    <Link href={`/${slug}/products/import`}>
+                        <Button variant="outline">
+                            <Upload className="mr-2 h-4 w-4" /> Import
+                        </Button>
+                    </Link>
+                    <Link href={`/${slug}/products/new`}>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" /> Add Product
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">

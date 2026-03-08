@@ -23,41 +23,51 @@ export function Overview({ data = [] }: { data?: any[] }) {
     }
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={Array.isArray(data) ? data : []} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                <XAxis
-                    dataKey="name"
-                    stroke="#94A3B8"
-                    fontSize={11}
-                    fontWeight={500}
-                    tickLine={false}
-                    axisLine={false}
-                    dy={8}
-                />
-                <YAxis
-                    stroke="#94A3B8"
-                    fontSize={11}
-                    fontWeight={500}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `₹${value}`}
-                />
-                <Tooltip
-                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                    cursor={{ fill: '#F0F9FF', opacity: 0.4 }}
-                    contentStyle={tooltipStyle}
-                    itemStyle={{ color: '#0EA5E9', fontWeight: 600 }}
-                    labelStyle={{ fontWeight: 700, marginBottom: '4px', color: '#0F172A' }}
-                />
-                <Bar
-                    dataKey="total"
-                    radius={[6, 6, 0, 0]}
-                    fill="#0EA5E9"
-                    fillOpacity={0.8}
-                    activeBar={{ fill: '#0284C7', fillOpacity: 1 }}
-                />
-            </BarChart>
-        </ResponsiveContainer>
+        <div className="h-full w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis
+                        dataKey="name"
+                        stroke="#94a3b8"
+                        fontSize={10}
+                        fontWeight={700}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => value.slice(0, 3)}
+                    />
+                    <YAxis
+                        stroke="#94a3b8"
+                        fontSize={10}
+                        fontWeight={700}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => {
+                            if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+                            if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+                            if (value >= 1000) return `₹${(value / 1000).toFixed(0)}k`;
+                            return `₹${value}`;
+                        }}
+                    />
+                    <Tooltip
+                        cursor={{ fill: '#f1f5f9', opacity: 0.4 }}
+                        contentStyle={{
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                            fontSize: '11px',
+                            fontWeight: 'bold'
+                        }}
+                        formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
+                    />
+                    <Bar
+                        dataKey="total"
+                        fill="currentColor"
+                        radius={[6, 6, 0, 0]}
+                        className="fill-primary"
+                        barSize={Math.min(32, 240 / (data?.length || 1))}
+                    />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
     )
 }

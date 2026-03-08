@@ -23,6 +23,8 @@ interface WelcomeEmailProps {
     gymAddress?: string | null;
     gymContact?: string | null;
     invoiceUrl?: string;
+    termsAndConditions?: string | null;
+    gymRules?: string | null;
 }
 
 export const WelcomeEmail = ({
@@ -34,6 +36,8 @@ export const WelcomeEmail = ({
     gymAddress,
     gymContact,
     invoiceUrl,
+    termsAndConditions,
+    gymRules,
 }: WelcomeEmailProps) => {
     const previewText = `Welcome to ${gymName}, ${memberName}!`;
 
@@ -62,7 +66,7 @@ export const WelcomeEmail = ({
                             Hello {memberName},
                         </Text>
                         <Text className="text-black text-[14px] leading-[24px]">
-                            Your membership at <strong>{gymName}</strong> is now active. We&apos;re excited to have you with us!
+                            Your membership at <strong>{gymName}</strong> is now active. We&apos;re excited to have you with us! By joining, you agree to our terms and conditions.
                         </Text>
                         <Section className="bg-slate-50 rounded-lg p-[20px] my-[24px]">
                             <Text className="text-black text-[14px] leading-[24px] m-0">
@@ -72,6 +76,7 @@ export const WelcomeEmail = ({
                                 <strong>Expiry Date:</strong> {expiryDate}
                             </Text>
                         </Section>
+
                         {invoiceUrl && (
                             <Section className="text-center mt-[10px] mb-[20px]">
                                 <Link
@@ -82,9 +87,31 @@ export const WelcomeEmail = ({
                                 </Link>
                             </Section>
                         )}
-                        <Text className="text-black text-[14px] leading-[24px]">
+
+                        {(gymRules || termsAndConditions) && (
+                            <Section className="mt-[20px]">
+                                <Heading as="h3" className="text-black text-[16px] font-bold m-0 mb-2">
+                                    Terms & Rules
+                                </Heading>
+                                {gymRules && (
+                                    <div className="text-slate-600 text-[12px] leading-[20px] mb-4 whitespace-pre-wrap">
+                                        <Text className="font-bold m-0 mb-1 underline">Gym Rules:</Text>
+                                        {gymRules}
+                                    </div>
+                                )}
+                                {termsAndConditions && (
+                                    <div className="text-slate-600 text-[12px] leading-[20px] whitespace-pre-wrap">
+                                        <Text className="font-bold m-0 mb-1 underline">Terms & Conditions:</Text>
+                                        {termsAndConditions}
+                                    </div>
+                                )}
+                            </Section>
+                        )}
+
+                        <Text className="text-black text-[14px] leading-[24px] mt-[32px]">
                             See you at the gym!
                         </Text>
+
                         {(gymAddress || gymContact) && (
                             <>
                                 <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />

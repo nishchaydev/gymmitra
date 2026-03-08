@@ -30,8 +30,10 @@ model GymProfile {
   onboardingStep     Int               @default(0)
   timezone           String            @default("Asia/Kolkata")
   saasPlan           SaaSPlan          @default(BASIC)
+  planTier           PlanTier          @default(STARTER)
   taxPercentage          Decimal           @default(18.0) @db.Decimal(5, 2)
   invoiceLinkExpiryDays  Int               @default(30) // Days before shared invoice links expire (0 = never)
+  onboardingEmailsSentAt DateTime?
   termsAndConditions     String?           @db.Text
   gymRules               String?           @db.Text
   deletedAt          DateTime?
@@ -42,6 +44,7 @@ model GymProfile {
   products           Product[]
   invoices           Invoice[]
   sales              Sale[]
+  expenses           Expense[]
   attendance         Attendance[]
   staff              StaffMember[]
   ptSessions         PTSession[]
@@ -138,6 +141,7 @@ model Product {
   category      ProductCategory
   description   String?
   price         Decimal         @db.Decimal(10, 2)
+  purchasePrice Decimal?        @db.Decimal(10, 2)
   stock         Int
   lowStockAlert Int             @default(10)
   image         String?
@@ -246,20 +250,24 @@ model Notification {
 }
 
 model Attendance {
-  id              String     @id @default(cuid())
-  memberId        String
+  id              String       @id @default(cuid())
+  memberId        String?
+  staffId         String?
   gymId           String // Direct gymId for multi-tenant isolation
-  date            DateTime   @default(now())
+  date            DateTime     @default(now())
   localDateString String
-  checkInTime     DateTime   @default(now())
+  checkInTime     DateTime     @default(now())
   checkOutTime    DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  member          Member     @relation(fields: [memberId], references: [id], onDelete: Restrict)
-  gym             GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  member          Member?      @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  staff           StaffMember? @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  gym             GymProfile   @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, localDateString])
+  @@unique([staffId, localDateString])
   @@index([memberId])
+  @@index([staffId])
   @@index([gymId])
 }
 
@@ -314,6 +322,8 @@ enum PaymentMethod {
 
 enum InvoiceType {
   MEMBERSHIP
+  PRODUCT
+  WALK_IN
   SALE
   RENEWAL
 }
@@ -343,6 +353,13 @@ enum SaaSPlan {
   BASIC
   GROWTH
   ENTERPRISE
+}
+
+enum PlanTier {
+  STARTER
+  GROWTH
+  PRO
+  ELITE
 }
 
 enum LeadStatus {
@@ -389,6 +406,7 @@ model StaffMember {
 
   // Trainer related
   ptSessions PTSession[]
+  attendance Attendance[]
 
   @@unique([userId, gymId]) // A user can only have one staff profile per gym
   @@unique([email, gymId]) // Prevent duplicate emails within the same gym
@@ -432,4 +450,29 @@ model AuditLog {
 
   @@index([gymId])
   @@index([entityType, entityId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  gymId       String
+  amount      Decimal  @db.Decimal(10, 2)
+  category    ExpenseCategory
+  description String
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  gym         GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@index([gymId])
+  @@index([gymId, date])
+}
+
+enum ExpenseCategory {
+  RENT
+  SALARY
+  ELECTRICITY
+  MAINTENANCE
+  EQUIPMENT
+  MARKETING
+  OTHER
 }

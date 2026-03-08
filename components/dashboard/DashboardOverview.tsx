@@ -24,9 +24,10 @@ const RecentInvoices = dynamic(() => import('@/components/dashboard/RecentInvoic
 })
 
 import { OutstandingBalances } from '@/components/dashboard/OutstandingBalances'
+import { DailyBriefing } from '@/components/dashboard/DailyBriefing'
 
 import { Button } from '@/components/ui/button'
-import { DollarSign, Users, ShoppingBag, CalendarCheck, UserPlus, ReceiptText, Loader2 } from 'lucide-react'
+import { IndianRupee, Users, ShoppingBag, CalendarCheck, UserPlus, ReceiptText, Loader2, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
 interface DashboardOverviewProps {
@@ -48,6 +49,13 @@ interface DashboardOverviewProps {
         upcomingBirthdays: any[]
         monthlyRevenueData: { name: string; total: number }[]
         outstandingInvoices: any[]
+        urgentCount: number
+        birthdayCount: number
+        followUps?: any[]
+        partialPayments?: any[]
+        lowStockItems?: any[]
+        expiringSubscriptions?: any[]
+        totalExpenses?: number
     }
 }
 
@@ -58,6 +66,12 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
     const d = (!isDemo && data) ? data : initialData
 
+    // Computations
+    const totalRev = Number(d.revenueRaw || 0)
+    const totalExp = Number(d.totalExpenses || 0)
+    const netIncome = totalRev - totalExp
+    const expenseRatio = totalRev > 0 ? (totalExp / totalRev) * 100 : 0
+
     return (
         <div className="space-y-6 relative">
             {isFetching && !isLoading && (
@@ -67,14 +81,14 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
             )}
 
             {/* Stat Cards */}
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-primary bg-white shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Total Revenue
                         </CardTitle>
                         <div className="bg-primary-50 rounded-lg p-2.5">
-                            <DollarSign className="h-5 w-5 text-primary" />
+                            <IndianRupee className="h-5 w-5 text-primary" />
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -109,7 +123,28 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-rose-500 bg-white shadow-sm">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-emerald-500 bg-white shadow-sm lg:order-3 xl:order-none">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
+                            Net Income
+                        </CardTitle>
+                        <div className="bg-emerald-50 rounded-lg p-2.5">
+                            <TrendingUp className="h-5 w-5 text-emerald-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-1">
+                            <div className="text-3xl font-black tracking-tight text-slate-900">
+                                ₹{netIncome.toLocaleString('en-IN')}
+                            </div>
+                            <p className="text-xs text-drift-400 mt-2 font-medium uppercase tracking-tight">
+                                {expenseRatio.toFixed(1)}% EXPENSE RATIO (₹{totalExp.toLocaleString('en-IN')})
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-rose-500 bg-white shadow-sm lg:order-4 xl:order-none">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Product Sales
@@ -128,7 +163,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-amber-500 bg-white shadow-sm">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-amber-500 bg-white shadow-sm lg:order-5 xl:order-none">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
                             Today&apos;s Attendance
@@ -152,9 +187,32 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
             </div>
 
             {/* Dashboard Content - Masonry style to prevent vertical overlap anomalies */}
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
                 {/* Left Column */}
-                <div className="lg:col-span-4 flex flex-col space-y-6">
+                <div className="lg:col-span-8 flex flex-col space-y-6">
+                    <DailyBriefing
+                        slug={slug}
+                        ownerName={gymName?.split(' ')[0] || 'Owner'}
+                        urgentRenewals={d.expiringSubscriptions?.filter((sub: any) => sub.daysLeft <= 1).map((sub: any) => ({
+                            id: sub.id,
+                            name: sub.member?.name || 'Unknown',
+                            planName: sub.plan?.name || 'Plan',
+                            daysLeft: sub.daysLeft
+                        })) || []}
+                        followUps={d.followUps || []}
+                        partialPayments={d.partialPayments?.map((p: any) => ({
+                            id: p.id,
+                            memberName: p.member?.name || 'Unknown',
+                            amountDue: Number(p.balanceDue),
+                            invoiceNumber: p.invoiceNumber
+                        })) || []}
+                        overdueInvoices={d.outstandingInvoices?.map((i: any) => ({
+                            id: i.id,
+                            name: i.member?.name || 'Unknown',
+                            amount: Number(i.total)
+                        })) || []}
+                        lowStockItems={d.lowStockItems || []}
+                    />
                     <RevenueSnapshot
                         revenue={d.revenue}
                         revenueChange={d.revenueChange}
@@ -172,7 +230,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </div>
 
                 {/* Right Column */}
-                <div className="lg:col-span-3 flex flex-col space-y-6">
+                <div className="lg:col-span-4 flex flex-col space-y-6">
                     <Card className="border-drift-200 shadow-sm rounded-xl bg-white overflow-hidden">
                         <CardHeader className="border-l-4 border-l-primary pl-4 py-4 bg-primary-50/20">
                             <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>

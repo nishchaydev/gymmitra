@@ -35,6 +35,9 @@ const productFormSchema = z.object({
     price: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
         message: "Price must be a valid non-negative number",
     }),
+    purchasePrice: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), {
+        message: "Purchase price must be a valid non-negative number",
+    }),
     stock: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
         message: "Stock must be a valid non-negative integer",
     }),
@@ -58,6 +61,7 @@ export default function NewProductPage() {
             category: "SUPPLEMENT",
             description: "",
             price: "",
+            purchasePrice: "",
             stock: "",
             lowStockAlert: "10"
         },
@@ -74,6 +78,7 @@ export default function NewProductPage() {
                 body: JSON.stringify({
                     ...data,
                     price: Number(data.price),
+                    purchasePrice: data.purchasePrice ? Number(data.purchasePrice) : null,
                     stock: parseInt(data.stock),
                     lowStockAlert: data.lowStockAlert ? parseInt(data.lowStockAlert) : 10,
                 }),
@@ -149,10 +154,25 @@ export default function NewProductPage() {
                                     name="price"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Price (₹)</FormLabel>
+                                            <FormLabel>Selling Price (₹)</FormLabel>
                                             <FormControl>
                                                 <Input type="number" step="0.01" placeholder="0.00" {...field} />
                                             </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="purchasePrice"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Owner Purchase Cost (₹)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                                            </FormControl>
+                                            <FormDescription>Used to calculate net profit correctly</FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}

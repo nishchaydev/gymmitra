@@ -11,6 +11,7 @@ import { ChevronLeft, Upload, Loader2, Check, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { importMembers } from "../../members/actions"
 import Papa from "papaparse"
+import * as XLSX from "xlsx"
 
 export default function MemberImportPage() {
     const router = useRouter()
@@ -30,48 +31,93 @@ export default function MemberImportPage() {
         const selectedFile = e.target.files?.[0]
         if (!selectedFile) return
 
-        if (!selectedFile.name.endsWith('.csv')) {
-            toast.error("Please upload a CSV file")
+        const isCSV = selectedFile.name.endsWith('.csv')
+        const isExcel = selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls')
+
+        if (!isCSV && !isExcel) {
+            toast.error("Please upload a CSV or Excel file (.csv, .xlsx, .xls)")
             return
         }
 
         setFile(selectedFile)
+        setPreview([])
         setIsParsing(true)
         setResult(null)
 
-        const REQUIRED_HEADERS = ['name', 'phone', 'email', 'joindate', 'planname', 'expirydate']
 
-        Papa.parse(selectedFile, {
-            header: true,
-            skipEmptyLines: true,
-            transformHeader: (header) => header.trim().toLowerCase(),
-            complete: function (results) {
-                const data = results.data as any[]
+        try {
+            if (isCSV) {
+                Papa.parse(selectedFile, {
+                    header: true,
+                    skipEmptyLines: true,
+                    transformHeader: (header) => header.trim().toLowerCase(),
+                    complete: function (results) {
+                        processParsedData(results.data, results.meta.fields || [])
+                    },
+                    error: function (error: any) {
+                        toast.error("Failed to parse CSV: " + error.message)
+                        setIsParsing(false)
+                    }
+                })
+            } else {
+                const reader = new FileReader()
+                reader.onload = (evt) => {
+                    const bstr = evt.target?.result
+                    const wb = XLSX.read(bstr, { type: 'binary' })
+                    const wsname = wb.SheetNames[0]
+                    const ws = wb.Sheets[wsname]
+                    const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[]
 
-                // Header Validation
-                const headers = results.meta.fields || []
-                const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h))
+                    if (data.length === 0) {
+                        toast.error("Excel file is empty")
+                        setIsParsing(false)
+                        return
+                    }
 
-                if (missingHeaders.length > 0) {
-                    toast.error(`Missing required headers: ${missingHeaders.join(', ')}`)
-                    setPreview([])
+                    const rawHeaders = data[0] as string[]
+                    const headers = rawHeaders.map(h => String(h || "").trim().toLowerCase())
+                    const rows = data.slice(1)
+                        .filter((row: any[]) => row && row.length > 0 && row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== ""))
+                        .map((row: any[]) => {
+                            const obj: any = {}
+                            headers.forEach((header, index) => {
+                                obj[header] = row[index]
+                            })
+                            return obj
+                        })
+
+                    processParsedData(rows, headers)
+                }
+                reader.onerror = () => {
+                    toast.error("Failed to read Excel file")
                     setIsParsing(false)
-                    return
                 }
-
-                if (data.length > 1000) {
-                    toast.error("Maximum 1000 rows allowed")
-                    setPreview([])
-                } else {
-                    setPreview(data)
-                }
-                setIsParsing(false)
-            },
-            error: function (error: any) {
-                toast.error("Failed to parse CSV: " + error.message)
-                setIsParsing(false)
+                reader.readAsBinaryString(selectedFile)
             }
-        })
+        } catch (err) {
+            toast.error("Parsing failed")
+            setIsParsing(false)
+        }
+    }
+
+    const processParsedData = (data: any[], headers: string[]) => {
+        const REQUIRED_HEADERS = ['name', 'phone', 'email', 'joindate', 'planname', 'expirydate']
+        const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h))
+
+        if (missingHeaders.length > 0) {
+            toast.error(`Missing required headers: ${missingHeaders.join(', ')}`)
+            setPreview([])
+            setIsParsing(false)
+            return
+        }
+
+        if (data.length > 1000) {
+            toast.error("Maximum 1000 rows allowed")
+            setPreview([])
+        } else {
+            setPreview(data)
+        }
+        setIsParsing(false)
     }
 
     const handleImport = async () => {
@@ -113,7 +159,7 @@ export default function MemberImportPage() {
                 <CardHeader>
                     <div className="flex items-center gap-2 text-amber-800">
                         <AlertCircle className="h-5 w-5" />
-                        <CardTitle className="text-lg">IMPORTANT: CSV Format Requirement</CardTitle>
+                        <CardTitle className="text-lg">IMPORTANT: CSV/Excel Format Requirement</CardTitle>
                     </div>
                 </CardHeader>
                 <CardContent className="text-amber-900">
@@ -131,16 +177,16 @@ export default function MemberImportPage() {
 
             <Card className="mb-8">
                 <CardHeader>
-                    <CardTitle>Step 1: Upload CSV</CardTitle>
+                    <CardTitle>Step 1: Upload File</CardTitle>
                     <CardDescription>
-                        Select your member list file (max 1000 rows).
+                        Select your member list CSV or Excel file (max 1000 rows).
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid w-full items-center gap-4">
                         <div className="flex flex-col space-y-1.5">
-                            <Label htmlFor="csv-file">Choose CSV File</Label>
-                            <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} disabled={isImporting} />
+                            <Label htmlFor="member-file">Choose CSV or Excel File</Label>
+                            <Input id="member-file" type="file" accept=".csv, .xlsx, .xls" onChange={handleFileChange} disabled={isImporting} />
                         </div>
                     </div>
                 </CardContent>

@@ -183,3 +183,50 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
         return { error: error instanceof Error ? error.message : "Failed to create invoice" }
     }
 }, ['OWNER', 'STAFF']) // Only Owners and Staff can create invoices
+
+const recordPaymentSchema = z.object({
+    invoiceId: z.string(),
+    additionalAmount: z.number().min(0.01),
+})
+
+export const recordInvoicePayment = withAuth(async (context, data: z.infer<typeof recordPaymentSchema>) => {
+    const validatedData = recordPaymentSchema.parse(data)
+    const gym = context.gym
+
+    try {
+        const invoice = await prisma.invoice.findFirst({
+            where: { id: validatedData.invoiceId, gymId: gym.id }
+        })
+
+        if (!invoice) return { error: "Invoice not found." }
+        if (invoice.paymentStatus === 'PAID') return { error: "Invoice is already fully paid." }
+
+        const total = Number(invoice.total)
+        const currentPaid = Number(invoice.amountPaid || 0)
+        let newPaid = currentPaid + validatedData.additionalAmount
+
+        if (newPaid > total) newPaid = total
+
+        const newBalance = Math.max(0, total - newPaid)
+        const newStatus = newBalance <= 0 ? 'PAID' : 'PARTIAL'
+
+        const updatedInvoice = await prisma.invoice.update({
+            where: { id: invoice.id },
+            data: {
+                amountPaid: newPaid as any,
+                balanceDue: newBalance as any,
+                paymentStatus: newStatus
+            }
+        })
+
+        const gymSlug = (gym as { slug?: string }).slug || 'gym'
+        revalidatePath(`/${gymSlug}/invoices/${invoice.id}`)
+        revalidatePath(`/${gymSlug}/invoices`)
+        revalidatePath(`/${gymSlug}/dashboard`)
+
+        return { success: true }
+    } catch (error) {
+        console.error("Record Payment Error:", error)
+        return { error: "Failed to record payment." }
+    }
+}, ['OWNER', 'STAFF'])

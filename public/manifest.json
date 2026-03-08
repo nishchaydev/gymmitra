@@ -1,0 +1,29 @@
+{
+    "name": "GymMitra",
+    "short_name": "GymMitra",
+    "description": "India's #1 Gym Management Software — billing, attendance, and WhatsApp automation.",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#0EA5E9",
+    "background_color": "#F8FAFC",
+    "categories": [
+        "business",
+        "productivity"
+    ],
+    "lang": "en-IN",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

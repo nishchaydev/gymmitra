@@ -30,6 +30,7 @@ const memberSchema = z.object({
     planId: z.string().optional().or(z.literal('none')),
     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
     discount: z.number().nonnegative().optional().default(0),
+    amountPaid: z.number().nonnegative().optional(),
 })
 
 export const createMember = withAuth(async (context, data: z.input<typeof memberSchema>) => {
@@ -80,6 +81,19 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 const endDate = addDays(startDate, plan.duration)
                 const paymentMethod = (validatedData.paymentMethod || 'CASH') as PaymentStatus
 
+                const planPrice = Number(plan.price)
+                const discount = validatedData.discount || 0
+                const total = Math.max(0, planPrice - discount)
+                let amountPaid = validatedData.amountPaid ?? total
+                const balanceDue = Math.max(0, total - amountPaid)
+
+                let paymentStatus: PaymentStatus = 'PAID'
+                if (balanceDue > 0 && amountPaid > 0) {
+                    paymentStatus = 'PARTIAL'
+                } else if (amountPaid === 0 && total > 0) {
+                    paymentStatus = 'PENDING'
+                }
+
                 // Create the physical subscription linkage
                 const subscription = await tx.memberSubscription.create({
                     data: {
@@ -90,15 +104,12 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                         endDate,
                         price: plan.price,
                         status: 'ACTIVE' as SubscriptionStatus,
-                        paymentStatus: 'PAID'
+                        paymentStatus: paymentStatus
                     }
                 })
 
                 // Generate Invoice
                 const invoiceNumber = await generateInvoiceNumber(gymId, tx)
-                const planPrice = Number(plan.price)
-                const discount = validatedData.discount || 0
-                const total = Math.max(0, planPrice - discount)
 
                 const invoice = await tx.invoice.create({
                     data: {
@@ -111,7 +122,9 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                         taxPercentage: 0,
                         discount: discount,
                         total: total,
-                        paymentStatus: 'PAID',
+                        amountPaid: amountPaid,
+                        balanceDue: balanceDue,
+                        paymentStatus: paymentStatus,
                         paymentMethod: (validatedData.paymentMethod || 'CASH') as any,
                         issueDate: new Date(),
                         dueDate: new Date(),
@@ -174,22 +187,22 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                         ? `https://gymmitra.com/${gym.slug}/invoices/${finalInvoiceId}`
                         : undefined
 
-                    const emailHtml = await render(React.createElement(WelcomeEmail, {
-                        gymName: gym.name,
-                        gymLogo: gym.logoUrl || gym.logo,
-                        memberName: validatedData.name,
-                        planName: latestSub?.plan.name || 'Pay-as-you-go',
-                        expiryDate: latestSub?.endDate ? format(latestSub.endDate, 'PPP') : 'Contact Gym',
-                        gymAddress: gym.address,
-                        gymContact: gym.phone,
-                        invoiceUrl: invoiceUrl
-                    }))
-
                     const { error } = await resend.emails.send({
-                        from: `"${gym.name} via GymMitra" <noreply@mail.emitra.dev>`,
+                        from: `${gym.name} <hello@mail.emitra.dev>`,
                         to: validatedData.email,
                         subject: `Welcome to ${gym.name}, ${validatedData.name}!`,
-                        html: emailHtml
+                        react: React.createElement(WelcomeEmail, {
+                            gymName: gym.name,
+                            gymLogo: gym.logoUrl || gym.logo,
+                            memberName: validatedData.name,
+                            planName: latestSub?.plan.name || 'Pay-as-you-go',
+                            expiryDate: latestSub?.endDate ? format(latestSub.endDate, 'PPP') : 'Contact Gym',
+                            gymAddress: gym.address,
+                            gymContact: gym.phone,
+                            invoiceUrl: invoiceUrl,
+                            termsAndConditions: gym.termsAndConditions,
+                            gymRules: gym.gymRules
+                        }) as React.ReactElement
                     })
 
                     if (error) console.error('[WelcomeEmail] Resend error:', JSON.stringify(error))
@@ -200,7 +213,24 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
             }
         })
 
-        return { success: true, id: finalMemberId, invoiceId: finalInvoiceId }
+        const { templates, getWhatsAppLink } = await import('@/lib/whatsapp')
+
+        // Generate public share link if invoice exists
+        let publicInvoiceUrl: string | undefined = undefined
+        if (finalInvoiceId) {
+            const inv = await prisma.invoice.findUnique({
+                where: { id: finalInvoiceId },
+                select: { shareToken: true, gym: { select: { slug: true } } }
+            })
+            if (inv?.shareToken) {
+                publicInvoiceUrl = `https://gymmitra.com/${inv.gym.slug}/invoice/${inv.shareToken}`
+            }
+        }
+
+        const welcomeMessage = templates.welcomeMessage(validatedData.name, context.gym.name, publicInvoiceUrl)
+        const whatsappUrl = getWhatsAppLink(validatedData.phone, welcomeMessage)
+
+        return { success: true, id: finalMemberId, invoiceId: finalInvoiceId, whatsappUrl }
     } catch (error: any) {
         console.error('Error creating member:', error)
         if (error.code === 'P2002') {
@@ -244,6 +274,7 @@ export const filterByStatus = withAuth(async (_context, status: string) => {
 
 export const importMembers = withAuth(async (context, data: any[]) => {
     const gymId = context.gym.id
+    const slug = context.gym.slug
     let imported = 0
     let skippedDuplicate = 0
     let skippedPlanNotFound = 0
@@ -343,8 +374,8 @@ export const importMembers = withAuth(async (context, data: any[]) => {
             payload: { imported, skippedDuplicate, skippedPlanNotFound, totalRows: data.length }
         }).catch(err => console.error('recordAuditLog IMPORT_MEMBERS', err))
 
-        revalidatePath('/members')
-        revalidatePath('/dashboard')
+        revalidatePath(`/${slug}/members`)
+        revalidatePath(`/${slug}/dashboard`)
 
         return { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData }
     } catch (error: any) {

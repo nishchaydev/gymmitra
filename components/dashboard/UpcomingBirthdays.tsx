@@ -66,35 +66,35 @@ export function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: Props)
 
     return (
         <Card className="border-drift-200 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="border-l-4 border-l-indigo-500 pl-4 bg-indigo-50/30">
+            <CardHeader className="border-l-4 border-l-indigo-500 pl-4 py-3 bg-indigo-50/10">
                 <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                     <Cake className="h-5 w-5 text-indigo-500" />
                     Upcoming Birthdays
                 </CardTitle>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 pb-4">
                 {birthdays.length === 0 ? (
                     <div className="py-8 text-center bg-drift-50/50 rounded-xl border border-dashed border-drift-200">
-                        <p className="text-sm text-drift-400 font-medium">No upcoming birthdays</p>
+                        <p className="text-xs text-drift-400 font-bold uppercase tracking-tight">No upcoming birthdays</p>
                     </div>
                 ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                         {birthdays.map((birthday, idx) => (
                             <div key={idx} className="flex items-center group">
-                                <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-drift-100">
+                                <Avatar className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-drift-100">
                                     {birthday.img && <AvatarImage src={birthday.img} alt={birthday.name} />}
-                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-sm">
+                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-[10px]">
                                         {(() => { const trimmed = birthday.name?.trim(); return trimmed ? trimmed.split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2) : '?' })()}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="ml-3 space-y-0.5">
-                                    <p className="text-sm font-bold text-slate-900 leading-none">{birthday.name}</p>
-                                    <p className="text-[10px] text-drift-400 font-bold uppercase tracking-tight">
-                                        Member • {birthday.date}
+                                    <p className="text-xs font-bold text-slate-900 leading-none">{birthday.name}</p>
+                                    <p className="text-[9px] text-drift-400 font-black uppercase tracking-widest">
+                                        {birthday.date}
                                     </p>
                                 </div>
-                                <div className="ml-auto flex flex-col items-end gap-1.5">
-                                    <div className="text-indigo-600 font-bold text-[10px] uppercase tracking-wider whitespace-nowrap">
+                                <div className="ml-auto flex items-center gap-3">
+                                    <div className="text-indigo-600 font-black text-[9px] uppercase tracking-widest hidden sm:block">
                                         {getDaysUntil(birthday.date, birthday.diffDays)}
                                     </div>
                                     {birthday.phone && (
@@ -103,7 +103,7 @@ export function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: Props)
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
-                                            <Button size="sm" className="h-7 px-4 text-[10px] rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition-all duration-150 shadow-sm active:scale-95 uppercase tracking-wider">
+                                            <Button size="sm" className="h-7 px-3 text-[9px] rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-black transition-all duration-150 shadow-sm active:scale-95 uppercase tracking-widest">
                                                 Wish! 🎂
                                             </Button>
                                         </Link>

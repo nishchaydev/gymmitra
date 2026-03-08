@@ -79,6 +79,7 @@ export function Navbar() {
         { href: `/${slug}/members`, label: "Members", active: pathname === `/${slug}/members` || pathname.startsWith(`/${slug}/members/`) },
         { href: `/${slug}/products`, label: "Products", active: pathname === `/${slug}/products` || pathname.startsWith(`/${slug}/products/`) },
         { href: `/${slug}/invoices`, label: "Invoices", active: pathname === `/${slug}/invoices` || pathname.startsWith(`/${slug}/invoices/`) },
+        { href: `/${slug}/expenses`, label: "Expenses", active: pathname === `/${slug}/expenses` || pathname.startsWith(`/${slug}/expenses/`) },
         { href: `/${slug}/attendance`, label: "Attendance", active: pathname === `/${slug}/attendance` },
         { href: `/${slug}/settings`, label: "Settings", active: pathname === `/${slug}/settings` },
     ]

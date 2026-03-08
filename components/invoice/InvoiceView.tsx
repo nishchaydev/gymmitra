@@ -1,11 +1,23 @@
 'use client'
 
-import React, { useRef } from 'react'
+import React, { useRef, useState, useTransition } from 'react'
 import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
-import { Printer, Download, Share2, MessageCircle } from 'lucide-react'
+import { Printer, Download, Share2, MessageCircle, CreditCard, Loader2 } from 'lucide-react'
 import { getInvoiceWhatsAppLink } from '@/lib/whatsapp'
 import { getBaseUrl } from '@/lib/utils'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { recordInvoicePayment } from '@/app/(dashboard)/[slug]/invoices/actions'
+import { toast } from 'sonner'
 
 interface InvoiceViewProps {
     invoice: any
@@ -186,6 +198,9 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
 
 export function InvoiceView({ invoice }: InvoiceViewProps) {
     const componentRef = useRef<HTMLDivElement>(null)
+    const [isPending, startTransition] = useTransition()
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+    const [additionalAmount, setAdditionalAmount] = useState<number | ''>('')
 
     const openInvoicePrintWindow = (forDownload: boolean) => {
         if (!componentRef.current) return
@@ -213,14 +228,18 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
             return
         }
         const url = `${getBaseUrl()}/${invoice.gym?.slug || 'gym'}/invoice/${invoice.shareToken}`
-        navigator.clipboard.writeText(url)
-        import('sonner').then(({ toast }) => toast.success('Public link copied to clipboard!'))
+        navigator.clipboard.writeText(url).then(() => {
+            import('sonner').then(({ toast }) => toast.success('Public link copied to clipboard!'))
+        }).catch((err) => {
+            console.error('Clipboard copy failed:', err)
+            import('sonner').then(({ toast }) => toast.error('Failed to copy link.'))
+        })
     }
 
     const shareOnWhatsApp = () => {
         const phone = invoice.member?.phone || invoice.walkInPhone || ''
         const memberName = invoice.member?.name || invoice.walkInName || 'Customer'
-        const gymName = invoice.gym.businessName || invoice.gym.name
+        const gymName = invoice.gym?.businessName || invoice.gym?.name
         const amount = Number(invoice.total)
         const shareToken = invoice.shareToken || ''
         const gymSlug = invoice.gym?.slug || 'gym'
@@ -237,13 +256,80 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         if (whatsappLink && whatsappLink !== '#') {
             window.open(whatsappLink, '_blank')
         } else {
-            import('sonner').then(({ toast }) => toast.error('Check if phone and invoice link are available.'))
+            toast.error('Check if phone and invoice link are available.')
         }
+    }
+
+    const handleRecordPayment = () => {
+        if (!additionalAmount || Number(additionalAmount) <= 0) {
+            toast.error("Please enter a valid amount")
+            return
+        }
+
+        startTransition(async () => {
+            const res = await recordInvoicePayment({
+                invoiceId: invoice.id,
+                additionalAmount: Number(additionalAmount)
+            })
+
+            if (res.error) {
+                toast.error(res.error)
+            } else {
+                toast.success("Payment recorded successfully")
+                setIsPaymentOpen(false)
+                setAdditionalAmount('')
+            }
+        })
     }
 
     return (
         <div className="space-y-6 w-full max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-end gap-3 no-print">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 no-print mb-6">
+                {(invoice.paymentStatus === 'PENDING' || invoice.paymentStatus === 'PARTIAL') && invoice.balanceDue > 0 && !invoice.id.startsWith('demo-') && (
+                    <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                                <CreditCard className="w-4 h-4 mr-2" /> Record Payment
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Record Payment</DialogTitle>
+                                <DialogDescription>
+                                    Enter the amount received from the member.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-medium text-slate-500">Balance Due</span>
+                                        <span className="text-sm font-bold text-rose-600">₹{Number(invoice.balanceDue).toLocaleString('en-IN')}</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="amount">Amount Received (₹)</Label>
+                                    <Input
+                                        id="amount"
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={additionalAmount}
+                                        onChange={(e) => setAdditionalAmount(e.target.value ? Number(e.target.value) : '')}
+                                        max={Number(invoice.balanceDue)}
+                                        className="font-bold text-lg"
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleRecordPayment}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                                    disabled={isPending || !additionalAmount || Number(additionalAmount) <= 0}
+                                >
+                                    {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    Confirm Payment
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
                 {invoice.shareToken && (
                     <Button variant="outline" size="sm" onClick={copyPublicLink} className="text-primary hover:text-primary">
                         <Share2 className="w-4 h-4 mr-2" /> Copy Public Link
@@ -255,7 +341,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                 <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
                     <Download className="w-4 h-4 mr-2" /> Download PDF
                 </Button>
-                <Button variant="default" size="sm" onClick={handlePrint}>
+                <Button variant="default" size="sm" onClick={handlePrint} className="bg-drift-900 hover:bg-drift-800 text-white">
                     <Printer className="w-4 h-4 mr-2" /> Print Invoice
                 </Button>
             </div>
@@ -271,12 +357,12 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                         })}
                         paymentMethod={invoice.paymentMethod}
                         gymInfo={{
-                            name: invoice.gym.businessName || invoice.gym.name,
-                            address: invoice.gym.address || 'N/A',
-                            phone: invoice.gym.phone || 'N/A',
-                            email: invoice.gym.email || 'N/A',
-                            upiId: invoice.gym.upiId,
-                            termsAndConditions: invoice.gym.termsAndConditions,
+                            name: invoice.gym?.businessName || invoice.gym?.name,
+                            address: invoice.gym?.address || 'N/A',
+                            phone: invoice.gym?.phone || 'N/A',
+                            email: invoice.gym?.email || 'N/A',
+                            upiId: invoice.gym?.upiId,
+                            termsAndConditions: invoice.gym?.termsAndConditions,
                         }}
                         memberInfo={{
                             name: invoice.member?.name || invoice.walkInName || 'Walk-in Customer',
@@ -294,6 +380,9 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                         taxAmount={Number(invoice.taxAmount || 0)}
                         discount={Number(invoice.discount || 0)}
                         total={Number(invoice.total)}
+                        amountPaid={Number(invoice.amountPaid || 0)}
+                        balanceDue={Number(invoice.balanceDue || 0)}
+                        paymentStatus={invoice.paymentStatus}
                     />
                 </div>
             </div>

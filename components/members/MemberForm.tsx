@@ -40,6 +40,7 @@ const memberFormSchema = z.object({
     planId: z.string().optional().or(z.literal('none')),
     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
     discount: z.coerce.number().nonnegative().optional().default(0),
+    amountPaid: z.coerce.number().nonnegative().optional(),
 })
 
 type MemberFormValues = z.infer<typeof memberFormSchema>
@@ -48,7 +49,7 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 interface MemberFormProps {
     member?: (Partial<Omit<MemberFormValues, 'dateOfBirth'>> & { dateOfBirth?: Date | string; id?: string }) | null;
     gymSlug: string;
-    onSubmitAction: (data: any) => Promise<{ success?: boolean, error?: string, id?: string, invoiceId?: string }>;
+    onSubmitAction: (data: any) => Promise<{ success?: boolean, error?: string, id?: string, invoiceId?: string, whatsappUrl?: string }>;
     activePlans?: { id: string, name: string, price: any, duration: number }[];
 }
 
@@ -57,6 +58,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
     const searchParams = useSearchParams()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
+    const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null)
+    const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
     const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const [step, setStep] = useState(1)
 
@@ -97,6 +100,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             planId: "none",
             paymentMethod: "CASH" as const,
             discount: 0,
+            amountPaid: undefined,
         }
     }, [member, searchParams])
 
@@ -111,6 +115,25 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             form.reset(initialValues as any)
         }
     }, [initialValues, member, form, searchParams])
+
+    // Auto-calculate amountPaid default when plan or discount changes
+    const selectedPlanId = form.watch('planId')
+    const discountAmount = form.watch('discount') || 0
+    const [userEditedAmount, setUserEditedAmount] = useState(false)
+
+    useEffect(() => {
+        setUserEditedAmount(false)
+    }, [selectedPlanId])
+
+    useEffect(() => {
+        if (selectedPlanId && selectedPlanId !== 'none' && !userEditedAmount) {
+            const plan = activePlans.find(p => p.id === selectedPlanId)
+            if (plan) {
+                const total = Math.max(0, Number(plan.price) - discountAmount)
+                form.setValue('amountPaid', total)
+            }
+        }
+    }, [selectedPlanId, discountAmount, activePlans, form, userEditedAmount])
 
     const onNextStep = async () => {
         const isValid = await form.trigger(["name", "phone", "email", "dateOfBirth"])
@@ -132,21 +155,15 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
 
             if (result?.success) {
                 setSuccess(true)
-                if (result.invoiceId) {
-                    toast.success("Member created! Welcome email sent.", {
-                        description: `${data.name} is active. Redirecting to invoice...`,
-                    })
-                    submitTimeoutRef.current = setTimeout(() => {
-                        router.push(`/${gymSlug}/invoices/${result.invoiceId}`)
-                    }, 1500)
-                } else {
-                    toast.success("Member created successfully", {
-                        description: `${data.name} has been added. Welcome email sent.`,
-                    })
-                    submitTimeoutRef.current = setTimeout(() => {
-                        router.push(`/${gymSlug}/members`)
-                    }, 1500)
+                if (result.whatsappUrl) {
+                    setWhatsappUrl(result.whatsappUrl)
                 }
+                const nextUrl = result.invoiceId ? `/${gymSlug}/invoices/${result.invoiceId}` : `/${gymSlug}/members`
+                setRedirectUrl(nextUrl)
+
+                toast.success("Member created successfully", {
+                    description: `${data.name} has been added.`,
+                })
             }
         } catch {
             toast.error("Something went wrong", {
@@ -161,7 +178,25 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in duration-500">
                 <SuccessCheckmark />
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Member Added!</h2>
-                <p className="text-slate-500">Redirecting you to the members list...</p>
+                <p className="text-slate-500 mb-8">The member profile has been generated successfully.</p>
+
+                <div className="flex flex-col gap-4 w-full max-w-xs">
+                    {whatsappUrl && (
+                        <Button
+                            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white"
+                            onClick={() => window.open(whatsappUrl, "_blank")}
+                        >
+                            Send Welcome WhatsApp
+                        </Button>
+                    )}
+                    <Button
+                        variant={whatsappUrl ? "outline" : "default"}
+                        className="w-full"
+                        onClick={() => router.push(redirectUrl || `/${gymSlug}/members`)}
+                    >
+                        {redirectUrl?.includes('invoices') ? 'View Invoice' : 'Back to Members'}
+                    </Button>
+                </div>
             </div>
         )
     }
@@ -382,6 +417,33 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                     </FormItem>
                                 )}
                             />
+
+                            {form.watch('planId') && form.watch('planId') !== 'none' && (
+                                <FormField
+                                    control={form.control}
+                                    name="amountPaid"
+                                    render={({ field }) => (
+                                        <FormItem className="animate-in fade-in duration-300">
+                                            <FormLabel className="text-base font-semibold text-slate-800">Amount Paid Now (₹)</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="number"
+                                                    min="0"
+                                                    placeholder="Full Amount"
+                                                    className="h-12 bg-white border-primary/20 focus-visible:ring-primary"
+                                                    {...field}
+                                                    onChange={e => {
+                                                        setUserEditedAmount(true)
+                                                        field.onChange(e.target.valueAsNumber || 0)
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <p className="text-[10px] text-slate-500 font-medium">Leave this as the full amount if paid in full.<br />Lower this amount to track a partial payment balance.</p>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
                         </div>
 
                         {form.watch('planId') && form.watch('planId') !== 'none' && (

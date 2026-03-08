@@ -5,7 +5,7 @@ import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
 
-// No force-dynamic
+export const dynamic = 'force-dynamic'
 
 const leadCreateSchema = z.object({
     name: z.string().min(2, 'Name is required'),
@@ -48,9 +48,12 @@ export async function GET(request: NextRequest) {
         const take = Math.min(100, Math.max(1, isNaN(parsedTake) ? 50 : parsedTake))
         const skip = (page - 1) * take
 
+        const validStatuses = ['NEW', 'CONTACTED', 'INTERESTED', 'NOT_INTERESTED', 'CONVERTED']
+        const isValidStatus = status && status !== 'ALL' && validStatuses.includes(status)
+
         const whereClause: any = {
             gymId: auth.gym.id,
-            ...(status && status !== 'ALL' ? { status: status as any } : {}),
+            ...(isValidStatus ? { status: status as any } : {}),
             ...(q
                 ? {
                     OR: [
@@ -129,7 +132,7 @@ export async function POST(request: NextRequest) {
             action: 'CREATE_LEAD',
             entityType: 'LEAD',
             entityId: lead.id,
-            payload: { name: lead.name, phone: lead.phone, source: lead.source },
+            payload: { name: lead.name, phone: lead.phone ? lead.phone.slice(-4).padStart(lead.phone.length, '*') : null, source: lead.source },
         }).catch(err => console.error('[Leads] Audit logging failed:', err))
 
         return NextResponse.json({ lead }, { status: 201 })

@@ -17,12 +17,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Loader2, Save, Building2, Users, Upload } from "lucide-react"
+import { Loader2, Save, Building2, Users, Upload, QrCode } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { StaffManagement } from "@/components/settings/StaffManagement"
+import { PlanManagement } from "@/components/settings/PlanManagement"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { QRPosterSection } from "@/components/settings/QRPosterSection"
+import { ClipboardList } from "lucide-react"
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -40,6 +43,7 @@ export default function SettingsPage() {
     const { slug } = useParams() as { slug: string }
     const [activeTab, setActiveTab] = useState('profile')
     const [loading, setLoading] = useState(true)
+    const [gymName, setGymName] = useState('')
     const [saving, setSaving] = useState(false)
 
     const form = useForm<SettingsFormValues>({
@@ -63,12 +67,14 @@ export default function SettingsPage() {
                     const data = await response.json()
                     form.reset({
                         name: data.name || "",
+                        ownerName: data.ownerName || "",
                         email: data.email || "",
                         phone: data.phone || "",
                         address: data.address || "",
                         gst: data.gst || "",
                         termsAndConditions: data.termsAndConditions || "",
                     })
+                    setGymName(data.name || '')
                 }
             } catch {
                 toast.error("Failed to load settings")
@@ -95,6 +101,7 @@ export default function SettingsPage() {
             }
 
             toast.success("Settings updated successfully")
+            setGymName(data.name)
         } catch (error: any) {
             toast.error(error.message)
         } finally {
@@ -139,6 +146,14 @@ export default function SettingsPage() {
                             <Users className="mr-2 h-4 w-4" />
                             Staff Management
                         </Button>
+                        <Button
+                            variant={activeTab === 'plans' ? "secondary" : "ghost"}
+                            className="justify-start"
+                            onClick={() => setActiveTab('plans')}
+                        >
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Membership Plans
+                        </Button>
                         <Link href={`/${slug}/settings/import`}>
                             <Button
                                 variant="ghost"
@@ -148,6 +163,14 @@ export default function SettingsPage() {
                                 Import Members
                             </Button>
                         </Link>
+                        <Button
+                            variant={activeTab === 'qr-poster' ? "secondary" : "ghost"}
+                            className="justify-start"
+                            onClick={() => setActiveTab('qr-poster')}
+                        >
+                            <QrCode className="mr-2 h-4 w-4" />
+                            QR Poster
+                        </Button>
                     </nav>
                 </aside>
                 <div className="flex-1 lg:max-w-2xl">
@@ -280,9 +303,17 @@ export default function SettingsPage() {
                                 </Form>
                             </CardContent>
                         </Card>
-                    ) : (
+                    ) : activeTab === 'staff' ? (
                         <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
                             <StaffManagement />
+                        </div>
+                    ) : activeTab === 'plans' ? (
+                        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
+                            <PlanManagement />
+                        </div>
+                    ) : (
+                        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
+                            <QRPosterSection slug={slug} gymName={gymName} />
                         </div>
                     )}
                 </div>

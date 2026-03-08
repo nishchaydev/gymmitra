@@ -28,7 +28,7 @@ export function Analytics({ isDemo = false, initialData }: { isDemo?: boolean, i
                     <ResponsiveContainer width="100%" height={350}>
                         <BarChart data={memberGrowthData}>
                             <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} allowDecimals={false} domain={[0, 'auto']} />
                             <Tooltip
                                 cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
                                 contentStyle={tooltipStyle}

@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus } from 'lucide-react'
+import { Plus, Download } from 'lucide-react'
 
 import { InvoiceSearch, InvoiceFilters } from "@/components/invoice/InvoiceFilters"
 import { InvoicesList } from "@/components/invoice/InvoicesList"
@@ -49,12 +49,10 @@ export default async function InvoicesPage({
 
     const parsedPage = parseInt(resolvedSearchParams.page || '1', 10)
     const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
-    // We don't clamp immediately since totalPages requires counting filtered db output anyway.
-
     const skip = (page - 1) * take
 
     const whereClause: Prisma.InvoiceWhereInput = {
-        member: { gymId: gymId }
+        gymId: gymId
     }
 
     if (query) {
@@ -114,6 +112,11 @@ export default async function InvoicesPage({
             <div className="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
                 <h2 className="text-3xl font-bold tracking-tight">Invoices</h2>
                 <div className="flex items-center space-x-2">
+                    <a href={`/api/reports/download?type=invoices`} download>
+                        <Button variant="outline">
+                            <Download className="mr-2 h-4 w-4" /> Download CSV
+                        </Button>
+                    </a>
                     <Link href={`/${slug}/invoices/new`}>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" /> Generate Invoice
@@ -134,7 +137,12 @@ export default async function InvoicesPage({
                 page={page}
                 take={take}
                 isDemo={isDemo}
-                initialData={{ invoices, totalCount, page, hasMore }}
+                initialData={{
+                    invoices: JSON.parse(JSON.stringify(invoices)),
+                    totalCount,
+                    page,
+                    hasMore
+                }}
             />
         </div>
     )

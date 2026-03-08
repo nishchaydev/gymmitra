@@ -37,6 +37,9 @@ interface InvoiceTemplateProps {
     taxAmount?: number
     discount: number
     total: number
+    amountPaid?: number
+    balanceDue?: number
+    paymentStatus?: string
 }
 
 export function InvoiceTemplate({
@@ -50,9 +53,12 @@ export function InvoiceTemplate({
     taxPercentage,
     taxAmount,
     discount,
-    total
+    total,
+    amountPaid,
+    balanceDue,
+    paymentStatus
 }: InvoiceTemplateProps) {
-    const upiQrData = gymInfo.upiId ? generateUpiQrData(gymInfo.upiId, total, gymInfo.name, invoiceNumber) : null
+    const upiQrData = gymInfo.upiId ? generateUpiQrData(gymInfo.upiId, paymentStatus === 'PARTIAL' && balanceDue ? balanceDue : total, gymInfo.name, invoiceNumber) : null
 
     return (
         <div className="bg-white p-4 sm:p-8 w-full max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid text-drift-900" id="invoice-template">
@@ -99,7 +105,12 @@ export function InvoiceTemplate({
                         </div>
                         <div className="flex justify-between">
                             <span className="text-slate-500">Status:</span>
-                            <span className="font-bold text-emerald-600">PAID</span>
+                            <span className={`font-bold transition-colors ${paymentStatus === 'PAID' ? 'text-emerald-600' :
+                                paymentStatus === 'PARTIAL' ? 'text-amber-600' :
+                                    'text-rose-600'
+                                }`}>
+                                {paymentStatus || 'PAID'}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -172,6 +183,21 @@ export function InvoiceTemplate({
                         <span className="text-base sm:text-lg font-black text-slate-900 uppercase">Grand Total</span>
                         <span className="text-xl sm:text-2xl font-black text-primary underline decoration-primary/20 underline-offset-8">₹{total.toLocaleString('en-IN')}</span>
                     </div>
+
+                    {(amountPaid !== undefined && amountPaid > 0) && (
+                        <div className="flex justify-between text-sm py-1">
+                            <span className="text-slate-500 font-medium">Amount Paid</span>
+                            <span className="text-emerald-600 font-bold">₹{amountPaid.toLocaleString('en-IN')}</span>
+                        </div>
+                    )}
+
+                    {(balanceDue !== undefined && balanceDue > 0) && (
+                        <div className="flex justify-between text-sm py-1 bg-amber-50 px-2 rounded -mx-2">
+                            <span className="text-amber-700 font-bold uppercase text-[10px] tracking-wide">Balance Due</span>
+                            <span className="text-rose-600 font-black">₹{balanceDue.toLocaleString('en-IN')}</span>
+                        </div>
+                    )}
+
                     <div className="pt-8 text-right opacity-30">
                         <div className="text-[10px] font-bold uppercase tracking-widest mb-1 italic">Authorized Signatory</div>
                         <div className="h-12 w-24 ml-auto border-b border-slate-900"></div>

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { InvoiceView } from "@/components/invoice/InvoiceView"
+import { UpiPayButton } from "@/components/invoice/UpiPayButton"
 import { Metadata } from 'next'
 import { apiLimiter } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
@@ -116,6 +117,8 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                         taxAmount: Number(dbInvoice.taxAmount),
                         discount: Number(dbInvoice.discount),
                         total: Number(dbInvoice.total),
+                        amountPaid: Number((dbInvoice as any).amountPaid || 0),
+                        balanceDue: Number((dbInvoice as any).balanceDue || 0),
                         items: dbInvoice.items.map(item => ({
                             ...item,
                             unitPrice: Number(item.unitPrice),

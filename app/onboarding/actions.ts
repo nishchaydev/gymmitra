@@ -281,48 +281,19 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             payload: { businessName: gymProfile.name }
         })
 
-        // Send Welcome Email — await so it finishes before redirect() kills the context
+        // Trigger Gym Activation Webhook (sends Welcome Email + QR Poster PDF)
         try {
-            const resendKey = process.env.RESEND_API_KEY
-            if (!resendKey) {
-                console.warn('[Onboarding] RESEND_API_KEY not configured — skipping welcome email')
-                warnings.push('Welcome email skipped: email service is not configured.')
-            } else if (!gymProfile.email) {
-                console.warn('[Onboarding] No gym email — skipping welcome email')
-            } else {
-                const resend = new Resend(resendKey)
-                const baseUrl = getBaseUrl()
-
-                const emailHtml = await render(React.createElement(OnboardingEmail, {
-                    ownerName: gymProfile.ownerName || user.user_metadata?.full_name || user.email?.split('@')[0] || gymProfile.businessName || gymProfile.name,
-                    gymName: gymProfile.businessName || gymProfile.name,
-                    loginUrl: `${baseUrl}/${gymProfile.slug}/dashboard`,
-                    serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
-                    saasPlan: 'FREE'
-                }));
-
-                console.log(`[Onboarding] Attempting to send welcome email to ${gymProfile.email} from ${gymProfile.slug}@mail.emitra.dev`)
-                const { data: emailData, error: emailError } = await resend.emails.send({
-                    from: `"${gymProfile.businessName || gymProfile.name} Team" <${gymProfile.slug}@mail.emitra.dev>`,
-                    to: gymProfile.email,
-                    subject: `Welcome to Gym Mitra, ${gymProfile.businessName || gymProfile.name}! 🎉`,
-                    html: emailHtml
-                })
-
-                if (emailError) {
-                    console.error('[Onboarding] Resend API error details:', {
-                        name: emailError.name,
-                        message: emailError.message,
-                        type: (emailError as any).type
-                    })
-                    warnings.push(`Welcome email failed: ${emailError.message}`)
-                } else {
-                    console.log(`[Onboarding] Welcome email sent successfully! ID: ${emailData?.id}`)
-                }
-            }
-        } catch (emailError) {
-            console.error('[Onboarding] Failed to send welcome email:', emailError)
-            warnings.push(`Welcome email failed: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`)
+            const baseUrl = getBaseUrl()
+            fetch(`${baseUrl}/api/webhooks/gym-activated`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-webhook-secret': process.env.CRON_SECRET || ''
+                },
+                body: JSON.stringify({ gymId: gymProfile.id })
+            }).catch(e => console.error('[Onboarding] Async webhook failure:', e))
+        } catch (webhookError) {
+            console.error('[Onboarding] Failed to trigger welcome webhook:', webhookError)
         }
 
         redirectSlug = gymProfile.slug

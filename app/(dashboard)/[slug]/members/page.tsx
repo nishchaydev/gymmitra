@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
@@ -146,11 +146,18 @@ export default async function MembersPage({
                     <h1 className="text-3xl font-bold">Members</h1>
                     <p className="text-muted-foreground">Manage your gym members</p>
                 </div>
-                <Link href={`/${slug}/members/new`}>
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Add Member
-                    </Button>
-                </Link>
+                <div className="flex gap-2">
+                    <a href={`/api/reports/download?type=members`} download>
+                        <Button variant="outline">
+                            <Download className="mr-2 h-4 w-4" /> Download CSV
+                        </Button>
+                    </a>
+                    <Link href={`/${slug}/members/new`}>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" /> Add Member
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">

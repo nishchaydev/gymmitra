@@ -163,7 +163,14 @@ export async function DELETE(
         }).catch(err => console.error('recordAuditLog DELETE_MEMBER', err))
 
         return NextResponse.json({ success: true })
-    } catch (error) {
+    } catch (error: any) {
+        console.error('Delete member error:', error)
+        if (error.code === 'P2003' || error.code === 'P2014') {
+            return NextResponse.json(
+                { error: 'Cannot delete member because they have existing invoices, attendance, or active subscriptions. Try changing their status to Inactive instead.' },
+                { status: 400 }
+            )
+        }
         return NextResponse.json(
             { error: 'Failed to delete member' },
             { status: 500 }

@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
-import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
 
 interface BrandedLayoutProps {
     children: ReactNode;
@@ -26,11 +25,9 @@ export default async function BrandedDashboardLayout({
         return (
             <>
                 <Navbar />
-                <ReactQueryProvider>
-                    <div className="flex-1 overflow-y-auto pt-4">
-                        {children}
-                    </div>
-                </ReactQueryProvider>
+                <div className="flex-1 overflow-y-auto pt-4">
+                    {children}
+                </div>
             </>
         );
     }
@@ -61,12 +58,9 @@ export default async function BrandedDashboardLayout({
     return (
         <>
             <Navbar />
-            <ReactQueryProvider>
-                <div className="flex-1 overflow-y-auto pt-4">
-                    {children}
-                </div>
-            </ReactQueryProvider>
+            <div className="flex-1 overflow-y-auto pt-4">
+                {children}
+            </div>
         </>
     );
 }
-

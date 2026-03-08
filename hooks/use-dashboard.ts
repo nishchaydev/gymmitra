@@ -27,6 +27,13 @@ interface DashboardData {
     }[]
     monthlyRevenueData: { name: string; total: number }[]
     outstandingInvoices: any[]
+    urgentCount: number
+    birthdayCount: number
+    followUps?: any[]
+    partialPayments?: any[]
+    lowStockItems?: any[]
+    expiringSubscriptions?: any[]
+    totalExpenses?: number
 }
 
 export function useDashboardQuery(initialData?: DashboardData) {

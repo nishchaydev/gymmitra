@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import {
     UserPlus, Search, Phone, MessageCircle, ArrowRightLeft,
-    Plus, X, Calendar, Trash2, Users
+    Plus, X, Calendar, Trash2, Users, Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -180,7 +180,7 @@ export default function LeadsPage() {
         const gymName = String(slug).split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
         const message = templates.leadFollowUp(lead.name, gymName, lead.planInterest || undefined)
         const link = getWhatsAppLink(lead.phone, message)
-        window.open(link, '_blank')
+        window.open(link, '_blank', 'noopener,noreferrer')
     }
 
     const leads = data?.leads || []
@@ -222,8 +222,9 @@ export default function LeadsPage() {
                     <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black text-drift-600 uppercase tracking-wider">Name *</Label>
+                                <Label htmlFor="newName" className="text-[10px] font-black text-drift-600 uppercase tracking-wider">Name *</Label>
                                 <Input
+                                    id="newName"
                                     value={newName}
                                     onChange={(e) => setNewName(e.target.value)}
                                     placeholder="Rahul Sharma"
@@ -231,8 +232,9 @@ export default function LeadsPage() {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black text-drift-600 uppercase tracking-wider">Phone *</Label>
+                                <Label htmlFor="newPhone" className="text-[10px] font-black text-drift-600 uppercase tracking-wider">Phone *</Label>
                                 <Input
+                                    id="newPhone"
                                     value={newPhone}
                                     onChange={(e) => setNewPhone(e.target.value)}
                                     placeholder="9876543210"
@@ -240,8 +242,9 @@ export default function LeadsPage() {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black text-drift-600 uppercase tracking-wider">Plan Interest</Label>
+                                <Label htmlFor="newPlanInterest" className="text-[10px] font-black text-drift-600 uppercase tracking-wider">Plan Interest</Label>
                                 <Input
+                                    id="newPlanInterest"
                                     value={newPlanInterest}
                                     onChange={(e) => setNewPlanInterest(e.target.value)}
                                     placeholder="e.g. Gold Monthly"
@@ -314,200 +317,270 @@ export default function LeadsPage() {
 
             {/* Leads Table */}
             <div className="bg-white rounded-2xl border border-drift-200 overflow-hidden shadow-sm">
-                {/* Desktop header */}
-                <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-drift-50/50 border-b border-drift-100 text-[10px] font-black text-drift-500 uppercase tracking-wider">
-                    <div className="col-span-3">Lead</div>
-                    <div className="col-span-2">Contact</div>
-                    <div className="col-span-2">Interest</div>
-                    <div className="col-span-1">Source</div>
-                    <div className="col-span-1">Status</div>
-                    <div className="col-span-1">Follow-up</div>
-                    <div className="col-span-2 text-right">Actions</div>
-                </div>
+                <div className="mt-4">
+                    {/* Desktop View */}
+                    <div className="hidden md:block">
+                        <div className="grid grid-cols-12 gap-4 p-4 bg-drift-50/50 border-b border-drift-100 text-[10px] font-black text-drift-500 uppercase tracking-wider">
+                            <div className="col-span-3">Lead</div>
+                            <div className="col-span-2">Contact</div>
+                            <div className="col-span-2">Interest</div>
+                            <div className="col-span-1">Source</div>
+                            <div className="col-span-1">Status</div>
+                            <div className="col-span-1">Follow-up</div>
+                            <div className="col-span-2 text-right">Actions</div>
+                        </div>
 
-                {isLoading ? (
-                    <div className="p-8 text-center text-drift-400">Loading leads...</div>
-                ) : error ? (
-                    <div className="p-4 md:p-8">
-                        <Card className="p-8 text-center border-rose-100 bg-rose-50/30 shadow-none">
-                            <X className="w-12 h-12 text-rose-300 mx-auto mb-4" />
-                            <h3 className="text-lg font-black text-rose-900 mb-2">Error Loading Leads</h3>
-                            <p className="text-sm text-rose-600 mb-6 bg-white/60 p-4 rounded-xl border border-rose-50 font-medium">
-                                {(error as any).details || error.message || "An unexpected server error occurred."}
-                            </p>
-                            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+                        {isLoading ? (
+                            <div className="p-12 text-center">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+                                <p className="text-drift-400 font-medium">Loading your leads...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="p-8 text-center border-rose-100 bg-rose-50/30">
+                                <X className="w-12 h-12 text-rose-300 mx-auto mb-4" />
+                                <h3 className="text-lg font-black text-rose-900 mb-2">Error Loading Leads</h3>
+                                <p className="text-sm text-rose-600 mb-6 font-medium">{(error as any).details || error.message}</p>
                                 <Button
                                     variant="outline"
                                     onClick={() => queryClient.invalidateQueries({ queryKey: ['leads'] })}
-                                    className="rounded-full border-rose-200 text-rose-700 hover:bg-rose-100 font-bold h-11"
+                                    className="rounded-full border-rose-200 text-rose-700 font-bold"
                                 >
                                     Try Again
                                 </Button>
-                                {(error as any).details?.includes('sync required') && (
-                                    <div className="text-[10px] text-rose-400 mt-2 space-y-1 font-bold uppercase tracking-wider">
-                                        <p>TIP: Run <code className="bg-rose-100 px-1 rounded text-rose-600 tracking-normal capitalize font-mono">npx prisma generate</code></p>
-                                        <p>And restart your dev server</p>
-                                    </div>
-                                )}
                             </div>
-                        </Card>
-                    </div>
-                ) : leads.length === 0 ? (
-                    <div className="p-12 text-center space-y-6">
-                        <div className="w-20 h-20 rounded-3xl bg-drift-50 flex items-center justify-center mx-auto shadow-inner border border-white">
-                            <Users className="w-10 h-10 text-drift-300" />
-                        </div>
-                        <div className="space-y-1">
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">No Active Leads!</h3>
-                            <p className="text-drift-400 text-sm font-medium italic">Or create your first Lead!</p>
-                        </div>
-                        <Button
-                            onClick={() => setShowAddForm(true)}
-                            className="bg-primary hover:bg-primary-600 text-white font-black uppercase tracking-widest text-[10px] px-8 py-6 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all scale-110 active:scale-95"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Get Started
-                        </Button>
-                    </div>
-                ) : (
-                    leads.map((lead: any) => (
-                        <div
-                            key={lead.id}
-                            className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 p-4 border-b border-drift-50 hover:bg-drift-50/10 transition-colors md:items-center relative"
-                        >
-                            {/* Mobile-only status badge at top right */}
-                            <div className="md:hidden absolute top-4 right-4">
-                                <Badge className={cn(
-                                    "text-[10px] font-black uppercase px-2 h-5 flex items-center shadow-none",
-                                    STATUS_COLORS[lead.status] || 'bg-gray-100'
-                                )} variant="outline">
-                                    {lead.status}
-                                </Badge>
-                            </div>
-
-                            {/* Name */}
-                            <div className="md:col-span-3">
-                                <p className="font-black text-slate-900 text-sm md:text-base">{lead.name}</p>
-                                {lead.email && (
-                                    <p className="text-[10px] md:text-xs text-drift-400 truncate font-bold uppercase tracking-tight hidden md:block">{lead.email}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 md:contents gap-2">
-                                {/* Phone */}
-                                <div className="md:col-span-2 flex items-center gap-2">
-                                    <div className="md:hidden p-1.5 rounded-lg bg-drift-50">
-                                        <Phone className="w-3 h-3 text-drift-400" />
-                                    </div>
-                                    <span className="text-xs md:text-sm text-drift-600 font-bold">{lead.phone}</span>
+                        ) : leads.length === 0 ? (
+                            <div className="p-12 text-center space-y-6">
+                                <div className="w-20 h-20 rounded-3xl bg-drift-50 flex items-center justify-center mx-auto shadow-inner border border-white">
+                                    <Users className="w-10 h-10 text-drift-300" />
                                 </div>
-
-                                {/* Plan Interest */}
-                                <div className="md:col-span-2 flex items-center gap-2">
-                                    <div className="md:hidden p-1.5 rounded-lg bg-drift-50">
-                                        <Calendar className="w-3 h-3 text-drift-400" />
-                                    </div>
-                                    {lead.planInterest ? (
-                                        <span className="text-xs md:text-sm text-slate-600 font-bold truncate">{lead.planInterest}</span>
-                                    ) : (
-                                        <span className="text-xs text-drift-200">—</span>
-                                    )}
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">No leads captured yet.</h3>
+                                    <p className="text-drift-500 text-sm font-medium italic">Your gym growth starts here.</p>
                                 </div>
-                            </div>
-
-                            {/* Source and Followup (Mobile hidden or stacked) */}
-                            <div className="flex md:grid md:grid-cols-2 md:col-span-2 gap-2 mt-1 md:mt-0 items-center">
-                                {/* Source (Md+) */}
-                                <div className="hidden md:block">
-                                    {lead.source ? (
-                                        <span className="text-[10px] font-black text-drift-400 uppercase tracking-widest leading-none bg-drift-50 px-1.5 py-0.5 rounded">{lead.source}</span>
-                                    ) : (
-                                        <span className="text-xs text-drift-200">—</span>
-                                    )}
-                                </div>
-
-                                {/* Status (Md+) */}
-                                <div className="hidden md:block">
-                                    <Select
-                                        value={lead.status}
-                                        onValueChange={(val) => updateMutation.mutate({ id: lead.id, status: val })}
-                                    >
-                                        <SelectTrigger className={cn(
-                                            'h-7 text-[10px] font-black uppercase border rounded-full px-2 w-fit min-w-[90px] shadow-none',
-                                            STATUS_COLORS[lead.status] || 'bg-gray-100'
-                                        )}>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="NEW">New</SelectItem>
-                                            <SelectItem value="CONTACTED">Contacted</SelectItem>
-                                            <SelectItem value="INTERESTED">Interested</SelectItem>
-                                            <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
-                                            <SelectItem value="CONVERTED">Converted</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            {/* Follow-up Date */}
-                            <div className="md:col-span-1 flex items-center gap-2">
-                                <Label className="md:hidden text-[10px] font-black text-drift-400 uppercase">Next Call:</Label>
-                                <Input
-                                    type="date"
-                                    defaultValue={lead.followUpDate ? new Date(lead.followUpDate).toISOString().split('T')[0] : ''}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            updateMutation.mutate({
-                                                id: lead.id,
-                                                followUpDate: e.target.value,
-                                            })
-                                        }
-                                    }}
-                                    className="h-7 text-[10px] font-black bg-drift-50 border-transparent px-2 w-full md:w-28 rounded-lg"
-                                />
-                            </div>
-
-                            {/* Actions */}
-                            <div className="md:col-span-2 flex items-center justify-end gap-2 mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-0 border-drift-50">
                                 <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleWhatsApp(lead)}
-                                    className="h-9 w-9 text-green-600 hover:bg-green-50 rounded-full border border-transparent hover:border-green-100"
-                                    title="WhatsApp"
+                                    onClick={() => setShowAddForm(true)}
+                                    className="bg-primary hover:bg-primary-600 text-white font-black uppercase tracking-widest text-[10px] px-8 py-6 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95"
                                 >
-                                    <MessageCircle className="w-4 h-4" />
-                                </Button>
-
-                                {lead.status !== 'CONVERTED' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleConvert(lead)}
-                                        className="h-9 text-[10px] font-black uppercase tracking-wider text-primary border-primary/20 hover:bg-primary hover:text-white px-4 rounded-full transition-all"
-                                    >
-                                        <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
-                                        Convert
-                                    </Button>
-                                )}
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                        if (confirm('Delete this lead?')) {
-                                            deleteMutation.mutate(lead.id)
-                                        }
-                                    }}
-                                    className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-full"
-                                    title="Delete"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Your First Lead
                                 </Button>
                             </div>
-                        </div>
-                    ))
-                )}
+                        ) : (
+                            leads.map((lead: any) => (
+                                <div
+                                    key={lead.id}
+                                    className="grid grid-cols-12 gap-4 p-4 border-b border-drift-50 hover:bg-drift-50/10 transition-colors items-center"
+                                >
+                                    {/* Name */}
+                                    <div className="col-span-3">
+                                        <p className="font-black text-slate-900 text-sm">{lead.name}</p>
+                                        {lead.email && (
+                                            <p className="text-[10px] text-drift-400 truncate font-bold uppercase tracking-tight">{lead.email}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Phone */}
+                                    <div className="col-span-2 flex items-center gap-2">
+                                        <span className="text-xs text-drift-600 font-bold">{lead.phone}</span>
+                                    </div>
+
+                                    {/* Plan Interest */}
+                                    <div className="col-span-2 flex items-center gap-2">
+                                        {lead.planInterest ? (
+                                            <span className="text-xs text-slate-600 font-bold truncate">{lead.planInterest}</span>
+                                        ) : (
+                                            <span className="text-xs text-drift-200">—</span>
+                                        )}
+                                    </div>
+
+                                    {/* Source */}
+                                    <div className="col-span-1">
+                                        {lead.source ? (
+                                            <span className="text-[10px] font-black text-drift-400 uppercase tracking-widest bg-drift-50 px-1.5 py-0.5 rounded">{lead.source}</span>
+                                        ) : (
+                                            <span className="text-xs text-drift-200">—</span>
+                                        )}
+                                    </div>
+
+                                    {/* Status */}
+                                    <div className="col-span-1">
+                                        <Select
+                                            value={lead.status}
+                                            onValueChange={(val) => updateMutation.mutate({ id: lead.id, status: val })}
+                                        >
+                                            <SelectTrigger className={cn(
+                                                'h-7 text-[10px] font-black uppercase border rounded-full px-2 w-fit min-w-[90px] shadow-none',
+                                                STATUS_COLORS[lead.status] || 'bg-gray-100'
+                                            )}>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="NEW">New</SelectItem>
+                                                <SelectItem value="CONTACTED">Contacted</SelectItem>
+                                                <SelectItem value="INTERESTED">Interested</SelectItem>
+                                                <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
+                                                <SelectItem value="CONVERTED">Converted</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Follow-up Date */}
+                                    <div className="col-span-1">
+                                        <Input
+                                            type="date"
+                                            defaultValue={lead.followUpDate ? new Date(lead.followUpDate).toISOString().split('T')[0] : ''}
+                                            onChange={(e) => {
+                                                if (e.target.value) {
+                                                    updateMutation.mutate({
+                                                        id: lead.id,
+                                                        followUpDate: e.target.value,
+                                                    })
+                                                }
+                                            }}
+                                            className="h-7 text-[10px] font-black bg-drift-50 border-transparent px-2 w-28 rounded-lg"
+                                        />
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="col-span-2 flex items-center justify-end gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleWhatsApp(lead)}
+                                            className="h-9 w-9 text-green-600 hover:bg-green-50 rounded-full"
+                                            title="WhatsApp"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                        </Button>
+
+                                        {lead.status !== 'CONVERTED' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleConvert(lead)}
+                                                className="h-8 text-[10px] font-black uppercase tracking-wider text-primary border-primary/20 hover:bg-primary hover:text-white px-3 rounded-full"
+                                            >
+                                                Convert
+                                            </Button>
+                                        )}
+
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                                if (confirm('Delete this lead?')) {
+                                                    deleteMutation.mutate(lead.id)
+                                                }
+                                            }}
+                                            className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-full"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden p-4">
+                        {isLoading ? (
+                            <div className="p-12 text-center">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                                <p className="text-drift-400 font-bold uppercase tracking-widest text-[10px]">Syncing Leads...</p>
+                            </div>
+                        ) : error ? (
+                            <Card className="p-8 text-center border-rose-100 bg-rose-50/30">
+                                <X className="w-10 h-10 text-rose-300 mx-auto mb-4" />
+                                <p className="text-sm text-rose-900 font-black uppercase mb-4">Sync Failed</p>
+                                <Button
+                                    onClick={() => queryClient.invalidateQueries({ queryKey: ['leads'] })}
+                                    className="rounded-xl bg-white border border-rose-200 text-rose-700 font-bold w-full"
+                                >
+                                    Retry Now
+                                </Button>
+                            </Card>
+                        ) : leads.length === 0 ? (
+                            <div className="py-12 bg-drift-50/50 rounded-3xl border-2 border-dashed border-drift-100 text-center px-6">
+                                <Users className="h-12 w-12 text-drift-200 mx-auto mb-4" />
+                                <h3 className="text-lg font-black text-slate-900">Zero Leads Found</h3>
+                                <p className="text-sm text-drift-500 font-medium mb-8">Ready to grow your gym? Add your first inquiry.</p>
+                                <Button
+                                    onClick={() => setShowAddForm(true)}
+                                    className="w-full bg-primary text-white font-black py-6 rounded-2xl shadow-lg"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" /> CREATE LEAD
+                                </Button>
+                            </div>
+                        ) : (
+                            leads.map((lead: any) => (
+                                <Card
+                                    key={lead.id}
+                                    className="overflow-hidden border-2 border-slate-100 shadow-sm rounded-2xl active:scale-[0.98] transition-transform"
+                                >
+                                    <div className="p-4 bg-white">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{lead.name}</h3>
+                                                <div className="flex items-center gap-2 text-drift-500">
+                                                    <Phone className="w-3 h-3" />
+                                                    <span className="text-xs font-bold">{lead.phone}</span>
+                                                </div>
+                                            </div>
+                                            <Badge className={cn(
+                                                "text-[10px] font-black uppercase px-2 h-6 shadow-none rounded-lg",
+                                                STATUS_COLORS[lead.status] || 'bg-gray-100'
+                                            )} variant="outline">
+                                                {lead.status}
+                                            </Badge>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 p-3 bg-drift-50/50 rounded-xl mb-4 border border-drift-100">
+                                            <div>
+                                                <p className="text-[9px] font-black text-drift-400 uppercase tracking-widest">Interest</p>
+                                                <p className="text-xs font-bold text-slate-700 truncate">{lead.planInterest || 'Unspecified'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-drift-400 uppercase tracking-widest">Source</p>
+                                                <p className="text-xs font-bold text-slate-700 truncate">{lead.source || 'Direct'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    onClick={() => handleWhatsApp(lead)}
+                                                    className="h-10 w-10 bg-green-50 text-green-600 rounded-xl"
+                                                >
+                                                    <MessageCircle className="w-5 h-5" />
+                                                </Button>
+                                                {lead.status !== 'CONVERTED' && (
+                                                    <Button
+                                                        onClick={() => handleConvert(lead)}
+                                                        className="h-10 bg-primary/10 text-primary font-black uppercase text-[10px] px-4 rounded-xl border border-primary/20"
+                                                    >
+                                                        Convert
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={() => confirm('Delete?') && deleteMutation.mutate(lead.id)}
+                                                className="h-10 w-10 text-rose-300"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     )

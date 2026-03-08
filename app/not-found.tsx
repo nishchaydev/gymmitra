@@ -24,11 +24,11 @@ export default function NotFound() {
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6 pb-10">
                     <div className="flex flex-col gap-3">
-                        <Link href="/" className="w-full">
-                            <Button className="w-full h-12 font-bold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20">
+                        <Button asChild className="w-full h-12 font-bold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20">
+                            <Link href="/">
                                 <Home className="mr-2 h-5 w-5" /> Go to Homepage
-                            </Button>
-                        </Link>
+                            </Link>
+                        </Button>
                         <Button
                             variant="ghost"
                             onClick={() => router.back()}

@@ -9,10 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
-import { MessageSquare } from "lucide-react"
+import { MessageSquare, Download } from "lucide-react"
 
 interface ReportsProps {
     isDemo?: boolean
+    gymName?: string
 }
 
 const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
@@ -42,7 +43,7 @@ interface ExpiringMembership {
     daysLeft?: number
 }
 
-export function Reports({ isDemo = false, initialData }: ReportsProps & { initialData?: any }) {
+export function Reports({ isDemo = false, initialData, gymName = "Your Gym" }: ReportsProps & { initialData?: any }) {
     return (
         <div className="space-y-4">
             <Tabs defaultValue="revenue" className="space-y-4">
@@ -65,7 +66,7 @@ export function Reports({ isDemo = false, initialData }: ReportsProps & { initia
                 </TabsContent>
 
                 <TabsContent value="expiring" className="space-y-4">
-                    <ExpiringMembershipsReport initialData={initialData?.expiring} />
+                    <ExpiringMembershipsReport initialData={initialData?.expiring} gymName={gymName} />
                 </TabsContent>
 
                 <TabsContent value="reminders" className="space-y-4">
@@ -111,7 +112,7 @@ function RemindersReport({ isDemo = false, initialData }: { isDemo?: boolean, in
                 console.error(err)
                 setLoading(false)
             })
-    }, [isDemo, initialData, loading])
+    }, [isDemo, initialData])
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
 
@@ -200,16 +201,30 @@ function RevenueReport({ initialData }: { initialData?: RevenueData[] }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Monthly Revenue</CardTitle>
-                <CardDescription>Income from memberships and product sales over the last 6 months.</CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Monthly Revenue</CardTitle>
+                        <CardDescription>Income from memberships and product sales over the last 6 months.</CardDescription>
+                    </div>
+                    <a href="/api/reports/download?type=invoices" download>
+                        <Button variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        </Button>
+                    </a>
+                </div>
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={data}>
                         <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} tickFormatter={(value) => {
+                            if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+                            if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+                            if (value >= 1000) return `₹${(value / 1000).toFixed(0)}k`;
+                            return `₹${value}`;
+                        }} />
                         <Tooltip
-                            formatter={(value: any) => [`₹${value}`, 'Revenue']}
+                            formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
                             cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
                             contentStyle={tooltipStyle}
                         />
@@ -248,14 +263,23 @@ function AttendanceReport({ initialData }: { initialData?: AttendanceData[] }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Weekly Footfall</CardTitle>
-                <CardDescription>Daily check-in counts for the past 7 days.</CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Weekly Footfall</CardTitle>
+                        <CardDescription>Daily check-in counts for the past 7 days.</CardDescription>
+                    </div>
+                    <a href="/api/reports/download?type=attendance" download>
+                        <Button variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        </Button>
+                    </a>
+                </div>
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={data}>
                         <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
                         <Tooltip
                             cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
                             contentStyle={tooltipStyle}
@@ -268,7 +292,7 @@ function AttendanceReport({ initialData }: { initialData?: AttendanceData[] }) {
     )
 }
 
-function ExpiringMembershipsReport({ initialData }: { initialData?: ExpiringMembership[] }) {
+function ExpiringMembershipsReport({ initialData, gymName = "this gym" }: { initialData?: ExpiringMembership[], gymName?: string }) {
     const [data, setData] = useState<ExpiringMembership[]>(initialData || [])
     const [loading, setLoading] = useState(!initialData)
 
@@ -303,11 +327,20 @@ function ExpiringMembershipsReport({ initialData }: { initialData?: ExpiringMemb
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    Expiring Soon
-                </CardTitle>
-                <CardDescription>Memberships ending in the next 7 days.</CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                            Expiring Soon
+                        </CardTitle>
+                        <CardDescription>Memberships ending in the next 7 days.</CardDescription>
+                    </div>
+                    <a href="/api/reports/download?type=members" download>
+                        <Button variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        </Button>
+                    </a>
+                </div>
             </CardHeader>
             <CardContent>
                 {data.length === 0 ? (
@@ -346,7 +379,7 @@ function ExpiringMembershipsReport({ initialData }: { initialData?: ExpiringMemb
                                         onClick={() => {
                                             const link = getWhatsAppLink(
                                                 sub.member.phone,
-                                                templates.renewalReminder(sub.member.name, sub.daysLeft || 0, "this gym") // The API pre-generates the real link. We should rely on that instead, but this component is currently fetching its own data and manually constructing the link.
+                                                templates.renewalReminder(sub.member.name, sub.daysLeft || 0, gymName)
                                             )
                                             window.open(link, '_blank')
                                         }}

@@ -9,6 +9,7 @@ const productSchema = z.object({
     category: z.enum(['PROTEIN', 'SUPPLEMENT', 'MERCHANDISE', 'OTHER']),
     description: z.string().optional(),
     price: z.number().min(0),
+    purchasePrice: z.number().min(0).optional().nullable(),
     stock: z.number().int().min(0),
     lowStockAlert: z.number().int().min(0).default(10),
     image: z.string().optional(),
