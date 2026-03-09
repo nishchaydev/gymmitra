@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { headers } from 'next/headers'
+import crypto from 'crypto'
 import { Resend } from 'resend'
 import { WelcomeEmail } from '@/components/emails/WelcomeEmail'
 import { render } from '@react-email/render'
@@ -110,6 +111,11 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
 
                 // Generate Invoice
                 const invoiceNumber = await generateInvoiceNumber(gymId, tx)
+                const shareToken = crypto.randomBytes(32).toString('hex')
+                const expiryDays = context.gym.invoiceLinkExpiryDays ?? 30
+                const shareTokenExpiresAt = expiryDays > 0
+                    ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
+                    : null
 
                 const invoice = await tx.invoice.create({
                     data: {
@@ -129,6 +135,8 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                         issueDate: new Date(),
                         dueDate: new Date(),
                         type: 'MEMBERSHIP',
+                        shareToken: shareToken,
+                        shareTokenExpiresAt: shareTokenExpiresAt,
                         items: {
                             create: [{
                                 description: `${plan.name} Membership (${plan.duration} Months)`,

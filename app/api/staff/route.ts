@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { Resend } from 'resend'
+import { StaffInviteEmail } from '@/components/emails/StaffInviteEmail'
+import React from 'react'
 
 const staffSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -78,6 +81,31 @@ export async function POST(request: NextRequest) {
                 isActive: false
             }
         })
+
+        // Send email invitation if Resend is configured
+        const resendKey = process.env.RESEND_API_KEY
+        if (resendKey) {
+            try {
+                const resend = new Resend(resendKey)
+                const signupUrl = 'https://gymmitra.com/login?tab=signup' // adjust if needed
+
+                await resend.emails.send({
+                    from: `${auth.gym.name} <hello@mail.emitra.dev>`,
+                    to: validatedData.email,
+                    subject: `Invitation to join ${auth.gym.name}`,
+                    react: React.createElement(StaffInviteEmail, {
+                        gymName: auth.gym.name,
+                        gymLogo: auth.gym.logoUrl || auth.gym.logo,
+                        staffName: validatedData.name,
+                        role: validatedData.role,
+                        signupUrl: signupUrl
+                    }) as React.ReactElement
+                })
+            } catch (err) {
+                console.error('[Staff POST] Failed to send invite email:', err)
+                // We don't fail the request if the email fails
+            }
+        }
 
         return NextResponse.json(newStaff, { status: 201 })
     } catch (error) {
