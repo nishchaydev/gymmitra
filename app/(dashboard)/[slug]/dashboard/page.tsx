@@ -22,6 +22,7 @@ import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 export const revalidate = 60
 
 export const metadata: Metadata = {
+    title: "Dashboard",
     description: "Manage your gym's members, revenue, and attendance with ease.",
 }
 

@@ -1,7 +1,7 @@
-export const metadata = {
-    title: "Settings"
-};
+import { Metadata } from 'next';
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-    return <>{children}</>;
+export const metadata: Metadata = { title: 'Settings' };
+
+export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+    return children;
 }

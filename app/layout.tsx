@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s | GymMitra"
   },
   description: "Complete gym management software for Indian gym owners",
-  metadataBase: new URL('https://gym.emitra.dev'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_METADATA_BASE || 'https://gym.emitra.dev'),
   alternates: {
     canonical: '/',
   },

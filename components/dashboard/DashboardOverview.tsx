@@ -93,7 +93,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">₹{d.revenue}</div>
+                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">₹{d.revenue}</div>
                             {!isDemo && (
                                 <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
                                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -115,7 +115,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">{d.activeMembers}</div>
+                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.activeMembers}</div>
                             <p className="text-xs text-[#64748B] mt-2 font-medium">
                                 {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
                             </p>
@@ -134,7 +134,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">
+                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">
                                 ₹{netIncome.toLocaleString('en-IN')}
                             </div>
                             <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
@@ -155,7 +155,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">{d.productSalesCount}</div>
+                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.productSalesCount}</div>
                             <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
                                 ALL-TIME ITEMS
                             </p>
@@ -174,7 +174,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">{d.dailyCheckins}</div>
+                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.dailyCheckins}</div>
                             {!isDemo && (
                                 <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
                                     <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />

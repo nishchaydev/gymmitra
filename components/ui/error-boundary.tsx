@@ -15,6 +15,16 @@ export default function ErrorBoundary({
             <p className="text-slate-500 text-sm mb-6 max-w-md">
                 We encountered an unexpected error while loading this page. Our team has been notified.
             </p>
+            {error.digest && (
+                <div className="bg-slate-100 p-2 rounded text-xs text-slate-600 mb-2 font-mono">
+                    Digest: {error.digest}
+                </div>
+            )}
+            {error.message && (
+                <div className="bg-rose-50 text-rose-600 p-2 rounded text-xs mb-6 max-w-md overflow-auto font-mono">
+                    {error.message}
+                </div>
+            )}
             <div className="flex gap-4">
                 <button
                     onClick={() => reset()}
