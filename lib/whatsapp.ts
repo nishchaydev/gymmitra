@@ -4,13 +4,13 @@ import { getBaseUrl } from './utils'
  * WhatsApp Utility for GymMitra
  * Generates wa.me links for zero-cost messaging
  */
-export const getWhatsAppLink = (phone: string, message: string) => {
+export const getWhatsAppLink = (phone: string | null | undefined, message: string) => {
     // Remove non-numeric characters, then strip leading 0 (e.g. 06261854014 -> 6261854014)
-    const stripped = phone.replace(/\D/g, '')
+    const stripped = (phone || '').replace(/\D/g, '')
     const cleanPhone = stripped.startsWith('0') ? stripped.slice(1) : stripped
     // Add country code if missing (assumes India +91)
     const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
-    const encodedMessage = encodeURIComponent(message)
+    const encodedMessage = encodeURIComponent(message || '')
     return `https://wa.me/${formattedPhone}?text=${encodedMessage}`
 }
 
@@ -55,11 +55,12 @@ export const templates = {
     /**
      * Sent with invoice link after a payment is recorded.
      */
-    invoiceShare: (name: string, gymName: string, amount: number, url: string) => {
+    invoiceShare: (name: string, gymName: string, amount: number, url?: string) => {
         const formattedAmount = formatCurrency(amount)
+        const linkPart = url ? `\nAapka invoice link yahan hai:\n${url}\n` : ''
         return (
             `Hi ${name}, thank you for the payment of *${formattedAmount}* to *${gymName}*.\n\n` +
-            `Payment record update ho gaya hai. Aapka invoice link yahan hai:\n${url}\n\n` +
+            `Payment record update ho gaya hai.${linkPart}\n` +
             `Keep crushing it! 🔥\n\n` +
             `Regards,\n${gymName}`
         )
@@ -133,19 +134,21 @@ export const getInvoiceWhatsAppLink = (
 ): string | null => {
     const baseUrl = getBaseUrl()
 
-    if (!shareToken || typeof shareToken !== 'string' || !shareToken.trim()) {
-        console.warn('WhatsApp Link: Invalid or missing shareToken', { shareToken })
-        return null
+    let url: string | undefined = undefined
+    if (shareToken && typeof shareToken === 'string' && shareToken.trim()) {
+        const safeToken = encodeURIComponent(shareToken.trim())
+        url = `${baseUrl}/${gymSlug}/invoice/${safeToken}`
+    } else {
+        console.warn('WhatsApp Link: Missing shareToken, omitting URL from message')
     }
 
-    if (!Number.isFinite(amount) || amount < 0) {
-        console.warn('WhatsApp Link: Invalid or negative amount', { amount })
-        return null
-    }
+    const safeAmount = (!Number.isFinite(amount) || amount < 0) ? 0 : amount
+    const formattedAmount = Number(safeAmount.toFixed(2))
 
-    const safeToken = encodeURIComponent(shareToken.trim())
-    const formattedAmount = Number(amount.toFixed(2))
-    const url = `${baseUrl}/${gymSlug}/invoice/${safeToken}`
-    const message = templates.invoiceShare(memberName, gymName, formattedAmount, url)
+    // Explicitly handle undefined gymName/memberName defaults so it doesn't template literally
+    const safeGym = gymName || 'your gym'
+    const safeMember = memberName || 'Customer'
+
+    const message = templates.invoiceShare(safeMember, safeGym, formattedAmount, url)
     return getWhatsAppLink(phone, message)
 }
