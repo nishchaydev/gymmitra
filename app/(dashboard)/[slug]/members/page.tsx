@@ -10,6 +10,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
 import { MembersList } from '@/components/members/MembersList'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = { title: "Members" };
 
 export const dynamic = 'force-dynamic'
 

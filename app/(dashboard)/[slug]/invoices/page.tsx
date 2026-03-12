@@ -15,6 +15,8 @@ import { redirect } from 'next/navigation'
 
 export const revalidate = 60
 
+export const metadata = { title: "Invoices" };
+
 export default async function InvoicesPage({
     searchParams,
     params: routeParams,

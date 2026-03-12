@@ -7,6 +7,8 @@ import { ExpenseCharts } from '@/components/expenses/ExpenseCharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IndianRupee, TrendingDown, Calendar } from 'lucide-react'
 
+export const metadata = { title: "Expenses" };
+
 export default async function ExpensesPage({
     params
 }: {

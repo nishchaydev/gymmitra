@@ -10,6 +10,18 @@ interface BrandedLayoutProps {
     params: Promise<{ slug: string }>;
 }
 
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: BrandedLayoutProps): Promise<Metadata> {
+    const { slug } = await params;
+    if (slug === 'demo') {
+        return {
+            robots: { index: false, follow: false }
+        };
+    }
+    return {};
+}
+
 export default async function BrandedDashboardLayout({
     children,
     params,

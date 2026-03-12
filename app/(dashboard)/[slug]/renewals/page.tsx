@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 
 export const metadata: Metadata = {
-    title: "Renewals | Gym Mitra",
+    title: "Renewals",
     description: "Manage upcoming and missed memberships.",
 }
 

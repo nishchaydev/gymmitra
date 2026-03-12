@@ -9,6 +9,8 @@ import { SHOWCASE_MEMBERS } from "@/lib/showcase-data"
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+export const metadata = { title: "Attendance" };
+
 export default async function AttendancePage({
     params,
 }: {
