@@ -738,16 +738,22 @@ export default async function DashboardPage({
                                 }) || [],
                                 reminders: {
                                     reminders: (() => {
-                                        const birthdays = dashboardData.remindersRaw?.[0]?.filter((m: any) => {
-                                            const today = new Date()
+                                        if (!dashboardData.remindersRaw) {
+                                            return { birthdays: [], overdue: [], inactive: [], expiring: [] }
+                                        }
+
+                                        const today = new Date()
+
+                                        const birthdays = dashboardData.remindersRaw[0]?.filter((m: any) => {
                                             if (!m.dateOfBirth) return false
                                             const dob = new Date(m.dateOfBirth)
                                             return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
                                         }) || []
-                                        const overdueInvoices = dashboardData.remindersRaw?.[1] || []
+
+                                        const overdueInvoices = dashboardData.remindersRaw[1] || []
+
+                                        const fourteenDaysAgo = subDays(startOfDay(today), 14)
                                         const inactiveMembers = dashboardData.frequencyData?.filter((m: any) => {
-                                            const today = new Date()
-                                            const fourteenDaysAgo = subDays(startOfDay(today), 14)
                                             return !m.last_visit || new Date(m.last_visit) < fourteenDaysAgo
                                         }) || []
 
@@ -765,7 +771,6 @@ export default async function DashboardPage({
                                         })
 
                                         const expiring = dashboardData.expiringSubscriptions?.map((sub: any) => {
-                                            const today = new Date()
                                             const diffTime = new Date(sub.endDate).getTime() - today.getTime();
                                             const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
                                             // @ts-ignore
@@ -779,7 +784,8 @@ export default async function DashboardPage({
                                                 link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, msg) : null
                                             }
                                         }) || []
-                                        return dashboardData.remindersRaw ? {
+
+                                        return {
                                             birthdays: birthdays.map((m: any) => ({
                                                 type: 'BIRTHDAY',
                                                 memberId: m.id,
@@ -788,7 +794,6 @@ export default async function DashboardPage({
                                             })),
                                             overdue: overdue,
                                             inactive: inactiveMembers.map((m: any) => {
-                                                const today = new Date()
                                                 const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
                                                 return {
                                                     type: 'INACTIVE',
@@ -799,8 +804,6 @@ export default async function DashboardPage({
                                                 }
                                             }),
                                             expiring: expiring
-                                        } : {
-                                            birthdays: [], overdue: [], inactive: [], expiring: []
                                         }
                                     })()
                                 }

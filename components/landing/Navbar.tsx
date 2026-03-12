@@ -113,7 +113,11 @@ export function Navbar() {
                             </>
                         )}
                         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"} aria-expanded={isMobileMenuOpen}>
-                            <Menu className="h-6 w-6 text-drift-700" />
+                            {isMobileMenuOpen ? (
+                                <X className="h-6 w-6 text-drift-700" />
+                            ) : (
+                                <Menu className="h-6 w-6 text-drift-700" />
+                            )}
                         </Button>
                     </div>
                 </div>

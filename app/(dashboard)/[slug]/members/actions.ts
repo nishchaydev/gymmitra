@@ -256,7 +256,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
         if (finalInvoiceId) {
             const inv = await prisma.invoice.findUnique({
                 where: { id: finalInvoiceId },
-                select: { shareToken: true, gym: { select: { slug: true, waWelcomeMsg: true } } }
+                select: { shareToken: true, gym: { select: { slug: true } } }
             })
             if (inv?.shareToken) {
                 const { getBaseUrl } = await import('@/lib/utils')
@@ -264,6 +264,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
             }
         }
 
+        // @ts-ignore
         const templateOverride = context.gym?.waWelcomeMsg || undefined;
         const welcomeMessage = templates.welcomeMessage(validatedData.name, context.gym.name, publicInvoiceUrl, templateOverride)
         const whatsappUrl = getWhatsAppLink(validatedData.phone, welcomeMessage)
