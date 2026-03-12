@@ -61,13 +61,13 @@ export function InvoiceTemplate({
     const upiQrData = gymInfo.upiId ? generateUpiQrData(gymInfo.upiId, paymentStatus === 'PARTIAL' && balanceDue ? balanceDue : total, gymInfo.name, invoiceNumber) : null
 
     return (
-        <div className="bg-white p-4 sm:p-8 w-full max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid text-drift-900" id="invoice-template">
+        <div className="bg-white p-4 sm:p-8 w-full max-w-[800px] mx-auto shadow-sm border print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-inside-avoid print:page-break-inside-avoid text-drift-900 overflow-x-hidden sm:overflow-visible" id="invoice-template">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 text-primary">
                         <Dumbbell className="w-8 h-8 sm:w-10 sm:h-10" />
-                        <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase">{gymInfo.name}</h1>
+                        <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase break-words break-all sm:break-normal">{gymInfo.name}</h1>
                     </div>
                     <div className="text-sm text-slate-500 space-y-1">
                         <div className="flex items-center gap-2"><MapPin className="w-3 h-3" /> {gymInfo.address}</div>
@@ -84,7 +84,7 @@ export function InvoiceTemplate({
                 </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-8 sm:gap-12 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 mb-12">
                 {/* Bill To */}
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Bill To</h3>
@@ -121,8 +121,9 @@ export function InvoiceTemplate({
                 </div>
             </div>
 
-            <div className="mb-12 overflow-x-auto -mx-4 sm:mx-0">
-                <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
+            {/* Desktop Table (Hidden on Mobile) */}
+            <div className="hidden sm:block mb-12">
+                <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-50 border-y border-slate-200">
                             <th className="py-4 px-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Description</th>
@@ -142,6 +143,24 @@ export function InvoiceTemplate({
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Line Items Cards (Hidden on Desktop) */}
+            <div className="sm:hidden space-y-4 mb-8">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Line Items</h3>
+                {items.map((item, idx) => (
+                    <div key={idx} className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col gap-3">
+                        <div className="text-sm font-bold text-slate-900">{item.description}</div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-slate-500">Qty: {item.quantity}</span>
+                            <span className="text-slate-500">@ ₹{item.unitPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-3">
+                            <span className="text-xs font-bold text-slate-500 uppercase">Total</span>
+                            <span className="text-base font-black text-slate-900 truncate">₹{item.total.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {/* Footer Summary */}
