@@ -157,7 +157,7 @@ export function InvoiceTemplate({
                         </div>
                         <div className="flex justify-between items-center border-t border-slate-200 pt-3">
                             <span className="text-xs font-bold text-slate-500 uppercase">Total</span>
-                            <span className="text-base font-black text-slate-900 truncate">₹{item.total.toLocaleString('en-IN')}</span>
+                            <span className="text-base font-black text-slate-900 whitespace-nowrap">₹{item.total.toLocaleString('en-IN')}</span>
                         </div>
                     </div>
                 ))}
