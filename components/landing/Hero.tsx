@@ -10,7 +10,7 @@ import { useEffect, useState } from "react"
 
 export function Hero() {
     return (
-        <section className="relative pt-12 pb-12 md:pt-20 md:pb-20 overflow-hidden bg-white circuit-bg">
+        <section className="relative pt-32 pb-12 md:pt-20 md:pb-20 overflow-hidden bg-white circuit-bg">
             {/* Background Gradients */}
             <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-drift-silver/20 to-white -z-20" />
             <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px] -z-10" />
@@ -82,7 +82,7 @@ export function Hero() {
                     </MotionWrapper>
 
                     <MotionWrapper delay={0.2}>
-                        <h1 className="text-5xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1] font-display">
+                        <h1 className="text-4xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1] font-display">
                             Automate Your Gym&apos;s <br />
                             <span className="text-primary relative">
                                 Growth.
