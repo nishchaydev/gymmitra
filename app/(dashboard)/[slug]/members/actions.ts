@@ -57,10 +57,14 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
         let finalInvoiceId: string | undefined = undefined
 
         await prisma.$transaction(async (tx) => {
-            // Capitalize first letter of every word
+            // Capitalize first letter of every word, including after hyphens and apostrophes
             const formattedName = validatedData.name
                 .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .map(word =>
+                    word.replace(/([^-']+)/g, (segment) =>
+                        segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase()
+                    )
+                )
                 .join(' ')
 
             // 1. Create the Member

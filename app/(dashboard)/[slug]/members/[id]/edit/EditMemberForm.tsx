@@ -53,16 +53,19 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
     const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }))
 
     useEffect(() => {
+        const controller = new AbortController()
+
         const fetchPincodeDetails = async () => {
             if (form.pincode && form.pincode.length === 6) {
                 try {
-                    const res = await fetch(`https://api.postalpincode.in/pincode/${form.pincode}`);
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${form.pincode}`, { signal: controller.signal });
                     const data = await res.json();
                     if (data && data[0] && data[0].Status === 'Success') {
                         const postOffice = data[0].PostOffice[0];
                         setForm(f => ({ ...f, state: postOffice.State, city: postOffice.District }));
                     }
-                } catch (error) {
+                } catch (error: any) {
+                    if (error.name === 'AbortError') return
                     console.warn("Failed to fetch pincode details (API may be down or blocked):", error);
                 }
             }
@@ -72,7 +75,10 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
             fetchPincodeDetails();
         }, 500);
 
-        return () => clearTimeout(timeoutId);
+        return () => {
+            clearTimeout(timeoutId)
+            controller.abort()
+        }
     }, [form.pincode]);
 
     const handleDelete = async () => {

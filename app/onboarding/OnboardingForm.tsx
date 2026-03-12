@@ -96,10 +96,12 @@ export default function OnboardingForm() {
     }
 
     useEffect(() => {
+        const controller = new AbortController()
+
         const fetchPincodeDetails = async () => {
             if (formData.pincode?.length === 6) {
                 try {
-                    const res = await fetch(`https://api.postalpincode.in/pincode/${formData.pincode}`)
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${formData.pincode}`, { signal: controller.signal })
                     const data = await res.json()
 
                     if (data && data[0] && data[0].Status === 'Success') {
@@ -117,7 +119,8 @@ export default function OnboardingForm() {
                     } else {
                         toast.error("Invalid pincode or details not found.")
                     }
-                } catch (error) {
+                } catch (error: any) {
+                    if (error.name === 'AbortError') return
                     console.warn("Failed to fetch pincode details:", error)
                     // We don't want to show an intrusive toast or overlay if the third party API is down or adblocked.
                 }
@@ -128,7 +131,10 @@ export default function OnboardingForm() {
             fetchPincodeDetails()
         }, 500) // Debounce
 
-        return () => clearTimeout(timeoutId)
+        return () => {
+            clearTimeout(timeoutId)
+            controller.abort()
+        }
     }, [formData.pincode])
 
     const removeLogo = () => {

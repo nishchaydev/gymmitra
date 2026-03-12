@@ -41,7 +41,7 @@ export default async function InvoicesPage({
 
     let gymId = 'demo'
     if (auth && !isDemo) {
-        gymId = auth.gym.id
+        gymId = auth?.gym?.id
     }
 
     const take = 50

@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
             }))
 
             const interval = eachMonthOfInterval({ start: startDate, end: new Date() })
-            const churnMap = new Map(
+            const churnMap = new Map<string, { name: string, churnRate: number | null }>(
                 interval.map(date => [format(date, 'yyyy-MM-01'), { name: format(date, 'MMM yyyy'), churnRate: 0 }])
             )
 
@@ -207,8 +207,8 @@ export async function GET(request: NextRequest) {
                 const key = row.month
                 if (churnMap.has(key)) {
                     const churned = Number(row.churned || 0)
-                    const totalActive = Number(row.total_active || 0) || 1
-                    const rate = Math.min(100, Math.round((churned / totalActive) * 100))
+                    const totalActive = Number(row.total_active || 0)
+                    const rate = totalActive > 0 ? Math.min(100, Math.round((churned / totalActive) * 100)) : null
                     churnMap.get(key)!.churnRate = rate
                 }
             })

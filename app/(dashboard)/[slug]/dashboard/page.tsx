@@ -684,8 +684,11 @@ export default async function DashboardPage({
                                 churnData: dashboardData.churnData?.map((row: any) => {
                                     const monthName = row.month ? format(new Date(row.month), 'MMM') : '???'
                                     const churned = Number(row.churned || 0)
-                                    const totalActive = Number(row.total_active || 0) || 1
-                                    return { name: monthName, churnRate: Math.min(100, Math.round((churned / totalActive) * 100)) }
+                                    const totalActive = Number(row.total_active || 0)
+                                    return {
+                                        name: monthName,
+                                        churnRate: totalActive > 0 ? Math.min(100, Math.round((churned / totalActive) * 100)) : null
+                                    }
                                 }) || [],
                                 retentionRate: dashboardData.retentionData?.length ? (() => {
                                     const last = dashboardData.retentionData[dashboardData.retentionData.length - 1]

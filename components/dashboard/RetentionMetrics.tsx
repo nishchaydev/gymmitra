@@ -13,7 +13,7 @@ import { format } from "date-fns"
 
 interface ChurnData {
     name: string
-    churnRate: number
+    churnRate: number | null
 }
 
 interface RetentionData {
@@ -113,7 +113,11 @@ export function RetentionMetrics({ isDemo = false, initialData }: { isDemo?: boo
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                                     <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                     <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
-                                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(225, 29, 72, 0.05)' }} />
+                                    <Tooltip
+                                        contentStyle={tooltipStyle}
+                                        cursor={{ fill: 'rgba(225, 29, 72, 0.05)' }}
+                                        formatter={(value: any) => value === null ? ['N/A', 'Churn Rate %'] : [`${value}%`, 'Churn Rate %']}
+                                    />
                                     <Bar dataKey="churnRate" name="Churn Rate %" fill="#e11d48" radius={[4, 4, 0, 0]} maxBarSize={50} />
                                 </BarChart>
                             </ResponsiveContainer>

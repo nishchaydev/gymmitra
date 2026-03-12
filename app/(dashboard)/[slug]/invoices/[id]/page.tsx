@@ -92,6 +92,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 createdAt: true,
                 gym: {
                     select: {
+                        id: true,
                         userId: true,
                         slug: true,
                         businessName: true,

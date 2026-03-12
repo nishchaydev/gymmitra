@@ -58,6 +58,7 @@ export function MemberFilters() {
         if (!slug) return // guard: no slug → don't navigate
 
         const params = new URLSearchParams(searchParams.toString())
+        params.delete('page')
 
         if (status === 'ALL') {
             params.delete('status')

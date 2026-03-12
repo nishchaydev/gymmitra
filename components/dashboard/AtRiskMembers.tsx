@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { useAtRiskQuery } from '@/hooks/use-at-risk'
 import { AlertCircle, CalendarClock, MessageCircle, Loader2, Clock } from 'lucide-react'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
-import { format } from 'date-fns'
+import { format, parseISO, isValid } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -178,12 +178,15 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
                                             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border", badgeStyle)}>
                                                 {member.daysInactive}d inactive
                                             </span>
-                                            {member.lastVisit && (
-                                                <div className="flex items-center text-xs text-slate-500 font-medium">
-                                                    <Clock className="h-3 w-3 mr-1" />
-                                                    Visit: {format(new Date(member.lastVisit), "d MMM")}
-                                                </div>
-                                            )}
+                                            {member.lastVisit && (() => {
+                                                const d = parseISO(member.lastVisit)
+                                                return isValid(d) ? (
+                                                    <div className="flex items-center text-xs text-slate-500 font-medium">
+                                                        <Clock className="h-3 w-3 mr-1" />
+                                                        Visit: {format(d, "d MMM")}
+                                                    </div>
+                                                ) : null
+                                            })()}
                                         </div>
                                     </div>
 

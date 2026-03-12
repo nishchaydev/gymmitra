@@ -73,11 +73,21 @@ export async function GET(request: NextRequest) {
         let members;
         let totalCount = 0;
 
+        // Validate status against allowed MemberStatus enum values before using in SQL
+        const ALLOWED_STATUSES = ['ACTIVE', 'INACTIVE', 'EXPIRED', 'PENDING'] as const
+        type MemberStatusType = typeof ALLOWED_STATUSES[number]
+        const validatedStatus = status && ALLOWED_STATUSES.includes(status as MemberStatusType) ? status : null
+
         if (dobMonth && dobMonth !== 'ALL') {
             const month = parseInt(dobMonth, 10);
 
+            // Validate month is a valid 1-12 integer to prevent bad SQL
+            if (isNaN(month) || month < 1 || month > 12) {
+                return NextResponse.json({ error: 'Invalid dobMonth parameter. Must be between 1 and 12.' }, { status: 400 })
+            }
+
             // Need raw query because Prisma doesn't support EXTRACT natively
-            const statusCondition = status ? Prisma.sql`AND "status" = ${status}::"MemberStatus"` : Prisma.empty;
+            const statusCondition = validatedStatus ? Prisma.sql`AND "status" = ${validatedStatus}::"MemberStatus"` : Prisma.empty;
             const searchCondition = q ? Prisma.sql`AND ("name" ILIKE ${'%' + q + '%'} OR "phone" ILIKE ${'%' + q + '%'} OR "email" ILIKE ${'%' + q + '%'})` : Prisma.empty;
 
             const countResult: any = await prisma.$queryRaw`

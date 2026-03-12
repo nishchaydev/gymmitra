@@ -146,10 +146,12 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
 
     const pincodeValue = form.watch('pincode')
     useEffect(() => {
+        const controller = new AbortController()
+
         const fetchPincodeDetails = async () => {
             if (pincodeValue && pincodeValue.length === 6) {
                 try {
-                    const res = await fetch(`https://api.postalpincode.in/pincode/${pincodeValue}`)
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${pincodeValue}`, { signal: controller.signal })
                     const data = await res.json()
                     if (data && data[0] && data[0].Status === 'Success') {
                         const postOffice = data[0].PostOffice[0]
@@ -158,7 +160,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                         form.setValue('state', postOffice.State, { shouldValidate: true })
                         form.setValue('city', postOffice.District, { shouldValidate: true })
                     }
-                } catch (error) {
+                } catch (error: any) {
+                    if (error.name === 'AbortError') return
                     console.warn("Failed to fetch pincode details (API may be down or blocked):", error)
                 }
             }
@@ -168,7 +171,10 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             fetchPincodeDetails()
         }, 500)
 
-        return () => clearTimeout(timeoutId)
+        return () => {
+            clearTimeout(timeoutId)
+            controller.abort()
+        }
     }, [pincodeValue, form])
 
     const onNextStep = async () => {

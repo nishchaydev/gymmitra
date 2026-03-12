@@ -36,7 +36,7 @@ export default async function AttendancePage({
 
     let gymId = 'demo'
     if (auth && !isDemo) {
-        gymId = auth.gym.id
+        gymId = auth?.gym?.id
     }
 
     // Stable timestamps for demo mode
