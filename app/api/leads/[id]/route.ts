@@ -9,7 +9,7 @@ import { recordAuditLog } from '@/lib/audit-logger'
 
 const leadUpdateSchema = z.object({
     name: z.string().min(2).optional(),
-    phone: z.string().min(7).optional(),
+    phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits').optional(),
     email: z.string().email().optional().or(z.literal('')).or(z.null()),
     planInterest: z.string().optional().or(z.null()),
     source: z.string().optional().or(z.null()),

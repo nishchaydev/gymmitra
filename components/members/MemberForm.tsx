@@ -34,6 +34,9 @@ const memberFormSchema = z.object({
     dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), {
         message: "Invalid date",
     }),
+    pincode: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
@@ -83,6 +86,9 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             emergencyName: member.emergencyName || "",
             emergencyPhone: member.emergencyPhone || "",
             emergencyRelation: member.emergencyRelation || "",
+            pincode: member.pincode || "",
+            state: member.state || "",
+            city: member.city || "",
             planId: "none",
             paymentMethod: "CASH" as const,
             discount: 0,
@@ -97,6 +103,9 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             emergencyName: "",
             emergencyPhone: "",
             emergencyRelation: "",
+            pincode: "",
+            state: "",
+            city: "",
             planId: "none",
             paymentMethod: "CASH" as const,
             discount: 0,
@@ -134,6 +143,33 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             }
         }
     }, [selectedPlanId, discountAmount, activePlans, form, userEditedAmount])
+
+    const pincodeValue = form.watch('pincode')
+    useEffect(() => {
+        const fetchPincodeDetails = async () => {
+            if (pincodeValue && pincodeValue.length === 6) {
+                try {
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${pincodeValue}`)
+                    const data = await res.json()
+                    if (data && data[0] && data[0].Status === 'Success') {
+                        const postOffice = data[0].PostOffice[0]
+
+                        // We use getValues to check what state is currently there, to avoid overriding if user manually changed it
+                        form.setValue('state', postOffice.State, { shouldValidate: true })
+                        form.setValue('city', postOffice.District, { shouldValidate: true })
+                    }
+                } catch (error) {
+                    console.warn("Failed to fetch pincode details (API may be down or blocked):", error)
+                }
+            }
+        }
+
+        const timeoutId = setTimeout(() => {
+            fetchPincodeDetails()
+        }, 500)
+
+        return () => clearTimeout(timeoutId)
+    }, [pincodeValue, form])
 
     const onNextStep = async () => {
         const isValid = await form.trigger(["name", "phone", "email", "dateOfBirth"])
@@ -213,7 +249,18 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                 <FormItem>
                                     <FormLabel>Full Name</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="John Doe" {...field} />
+                                        <Input
+                                            placeholder="John Doe"
+                                            {...field}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const formatted = val
+                                                    .split(' ')
+                                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                                    .join(' ');
+                                                field.onChange(formatted);
+                                            }}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -226,7 +273,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                 name="phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Phone Number</FormLabel>
+                                        <FormLabel>Mobile Number</FormLabel>
                                         <FormControl>
                                             <Input placeholder="9876543210" {...field} />
                                         </FormControl>
@@ -263,6 +310,87 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                 </FormItem>
                             )}
                         />
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-md">
+                            <FormField
+                                control={form.control}
+                                name="pincode"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Pincode</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="110001" maxLength={6} {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="state"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>State</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select state" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {/* Pre-populate with typical Indian states, fallback to dynamic value if it's not in the list but was fetched */}
+                                                <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                                                <SelectItem value="Arunachal Pradesh">Arunachal Pradesh</SelectItem>
+                                                <SelectItem value="Assam">Assam</SelectItem>
+                                                <SelectItem value="Bihar">Bihar</SelectItem>
+                                                <SelectItem value="Chhattisgarh">Chhattisgarh</SelectItem>
+                                                <SelectItem value="Delhi">Delhi</SelectItem>
+                                                <SelectItem value="Goa">Goa</SelectItem>
+                                                <SelectItem value="Gujarat">Gujarat</SelectItem>
+                                                <SelectItem value="Haryana">Haryana</SelectItem>
+                                                <SelectItem value="Himachal Pradesh">Himachal Pradesh</SelectItem>
+                                                <SelectItem value="Jharkhand">Jharkhand</SelectItem>
+                                                <SelectItem value="Karnataka">Karnataka</SelectItem>
+                                                <SelectItem value="Kerala">Kerala</SelectItem>
+                                                <SelectItem value="Madhya Pradesh">Madhya Pradesh</SelectItem>
+                                                <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                                                <SelectItem value="Manipur">Manipur</SelectItem>
+                                                <SelectItem value="Meghalaya">Meghalaya</SelectItem>
+                                                <SelectItem value="Mizoram">Mizoram</SelectItem>
+                                                <SelectItem value="Nagaland">Nagaland</SelectItem>
+                                                <SelectItem value="Odisha">Odisha</SelectItem>
+                                                <SelectItem value="Punjab">Punjab</SelectItem>
+                                                <SelectItem value="Rajasthan">Rajasthan</SelectItem>
+                                                <SelectItem value="Sikkim">Sikkim</SelectItem>
+                                                <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                                                <SelectItem value="Telangana">Telangana</SelectItem>
+                                                <SelectItem value="Tripura">Tripura</SelectItem>
+                                                <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
+                                                <SelectItem value="Uttarakhand">Uttarakhand</SelectItem>
+                                                <SelectItem value="West Bengal">West Bengal</SelectItem>
+                                                {field.value && !["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"].includes(field.value) && (
+                                                    <SelectItem value={field.value}>{field.value}</SelectItem>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="city"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>City</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Delhi" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <div className="space-y-4 border p-4 rounded-md">
                             <h3 className="font-medium text-sm text-gray-500">Emergency Contact</h3>

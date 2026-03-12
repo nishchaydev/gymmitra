@@ -1,3 +1,4 @@
+import * as React from "react"
 import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { SHOWCASE_INVOICES } from "@/lib/showcase-data"
@@ -25,24 +26,20 @@ export default async function InvoicesPage({
     const { slug } = resolvedParams
     const query = resolvedSearchParams.q || ''
     const status = resolvedSearchParams.status
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
 
     // Secure Demo Logic
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    if (!user && !isDemo) {
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
     let gymId = 'demo'
-    if (user && !isDemo) {
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-        if (!gym) return <div className="p-8">Gym profile not found.</div>
-        gymId = gym.id
+    if (auth && !isDemo) {
+        gymId = auth.gym.id
     }
 
     const take = 50
@@ -130,20 +127,22 @@ export default async function InvoicesPage({
                 <InvoiceFilters />
             </div>
 
-            <InvoicesList
-                slug={slug}
-                query={query}
-                status={status}
-                page={page}
-                take={take}
-                isDemo={isDemo}
-                initialData={{
-                    invoices: JSON.parse(JSON.stringify(invoices)),
-                    totalCount,
-                    page,
-                    hasMore
-                }}
-            />
+            <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl border border-gray-100 dark:border-gray-800"><span className="text-gray-500 font-medium">Loading Invoices...</span></div>}>
+                <InvoicesList
+                    slug={slug}
+                    query={query}
+                    status={status}
+                    page={page}
+                    take={take}
+                    isDemo={isDemo}
+                    initialData={{
+                        invoices: JSON.parse(JSON.stringify(invoices)),
+                        totalCount,
+                        page,
+                        hasMore
+                    }}
+                />
+            </React.Suspense>
         </div>
     )
 }

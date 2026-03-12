@@ -17,10 +17,9 @@ export default async function RenewalsPage({
     params: Promise<{ slug: string }>
 }) {
     const { slug } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
     const auth = await getAuthGym()
 

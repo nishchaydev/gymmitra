@@ -7,11 +7,14 @@ import { recordAuditLog } from '@/lib/audit-logger'
 
 const memberUpdateSchema = z.object({
     name: z.string().min(2).optional(),
-    phone: z.string().min(10).optional(),
+    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits").optional(),
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string().transform(str => new Date(str)).optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'EXPIRED', 'PENDING']).optional(),
     address: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().optional(),
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
@@ -82,6 +85,13 @@ export async function PUT(
         const { id } = await params
         const body = await request.json()
         const validatedData = memberUpdateSchema.parse(body)
+
+        if (validatedData.name) {
+            validatedData.name = validatedData.name
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')
+        }
 
         // Ensure member belongs to gym before updating
         const count = await prisma.member.count({ where: { id, gymId: auth.gym.id } })

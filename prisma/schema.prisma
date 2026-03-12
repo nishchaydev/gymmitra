@@ -73,6 +73,9 @@ model Member {
   dateOfBirth       DateTime
   photo             String?
   address           String?
+  city              String?
+  state             String?
+  pincode           String?
   emergencyName     String
   emergencyPhone    String
   emergencyRelation String
@@ -91,6 +94,7 @@ model Member {
   ptSessions        PTSession[]
 
   @@index([gymId])
+  @@index([gymId, phone])
 }
 
 model MembershipPlan {
@@ -388,6 +392,7 @@ model Lead {
 
   @@index([gymId])
   @@index([gymId, status])
+  @@index([gymId, phone])
 }
 
 model StaffMember {

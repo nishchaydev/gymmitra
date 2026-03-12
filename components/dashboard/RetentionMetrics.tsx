@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { MessageSquare, AlertTriangle, Activity, RefreshCw } from "lucide-react"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
+import { format } from "date-fns"
 
 interface ChurnData {
     name: string
@@ -175,7 +176,7 @@ export function RetentionMetrics({ isDemo = false, initialData }: { isDemo?: boo
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-slate-500 text-sm">
-                                                    {member.lastVisit ? new Date(member.lastVisit).toLocaleDateString() : 'Never'}
+                                                    {member.lastVisit ? format(new Date(member.lastVisit), "dd/MM/yyyy") : 'Never'}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <a href={link} target="_blank" rel="noopener noreferrer">

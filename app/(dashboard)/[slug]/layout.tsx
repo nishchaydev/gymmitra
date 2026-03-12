@@ -32,16 +32,7 @@ export default async function BrandedDashboardLayout({
         );
     }
 
-    // 1. Verify Gym Slug exists
-    const gym = await prisma.gymProfile.findUnique({
-        where: { slug },
-    });
-
-    if (!gym) {
-        notFound();
-    }
-
-    // 2. Check Auth Context
+    // Check Auth Context - this is cached via React.cache
     const auth = await getAuthGym();
 
     // If not logged in, redirect to login
@@ -51,6 +42,7 @@ export default async function BrandedDashboardLayout({
 
     // If logged in but slug mismatch, redirect to THEIR gym's slug
     // This ensures members/staff can't wander into other gyms (multi-tenancy check)
+    // and naturally acts as the 404/not-found check for invalid slugs
     if (auth.gym.slug !== slug) {
         redirect(`/${auth.gym.slug}/dashboard`);
     }

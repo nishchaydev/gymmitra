@@ -23,24 +23,21 @@ export default async function MemberDetailPage({
     params: Promise<{ slug: string; id: string }>
 }) {
     const { slug, id } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    if (!user && !isDemo) {
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
+
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
     let gymId = 'demo'
     let gymName = 'your gym'
-    if (user && !isDemo) {
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-        if (!gym) return <div className="p-8">Gym profile not found.</div>
-        gymId = gym.id
-        gymName = gym.name
+    if (auth && !isDemo) {
+        gymId = auth.gym.id
+        gymName = auth.gym.name
     }
 
     const MS_PER_DAY = 24 * 60 * 60 * 1000

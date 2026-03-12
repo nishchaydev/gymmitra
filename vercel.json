@@ -2,10 +2,14 @@
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "functions": {
         "app/api/**": {
-            "maxDuration": 30
+            "maxDuration": 10
         }
     },
     "crons": [
+        {
+            "path": "/api/cron/keepalive",
+            "schedule": "0 0 */3 * *"
+        },
         {
             "path": "/api/cron/daily-reminders",
             "schedule": "0 1 * * *"

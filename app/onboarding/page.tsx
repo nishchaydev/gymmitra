@@ -11,17 +11,12 @@ export const metadata: Metadata = {
 }
 
 export default async function OnboardingPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (user) {
+    if (auth?.userId) {
         let shouldRedirect = false
         try {
-            const gymProfile = await prisma.gymProfile.findUnique({
-                where: { userId: user.id }
-            })
-
-            if (gymProfile && gymProfile.isVerified) {
+            if (auth.gym && auth.gym.isVerified) {
                 shouldRedirect = true
             }
         } catch (error) {

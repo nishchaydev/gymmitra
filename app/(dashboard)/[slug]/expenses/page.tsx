@@ -60,6 +60,47 @@ export default async function ExpensesPage({
 
     const netIncome = totalRevenue - totalExpenses
 
+    // Fetch last 6 months data for trend chart
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const recentInvoices = await prisma.invoice.findMany({
+        where: {
+            gymId: auth.gym.id,
+            paymentStatus: 'PAID',
+            deletedAt: null,
+            createdAt: { gte: sixMonthsAgo }
+        }
+    });
+
+    const recentExpenses = rawExpenses.filter((e: any) => new Date(e.date) >= sixMonthsAgo);
+
+    const trendData = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const monthName = d.toLocaleString('en-US', { month: 'short' });
+        const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+
+        const monthRev = recentInvoices
+            .filter((inv) => inv.createdAt >= monthStart && inv.createdAt <= monthEnd)
+            .reduce((acc, inv) => acc + Number(inv.total), 0);
+
+        const monthExp = recentExpenses
+            .filter((exp: any) => new Date(exp.date) >= monthStart && new Date(exp.date) <= monthEnd)
+            .reduce((acc, exp: any) => acc + Number(exp.amount), 0);
+
+        trendData.push({
+            name: monthName,
+            revenue: monthRev,
+            expenses: monthExp,
+            profit: monthRev - monthExp
+        });
+    }
+
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -71,23 +112,27 @@ export default async function ExpensesPage({
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border-l-4 border-l-red-500 shadow-sm">
+                <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">Total Expenses</CardTitle>
-                        <TrendingDown className="h-4 w-4 text-red-500" />
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">Total Expenses</CardTitle>
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <TrendingDown className="h-4 w-4 text-[#0066FF]" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-black text-slate-900">₹{totalExpenses.toLocaleString('en-IN')}</div>
+                        <div className="text-2xl font-black tracking-tight text-[#0F172A]">₹{totalExpenses.toLocaleString('en-IN')}</div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-amber-500 shadow-sm">
+                <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">This Month</CardTitle>
-                        <Calendar className="h-4 w-4 text-amber-500" />
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">This Month</CardTitle>
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <Calendar className="h-4 w-4 text-[#0066FF]" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-black text-slate-900">₹{monthlyExpenses.toLocaleString('en-IN')}</div>
+                        <div className="text-2xl font-black tracking-tight text-[#0F172A]">₹{monthlyExpenses.toLocaleString('en-IN')}</div>
                     </CardContent>
                 </Card>
 
@@ -109,8 +154,10 @@ export default async function ExpensesPage({
                 <div className="md:col-span-2">
                     <ExpensesList slug={slug} initialData={expenses} />
                 </div>
-                <div>
-                    <ExpenseCharts expenses={expenses} />
+                <div className="flex flex-col h-full">
+                    <div className="sticky top-6">
+                        <ExpenseCharts expenses={expenses} trendData={trendData} />
+                    </div>
                 </div>
             </div>
         </div>

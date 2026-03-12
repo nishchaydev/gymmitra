@@ -4,20 +4,15 @@ import NewInvoiceForm from "./NewInvoiceForm"
 import { redirect } from "next/navigation"
 
 export default async function NewInvoicePage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (!user) redirect("/login")
+    if (!auth) redirect("/login")
 
-    const gym = await prisma.gymProfile.findUnique({
-        where: { userId: user.id }
-    })
+    const gymId = auth.gym.id
 
-    if (!gym) redirect("/onboarding")
-
-    const members = await prisma.member.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } })
-    const dbMembershipPlans = await prisma.membershipPlan.findMany({ where: { gymId: gym.id, isActive: true }, orderBy: { name: 'asc' } })
-    const dbProducts = await prisma.product.findMany({ where: { gymId: gym.id }, orderBy: { name: 'asc' } })
+    const members = await prisma.member.findMany({ where: { gymId: gymId }, orderBy: { name: 'asc' } })
+    const dbMembershipPlans = await prisma.membershipPlan.findMany({ where: { gymId: gymId, isActive: true }, orderBy: { name: 'asc' } })
+    const dbProducts = await prisma.product.findMany({ where: { gymId: gymId }, orderBy: { name: 'asc' } })
 
     // Convert Decimals to numbers for client components
     const membershipPlans = dbMembershipPlans.map(p => ({ ...p, price: Number(p.price) }))

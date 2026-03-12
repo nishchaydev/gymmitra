@@ -5,7 +5,7 @@ import { guardRateLimit } from "@/lib/rate-limit"
 import { formatInTimeZone } from "date-fns-tz"
 
 const checkInSchema = z.object({
-    phone: z.string()
+    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits")
         .min(10, "Phone number must be at least 10 digits")
         .max(15)
         .regex(/^\d+$/, "Phone number must contain only digits"),

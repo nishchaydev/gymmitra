@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +22,9 @@ interface Member {
     emergencyName: string
     emergencyPhone: string
     emergencyRelation: string
+    pincode?: string | null
+    state?: string | null
+    city?: string | null
     notes?: string | null
 }
 
@@ -38,13 +41,39 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
         dateOfBirth: initialDate,
         address: member.address || '',
         status: member.status,
-        emergencyName: member.emergencyName,
-        emergencyPhone: member.emergencyPhone,
-        emergencyRelation: member.emergencyRelation,
+        emergencyName: member.emergencyName || '',
+        emergencyPhone: member.emergencyPhone || '',
+        emergencyRelation: member.emergencyRelation || '',
+        pincode: member.pincode || '',
+        state: member.state || '',
+        city: member.city || '',
         notes: member.notes || '',
     })
 
     const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }))
+
+    useEffect(() => {
+        const fetchPincodeDetails = async () => {
+            if (form.pincode && form.pincode.length === 6) {
+                try {
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${form.pincode}`);
+                    const data = await res.json();
+                    if (data && data[0] && data[0].Status === 'Success') {
+                        const postOffice = data[0].PostOffice[0];
+                        setForm(f => ({ ...f, state: postOffice.State, city: postOffice.District }));
+                    }
+                } catch (error) {
+                    console.warn("Failed to fetch pincode details (API may be down or blocked):", error);
+                }
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            fetchPincodeDetails();
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [form.pincode]);
 
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this member? This action cannot be undone.')) return
@@ -118,10 +147,21 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="name">Full Name</Label>
-                            <Input id="name" value={form.name} onChange={e => update('name', e.target.value)} />
+                            <Input
+                                id="name"
+                                value={form.name}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    const formatted = val
+                                        .split(' ')
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ');
+                                    update('name', formatted);
+                                }}
+                            />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="phone">Phone Number</Label>
+                            <Label htmlFor="phone">Mobile Number</Label>
                             <Input id="phone" value={form.phone} onChange={e => update('phone', e.target.value)} />
                         </div>
                     </div>
@@ -140,6 +180,58 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
                             <Label htmlFor="address">Address</Label>
                             <Input id="address" value={form.address} onChange={e => update('address', e.target.value)} />
                         </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="pincode">Pincode</Label>
+                            <Input id="pincode" maxLength={6} value={form.pincode} onChange={e => update('pincode', e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="state">State</Label>
+                            <Select value={form.state || undefined} onValueChange={val => update('state', val)}>
+                                <SelectTrigger id="state"><SelectValue placeholder="Select state" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                                    <SelectItem value="Arunachal Pradesh">Arunachal Pradesh</SelectItem>
+                                    <SelectItem value="Assam">Assam</SelectItem>
+                                    <SelectItem value="Bihar">Bihar</SelectItem>
+                                    <SelectItem value="Chhattisgarh">Chhattisgarh</SelectItem>
+                                    <SelectItem value="Delhi">Delhi</SelectItem>
+                                    <SelectItem value="Goa">Goa</SelectItem>
+                                    <SelectItem value="Gujarat">Gujarat</SelectItem>
+                                    <SelectItem value="Haryana">Haryana</SelectItem>
+                                    <SelectItem value="Himachal Pradesh">Himachal Pradesh</SelectItem>
+                                    <SelectItem value="Jharkhand">Jharkhand</SelectItem>
+                                    <SelectItem value="Karnataka">Karnataka</SelectItem>
+                                    <SelectItem value="Kerala">Kerala</SelectItem>
+                                    <SelectItem value="Madhya Pradesh">Madhya Pradesh</SelectItem>
+                                    <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                                    <SelectItem value="Manipur">Manipur</SelectItem>
+                                    <SelectItem value="Meghalaya">Meghalaya</SelectItem>
+                                    <SelectItem value="Mizoram">Mizoram</SelectItem>
+                                    <SelectItem value="Nagaland">Nagaland</SelectItem>
+                                    <SelectItem value="Odisha">Odisha</SelectItem>
+                                    <SelectItem value="Punjab">Punjab</SelectItem>
+                                    <SelectItem value="Rajasthan">Rajasthan</SelectItem>
+                                    <SelectItem value="Sikkim">Sikkim</SelectItem>
+                                    <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                                    <SelectItem value="Telangana">Telangana</SelectItem>
+                                    <SelectItem value="Tripura">Tripura</SelectItem>
+                                    <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
+                                    <SelectItem value="Uttarakhand">Uttarakhand</SelectItem>
+                                    <SelectItem value="West Bengal">West Bengal</SelectItem>
+                                    {form.state && !["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"].includes(form.state) && (
+                                        <SelectItem value={form.state}>{form.state}</SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="city">City</Label>
+                            <Input id="city" value={form.city} onChange={e => update('city', e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="status">Membership Status</Label>
                             <Select value={form.status} onValueChange={val => update('status', val)}>
@@ -193,6 +285,6 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
                     {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
-        </div>
+        </div >
     )
 }

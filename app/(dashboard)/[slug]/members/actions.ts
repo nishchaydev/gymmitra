@@ -20,11 +20,14 @@ import { after } from 'next/server'
 
 const memberSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
-    phone: z.string().min(10, "Phone number must be at least 10 digits"),
+    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string()
         .refine(val => !isNaN(Date.parse(val)), { message: "Invalid date format" })
         .transform(str => new Date(str)),
+    pincode: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
     emergencyName: z.string().optional(),
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
@@ -54,15 +57,24 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
         let finalInvoiceId: string | undefined = undefined
 
         await prisma.$transaction(async (tx) => {
+            // Capitalize first letter of every word
+            const formattedName = validatedData.name
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')
+
             // 1. Create the Member
             const member = await tx.member.create({
                 data: {
-                    name: validatedData.name,
+                    name: formattedName,
                     phone: validatedData.phone,
                     email: validatedData.email || null,
                     dateOfBirth: validatedData.dateOfBirth,
                     gymId,
                     status: 'ACTIVE',
+                    pincode: validatedData.pincode,
+                    state: validatedData.state,
+                    city: validatedData.city,
                     emergencyName: validatedData.emergencyName || '',
                     emergencyPhone: validatedData.emergencyPhone || '',
                     emergencyRelation: validatedData.emergencyRelation || '',

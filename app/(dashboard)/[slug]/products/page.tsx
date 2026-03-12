@@ -1,3 +1,4 @@
+import * as React from "react"
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
@@ -26,23 +27,19 @@ export default async function ProductsPage({
     const category = sParams.category
     const showLowStock = sParams.lowStock === 'true'
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (!user && !isDemo) {
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
     let gymId = 'demo'
-    if (user && !isDemo) {
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-        if (!gym) return <div className="p-8">Gym profile not found.</div>
-        gymId = gym.id
+    if (auth && !isDemo) {
+        gymId = auth.gym.id
     }
 
     const whereClause: Prisma.ProductWhereInput = {
@@ -151,13 +148,15 @@ export default async function ProductsPage({
                 </div>
             </div>
 
-            <ProductsList
-                slug={slug}
-                query={query}
-                category={category}
-                lowStock={sParams.lowStock}
-                initialData={finalProducts}
-            />
+            <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500 font-medium">Loading Products...</span></div>}>
+                <ProductsList
+                    slug={slug}
+                    query={query}
+                    category={category}
+                    lowStock={sParams.lowStock}
+                    initialData={finalProducts}
+                />
+            </React.Suspense>
         </div>
     )
 }

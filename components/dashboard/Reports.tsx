@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 import { MessageSquare, Download } from "lucide-react"
+import { format } from "date-fns"
 
 interface ReportsProps {
     isDemo?: boolean
@@ -366,7 +367,7 @@ function ExpiringMembershipsReport({ initialData, gymName = "this gym" }: { init
                                 <div className="flex items-center gap-2">
                                     <div className="text-right">
                                         <div className="font-medium text-sm">
-                                            Expires: {new Date(sub.endDate).toLocaleDateString()}
+                                            Expires: {format(new Date(sub.endDate), "dd/MM/yyyy")}
                                         </div>
                                         <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600 bg-yellow-50">
                                             {sub.daysLeft ?? 0} days left

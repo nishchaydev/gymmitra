@@ -82,18 +82,18 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
             {/* Stat Cards - 2x2 on mobile for better density */}
             <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-primary bg-white shadow-sm">
+                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Total Revenue
                         </CardTitle>
-                        <div className="bg-primary-50 rounded-lg p-2.5">
-                            <IndianRupee className="h-5 w-5 text-primary" />
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <IndianRupee className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-slate-900">₹{d.revenue}</div>
+                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">₹{d.revenue}</div>
                             {!isDemo && (
                                 <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
                                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -104,77 +104,77 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-indigo-500 bg-white shadow-sm">
+                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Active Members
                         </CardTitle>
-                        <div className="bg-indigo-50 rounded-lg p-2.5">
-                            <Users className="h-5 w-5 text-indigo-500" />
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <Users className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-slate-900">{d.activeMembers}</div>
-                            <p className="text-xs text-drift-400 mt-2 font-medium">
+                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">{d.activeMembers}</div>
+                            <p className="text-xs text-[#64748B] mt-2 font-medium">
                                 {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
                             </p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-emerald-500 bg-white shadow-sm lg:order-3 xl:order-none">
+                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-3 xl:order-none">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Net Income
                         </CardTitle>
-                        <div className="bg-emerald-50 rounded-lg p-2.5">
-                            <TrendingUp className="h-5 w-5 text-emerald-600" />
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <TrendingUp className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-slate-900">
+                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">
                                 ₹{netIncome.toLocaleString('en-IN')}
                             </div>
-                            <p className="text-xs text-drift-400 mt-2 font-medium uppercase tracking-tight">
+                            <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
                                 {expenseRatio.toFixed(1)}% EXPENSE RATIO (₹{totalExp.toLocaleString('en-IN')})
                             </p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-rose-500 bg-white shadow-sm lg:order-4 xl:order-none">
+                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-4 xl:order-none">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Product Sales
                         </CardTitle>
-                        <div className="bg-rose-50 rounded-lg p-2.5">
-                            <ShoppingBag className="h-5 w-5 text-rose-500" />
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <ShoppingBag className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-slate-900">{d.productSalesCount}</div>
-                            <p className="text-xs text-drift-400 mt-2 font-medium uppercase tracking-tight">
+                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">{d.productSalesCount}</div>
+                            <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
                                 ALL-TIME ITEMS
                             </p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-drift-200 border-l-4 border-l-amber-500 bg-white shadow-sm lg:order-5 xl:order-none">
+                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-5 xl:order-none">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-[10px] font-black text-drift-400 uppercase tracking-widest">
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Today&apos;s Attendance
                         </CardTitle>
-                        <div className="bg-amber-50 rounded-lg p-2.5">
-                            <CalendarCheck className="h-5 w-5 text-amber-500" />
+                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                            <CalendarCheck className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <div className="text-3xl font-black tracking-tight text-slate-900">{d.dailyCheckins}</div>
+                            <div className="text-3xl font-black tracking-tight text-[#0F172A]">{d.dailyCheckins}</div>
                             {!isDemo && (
                                 <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
                                     <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -231,8 +231,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
                 {/* Right Column */}
                 <div className="lg:col-span-4 flex flex-col space-y-6">
-                    <Card className="border-drift-200 shadow-sm rounded-xl bg-white overflow-hidden">
-                        <CardHeader className="border-l-4 border-l-primary pl-4 py-4 bg-primary-50/20">
+                    <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
+                        <CardHeader className="pl-4 py-4 bg-primary-50/20">
                             <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>
                             <CardDescription className="text-xs text-primary-700/70 font-medium tracking-tight">Most frequent operations</CardDescription>
                         </CardHeader>

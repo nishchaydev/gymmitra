@@ -16,14 +16,16 @@ interface MembersListProps {
     slug: string
     query: string
     status?: string
+    dobMonth?: string
     page: number
     take: number
 }
 
-export function MembersList({ slug, query, status, page, take }: MembersListProps) {
+export function MembersList({ slug, query, status, dobMonth, page, take }: MembersListProps) {
     const { data, isLoading, isFetching, error } = useMembers({
         q: query || undefined,
         status: status || undefined,
+        dobMonth: dobMonth || undefined,
         page,
         take,
     })
@@ -221,7 +223,7 @@ export function MembersList({ slug, query, status, page, take }: MembersListProp
                             <Button variant="outline" size="sm" disabled>Previous</Button>
                         ) : (
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/${slug}/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`}>
+                                <Link href={`/${slug}/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}`}>
                                     Previous
                                 </Link>
                             </Button>
@@ -230,7 +232,7 @@ export function MembersList({ slug, query, status, page, take }: MembersListProp
                             <Button variant="outline" size="sm" disabled>Next</Button>
                         ) : (
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/${slug}/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`}>
+                                <Link href={`/${slug}/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}`}>
                                     Next
                                 </Link>
                             </Button>

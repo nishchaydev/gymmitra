@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { useAtRiskQuery } from '@/hooks/use-at-risk'
-import { AlertCircle, CalendarClock, MessageCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, CalendarClock, MessageCircle, Loader2, Clock } from 'lucide-react'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
+import { format } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -55,7 +56,7 @@ export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: A
 
     if (isLoading) {
         return (
-            <Card className="h-full border-slate-200">
+            <Card className="h-full border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
                 <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
                     <div>
                         <CardTitle className="text-lg font-bold flex items-center gap-2 text-rose-600">
@@ -74,7 +75,7 @@ export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: A
 
     if (isError || !atRiskData) {
         return (
-            <Card className="h-full border-slate-200">
+            <Card className="h-full border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
                 <CardHeader className="pb-3 border-b border-slate-100">
                     <CardTitle className="text-lg font-bold flex items-center gap-2 text-rose-600">
                         <AlertCircle className="h-5 w-5" />
@@ -109,11 +110,11 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
     const { count, members } = data
 
     return (
-        <Card className="border-drift-200 shadow-sm flex flex-col bg-white rounded-xl overflow-hidden h-fit">
+        <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] flex flex-col overflow-hidden h-fit">
             <CardHeader className="pb-3 border-b border-drift-100 flex flex-row items-center justify-between bg-drift-50/5">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <div className="w-1.5 h-4 bg-red-500 rounded-full" />
+                        <AlertCircle className="h-5 w-5 text-rose-600" />
                         <CardTitle className="text-base font-bold text-slate-900">
                             At-Risk Members
                         </CardTitle>
@@ -178,9 +179,10 @@ function renderWidget(data: AtRiskData, days: number, onDaysChange: (v: string) 
                                                 {member.daysInactive}d inactive
                                             </span>
                                             {member.lastVisit && (
-                                                <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
-                                                    Visit: {new Date(member.lastVisit).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                                </span>
+                                                <div className="flex items-center text-xs text-slate-500 font-medium">
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    Visit: {format(new Date(member.lastVisit), "d MMM")}
+                                                </div>
                                             )}
                                         </div>
                                     </div>

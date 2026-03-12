@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -55,12 +56,12 @@ export default async function DashboardPage({
     params: Promise<{ slug: string }>
 }) {
     const { slug } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    if (!user && !isDemo) {
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
@@ -69,10 +70,8 @@ export default async function DashboardPage({
     try {
         if (isDemo) {
             gym = { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true }
-        } else if (user) {
-            gym = await prisma.gymProfile.findUnique({
-                where: { userId: user.id }
-            })
+        } else if (auth) {
+            gym = auth.gym
         }
     } catch (error) {
         console.error("Failed to load gym profile:", error)
@@ -634,128 +633,140 @@ export default async function DashboardPage({
                     <TabsTrigger value="insights">Insights</TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
                 </TabsList>
-                <TabsContent value="overview" className="space-y-6">
-                    <DashboardOverview
-                        slug={slug}
-                        gymName={(gym as any)?.businessName || gym?.name}
-                        isDemo={isDemo}
-                        initialData={{
-                            totalMembers: dashboardData.totalMembers,
-                            activeMembers: dashboardData.activeMembers,
-                            revenue: dashboardData.revenue,
-                            revenueRaw: dashboardData.revenueRaw,
-                            lastMonthRevenue: (dashboardData as any).lastMonthRevenue || 0,
-                            revenueChange: (dashboardData as any).revenueChange || 0,
-                            pendingRevenue: (dashboardData as any).pendingRevenue || 0,
-                            productSalesCount: dashboardData.productSalesCount,
-                            dailyCheckins: dashboardData.dailyCheckins,
-                            recentInvoices: JSON.parse(JSON.stringify(recentInvoices)),
-                            todayAttendance,
-                            upcomingBirthdays: JSON.parse(JSON.stringify(upcomingBirthdays)),
-                            monthlyRevenueData,
-                            outstandingInvoices: JSON.parse(JSON.stringify(dashboardData.outstandingInvoices || [])),
-                            urgentCount: dashboardData.urgentCount,
-                            birthdayCount: dashboardData.birthdayCount,
-                            totalExpenses: (dashboardData as any).totalExpenses || 0,
-                        }}
-                    />
+
+                <TabsContent value="overview" className="space-y-6" forceMount={true}>
+                    <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Overview...</span></div>}>
+                        <DashboardOverview
+                            slug={slug}
+                            gymName={(gym as any)?.businessName || gym?.name}
+                            isDemo={isDemo}
+                            initialData={{
+                                totalMembers: dashboardData.totalMembers,
+                                activeMembers: dashboardData.activeMembers,
+                                revenue: dashboardData.revenue,
+                                revenueRaw: dashboardData.revenueRaw,
+                                lastMonthRevenue: (dashboardData as any).lastMonthRevenue || 0,
+                                revenueChange: (dashboardData as any).revenueChange || 0,
+                                pendingRevenue: (dashboardData as any).pendingRevenue || 0,
+                                productSalesCount: dashboardData.productSalesCount,
+                                dailyCheckins: dashboardData.dailyCheckins,
+                                recentInvoices: JSON.parse(JSON.stringify(recentInvoices)),
+                                todayAttendance,
+                                upcomingBirthdays: JSON.parse(JSON.stringify(upcomingBirthdays)),
+                                monthlyRevenueData,
+                                outstandingInvoices: JSON.parse(JSON.stringify(dashboardData.outstandingInvoices || [])),
+                                urgentCount: dashboardData.urgentCount,
+                                birthdayCount: dashboardData.birthdayCount,
+                                totalExpenses: (dashboardData as any).totalExpenses || 0,
+                            }}
+                        />
+                    </React.Suspense>
                 </TabsContent>
-                <TabsContent value="analytics" className="space-y-4">
-                    <Analytics
-                        isDemo={isDemo}
-                        initialData={isDemo ? undefined : {
-                            isEstimated: false,
-                            memberGrowth: dashboardData.growthData || [],
-                            attendance: dashboardData.weeklyAttendance || []
-                        }}
-                    />
+
+                <TabsContent value="analytics" className="space-y-4" forceMount={true}>
+                    <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Analytics...</span></div>}>
+                        <Analytics
+                            isDemo={isDemo}
+                            initialData={isDemo ? undefined : {
+                                isEstimated: false,
+                                memberGrowth: dashboardData.growthData || [],
+                                attendance: dashboardData.weeklyAttendance || []
+                            }}
+                        />
+                    </React.Suspense>
                 </TabsContent>
-                <TabsContent value="insights" className="space-y-4">
-                    <RetentionMetrics
-                        isDemo={isDemo}
-                        initialData={isDemo ? undefined : {
-                            churnData: dashboardData.churnData?.map((row: any) => {
-                                const monthName = row.month ? format(new Date(row.month), 'MMM') : '???'
-                                const churned = Number(row.churned || 0)
-                                const totalActive = Number(row.total_active || 0) || 1
-                                return { name: monthName, churnRate: Math.min(100, Math.round((churned / totalActive) * 100)) }
-                            }) || [],
-                            retentionRate: dashboardData.retentionData?.length ? (() => {
-                                const last = dashboardData.retentionData[dashboardData.retentionData.length - 1]
-                                const renewed = Number(last.renewed || 0)
-                                const expired = Number(last.expired || 0)
-                                return (renewed + expired) > 0 ? Math.round((renewed / (renewed + expired)) * 100) : 100
-                            })() : 0,
-                            atRiskMembers: dashboardData.frequencyData?.filter((m: any) => Number(m.visit_count || 0) < 4).map((m: any) => ({
-                                memberId: m.member_id,
-                                memberName: m.member_name,
-                                phone: m.phone,
-                                visitCount: Number(m.visit_count || 0),
-                                lastVisit: m.last_visit ? format(new Date(m.last_visit), 'yyyy-MM-dd') : null
-                            })) || []
-                        }}
-                    />
-                </TabsContent>
-                <TabsContent value="reports" className="space-y-4">
-                    <Reports
-                        isDemo={isDemo}
-                        gymName={gym?.name || "Gym Mitra"}
-                        initialData={isDemo ? undefined : {
-                            revenue: monthlyRevenueData,
-                            attendance: dashboardData.weeklyAttendance || [],
-                            expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
-                                const diff = new Date(sub.endDate).getTime() - new Date().getTime();
-                                return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
-                            }) || [],
-                            reminders: {
-                                birthdays: dashboardData.remindersRaw?.[0]?.filter((m: any) => {
-                                    const today = new Date()
-                                    if (!m.dateOfBirth) return false
-                                    const dob = new Date(m.dateOfBirth)
-                                    return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
-                                }).map((m: any) => ({
-                                    type: 'BIRTHDAY',
-                                    memberId: m.id,
-                                    name: m.name,
-                                    link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym?.name || 'Gym Mitra')) : null
-                                })) || [],
-                                overdue: dashboardData.remindersRaw?.[1]?.map((inv: any) => ({
-                                    type: 'OVERDUE',
-                                    invoiceId: inv.id,
-                                    name: inv.member?.name || 'Unknown',
-                                    amount: Number(inv.total),
-                                    link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'Gym Mitra')) : null
-                                })) || [],
-                                inactive: dashboardData.frequencyData?.filter((m: any) => {
-                                    const today = new Date()
-                                    const fourteenDaysAgo = subDays(startOfDay(today), 14)
-                                    return !m.last_visit || new Date(m.last_visit) < fourteenDaysAgo
-                                }).map((m: any) => {
-                                    const today = new Date()
-                                    const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
-                                    return {
-                                        type: 'INACTIVE',
-                                        memberId: m.member_id,
-                                        name: m.member_name,
-                                        daysInactive: daysSince,
-                                        link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'Gym Mitra')) : null
-                                    }
+
+                <TabsContent value="insights" className="space-y-4" forceMount={true}>
+                    <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Insights...</span></div>}>
+                        <RetentionMetrics
+                            isDemo={isDemo}
+                            initialData={isDemo ? undefined : {
+                                churnData: dashboardData.churnData?.map((row: any) => {
+                                    const monthName = row.month ? format(new Date(row.month), 'MMM') : '???'
+                                    const churned = Number(row.churned || 0)
+                                    const totalActive = Number(row.total_active || 0) || 1
+                                    return { name: monthName, churnRate: Math.min(100, Math.round((churned / totalActive) * 100)) }
                                 }) || [],
+                                retentionRate: dashboardData.retentionData?.length ? (() => {
+                                    const last = dashboardData.retentionData[dashboardData.retentionData.length - 1]
+                                    const renewed = Number(last.renewed || 0)
+                                    const expired = Number(last.expired || 0)
+                                    return (renewed + expired) > 0 ? Math.round((renewed / (renewed + expired)) * 100) : 100
+                                })() : 0,
+                                atRiskMembers: dashboardData.frequencyData?.filter((m: any) => Number(m.visit_count || 0) < 4).map((m: any) => ({
+                                    memberId: m.member_id,
+                                    memberName: m.member_name,
+                                    phone: m.phone,
+                                    visitCount: Number(m.visit_count || 0),
+                                    lastVisit: m.last_visit ? format(new Date(m.last_visit), 'yyyy-MM-dd') : null
+                                })) || []
+                            }}
+                        />
+                    </React.Suspense>
+                </TabsContent>
+
+                <TabsContent value="reports" className="space-y-4" forceMount={true}>
+                    <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Reports...</span></div>}>
+                        <Reports
+                            isDemo={isDemo}
+                            gymName={gym?.name || "Gym Mitra"}
+                            initialData={isDemo ? undefined : {
+                                revenue: monthlyRevenueData,
+                                attendance: dashboardData.weeklyAttendance || [],
                                 expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
-                                    const today = new Date()
-                                    const diffTime = new Date(sub.endDate).getTime() - today.getTime();
-                                    const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
-                                    return {
-                                        type: 'EXPIRING',
-                                        subId: sub.id,
-                                        name: sub.member?.name || 'Unknown',
-                                        daysLeft,
-                                        link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'Gym Mitra')) : null
-                                    }
-                                }) || []
-                            }
-                        }}
-                    />
+                                    const diff = new Date(sub.endDate).getTime() - new Date().getTime();
+                                    return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
+                                }) || [],
+                                reminders: {
+                                    birthdays: dashboardData.remindersRaw?.[0]?.filter((m: any) => {
+                                        const today = new Date()
+                                        if (!m.dateOfBirth) return false
+                                        const dob = new Date(m.dateOfBirth)
+                                        return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
+                                    }).map((m: any) => ({
+                                        type: 'BIRTHDAY',
+                                        memberId: m.id,
+                                        name: m.name,
+                                        link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym?.name || 'Gym Mitra')) : null
+                                    })) || [],
+                                    overdue: dashboardData.remindersRaw?.[1]?.map((inv: any) => ({
+                                        type: 'OVERDUE',
+                                        invoiceId: inv.id,
+                                        name: inv.member?.name || 'Unknown',
+                                        amount: Number(inv.total),
+                                        link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'Gym Mitra')) : null
+                                    })) || [],
+                                    inactive: dashboardData.frequencyData?.filter((m: any) => {
+                                        const today = new Date()
+                                        const fourteenDaysAgo = subDays(startOfDay(today), 14)
+                                        return !m.last_visit || new Date(m.last_visit) < fourteenDaysAgo
+                                    }).map((m: any) => {
+                                        const today = new Date()
+                                        const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
+                                        return {
+                                            type: 'INACTIVE',
+                                            memberId: m.member_id,
+                                            name: m.member_name,
+                                            daysInactive: daysSince,
+                                            link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'Gym Mitra')) : null
+                                        }
+                                    }) || [],
+                                    expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
+                                        const today = new Date()
+                                        const diffTime = new Date(sub.endDate).getTime() - today.getTime();
+                                        const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
+                                        return {
+                                            type: 'EXPIRING',
+                                            subId: sub.id,
+                                            name: sub.member?.name || 'Unknown',
+                                            daysLeft,
+                                            link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'Gym Mitra')) : null
+                                        }
+                                    }) || []
+                                }
+                            }}
+                        />
+                    </React.Suspense>
                 </TabsContent>
             </Tabs>
 

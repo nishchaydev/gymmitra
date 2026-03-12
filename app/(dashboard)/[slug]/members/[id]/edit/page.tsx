@@ -8,18 +8,13 @@ import { Button } from '@/components/ui/button'
 
 export default async function EditMemberPage({ params }: { params: Promise<{ id: string, slug: string }> }) {
     const { id, slug } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (!user) redirect('/login')
+    if (!auth) redirect('/login')
 
-    const [gym, member] = await Promise.all([
-        prisma.gymProfile.findUnique({ where: { userId: user.id } }),
-        prisma.member.findUnique({ where: { id } })
-    ])
+    const member = await prisma.member.findUnique({ where: { id } })
 
-    if (!gym) redirect('/onboarding')
-    if (!member || member.gymId !== gym.id) notFound()
+    if (!member || member.gymId !== auth.gym.id) notFound()
 
     return (
         <div className="container mx-auto p-8 max-w-2xl">

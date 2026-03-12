@@ -7,13 +7,13 @@ import { cookies } from "next/headers"
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ slug: string; id: string }> }) {
     const { slug, id } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
     const cookieStore = await cookies()
-    const isDemoMode = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemoMode = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    if (!user && !isDemoMode) redirect("/login")
+    if (!auth && !isDemoMode) redirect("/login")
 
     let invoice: any; // Using any for large combined object, but could be refined
 
@@ -127,7 +127,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         if (!dbInvoice) notFound()
 
         const gymData = dbInvoice.gym as any;
-        if (!isDemoMode && gymData.userId !== user?.id) {
+        if (!isDemoMode && auth && gymData.id !== auth.gym.id) {
             const actualSlug = slug && slug !== 'dashboard' ? slug : (gymData.slug || '');
             redirect(actualSlug ? `/${actualSlug}/dashboard` : `/dashboard`);
         }

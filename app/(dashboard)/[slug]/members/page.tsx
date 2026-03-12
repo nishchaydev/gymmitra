@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
+import * as React from "react"
 import { prisma } from '@/lib/prisma'
 import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
@@ -16,25 +17,26 @@ export default async function MembersPage({
     searchParams,
     params: routeParams,
 }: {
-    searchParams: Promise<{ q?: string; status?: string; page?: string }>
+    searchParams: Promise<{ q?: string; status?: string; dobMonth?: string; page?: string }>
     params: Promise<{ slug: string }>
 }) {
     const [resolvedParams, resolvedSearchParams] = await Promise.all([routeParams, searchParams])
     const { slug } = resolvedParams
     const query = resolvedSearchParams.q || ''
     const status = resolvedSearchParams.status
+    const dobMonth = resolvedSearchParams.dobMonth
     const parsedPage = parseInt(resolvedSearchParams.page || '1', 10)
     const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
     const take = 50
     const skip = (page - 1) * take
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     const cookieStore = await cookies()
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (!user && !isDemo) {
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
@@ -42,19 +44,11 @@ export default async function MembersPage({
     let hasGymError = false
     let hasNoGym = false
 
-    if (user && !isDemo) {
-        try {
-            const gym = await prisma.gymProfile.findUnique({
-                where: { userId: user.id }
-            })
-            if (!gym) {
-                hasNoGym = true
-            } else {
-                gymId = gym.id
-            }
-        } catch (error) {
-            console.error("Failed to load gym profile for members:", error)
-            hasGymError = true
+    if (auth && !isDemo) {
+        if (!auth.gym) {
+            hasNoGym = true
+        } else {
+            gymId = auth.gym.id
         }
     }
 
@@ -94,50 +88,9 @@ export default async function MembersPage({
         whereClause.status = status as any
     }
 
-    let allDemoMembers = isDemo ? [...SHOWCASE_MEMBERS as any[]] : []
-    if (isDemo) {
-        if (query) {
-            const lowQuery = query.toLowerCase()
-            allDemoMembers = allDemoMembers.filter(m =>
-                (m.name?.toLowerCase().includes(lowQuery)) ||
-                (m.phone && m.phone.toLowerCase().includes(lowQuery)) ||
-                (m.email && m.email.toLowerCase().includes(lowQuery))
-            )
-        }
-        if (status && status !== 'ALL') {
-            allDemoMembers = allDemoMembers.filter(m => m.status === status)
-        }
-    }
+    // We don't fetch members on the server for regular users anymore since it is a client-side fetched list, 
+    // saving db load natively.
 
-    let members = isDemo
-        ? [...allDemoMembers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(skip, skip + take)
-        : []
-
-    let totalCount = isDemo ? allDemoMembers.length : 0
-
-    if (!isDemo) {
-        try {
-            const [dbMembers, dbCount] = await Promise.all([
-                prisma.member.findMany({
-                    where: whereClause,
-                    orderBy: { createdAt: 'desc' },
-                    take: take,
-                    skip: skip
-                }),
-                prisma.member.count({ where: whereClause })
-            ])
-            members = dbMembers
-            totalCount = dbCount
-        } catch (error) {
-            console.error("Failed to load members:", error)
-            return (
-                <div className="p-8 text-center text-destructive">
-                    System error loading members. Please try refreshing.
-                </div>
-            )
-        }
-    }
-    const hasMore = totalCount > page * take
 
     return (
         <div className="container mx-auto p-8 space-y-6">
@@ -160,18 +113,20 @@ export default async function MembersPage({
                 </div>
             </div>
 
-            <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm flex-wrap">
                 <MemberSearch />
                 <MemberFilters />
             </div>
-
-            <MembersList
-                slug={slug}
-                query={query}
-                status={status}
-                page={page}
-                take={take}
-            />
+            <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500 font-medium">Loading Members...</span></div>}>
+                <MembersList
+                    slug={slug}
+                    query={query}
+                    status={status}
+                    dobMonth={dobMonth}
+                    page={page}
+                    take={take}
+                />
+            </React.Suspense>
         </div>
     )
 }

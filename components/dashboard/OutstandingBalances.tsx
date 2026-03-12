@@ -28,8 +28,8 @@ export function OutstandingBalances({ data, gymName, slug }: OutstandingBalances
     }
 
     return (
-        <Card className="border-drift-200 shadow-sm rounded-xl bg-white overflow-hidden">
-            <CardHeader className="border-l-4 border-l-amber-500 pl-4 py-4 bg-amber-50/30">
+        <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
+            <CardHeader className="pl-4 py-4 bg-amber-50/30">
                 <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-amber-500" />
                     Outstanding Balances

@@ -209,7 +209,7 @@ export function DailyBriefing({
     }
 
     return (
-        <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-primary">
+        <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
             <CardHeader className="bg-slate-50/50 pb-4 border-b border-slate-100">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>

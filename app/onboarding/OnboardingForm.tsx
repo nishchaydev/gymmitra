@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,7 +9,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { Building2, MapPin, Contact, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, ImagePlus, X } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { completeOnboarding } from './actions'
+
+const INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
+    "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
+    "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
 
 const steps = [
     { title: 'Business Info', icon: Building2 },
@@ -23,6 +33,7 @@ export default function OnboardingForm() {
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [states, setStates] = useState<string[]>(INDIAN_STATES)
     const [logoFile, setLogoFile] = useState<File | null>(null)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [formData, setFormData] = useState({
@@ -83,6 +94,42 @@ export default function OnboardingForm() {
             reader.readAsDataURL(file)
         }
     }
+
+    useEffect(() => {
+        const fetchPincodeDetails = async () => {
+            if (formData.pincode?.length === 6) {
+                try {
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${formData.pincode}`)
+                    const data = await res.json()
+
+                    if (data && data[0] && data[0].Status === 'Success') {
+                        const postOffice = data[0].PostOffice[0]
+                        const fetchedState = postOffice.State
+                        const fetchedCity = postOffice.District
+
+                        // If state doesn't exist in our current dropdown list or it's empty, add it 
+                        setStates(prev => {
+                            if (!prev.includes(fetchedState)) return [...prev, fetchedState].sort()
+                            return prev
+                        })
+
+                        setFormData(prev => ({ ...prev, state: fetchedState, city: fetchedCity }))
+                    } else {
+                        toast.error("Invalid pincode or details not found.")
+                    }
+                } catch (error) {
+                    console.warn("Failed to fetch pincode details:", error)
+                    // We don't want to show an intrusive toast or overlay if the third party API is down or adblocked.
+                }
+            }
+        }
+
+        const timeoutId = setTimeout(() => {
+            fetchPincodeDetails()
+        }, 500) // Debounce
+
+        return () => clearTimeout(timeoutId)
+    }, [formData.pincode])
 
     const removeLogo = () => {
         setLogoFile(null)
@@ -325,15 +372,19 @@ export default function OnboardingForm() {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="state">State</Label>
-                                                <Input
-                                                    id="state"
-                                                    name="state"
+                                                <Select
                                                     value={formData.state}
-                                                    onChange={handleInputChange}
-                                                    placeholder="State"
-                                                    autoComplete="address-level1"
-                                                    required
-                                                />
+                                                    onValueChange={(val) => setFormData(prev => ({ ...prev, state: val }))}
+                                                >
+                                                    <SelectTrigger id="state" className="bg-white px-3 py-2 border rounded-md shadow-sm">
+                                                        <SelectValue placeholder="Select State" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {states.map((s) => (
+                                                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
                                         <div className="space-y-2">

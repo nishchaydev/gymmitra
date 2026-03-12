@@ -101,12 +101,14 @@ async function uploadToCloudinary(file: File): Promise<string> {
 }
 
 export async function completeOnboarding(formData: FormData): Promise<{ redirectTo?: string; warnings?: string[], error?: string }> {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (!user) {
+    if (!auth || !auth.userId) {
         return { error: "Unauthorized" }
     }
+
+    // We will use authId where user.id was used before
+    const userId = auth.userId
 
     const rawData = {
         businessName: formData.get("businessName"),
@@ -158,7 +160,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
         // Look up existing profile to preserve slug on updates
         const existingProfile = await prisma.gymProfile.findUnique({
-            where: { userId: user.id },
+            where: { userId: userId },
             select: { slug: true },
         });
 
@@ -169,7 +171,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         for (let attempt = 0; attempt <= MAX_SLUG_RETRIES; attempt++) {
             try {
                 gymProfile = await prisma.gymProfile.upsert({
-                    where: { userId: user.id },
+                    where: { userId: userId },
                     update: {
                         ...updateData,
                         name: validatedData.businessName,
@@ -178,7 +180,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                         onboardingStep: ONBOARDING_COMPLETE_STEP,
                     },
                     create: {
-                        userId: user.id,
+                        userId: userId,
                         ...updateData,
                         name: validatedData.businessName,
                         slug,
@@ -273,7 +275,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
     if (gymProfile) {
         await recordAuditLog({
             gymId: gymProfile.id,
-            actorId: user.id,
+            actorId: userId,
             action: 'ONBOARDING_COMPLETE',
             entityType: 'GYM',
             entityId: gymProfile.id,

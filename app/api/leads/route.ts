@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 const leadCreateSchema = z.object({
     name: z.string().min(2, 'Name is required'),
-    phone: z.string().min(7, 'Phone number is required'),
+    phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
     email: z.string().email().optional().or(z.literal('')),
     planInterest: z.string().optional(),
     source: z.string().optional(),

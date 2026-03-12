@@ -21,24 +21,20 @@ export default async function AttendancePage({
     const endOfDay = new Date()
     endOfDay.setHours(23, 59, 59, 999)
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
 
     // Secure Demo Logic
-    const isDemo = !user && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
+    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
 
-    if (!user && !isDemo) {
+    if (!auth && !isDemo) {
         redirect("/login")
     }
 
     let gymId = 'demo'
-    if (user && !isDemo) {
-        const gym = await prisma.gymProfile.findUnique({
-            where: { userId: user.id }
-        })
-        if (!gym) return <div className="p-8">Gym profile not found.</div>
-        gymId = gym.id
+    if (auth && !isDemo) {
+        gymId = auth.gym.id
     }
 
     // Stable timestamps for demo mode

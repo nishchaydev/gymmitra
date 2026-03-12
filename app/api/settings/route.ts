@@ -10,7 +10,7 @@ const SETTINGS_RATE_LIMIT = 20
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
     email: z.string().email("Invalid email"),
-    phone: z.string().min(10, "Phone number is required"),
+    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
     address: z.string().optional(),
     gst: z.string().optional(),
     invoicePrefix: z.string().min(1).max(5).optional(),
