@@ -77,7 +77,7 @@ export default async function RootLayout({
   const headersList = await headers();
   const nonce = headersList.get('x-nonce') ?? undefined;
   return (
-    <html lang="en" className="scroll-smooth scroll-pt-24">
+    <html lang="en" className="scroll-smooth scroll-pt-24" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         className={`${fontDisplay.variable} ${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-primary-500/10 selection:text-primary-900`}
       >
