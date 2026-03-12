@@ -217,13 +217,42 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
     /* No content clipping on print */
     #invoice-template { page-break-inside: avoid; break-inside: avoid; }
 
+    /* Add forced width resets to avoid page edge clipping on specific elements */
+    @media print {
+      * { box-sizing: border-box !important; }
+      body { margin: 0 !important; padding: 0 !important; }
+      
+      #invoice-template {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 20px !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      
+      /* Ensure Payment Info and Totals columns don't stretch off the page */
+      .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      .sm\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      
+      .flex.justify-between {
+        display: flex !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        padding-right: 0 !important;
+      }
+
+      /* Banner (only visible before print dialog) */
+      #pdf-banner { display: none !important; }
+    }
+
     /* Banner (only visible before print dialog) */
     #pdf-banner {
       background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
       padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #1e40af;
       display: flex; align-items: center; gap: 8px;
     }
-    @media print { #pdf-banner { display: none !important; } }
   </style>
 </head>
 <body>

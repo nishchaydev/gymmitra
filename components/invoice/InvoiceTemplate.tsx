@@ -145,8 +145,8 @@ export function InvoiceTemplate({
                 </table>
             </div>
 
-            {/* Mobile Line Items Cards (Hidden on Desktop) */}
-            <div className="sm:hidden space-y-4 mb-8">
+            {/* Mobile Line Items Cards (Hidden on Desktop & Print) */}
+            <div className="sm:hidden print:hidden space-y-4 mb-8">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Line Items</h3>
                 {items.map((item, idx) => (
                     <div key={idx} className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col gap-3">
