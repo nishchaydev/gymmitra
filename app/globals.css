@@ -171,4 +171,10 @@
   .glow-blue {
     box-shadow: 0 0 20px color-mix(in srgb, var(--ion-blue) 8%, transparent);
   }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
 }

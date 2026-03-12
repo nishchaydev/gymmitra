@@ -98,47 +98,77 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
 
     /* Layout */
     .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .sm\:flex-row { flex-direction: row; }
     .grid { display: grid; }
-    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .justify-between { justify-content: space-between; }
+    .sm\:justify-between { justify-content: space-between; }
     .items-start  { align-items: flex-start; }
     .items-center { align-items: center; }
     .items-end    { align-items: flex-end; }
+    .sm\:items-end { align-items: flex-end; }
     .gap-2  { gap: 0.5rem; }
     .gap-3  { gap: 0.75rem; }
+    .gap-4  { gap: 1rem; }
+    .gap-8  { gap: 2rem; }
     .gap-12 { gap: 3rem; }
+    .sm\:gap-12 { gap: 3rem; }
     .space-y-1 > * + * { margin-top: 0.25rem; }
     .space-y-3 > * + * { margin-top: 0.75rem; }
     .space-y-4 > * + * { margin-top: 1rem; }
     .space-y-6 > * + * { margin-top: 1.5rem; }
     .ml-auto { margin-left: auto; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
     .mb-4  { margin-bottom: 1rem; }
+    .sm\:mb-4 { margin-bottom: 1rem; }
+    .mb-8  { margin-bottom: 2rem; }
     .mb-12 { margin-bottom: 3rem; }
     .mt-20 { margin-top: 5rem; }
     .pb-2  { padding-bottom: 0.5rem; }
+    .pt-3  { padding-top: 0.75rem; }
     .pt-8  { padding-top: 2rem; }
     .py-2  { padding-top: 0.5rem; padding-bottom: 0.5rem; }
     .py-4  { padding-top: 1rem;  padding-bottom: 1rem;  }
     .px-4  { padding-left: 1rem; padding-right: 1rem; }
+    .p-4   { padding: 1rem; }
     .p-8   { padding: 2rem; }
+    .sm\:p-8 { padding: 2rem; }
 
     /* Sizing */
     .w-3  { width: 0.75rem; }  .h-3  { height: 0.75rem; }
+    .w-4  { width: 1rem; }     .h-4  { height: 1rem; }
     .w-5  { width: 1.25rem; }  .h-5  { height: 1.25rem; }
+    .w-8  { width: 2rem; }     .h-8  { height: 2rem; }
     .w-10 { width: 2.5rem;  }  .h-10 { height: 2.5rem;  }
     .w-24 { width: 6rem; }     .h-12 { height: 3rem; }
+    .w-full { width: 100%; }
+    .sm\:w-auto { width: auto; }
     .w-\[300px\] { width: 300px; }
+    .sm\:w-\[300px\] { width: 300px; }
     .max-w-\[200px\] { max-width: 200px; }
     .max-w-\[300px\] { max-width: 300px; }
+    .max-w-\[800px\] { max-width: 800px; }
+    .min-w-\[600px\] { min-width: 600px; }
+    .sm\:min-w-0 { min-width: 0; }
 
     /* Typography */
     .text-\[10px\] { font-size: 10px; }
     .text-xs  { font-size: 0.75rem; }
     .text-sm  { font-size: 0.875rem; }
+    .text-base { font-size: 1rem; }
     .text-lg  { font-size: 1.125rem; }
+    .sm\:text-lg { font-size: 1.125rem; }
+    .text-xl { font-size: 1.25rem; }
+    .sm\:text-xl { font-size: 1.25rem; }
     .text-2xl { font-size: 1.5rem; }
+    .sm\:text-2xl { font-size: 1.5rem; }
     .text-3xl { font-size: 1.875rem; }
+    .sm\:text-3xl { font-size: 1.875rem; }
     .text-4xl { font-size: 2.25rem; }
+    .sm\:text-4xl { font-size: 2.25rem; }
     .font-medium { font-weight: 500; }
     .font-bold   { font-weight: 700; }
     .font-black  { font-weight: 900; }
@@ -149,12 +179,24 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
     .tracking-widest   { letter-spacing: 0.1em; }
     .tracking-\[0\.2em\] { letter-spacing: 0.2em; }
     .leading-relaxed   { line-height: 1.625; }
+    .text-left { text-align: left; }
     .text-right  { text-align: right; }
+    .sm\:text-right { text-align: right; }
     .text-center { text-align: center; }
     .underline   { text-decoration: underline; }
     .underline-offset-8 { text-underline-offset: 8px; }
     .opacity-30  { opacity: 0.3; }
     .opacity-50  { opacity: 0.5; }
+    .break-words { overflow-wrap: break-word; }
+    .break-all { word-break: break-all; }
+    .sm\:break-normal { word-break: normal; overflow-wrap: normal; }
+    .whitespace-nowrap { white-space: nowrap; }
+
+    /* Visibility / Display */
+    .hidden { display: none !important; }
+    .sm\:hidden { display: none !important; }
+    .block { display: block !important; }
+    .sm\:block { display: block !important; }
 
     /* Borders */
     .border     { border: 1px solid #e2e8f0; }
