@@ -109,14 +109,17 @@ export async function GET(request: NextRequest) {
                 message: templates.birthdayWish(m.name, gym.name),
                 link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym.name)) : null
             })),
-            overdue: overdueInvoices.map(inv => ({
-                type: 'OVERDUE',
-                invoiceId: inv.id,
-                name: inv.member?.name || 'Unknown',
-                amount: Number(inv.total),
-                message: templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym.name),
-                link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym.name)) : null
-            })),
+            overdue: overdueInvoices.map(inv => {
+                const msg = templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym.name, gym.waOverdueMsg || undefined)
+                return {
+                    type: 'OVERDUE',
+                    invoiceId: inv.id,
+                    name: inv.member?.name || 'Unknown',
+                    amount: Number(inv.total),
+                    message: msg,
+                    link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, msg) : null
+                }
+            }),
             inactive: filteredInactive.map(m => {
                 const lastAttendance = m.attendance[0]?.date
                 const daysSince = lastAttendance ? Math.floor((today.getTime() - new Date(lastAttendance).getTime()) / (1000 * 3600 * 24)) : 30 // assume 30 if null
@@ -132,13 +135,14 @@ export async function GET(request: NextRequest) {
             expiring: expiringSubs.map(sub => {
                 const diffTime = new Date(sub.endDate).getTime() - today.getTime();
                 const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
+                const msg = templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym.name, gym.waRenewalMsg || undefined)
                 return {
                     type: 'EXPIRING',
                     subId: sub.id,
                     name: sub.member?.name || 'Unknown',
                     daysLeft,
-                    message: templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym.name),
-                    link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym.name)) : null
+                    message: msg,
+                    link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, msg) : null
                 }
             })
         }

@@ -10,16 +10,18 @@ interface OutstandingBalancesProps {
     data: any[]
     gymName: string
     slug: string
+    waOverdueMsg?: string | null
 }
 
-export function OutstandingBalances({ data, gymName, slug }: OutstandingBalancesProps) {
+export function OutstandingBalances({ data, gymName, slug, waOverdueMsg }: OutstandingBalancesProps) {
     if (!data || data.length === 0) return null
 
     const handleWhatsApp = (inv: any) => {
         const message = templates.paymentOverdue(
             inv.member?.name || inv.walkInName || 'Customer',
             Number(inv.balanceDue),
-            gymName
+            gymName,
+            waOverdueMsg || undefined
         )
         const phone = inv.member?.phone || inv.walkInPhone
         if (phone) {

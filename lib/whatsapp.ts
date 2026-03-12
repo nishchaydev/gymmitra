@@ -30,7 +30,14 @@ export const templates = {
     /**
      * Sent before membership expiry to prompt renewal.
      */
-    renewalReminder: (name: string, daysLeft: number, gymName: string) => {
+    renewalReminder: (name: string, daysLeft: number, gymName: string, customTemplate?: string) => {
+        if (customTemplate) {
+            return customTemplate
+                .replace(/{name}/g, name)
+                .replace(/{gymName}/g, gymName)
+                .replace(/{daysLeft}/g, String(daysLeft))
+                .replace(/\\n/g, '\n')
+        }
         return (
             `Hi ${name}!\n\n` +
             `Reminder from *${gymName}*: Aapki membership ${daysLeft === 0 ? 'aaj' : daysLeft === 1 ? 'kal' : `agli ${daysLeft} dino mein`} khatam ho rahi hai.\n\n` +
@@ -42,8 +49,16 @@ export const templates = {
     /**
      * Sent upon successful new member registration.
      */
-    welcomeMessage: (name: string, gymName: string, invoiceUrl?: string) => {
-        const invoiceLine = invoiceUrl ? `\n\nAapka joining invoice yahan hai: ${invoiceUrl}` : ''
+    welcomeMessage: (name: string, gymName: string, url?: string, customTemplate?: string) => {
+        if (customTemplate) {
+            return customTemplate
+                .replace(/{name}/g, name)
+                .replace(/{gymName}/g, gymName)
+                .replace(/{url}/g, url || '')
+                .replace(/\\n/g, '\n')
+        }
+
+        const invoiceLine = url ? `\n\nAapka joining invoice yahan hai: ${url}` : ''
         return (
             `Welcome to *${gymName}*, ${name}! 🎉\n\n` +
             `Hume khushi hai ki aap hamari community ka hissa bane. Aapka digital pass active ho gaya hai.${invoiceLine}\n\n` +
@@ -55,8 +70,18 @@ export const templates = {
     /**
      * Sent with invoice link after a payment is recorded.
      */
-    invoiceShare: (name: string, gymName: string, amount: number, url?: string) => {
+    invoiceShare: (name: string, gymName: string, amount: number, url?: string, customTemplate?: string) => {
         const formattedAmount = formatCurrency(amount)
+
+        if (customTemplate) {
+            return customTemplate
+                .replace(/{name}/g, name)
+                .replace(/{gymName}/g, gymName)
+                .replace(/{amount}/g, formattedAmount)
+                .replace(/{url}/g, url || '')
+                .replace(/\\n/g, '\n')
+        }
+
         const linkPart = url ? `\nAapka invoice link yahan hai:\n${url}\n` : ''
         return (
             `Hi ${name}, thank you for the payment of *${formattedAmount}* to *${gymName}*.\n\n` +
@@ -81,8 +106,17 @@ export const templates = {
     /**
      * Sent when a payment is overdue.
      */
-    paymentOverdue: (name: string, amount: number, gymName: string) => {
+    paymentOverdue: (name: string, amount: number, gymName: string, customTemplate?: string) => {
         const formattedAmount = formatCurrency(amount)
+
+        if (customTemplate) {
+            return customTemplate
+                .replace(/{name}/g, name)
+                .replace(/{gymName}/g, gymName)
+                .replace(/{amount}/g, formattedAmount)
+                .replace(/\\n/g, '\n')
+        }
+
         return (
             `Hi ${name}, *${gymName}* se reminder:\n\n` +
             `Aapka *${formattedAmount}* pending balance hai. Please use clear kar dein taaki koi interruption na ho.\n\n` +
@@ -130,7 +164,8 @@ export const getInvoiceWhatsAppLink = (
     gymName: string,
     amount: number,
     shareToken: string,
-    gymSlug: string
+    gymSlug: string,
+    customTemplate?: string
 ): string | null => {
     const baseUrl = getBaseUrl()
 
@@ -149,6 +184,6 @@ export const getInvoiceWhatsAppLink = (
     const safeGym = gymName || 'your gym'
     const safeMember = memberName || 'Customer'
 
-    const message = templates.invoiceShare(safeMember, safeGym, formattedAmount, url)
+    const message = templates.invoiceShare(safeMember, safeGym, formattedAmount, url, customTemplate)
     return getWhatsAppLink(phone, message)
 }

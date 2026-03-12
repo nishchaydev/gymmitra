@@ -6,6 +6,10 @@ import { Analytics } from "@/components/dashboard/Analytics"
 import { Reports } from "@/components/dashboard/Reports"
 import { RetentionMetrics } from "@/components/dashboard/RetentionMetrics"
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview"
+import { RenewalCommandCenter } from "@/components/renewals/RenewalCommandCenter"
+import { AtRiskMembers } from "@/components/dashboard/AtRiskMembers"
+import { OutstandingBalances } from "@/components/dashboard/OutstandingBalances"
+import { UpcomingBirthdays } from "@/components/dashboard/UpcomingBirthdays"
 import { Button } from "@/components/ui/button"
 import { UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
@@ -711,6 +715,17 @@ export default async function DashboardPage({
 
                 <TabsContent value="reports" className="space-y-4" forceMount={true}>
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Reports...</span></div>}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* @ts-ignore */}
+                            <RenewalCommandCenter gymName={gym?.name || ''} waRenewalMsg={gym?.waRenewalMsg} />
+                            <AtRiskMembers slug={slug} gymName={gym?.name || ''} />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* @ts-ignore */}
+                            <OutstandingBalances data={dashboardData.outstandingInvoices} gymName={gym?.name || ''} slug={slug} waOverdueMsg={gym?.waOverdueMsg} />
+                            <UpcomingBirthdays data={upcomingBirthdays} gymName={gym?.name || ''} />
+                        </div>
                         <Reports
                             isDemo={isDemo}
                             gymName={gym?.name || "Gym Mitra"}
@@ -722,51 +737,72 @@ export default async function DashboardPage({
                                     return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
                                 }) || [],
                                 reminders: {
-                                    birthdays: dashboardData.remindersRaw?.[0]?.filter((m: any) => {
-                                        const today = new Date()
-                                        if (!m.dateOfBirth) return false
-                                        const dob = new Date(m.dateOfBirth)
-                                        return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
-                                    }).map((m: any) => ({
-                                        type: 'BIRTHDAY',
-                                        memberId: m.id,
-                                        name: m.name,
-                                        link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym?.name || 'Gym Mitra')) : null
-                                    })) || [],
-                                    overdue: dashboardData.remindersRaw?.[1]?.map((inv: any) => ({
-                                        type: 'OVERDUE',
-                                        invoiceId: inv.id,
-                                        name: inv.member?.name || 'Unknown',
-                                        amount: Number(inv.total),
-                                        link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'Gym Mitra')) : null
-                                    })) || [],
-                                    inactive: dashboardData.frequencyData?.filter((m: any) => {
-                                        const today = new Date()
-                                        const fourteenDaysAgo = subDays(startOfDay(today), 14)
-                                        return !m.last_visit || new Date(m.last_visit) < fourteenDaysAgo
-                                    }).map((m: any) => {
-                                        const today = new Date()
-                                        const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
-                                        return {
-                                            type: 'INACTIVE',
-                                            memberId: m.member_id,
-                                            name: m.member_name,
-                                            daysInactive: daysSince,
-                                            link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'Gym Mitra')) : null
+                                    reminders: (() => {
+                                        const birthdays = dashboardData.remindersRaw?.[0]?.filter((m: any) => {
+                                            const today = new Date()
+                                            if (!m.dateOfBirth) return false
+                                            const dob = new Date(m.dateOfBirth)
+                                            return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
+                                        }) || []
+                                        const overdueInvoices = dashboardData.remindersRaw?.[1] || []
+                                        const inactiveMembers = dashboardData.frequencyData?.filter((m: any) => {
+                                            const today = new Date()
+                                            const fourteenDaysAgo = subDays(startOfDay(today), 14)
+                                            return !m.last_visit || new Date(m.last_visit) < fourteenDaysAgo
+                                        }) || []
+
+                                        const overdue = overdueInvoices.map((inv: any) => {
+                                            // @ts-ignore
+                                            const msg = templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'Gym Mitra', gym?.waOverdueMsg || undefined)
+                                            return {
+                                                type: 'OVERDUE',
+                                                invoiceId: inv.id,
+                                                name: inv.member?.name || 'Unknown',
+                                                amount: Number(inv.total),
+                                                message: msg,
+                                                link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, msg) : null
+                                            }
+                                        })
+
+                                        const expiring = dashboardData.expiringSubscriptions?.map((sub: any) => {
+                                            const today = new Date()
+                                            const diffTime = new Date(sub.endDate).getTime() - today.getTime();
+                                            const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
+                                            // @ts-ignore
+                                            const msg = templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'Gym Mitra', gym?.waRenewalMsg || undefined)
+                                            return {
+                                                type: 'EXPIRING',
+                                                subId: sub.id,
+                                                name: sub.member?.name || 'Unknown',
+                                                daysLeft,
+                                                message: msg,
+                                                link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, msg) : null
+                                            }
+                                        }) || []
+                                        return dashboardData.remindersRaw ? {
+                                            birthdays: birthdays.map((m: any) => ({
+                                                type: 'BIRTHDAY',
+                                                memberId: m.id,
+                                                name: m.name,
+                                                link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym?.name || 'Gym Mitra')) : null
+                                            })),
+                                            overdue: overdue,
+                                            inactive: inactiveMembers.map((m: any) => {
+                                                const today = new Date()
+                                                const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
+                                                return {
+                                                    type: 'INACTIVE',
+                                                    memberId: m.member_id,
+                                                    name: m.member_name,
+                                                    daysInactive: daysSince,
+                                                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'Gym Mitra')) : null
+                                                }
+                                            }),
+                                            expiring: expiring
+                                        } : {
+                                            birthdays: [], overdue: [], inactive: [], expiring: []
                                         }
-                                    }) || [],
-                                    expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
-                                        const today = new Date()
-                                        const diffTime = new Date(sub.endDate).getTime() - today.getTime();
-                                        const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
-                                        return {
-                                            type: 'EXPIRING',
-                                            subId: sub.id,
-                                            name: sub.member?.name || 'Unknown',
-                                            daysLeft,
-                                            link: sub.member?.phone ? getWhatsAppLink(sub.member?.phone, templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'Gym Mitra')) : null
-                                        }
-                                    }) || []
+                                    })()
                                 }
                             }}
                         />

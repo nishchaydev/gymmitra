@@ -207,9 +207,21 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                         orderBy: { createdAt: 'desc' }
                     })
 
-                    const invoiceUrl = finalInvoiceId
-                        ? `https://gymmitra.com/${gym.slug}/invoices/${finalInvoiceId}`
-                        : undefined
+                    const { templates, getWhatsAppLink } = await import('@/lib/whatsapp')
+                    const { getBaseUrl } = await import('@/lib/utils')
+
+                    let publicInvoiceUrl: string | undefined = undefined
+                    if (finalInvoiceId) {
+                        const inv = await prisma.invoice.findUnique({
+                            where: { id: finalInvoiceId },
+                            select: { shareToken: true, gym: { select: { slug: true } } }
+                        })
+                        if (inv?.shareToken) {
+                            publicInvoiceUrl = `${getBaseUrl()}/${inv.gym.slug}/invoice/${inv.shareToken}`
+                        }
+                    }
+
+                    const invoiceUrl = publicInvoiceUrl
 
                     const { error } = await resend.emails.send({
                         from: `${gym.name} <hello@mail.emitra.dev>`,
@@ -239,19 +251,21 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
 
         const { templates, getWhatsAppLink } = await import('@/lib/whatsapp')
 
-        // Generate public share link if invoice exists
         let publicInvoiceUrl: string | undefined = undefined
+
         if (finalInvoiceId) {
             const inv = await prisma.invoice.findUnique({
                 where: { id: finalInvoiceId },
-                select: { shareToken: true, gym: { select: { slug: true } } }
+                select: { shareToken: true, gym: { select: { slug: true, waWelcomeMsg: true } } }
             })
             if (inv?.shareToken) {
-                publicInvoiceUrl = `https://gymmitra.com/${inv.gym.slug}/invoice/${inv.shareToken}`
+                const { getBaseUrl } = await import('@/lib/utils')
+                publicInvoiceUrl = `${getBaseUrl()}/${inv.gym.slug}/invoice/${inv.shareToken}`
             }
         }
 
-        const welcomeMessage = templates.welcomeMessage(validatedData.name, context.gym.name, publicInvoiceUrl)
+        const templateOverride = context.gym?.waWelcomeMsg || undefined;
+        const welcomeMessage = templates.welcomeMessage(validatedData.name, context.gym.name, publicInvoiceUrl, templateOverride)
         const whatsappUrl = getWhatsAppLink(validatedData.phone, welcomeMessage)
 
         return { success: true, id: finalMemberId, invoiceId: finalInvoiceId, whatsappUrl }

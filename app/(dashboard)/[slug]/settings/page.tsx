@@ -27,6 +27,8 @@ import { useParams } from "next/navigation"
 import { QRPosterSection } from "@/components/settings/QRPosterSection"
 import { ClipboardList } from "lucide-react"
 
+import { WhatsAppTemplates } from "@/components/settings/WhatsAppTemplates"
+
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
     ownerName: z.string().min(2, "Owner name is required"),
@@ -35,6 +37,10 @@ const settingsSchema = z.object({
     address: z.string().optional(),
     gst: z.string().optional(),
     termsAndConditions: z.string().max(1000).optional(),
+    waWelcomeMsg: z.string().max(2000).optional().nullable(),
+    waInvoiceMsg: z.string().max(2000).optional().nullable(),
+    waRenewalMsg: z.string().max(2000).optional().nullable(),
+    waOverdueMsg: z.string().max(2000).optional().nullable(),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -56,6 +62,10 @@ export default function SettingsPage() {
             address: "",
             gst: "",
             termsAndConditions: "",
+            waWelcomeMsg: "",
+            waInvoiceMsg: "",
+            waRenewalMsg: "",
+            waOverdueMsg: "",
         },
     })
 
@@ -73,6 +83,10 @@ export default function SettingsPage() {
                         address: data.address || "",
                         gst: data.gst || "",
                         termsAndConditions: data.termsAndConditions || "",
+                        waWelcomeMsg: data.waWelcomeMsg || "",
+                        waInvoiceMsg: data.waInvoiceMsg || "",
+                        waRenewalMsg: data.waRenewalMsg || "",
+                        waOverdueMsg: data.waOverdueMsg || "",
                     })
                     setGymName(data.name || '')
                 }
@@ -145,6 +159,14 @@ export default function SettingsPage() {
                         >
                             <QrCode className="mr-2 h-4 w-4" />
                             QR Poster
+                        </Button>
+                        <Button
+                            variant={activeTab === 'whatsapp' ? "secondary" : "ghost"}
+                            className="justify-start"
+                            onClick={() => setActiveTab('whatsapp')}
+                        >
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            WhatsApp Templates
                         </Button>
                         <Link href={`/${slug}/settings/import`}>
                             <Button
@@ -287,11 +309,11 @@ export default function SettingsPage() {
                                 </Form>
                             </CardContent>
                         </Card>
-                    ) : (
-                        <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border shadow-sm">
-                            <QRPosterSection slug={slug} gymName={gymName} />
-                        </div>
-                    )}
+                    ) : activeTab === 'qr-poster' ? (
+                        <QRPosterSection slug={slug} gymName={gymName} />
+                    ) : activeTab === 'whatsapp' ? (
+                        <WhatsAppTemplates form={form} onSubmit={onSubmit} saving={saving} />
+                    ) : null}
                 </div>
             </div>
         </div>

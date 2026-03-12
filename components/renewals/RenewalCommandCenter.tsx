@@ -15,6 +15,7 @@ import { format, addDays, subDays } from 'date-fns'
 interface RenewalCommandCenterProps {
     gymName: string
     isDemo?: boolean
+    waRenewalMsg?: string | null
 }
 
 // Generate some fake demo renewals if we are in showcase mode
@@ -39,7 +40,7 @@ const generateDemoRenewals = () => {
     }
 }
 
-export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommandCenterProps) {
+export function RenewalCommandCenter({ gymName, isDemo = false, waRenewalMsg }: RenewalCommandCenterProps) {
     const { data: realData, isLoading: queryLoading, isError } = useRenewalsQuery({ enabled: !isDemo })
 
     // Switch between real and demo data
@@ -93,7 +94,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommand
 
         for (let i = 0; i < membersToSend.length; i++) {
             const member = membersToSend[i]
-            const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
+            const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName, waRenewalMsg || undefined)
             const link = getWhatsAppLink(member.phone, msg)
 
             // Open in new tab
@@ -155,7 +156,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommand
                                 const hasPhone = !!member.phone
                                 const isMissed = member.daysOffset < 0
                                 const isUrgent = !isMissed && member.daysOffset <= 7
-                                const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
+                                const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName, waRenewalMsg || undefined)
                                 const link = hasPhone ? getWhatsAppLink(member.phone, msg) : ''
 
                                 return (
@@ -214,7 +215,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommand
                         const hasPhone = !!member.phone
                         const isMissed = member.daysOffset < 0
                         const isUrgent = !isMissed && member.daysOffset <= 7
-                        const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
+                        const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName, waRenewalMsg || undefined)
                         const link = hasPhone ? getWhatsAppLink(member.phone, msg) : ''
 
                         return (
@@ -359,7 +360,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false }: RenewalCommand
                     <CardContent className="p-0 max-h-[400px] overflow-y-auto">
                         <div className="divide-y divide-slate-100">
                             {fallbackMembers.map(member => {
-                                const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName)
+                                const msg = templates.renewalReminder(member.memberName, Math.abs(member.daysOffset), gymName, waRenewalMsg || undefined)
                                 const link = getWhatsAppLink(member.phone, msg)
                                 return (
                                     <div key={`fallback-${member.id}`} className="p-4 flex items-center justify-between hover:bg-slate-50">

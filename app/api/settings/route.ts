@@ -16,6 +16,10 @@ const settingsSchema = z.object({
     invoicePrefix: z.string().min(1).max(5).optional(),
     invoiceLinkExpiryDays: z.number().int().min(0).max(365).optional(), // 0 = never expire
     termsAndConditions: z.string().max(1000).optional(),
+    waWelcomeMsg: z.string().max(2000).optional().nullable(),
+    waInvoiceMsg: z.string().max(2000).optional().nullable(),
+    waRenewalMsg: z.string().max(2000).optional().nullable(),
+    waOverdueMsg: z.string().max(2000).optional().nullable(),
 })
 
 export async function GET() {

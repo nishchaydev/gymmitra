@@ -321,7 +321,8 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
             gymName,
             amount,
             shareToken,
-            gymSlug
+            gymSlug,
+            invoice.gym?.waInvoiceMsg
         )
 
         if (whatsappLink && whatsappLink !== '#') {

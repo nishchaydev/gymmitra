@@ -36,6 +36,11 @@ model GymProfile {
   onboardingEmailsSentAt DateTime?
   termsAndConditions     String?           @db.Text
   gymRules               String?           @db.Text
+  waWelcomeMsg       String?           @db.Text
+  waInvoiceMsg       String?           @db.Text
+  waRenewalMsg       String?           @db.Text
+  waOverdueMsg       String?           @db.Text
+
   deletedAt          DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
