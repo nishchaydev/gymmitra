@@ -83,7 +83,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
             {/* Stat Cards - 2x2 on mobile for better density */}
             <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Total Revenue
                         </CardTitle>
@@ -91,9 +91,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                             <IndianRupee className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                         <div className="space-y-1">
-                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">₹{d.revenue}</div>
+                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">₹{d.revenue}</div>
                             {!isDemo && (
                                 <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
                                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -105,7 +105,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </Card>
 
                 <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Active Members
                         </CardTitle>
@@ -113,9 +113,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                             <Users className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                         <div className="space-y-1">
-                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.activeMembers}</div>
+                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.activeMembers}</div>
                             <p className="text-xs text-[#64748B] mt-2 font-medium">
                                 {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
                             </p>
@@ -124,7 +124,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </Card>
 
                 <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-3 xl:order-none">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Net Income
                         </CardTitle>
@@ -132,9 +132,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                             <TrendingUp className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                         <div className="space-y-1">
-                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">
+                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">
                                 ₹{netIncome.toLocaleString('en-IN')}
                             </div>
                             <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
@@ -145,7 +145,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </Card>
 
                 <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-4 xl:order-none">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Product Sales
                         </CardTitle>
@@ -153,9 +153,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                             <ShoppingBag className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                         <div className="space-y-1">
-                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.productSalesCount}</div>
+                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.productSalesCount}</div>
                             <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
                                 ALL-TIME ITEMS
                             </p>
@@ -164,7 +164,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </Card>
 
                 <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-5 xl:order-none">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
                             Today&apos;s Attendance
                         </CardTitle>
@@ -172,9 +172,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                             <CalendarCheck className="h-5 w-5 text-[#0066FF]" />
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                         <div className="space-y-1">
-                            <div className="text-xl sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.dailyCheckins}</div>
+                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.dailyCheckins}</div>
                             {!isDemo && (
                                 <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
                                     <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
