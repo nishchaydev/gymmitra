@@ -114,7 +114,7 @@ export function ExpenseCharts({ expenses, trendData }: { expenses: Expense[], tr
                 <CardContent className="p-6">
                     <div className="h-[300px] w-full mt-2">
                         <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                                 <XAxis
                                     dataKey="name"

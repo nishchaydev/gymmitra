@@ -54,13 +54,13 @@ export default async function ExpensesPage({
         .filter((e: any) => new Date(e.date) >= startOfMonth)
         .reduce((acc: number, curr: any) => acc + curr.amount, 0)
 
-    const totalRevenueResult = await prisma.invoice.aggregate({
-        where: { gymId: auth.gym.id, paymentStatus: 'PAID', deletedAt: null },
+    const monthlyRevenueResult = await prisma.invoice.aggregate({
+        where: { gymId: auth.gym.id, paymentStatus: 'PAID', deletedAt: null, createdAt: { gte: startOfMonth } },
         _sum: { total: true }
     })
-    const totalRevenue = Number(totalRevenueResult._sum.total || 0)
+    const monthlyRevenue = Number(monthlyRevenueResult._sum.total || 0)
 
-    const netIncome = totalRevenue - totalExpenses
+    const netIncome = monthlyRevenue - monthlyExpenses
 
     // Fetch last 6 months data for trend chart
     const sixMonthsAgo = new Date();
@@ -147,7 +147,7 @@ export default async function ExpensesPage({
                         <div className={`text-2xl font-black ${netIncome >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {netIncome >= 0 ? '+' : '-'}₹{Math.abs(netIncome).toLocaleString('en-IN')}
                         </div>
-                        <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-tighter">Net Income (Rev - Exp)</p>
+                        <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-tighter">Monthly Net Income (Rev - Exp)</p>
                     </CardContent>
                 </Card>
             </div>

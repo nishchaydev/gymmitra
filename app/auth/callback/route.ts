@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getBaseUrl } from '@/lib/utils'
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url)
+    const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/dashboard'
 
@@ -15,6 +15,21 @@ export async function GET(request: Request) {
         const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error && user) {
+            // Password recovery flow — detect via explicit param OR recent recovery_sent_at
+            if (next === '/reset-password') {
+                return NextResponse.redirect(`${baseUrl}/reset-password`)
+            }
+
+            // Smart detection: if a recovery email was sent within the last hour, it's a password reset
+            if (user.recovery_sent_at) {
+                const recoverySentAt = new Date(user.recovery_sent_at).getTime()
+                const oneHourAgo = Date.now() - 60 * 60 * 1000
+                if (recoverySentAt > oneHourAgo) {
+                    return NextResponse.redirect(`${baseUrl}/reset-password`)
+                }
+            }
+
+            // Normal login / signup flow
             const { prisma } = await import('@/lib/prisma')
             const gym = await prisma.gymProfile.findFirst({
                 where: { userId: user.id }

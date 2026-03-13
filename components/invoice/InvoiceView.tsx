@@ -3,7 +3,7 @@
 import React, { useRef, useState, useTransition } from 'react'
 import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
-import { Printer, Download, Share2, MessageCircle, CreditCard, Loader2 } from 'lucide-react'
+import { Printer, Download, Share2, MessageCircle, CreditCard, Loader2, CheckCircle2 } from 'lucide-react'
 import { getInvoiceWhatsAppLink } from '@/lib/whatsapp'
 import { getBaseUrl } from '@/lib/utils'
 import {
@@ -271,6 +271,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
     const componentRef = useRef<HTMLDivElement>(null)
     const [isPending, startTransition] = useTransition()
     const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+    const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false)
     const [additionalAmount, setAdditionalAmount] = useState<number | ''>('')
 
     const openInvoicePrintWindow = (forDownload: boolean) => {
@@ -354,53 +355,102 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         })
     }
 
+    const handleMarkAsPaid = () => {
+        startTransition(async () => {
+            const res = await recordInvoicePayment({
+                invoiceId: invoice.id,
+                additionalAmount: Number(invoice.balanceDue)
+            })
+
+            if (res.error) {
+                toast.error(res.error)
+            } else {
+                toast.success("Invoice marked as fully paid!")
+                setIsMarkPaidOpen(false)
+            }
+        })
+    }
+
     return (
         <div className="space-y-6 w-full max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row justify-end gap-3 no-print mb-6">
                 {(invoice.paymentStatus === 'PENDING' || invoice.paymentStatus === 'PARTIAL') && invoice.balanceDue > 0 && !invoice.id.startsWith('demo-') && (
-                    <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                                <CreditCard className="w-4 h-4 mr-2" /> Record Payment
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>Record Payment</DialogTitle>
-                                <DialogDescription>
-                                    Enter the amount received from the member.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm font-medium text-slate-500">Balance Due</span>
-                                        <span className="text-sm font-bold text-rose-600">₹{Number(invoice.balanceDue).toLocaleString('en-IN')}</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="amount">Amount Received (₹)</Label>
-                                    <Input
-                                        id="amount"
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={additionalAmount}
-                                        onChange={(e) => setAdditionalAmount(e.target.value ? Number(e.target.value) : '')}
-                                        max={Number(invoice.balanceDue)}
-                                        className="font-bold text-lg"
-                                    />
-                                </div>
-                                <Button
-                                    onClick={handleRecordPayment}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700"
-                                    disabled={isPending || !additionalAmount || Number(additionalAmount) <= 0}
-                                >
-                                    {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                    Confirm Payment
+                    <>
+                        {/* Mark as Paid - one click */}
+                        <Dialog open={isMarkPaidOpen} onOpenChange={setIsMarkPaidOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90">
+                                    <CheckCircle2 className="w-4 h-4 mr-2" /> Mark as Paid
                                 </Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Mark Invoice as Fully Paid?</DialogTitle>
+                                    <DialogDescription>
+                                        This will record a payment of <span className="font-bold text-slate-900">₹{Number(invoice.balanceDue).toLocaleString('en-IN')}</span> (full remaining balance) and mark the invoice as PAID.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex gap-3 pt-4">
+                                    <Button variant="outline" className="flex-1" onClick={() => setIsMarkPaidOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleMarkAsPaid}
+                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                                        disabled={isPending}
+                                    >
+                                        {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                                        Confirm
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
+                        {/* Record Partial Payment */}
+                        <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                                    <CreditCard className="w-4 h-4 mr-2" /> Record Payment
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Record Payment</DialogTitle>
+                                    <DialogDescription>
+                                        Enter the amount received from the member.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between">
+                                            <span className="text-sm font-medium text-slate-500">Balance Due</span>
+                                            <span className="text-sm font-bold text-rose-600">₹{Number(invoice.balanceDue).toLocaleString('en-IN')}</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="amount">Amount Received (₹)</Label>
+                                        <Input
+                                            id="amount"
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={additionalAmount}
+                                            onChange={(e) => setAdditionalAmount(e.target.value ? Number(e.target.value) : '')}
+                                            max={Number(invoice.balanceDue)}
+                                            className="font-bold text-lg"
+                                        />
+                                    </div>
+                                    <Button
+                                        onClick={handleRecordPayment}
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                                        disabled={isPending || !additionalAmount || Number(additionalAmount) <= 0}
+                                    >
+                                        {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                        Confirm Payment
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </>
                 )}
                 {invoice.shareToken && (
                     <Button variant="outline" size="sm" onClick={copyPublicLink} className="text-primary hover:text-primary">

@@ -42,6 +42,7 @@ const memberFormSchema = z.object({
     emergencyRelation: z.string().optional(),
     planId: z.string().optional().or(z.literal('none')),
     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
+    customPrice: z.coerce.number().nonnegative().optional(),
     discount: z.coerce.number().nonnegative().optional().default(0),
     amountPaid: z.coerce.number().nonnegative().optional(),
 })
@@ -128,6 +129,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
     // Auto-calculate amountPaid default when plan or discount changes
     const selectedPlanId = form.watch('planId')
     const discountAmount = form.watch('discount') || 0
+    const customPriceValue = form.watch('customPrice')
     const [userEditedAmount, setUserEditedAmount] = useState(false)
 
     useEffect(() => {
@@ -138,11 +140,12 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
         if (selectedPlanId && selectedPlanId !== 'none' && !userEditedAmount) {
             const plan = activePlans.find(p => p.id === selectedPlanId)
             if (plan) {
-                const total = Math.max(0, Number(plan.price) - discountAmount)
+                const basePrice = (customPriceValue !== undefined && customPriceValue !== null && customPriceValue > 0) ? customPriceValue : Number(plan.price)
+                const total = Math.max(0, basePrice - discountAmount)
                 form.setValue('amountPaid', total)
             }
         }
-    }, [selectedPlanId, discountAmount, activePlans, form, userEditedAmount])
+    }, [selectedPlanId, discountAmount, customPriceValue, activePlans, form, userEditedAmount])
 
     const pincodeValue = form.watch('pincode')
     useEffect(() => {
@@ -504,6 +507,34 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                     </FormItem>
                                 )}
                             />
+
+                            {form.watch('planId') && form.watch('planId') !== 'none' && (
+                                <FormField
+                                    control={form.control}
+                                    name="customPrice"
+                                    render={({ field }) => {
+                                        const selectedPlan = activePlans.find(p => p.id === form.watch('planId'))
+                                        return (
+                                            <FormItem className="animate-in fade-in duration-300">
+                                                <FormLabel className="text-base font-semibold text-slate-800">Custom Price Override (₹)</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        placeholder={selectedPlan ? `Plan default: ₹${Number(selectedPlan.price).toLocaleString('en-IN')}` : '0'}
+                                                        className="h-12 bg-white"
+                                                        {...field}
+                                                        value={field.value ?? ''}
+                                                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                                                    />
+                                                </FormControl>
+                                                <p className="text-[10px] text-slate-500 font-medium">Leave blank to use the plan&apos;s standard price. Set a value to charge a different rate for this member.</p>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )
+                                    }}
+                                />
+                            )}
 
                             {form.watch('planId') && form.watch('planId') !== 'none' && (
                                 <FormField

@@ -33,6 +33,7 @@ const memberSchema = z.object({
     emergencyRelation: z.string().optional(),
     planId: z.string().optional().or(z.literal('none')),
     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
+    customPrice: z.number().nonnegative().optional(),
     discount: z.number().nonnegative().optional().default(0),
     amountPaid: z.number().nonnegative().optional(),
 })
@@ -98,7 +99,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 const endDate = addDays(startDate, plan.duration)
                 const paymentMethod = (validatedData.paymentMethod || 'CASH') as PaymentStatus
 
-                const planPrice = Number(plan.price)
+                const planPrice = (validatedData.customPrice !== undefined && validatedData.customPrice > 0) ? validatedData.customPrice : Number(plan.price)
                 const discount = validatedData.discount || 0
                 const total = Math.max(0, planPrice - discount)
                 let amountPaid = validatedData.amountPaid ?? total
@@ -311,6 +312,25 @@ export const filterByStatus = withAuth(async (_context, status: string) => {
     redirect(`/${slug}/members?${params.toString()}`)
 })
 
+/**
+ * Normalize phone: strip +91, leading 0, spaces, dashes, parens → 10-digit string.
+ * Returns null if the result isn't a valid 10-digit number.
+ */
+function normalizePhone(raw: string): string | null {
+    // Remove all non-digit characters
+    let digits = raw.replace(/[^\d]/g, '')
+    // Strip country code: 91XXXXXXXXXX → XXXXXXXXXX
+    if (digits.length === 12 && digits.startsWith('91')) {
+        digits = digits.slice(2)
+    }
+    // Strip leading 0: 0XXXXXXXXXX → XXXXXXXXXX
+    if (digits.length === 11 && digits.startsWith('0')) {
+        digits = digits.slice(1)
+    }
+    // Must be exactly 10 digits
+    return digits.length === 10 ? digits : null
+}
+
 export const importMembers = withAuth(async (context, data: any[]) => {
     const gymId = context.gym.id
     const slug = context.gym.slug
@@ -318,54 +338,72 @@ export const importMembers = withAuth(async (context, data: any[]) => {
     let skippedDuplicate = 0
     let skippedPlanNotFound = 0
     let skippedInvalidData = 0
+    const failedRows: { row: any; reason: string }[] = []
 
     try {
-        // 1. Get existing phones to skip duplicates
+        // 1. Get existing phones to skip duplicates (normalized)
         const existingMembers = await prisma.member.findMany({
             where: { gymId },
             select: { phone: true }
         })
         const existingPhones = new Set(existingMembers.map(m => m.phone))
 
-        // 2. Get existing plans to map by name
+        // 2. Get existing plans to map by name (case-insensitive)
         const existingPlans = await prisma.membershipPlan.findMany({
             where: { gymId, isActive: true }
         })
+        const planMap = new Map(existingPlans.map(p => [p.name.trim().toLowerCase(), p]))
 
-        // 3. Process in a transaction
-        await prisma.$transaction(async (tx) => {
-            for (const row of data) {
-                const phone = String(row.phone || "").trim()
-                const name = String(row.name || "").trim()
+        // 3. Process rows INDIVIDUALLY — no single $transaction to avoid timeout
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i]
+            const rawPhone = String(row.phone || "").trim()
+            const name = String(row.name || "").trim()
 
-                if (!phone || !name) {
-                    skippedInvalidData++
-                    continue
-                }
+            // Validate name
+            if (!name) {
+                skippedInvalidData++
+                failedRows.push({ row, reason: 'Missing name' })
+                continue
+            }
 
-                if (existingPhones.has(phone)) {
-                    skippedDuplicate++
-                    continue
-                }
+            // Normalize & validate phone
+            const phone = normalizePhone(rawPhone)
+            if (!phone) {
+                skippedInvalidData++
+                failedRows.push({ row, reason: `Invalid phone: "${rawPhone}" (must be 10 digits)` })
+                continue
+            }
 
-                const planName = String(row.planname || "").trim().toLowerCase()
-                const plan = existingPlans.find(p => p.name.toLowerCase() === planName)
+            // Duplicate check (against DB + already-imported in this batch)
+            if (existingPhones.has(phone)) {
+                skippedDuplicate++
+                failedRows.push({ row, reason: `Duplicate phone: ${phone}` })
+                continue
+            }
 
-                if (!plan && planName) {
-                    skippedPlanNotFound++
-                    continue
-                }
+            // Plan matching
+            const planName = String(row.planname || "").trim().toLowerCase()
+            const plan = planName ? planMap.get(planName) : undefined
 
-                // Create Member
-                const member = await tx.member.create({
+            if (planName && !plan) {
+                skippedPlanNotFound++
+                failedRows.push({ row, reason: `Plan not found: "${row.planname}"` })
+                continue
+            }
+
+            // Per-row try/catch — one bad row doesn't kill the entire import
+            try {
+                const member = await prisma.member.create({
                     data: {
-                        name: name,
-                        phone: phone,
-                        email: row.email || null,
+                        name,
+                        phone,
+                        email: row.email ? String(row.email).trim() : null,
                         dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
                         joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
                         gymId,
                         status: 'ACTIVE',
+                        city: row.city ? String(row.city).trim() : undefined,
                         emergencyName: '',
                         emergencyPhone: '',
                         emergencyRelation: '',
@@ -378,7 +416,7 @@ export const importMembers = withAuth(async (context, data: any[]) => {
                     const expiryDate = row.expirydate ? new Date(row.expirydate) : null
 
                     if (expiryDate && isValid(new Date(expiryDate))) {
-                        await tx.memberSubscription.create({
+                        await prisma.memberSubscription.create({
                             data: {
                                 memberId: member.id,
                                 planId: plan.id,
@@ -395,8 +433,11 @@ export const importMembers = withAuth(async (context, data: any[]) => {
 
                 imported++
                 existingPhones.add(phone)
+            } catch (rowError: any) {
+                skippedInvalidData++
+                failedRows.push({ row, reason: `DB error: ${rowError?.message || 'Unknown error'}` })
             }
-        })
+        }
 
         // Audit Log
         const headerList = await headers()
@@ -410,15 +451,15 @@ export const importMembers = withAuth(async (context, data: any[]) => {
             entityType: 'MEMBER',
             entityId: 'batch',
             ipAddress: ip,
-            payload: { imported, skippedDuplicate, skippedPlanNotFound, totalRows: data.length }
+            payload: { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData, totalRows: data.length }
         }).catch(err => console.error('recordAuditLog IMPORT_MEMBERS', err))
 
         revalidatePath(`/${slug}/members`)
         revalidatePath(`/${slug}/dashboard`)
 
-        return { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData }
+        return { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData, failedRows }
     } catch (error: any) {
         console.error('Import error:', error)
-        return { error: 'Failed to import members. Ensure CSV format is correct.' }
+        return { error: 'Failed to import members: ' + (error?.message || 'Unknown error'), imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData, failedRows }
     }
 })

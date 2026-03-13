@@ -106,7 +106,7 @@ export function InvoicesList({ slug, query, status, page, take, isDemo, initialD
                                     invoices.map((invoice: any) => (
                                         <TableRow key={invoice.id}>
                                             <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                                            <TableCell>{invoice.member?.name || invoice.walkInName || 'Walk-in Customer'}</TableCell>
+                                            <TableCell className="max-w-[150px]"><span className="block truncate" title={invoice.member?.name || invoice.walkInName || 'Walk-in Customer'}>{invoice.member?.name || invoice.walkInName || 'Walk-in Customer'}</span></TableCell>
                                             <TableCell>
                                                 <Badge variant={
                                                     invoice.paymentStatus === 'PAID' ? 'default' :

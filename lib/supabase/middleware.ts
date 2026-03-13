@@ -48,12 +48,25 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
     const isOnboarded = request.cookies.get('gym_onboarded')?.value === 'true'
     const { pathname } = request.nextUrl
 
+    // 0. INTERCEPT SUPABASE AUTH CODES
+    // When Supabase can't use our redirectTo (not whitelisted), it falls back to Site URL
+    // with ?code=... param. Catch that and route it to our callback handler.
+    const authCode = request.nextUrl.searchParams.get('code')
+    if (authCode && !pathname.startsWith('/auth/callback')) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/callback'
+        // Preserve all existing query params (code, next, type, etc.)
+        return NextResponse.redirect(url)
+    }
+
     // 1. PUBLIC ROUTES & STATIC ASSETS EXEMPTION
     const isPublicRoute =
         pathname === '/' ||
         pathname.startsWith('/login') ||
         pathname.startsWith('/auth') ||
         pathname.startsWith('/error') ||
+        pathname.startsWith('/forgot-password') ||
+        pathname.startsWith('/reset-password') ||
         pathname.startsWith('/invoice/') || // Public invoice sharing
         pathname === '/manifest.webmanifest' || // PWA manifest
         pathname === '/api/csp-report' || // CSP Violation Reporting

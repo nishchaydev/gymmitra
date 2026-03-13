@@ -65,6 +65,11 @@ export default async function LoginPage(props: {
                                     <Label htmlFor="password">Password</Label>
                                     <Input id="password" name="password" type="password" required />
                                 </div>
+                                <div className="flex justify-end">
+                                    <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                                        Forgot Password?
+                                    </a>
+                                </div>
                                 <SubmitButton formAction={login} className="w-full" text="Log in" loadingText="Logging in..." />
                             </form>
                         </TabsContent>
