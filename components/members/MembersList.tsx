@@ -17,15 +17,17 @@ interface MembersListProps {
     query: string
     status?: string
     dobMonth?: string
+    birthday?: string
     page: number
     take: number
 }
 
-export function MembersList({ slug, query, status, dobMonth, page, take }: MembersListProps) {
+export function MembersList({ slug, query, status, dobMonth, birthday, page, take }: MembersListProps) {
     const { data, isLoading, isFetching, error } = useMembers({
         q: query || undefined,
         status: status || undefined,
         dobMonth: dobMonth || undefined,
+        birthday: birthday || undefined,
         page,
         take,
     })

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     description: "Manage your gym's members, revenue, and attendance with ease.",
 }
 
-function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName }: { ownerName: string, urgentCount: number, birthdayCount: number, gymName: string }) {
+function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName, slug }: { ownerName: string, urgentCount: number, birthdayCount: number, gymName: string, slug: string }) {
     const hour = new Date().getHours()
     const greeting = hour < 12 ? 'Good morning'
         : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -41,14 +41,20 @@ function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName }: {
             <p className="text-slate-500 mt-1 font-medium flex flex-wrap items-center gap-1.5 text-sm md:text-base">
                 <span>{greeting}, {ownerName}.</span>
                 {urgentCount > 0 && (
-                    <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md text-xs md:text-sm animate-pulse">
-                        {urgentCount} renewals need attention.
-                    </span>
+                    <Link href={`/${slug}/renewals`} className="inline-flex items-center gap-1 cursor-pointer group">
+                        <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md text-xs md:text-sm animate-pulse group-hover:underline">
+                            {urgentCount} renewals need attention.
+                        </span>
+                        <span className="text-rose-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    </Link>
                 )}
                 {birthdayCount > 0 && (
-                    <span className="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md text-xs md:text-sm">
-                        🎂 {birthdayCount} {birthdayCount === 1 ? 'birthday' : 'birthdays'} today!
-                    </span>
+                    <Link href={`/${slug}/members?birthday=today`} className="inline-flex items-center gap-1 cursor-pointer group">
+                        <span className="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md text-xs md:text-sm group-hover:underline">
+                            🎂 {birthdayCount} {birthdayCount === 1 ? 'birthday' : 'birthdays'} today!
+                        </span>
+                        <span className="text-amber-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    </Link>
                 )}
             </p>
         </div>
@@ -617,6 +623,7 @@ export default async function DashboardPage({
                     ownerName={gym?.ownerName || "Owner"}
                     urgentCount={dashboardData.urgentCount}
                     birthdayCount={dashboardData.birthdayCount}
+                    slug={slug}
                 />
                 <div className="flex items-center space-x-2">
                     <Link href={`/${slug}/members/new`}>

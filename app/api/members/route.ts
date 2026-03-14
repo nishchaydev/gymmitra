@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
         const status = searchParams.get('status')
         const q = searchParams.get('q') || ''
         const dobMonth = searchParams.get('dobMonth')
+        const birthday = searchParams.get('birthday')
         const parsedPage = parseInt(searchParams.get('page') || '1', 10)
         const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
         const parsedTake = parseInt(searchParams.get('take') || '50', 10)
@@ -78,7 +79,37 @@ export async function GET(request: NextRequest) {
         type MemberStatusType = typeof ALLOWED_STATUSES[number]
         const validatedStatus = status && ALLOWED_STATUSES.includes(status as MemberStatusType) ? status : null
 
-        if (dobMonth && dobMonth !== 'ALL') {
+        if (birthday === 'today') {
+            const now = new Date()
+            const todayMonth = now.getMonth() + 1 // 1-indexed
+            const todayDay = now.getDate()
+
+            const statusCondition = validatedStatus ? Prisma.sql`AND "status" = ${validatedStatus}::"MemberStatus"` : Prisma.empty;
+            const searchCondition = q ? Prisma.sql`AND ("name" ILIKE ${'%' + q + '%'} OR "phone" ILIKE ${'%' + q + '%'} OR "email" ILIKE ${'%' + q + '%'})` : Prisma.empty;
+
+            const countResult: any = await prisma.$queryRaw`
+                SELECT COUNT(*) as count 
+                FROM "Member" 
+                WHERE "gymId" = ${gym.id} 
+                AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
+                AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}
+                ${statusCondition}
+                ${searchCondition}
+            `;
+            totalCount = Number(countResult[0]?.count || 0);
+
+            members = await prisma.$queryRaw`
+                SELECT id, name, phone, email, status, "dateOfBirth", "createdAt", "updatedAt", "gymId"
+                FROM "Member" 
+                WHERE "gymId" = ${gym.id} 
+                AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
+                AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}
+                ${statusCondition}
+                ${searchCondition}
+                ORDER BY "createdAt" DESC
+                LIMIT ${take} OFFSET ${skip}
+            `;
+        } else if (dobMonth && dobMonth !== 'ALL') {
             const month = parseInt(dobMonth, 10);
 
             // Validate month is a valid 1-12 integer to prevent bad SQL

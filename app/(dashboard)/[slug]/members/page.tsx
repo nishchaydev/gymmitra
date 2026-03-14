@@ -20,7 +20,7 @@ export default async function MembersPage({
     searchParams,
     params: routeParams,
 }: {
-    searchParams: Promise<{ q?: string; status?: string; dobMonth?: string; page?: string }>
+    searchParams: Promise<{ q?: string; status?: string; dobMonth?: string; birthday?: string; page?: string }>
     params: Promise<{ slug: string }>
 }) {
     const [resolvedParams, resolvedSearchParams] = await Promise.all([routeParams, searchParams])
@@ -28,6 +28,7 @@ export default async function MembersPage({
     const query = resolvedSearchParams.q || ''
     const status = resolvedSearchParams.status
     const dobMonth = resolvedSearchParams.dobMonth
+    const birthday = resolvedSearchParams.birthday
     const parsedPage = parseInt(resolvedSearchParams.page || '1', 10)
     const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
     const take = 50
@@ -126,6 +127,7 @@ export default async function MembersPage({
                     query={query}
                     status={status}
                     dobMonth={dobMonth}
+                    birthday={birthday}
                     page={page}
                     take={take}
                 />

@@ -6,6 +6,7 @@ interface MembersParams {
     q?: string
     status?: string
     dobMonth?: string
+    birthday?: string
     page?: number
     take?: number
 }
@@ -22,6 +23,7 @@ async function fetchMembers(params: MembersParams): Promise<MembersResponse> {
     if (params.q) searchParams.set('q', params.q)
     if (params.status) searchParams.set('status', params.status)
     if (params.dobMonth) searchParams.set('dobMonth', params.dobMonth)
+    if (params.birthday) searchParams.set('birthday', params.birthday)
     if (params.page !== undefined) searchParams.set('page', String(params.page))
     if (params.take !== undefined) searchParams.set('take', String(params.take))
 

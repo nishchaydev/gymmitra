@@ -17,6 +17,7 @@ import {
     Plus, X, Calendar, Trash2, Users, Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { convertToMember } from './actions'
 
 const STATUS_TABS = [
     { value: '', label: 'All' },
@@ -160,20 +161,17 @@ export default function LeadsPage() {
         })
     }
 
-    const handleConvert = (lead: any) => {
-        // Mark as converted then redirect to new member page with prefilled data
-        updateMutation.mutate(
-            { id: lead.id, status: 'CONVERTED' },
-            {
-                onSuccess: () => {
-                    const memberParams = new URLSearchParams()
-                    if (lead.name) memberParams.set('name', lead.name)
-                    if (lead.phone) memberParams.set('phone', lead.phone)
-                    if (lead.email) memberParams.set('email', lead.email)
-                    router.push(`/${slug}/members/new?${memberParams.toString()}`)
-                },
+    const handleConvert = async (lead: any) => {
+        // Use the server action for atomic status update + redirect
+        try {
+            await convertToMember(lead.id)
+            // Server action handles redirect; if it returns without redirecting, show error
+        } catch (err: any) {
+            // Next.js redirect() throws internally — only surface real errors
+            if (err?.message !== 'NEXT_REDIRECT') {
+                toast.error(err?.message || 'Failed to convert lead')
             }
-        )
+        }
     }
 
     const handleWhatsApp = (lead: any) => {

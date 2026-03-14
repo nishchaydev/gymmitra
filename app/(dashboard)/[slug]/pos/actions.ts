@@ -21,7 +21,26 @@ export async function processPosSale(slug: string, data: {
             // Generate inside transaction to prevent invoice race conditions
             const invoiceNumber = await generateInvoiceNumber(auth.gym.id, tx)
 
-            // 1. Create Invoice
+            // 1. Fetch and validate all products upfront (ownership + stock) before any writes
+            const productIds = data.items.map(i => i.productId)
+            const products = await tx.product.findMany({
+                where: { id: { in: productIds }, gymId: auth.gym.id },
+                select: { id: true, name: true, stock: true, gymId: true }
+            })
+
+            // Build a lookup map and validate every requested item
+            const productMap = new Map(products.map(p => [p.id, p]))
+            for (const item of data.items) {
+                const product = productMap.get(item.productId)
+                if (!product) {
+                    throw new Error(`Unauthorized or missing product: ${item.productId}`)
+                }
+                if (product.stock < item.quantity) {
+                    throw new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`)
+                }
+            }
+
+            // 2. Create Invoice with real product names as descriptions
             const invoice = await tx.invoice.create({
                 data: {
                     invoiceNumber,
@@ -36,7 +55,7 @@ export async function processPosSale(slug: string, data: {
                     type: 'PRODUCT',
                     items: {
                         create: data.items.map(item => ({
-                            description: "POS item", // Ideally fetch product name
+                            description: productMap.get(item.productId)!.name,
                             amount: item.unitPrice * item.quantity,
                             quantity: item.quantity,
                             unitPrice: item.unitPrice,
@@ -46,26 +65,15 @@ export async function processPosSale(slug: string, data: {
                 }
             })
 
-            // 2. Update stock
-            for (const item of data.items) {
-                // Ensure we only touch products belonging to this gym and have enough stock
-                const product = await tx.product.findUnique({
-                    where: { id: item.productId }
-                })
-
-                if (!product || product.gymId !== auth.gym.id) {
-                    throw new Error(`Unauthorized or missing product: ${item.productId}`)
-                }
-
-                if (product.stock < item.quantity) {
-                    throw new Error(`Insufficient stock for ${product.name || item.productId}. Available: ${product.stock}, Requested: ${item.quantity}`)
-                }
-
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: { stock: { decrement: item.quantity } }
-                })
-            }
+            // 3. Decrement stock for each product atomically
+            await Promise.all(
+                data.items.map(item =>
+                    tx.product.update({
+                        where: { id: item.productId },
+                        data: { stock: { decrement: item.quantity } }
+                    })
+                )
+            )
 
             return invoice
         })
