@@ -42,3 +42,12 @@ next-env.d.ts
 
 # reports
 lint_report.txt
+/lint*.txt
+/lint_results/
+
+# python
+__pycache__/
+*.pyc
+
+# logs
+*.log
