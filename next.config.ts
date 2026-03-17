@@ -29,6 +29,14 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: "/register",
+        destination: "/login?view=register",
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(pwa(nextConfig), {
