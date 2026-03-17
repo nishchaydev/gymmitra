@@ -1,7 +1,16 @@
+import { config } from 'dotenv';
+config();
+
 import { PrismaClient, SaaSPlan } from '@prisma/client';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DIRECT_URL
+    }
+  }
+});
 
 async function generateCodes() {
     const planArg = process.argv[2]?.toUpperCase() as SaaSPlan;
