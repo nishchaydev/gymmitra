@@ -45,23 +45,23 @@ export function BeforeAfter() {
                             <div className="space-y-8">
                                 <PainPoint
                                     icon={<FileText className="h-6 w-6" />}
-                                    text="Handwritten receipts that get lost"
+                                    text="Handwritten receipts lost in drawers"
                                 />
                                 <PainPoint
                                     icon={<Phone className="h-6 w-6" />}
-                                    text="Manually chasing payments via calls"
+                                    text="Calling members at 10pm chasing due payments"
                                 />
                                 <PainPoint
                                     icon={<Calculator className="h-6 w-6" />}
-                                    text="Spending hours calculating revenue"
+                                    text="Revenue calculated manually in Excel every night"
                                 />
                                 <PainPoint
                                     icon={<AlertTriangle className="h-6 w-6" />}
-                                    text="Members forgetting to renew on time"
+                                    text="Members forget to renew, you lose income silently"
                                 />
                                 <PainPoint
                                     icon={<Clock className="h-6 w-6" />}
-                                    text="2+ hours wasted daily on admin work"
+                                    text="2+ hours daily on work software should be doing"
                                 />
                             </div>
                         </div>
@@ -75,29 +75,29 @@ export function BeforeAfter() {
                                 <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center shrink-0 shadow-[inset_0_0_20px_var(--color-primary)]">
                                     <Check className="text-primary h-8 w-8" />
                                 </div>
-                                <h3 className="text-3xl font-black text-white font-display">Ion Automation</h3>
+                                <h3 className="text-3xl font-black text-white font-display">With GymMitra</h3>
                             </div>
 
                             <div className="space-y-8">
                                 <SolutionPoint
                                     icon={<Zap className="h-6 w-6" />}
-                                    text="Generate invoices in 30 seconds"
+                                    text="Invoice generated in 30 seconds, sent via WhatsApp instantly"
                                 />
                                 <SolutionPoint
                                     icon={<MessageSquare className="h-6 w-6" />}
-                                    text="Auto WhatsApp reminders & wishes"
+                                    text="Automated renewal reminders sent from your gym's number"
                                 />
                                 <SolutionPoint
                                     icon={<TrendingUp className="h-6 w-6" />}
-                                    text="Live revenue dashboard on your phone"
+                                    text="Live revenue visible on your phone, anywhere, anytime"
                                 />
                                 <SolutionPoint
                                     icon={<Bell className="h-6 w-6" />}
-                                    text="Automatic renewal notifications"
+                                    text="Members get birthday wishes automatically — zero effort"
                                 />
                                 <SolutionPoint
                                     icon={<Sparkles className="h-6 w-6" />}
-                                    text="Just 15 minutes daily admin work"
+                                    text="Daily admin work reduced to under 15 minutes"
                                 />
                             </div>
                         </div>

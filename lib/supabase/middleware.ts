@@ -68,6 +68,7 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         pathname.startsWith('/forgot-password') ||
         pathname.startsWith('/reset-password') ||
         pathname.startsWith('/onboarding') || // Explicitly public to prevent redirect loops
+        pathname.startsWith('/register') || // Allow registration flow
         pathname.startsWith('/invoice/') || // Public invoice sharing
         pathname === '/manifest.webmanifest' || // PWA manifest
         pathname === '/api/csp-report' || // CSP Violation Reporting
@@ -99,14 +100,11 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
     }
 
     // 3. ONBOARDING ENFORCEMENT
-    const isProtectedRoute =
-        pathname.startsWith('/dashboard') ||
-        pathname.startsWith('/members') ||
-        pathname.startsWith('/invoices') ||
-        pathname.startsWith('/products') ||
-        pathname.startsWith('/attendance') ||
-        pathname.startsWith('/settings') ||
-        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth'))
+    const protectedPaths = ['dashboard', 'members', 'invoices', 'products', 'attendance', 'settings']
+    const isProtectedRoute = 
+        protectedPaths.some(p => pathname.startsWith(`/${p}`)) ||
+        pathname.match(new RegExp(`^/[^/]+/(?:${protectedPaths.join('|')})`)) !== null ||
+        (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth') && !pathname.startsWith('/api/csp-report') && !pathname.startsWith('/api/webhooks'))
 
     if (user && !isDemoMode && isProtectedRoute && !isOnboarded) {
         const url = request.nextUrl.clone()

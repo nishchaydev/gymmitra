@@ -34,9 +34,27 @@ export async function GET(request: Request) {
             const gym = await prisma.gymProfile.findFirst({
                 where: { userId: user.id }
             }) as any
+            
+            const isTrainerProfile = !gym ? await prisma.staffMember.findFirst({
+                where: { userId: user.id },
+                include: { gym: true }
+            }) : null;
 
-            if (gym?.slug) {
-                return NextResponse.redirect(`${baseUrl}/${gym.slug}/dashboard`)
+            if (gym?.isVerified || isTrainerProfile) {
+                const { cookies } = await import('next/headers')
+                const cookieStore = await cookies()
+                cookieStore.set('gym_onboarded', 'true', {
+                    maxAge: 30 * 24 * 60 * 60, // 30 days
+                    path: '/',
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax'
+                })
+            }
+
+            const finalSlug = gym?.slug || (isTrainerProfile as any)?.gym?.slug
+            
+            if (finalSlug) {
+                return NextResponse.redirect(`${baseUrl}/${finalSlug}/dashboard`)
             }
 
             return NextResponse.redirect(`${baseUrl}${next}`)

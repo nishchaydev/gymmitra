@@ -1,8 +1,6 @@
 "use client"
-
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
-import { Star, Play, Quote } from "lucide-react"
-import { useState } from "react"
+import { Star, Quote } from "lucide-react"
 
 export function Testimonials() {
     return (
@@ -14,12 +12,12 @@ export function Testimonials() {
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <MotionWrapper>
                         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4 font-display">
-                            Built for Gym Owners, <span className="text-[#4FC3F7]">By</span> Tech Experts.
+                            What Gym Owners Actually Say
                         </h2>
                     </MotionWrapper>
                     <MotionWrapper delay={0.1}>
                         <p className="text-lg text-slate-500">
-                            Powering growth for leading fitness clubs.
+                            One gym in. Already seeing the difference.
                         </p>
                     </MotionWrapper>
                 </div>
@@ -28,7 +26,7 @@ export function Testimonials() {
                     <TestimonialCard
                         name="Mr Nikhil Verma"
                         gym="TRI-STAR FITNESS, Indore"
-                        quote="Best decision for my gym. WhatsApp reminders and instant billing have changed the way we work."
+                        quote="Pehle har mahine 2-3 din sirf payments chase karne mein jaate the. Ab GymMitra ke saath reminders automatically chale jaate hain — bilkul bina kuch kiye. Sach mein game changer hai."
                         delay={0.2}
                     />
                 </div>
@@ -38,8 +36,6 @@ export function Testimonials() {
 }
 
 function TestimonialCard({ name, gym, quote, delay }: { name: string, gym: string, quote: string, delay: number }) {
-    const [isPlaying, setIsPlaying] = useState(false)
-
     return (
         <MotionWrapper delay={delay} className="h-full">
             <div className="bg-white p-8 rounded-3xl border border-drift-200 shadow-xl shadow-drift-200/50 hover:shadow-2xl hover:shadow-primary-900/5 transition-all duration-300 h-full flex flex-col relative group">

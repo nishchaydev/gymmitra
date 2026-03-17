@@ -33,7 +33,7 @@ export default async function OnboardingPage() {
         const isAction = headerList.has('next-action')
 
         if (shouldRedirect && !isAction) {
-            redirect('/dashboard')
+            redirect('/api/auth/sync-cookie')
         }
     }
 
