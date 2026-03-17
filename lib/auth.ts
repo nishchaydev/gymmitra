@@ -21,6 +21,8 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
     const { data, error } = await supabase.auth.getUser()
 
     if (error || !data?.user) {
+
+
         if (error && error.status !== 401) {
             console.error("Auth context error:", error.message)
         }
@@ -52,6 +54,8 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
             userId: user.id
         }
     }
+
+
 
     return null
 })

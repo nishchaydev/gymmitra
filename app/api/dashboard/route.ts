@@ -79,18 +79,18 @@ export async function GET(req: NextRequest) {
                 select: { name: true, phone: true, dateOfBirth: true },
                 take: 50,
             }).catch(() => []),
-            (prisma.$queryRaw`
-                SELECT
-                    EXTRACT(MONTH FROM "issueDate")::int AS month,
-                    COALESCE(SUM("total"), 0) AS total
-                FROM "Invoice"
-                WHERE "gymId" = ${gym.id}
-                    AND "paymentStatus" = 'PAID'
-                    AND EXTRACT(YEAR FROM "issueDate") = EXTRACT(YEAR FROM NOW())
-                    AND "deletedAt" IS NULL
-                GROUP BY month
-                ORDER BY month
-            ` as Promise<{ month: number; total: any }[]>).catch(() => []),
+             (prisma.$queryRaw`
+                 SELECT
+                     EXTRACT(YEAR FROM "issueDate")::int AS year,
+                     EXTRACT(MONTH FROM "issueDate")::int AS month,
+                     COALESCE(SUM("total"), 0) AS total
+                 FROM "Invoice"
+                 WHERE "gymId" = ${gym.id}
+                     AND "paymentStatus" = 'PAID'
+                     AND "deletedAt" IS NULL
+                 GROUP BY year, month
+                 ORDER BY year DESC, month ASC
+             ` as Promise<{ year: number; month: number; total: any }[]>).catch(() => []),
             prisma.invoice.aggregate({
                 where: {
                     gymId: gym.id,
@@ -135,17 +135,27 @@ export async function GET(req: NextRequest) {
                     status: 'ACTIVE'
                 }
             }).catch(() => 0),
-            prisma.member.findMany({
+             prisma.member.findMany({
                 where: {
                     gymId: gym.id,
                     status: 'ACTIVE'
                 },
                 select: { dateOfBirth: true }
             }).catch(() => []),
-            prisma.expense.aggregate({
-                where: { gymId: gym.id, date: { gte: startOfThisMonth } },
-                _sum: { amount: true }
-            }).catch(() => ({} as any))
+            // Handle case where Expense model/table might not exist
+            (async (): Promise<{ _sum: { amount: number | null } }> => {
+                try {
+                    const result = await prisma.expense.aggregate({
+                        where: { gymId: gym.id, date: { gte: startOfThisMonth } },
+                        _sum: { amount: true }
+                    });
+                    return { _sum: { amount: result._sum.amount ? Number(result._sum.amount) : null } };
+                } catch (error) {
+                    // Expense table/model might not exist yet
+                    console.warn('Expense table not available:', (error as Error).message);
+                    return { _sum: { amount: null } };
+                }
+            })()
         ])
 
         const birthdayCount = birthdaysToday.filter((m: any) => {
@@ -209,18 +219,39 @@ export async function GET(req: NextRequest) {
             .sort((a: any, b: any) => a.diffDays - b.diffDays)
             .slice(0, 5)
 
-        // Process monthly revenue chart
-        let monthlyRevenueData: { name: string; total: number }[] = []
-        if (monthlyRevenue && monthlyRevenue.length > 0) {
-            const revenueMap = new Map<number, number>()
-            for (const row of monthlyRevenue) {
-                revenueMap.set(row.month, Number(row.total) || 0)
-            }
-            monthlyRevenueData = monthNames.map((name, i) => ({
-                name,
-                total: Number(revenueMap.get(i + 1)) || 0,
-            }))
-        }
+         // Process monthly revenue chart - now includes year data
+         let monthlyRevenueData: { name: string; total: number }[] = []
+         if (monthlyRevenue && Array.isArray(monthlyRevenue)) {
+             // Group by year-month for proper historical data
+             const revenueMap = new Map<string, number>()
+             
+             for (const row of monthlyRevenue) {
+                 const year = Number(row.year)
+                 const month = Number(row.month)
+                 const total = Number(row.total?.toString() || row.total || 0)
+                 
+                 if (!isNaN(year) && !isNaN(month)) {
+                     // Create key like "2024-01" for Jan 2024
+                     const key = `${year}-${month.toString().padStart(2, '0')}`
+                     revenueMap.set(key, (revenueMap.get(key) || 0) + total)
+                 }
+             }
+             
+             // Convert to format expected by chart: last 12 months
+             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+             for (let i = 11; i >= 0; i--) {
+                 const date = subMonths(startOfToday(), i)
+                 const year = date.getFullYear()
+                 const month = date.getMonth() + 1 // JS months are 0-indexed
+                 const key = `${year}-${month.toString().padStart(2, '0')}`
+                 const total = revenueMap.get(key) || 0
+                 
+                 monthlyRevenueData.push({
+                     name: monthNames[month - 1],
+                     total: total
+                 })
+             }
+         }
 
         return NextResponse.json({
             totalMembers,

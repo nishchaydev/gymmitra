@@ -67,6 +67,7 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         pathname.startsWith('/error') ||
         pathname.startsWith('/forgot-password') ||
         pathname.startsWith('/reset-password') ||
+        pathname.startsWith('/onboarding') || // Explicitly public to prevent redirect loops
         pathname.startsWith('/invoice/') || // Public invoice sharing
         pathname === '/manifest.webmanifest' || // PWA manifest
         pathname === '/api/csp-report' || // CSP Violation Reporting
@@ -75,6 +76,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
     if (isPublicRoute) {
         // If user is logged in, but tries to access login page or landing page, redirect to dashboard
         if (user && (pathname.startsWith('/login') || pathname === '/')) {
+
+
             const url = request.nextUrl.clone()
             url.pathname = '/dashboard'
             return NextResponse.redirect(url)

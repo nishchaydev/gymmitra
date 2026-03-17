@@ -41,19 +41,17 @@ function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName, slu
             <p className="text-slate-500 mt-1 font-medium flex flex-wrap items-center gap-1.5 text-sm md:text-base">
                 <span>{greeting}, {ownerName}.</span>
                 {urgentCount > 0 && (
-                    <Link href={`/${slug}/renewals`} className="inline-flex items-center gap-1 cursor-pointer group">
-                        <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md text-xs md:text-sm animate-pulse group-hover:underline">
-                            {urgentCount} renewals need attention.
+                    <Link href={`/${slug}/dashboard?tab=reports`} className="inline-flex items-center gap-1 cursor-pointer group">
+                        <span className="text-rose-600 font-bold justify-center items-center bg-rose-100 dark:bg-rose-900/30 px-2.5 py-1 rounded-md text-xs md:text-sm shadow-sm hover:shadow transition-all group-hover:bg-rose-200 dark:group-hover:bg-rose-900/50">
+                            🚨 {urgentCount} renewals need attention.
                         </span>
-                        <span className="text-rose-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                     </Link>
                 )}
                 {birthdayCount > 0 && (
                     <Link href={`/${slug}/members?birthday=today`} className="inline-flex items-center gap-1 cursor-pointer group">
-                        <span className="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md text-xs md:text-sm group-hover:underline">
+                        <span className="text-amber-600 font-bold justify-center items-center bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 rounded-md text-xs md:text-sm shadow-sm hover:shadow transition-all group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50">
                             🎂 {birthdayCount} {birthdayCount === 1 ? 'birthday' : 'birthdays'} today!
                         </span>
-                        <span className="text-amber-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                     </Link>
                 )}
             </p>
@@ -63,10 +61,17 @@ function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName, slu
 
 export default async function DashboardPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ slug: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const { slug } = await params
+    const resolvedSearchParams = await searchParams
+    const searchParamTab = Array.isArray(resolvedSearchParams?.tab) ? resolvedSearchParams.tab[0] : resolvedSearchParams?.tab
+    const rawTab = searchParamTab?.toString().toLowerCase() || "overview"
+    const allowedTabs = ["overview", "analytics", "insights", "reports"]
+    const tab = allowedTabs.includes(rawTab) ? rawTab : "overview"
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
     const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
@@ -638,12 +643,12 @@ export default async function DashboardPage({
                     </Link>
                 </div>
             </div>
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs defaultValue={tab} key={tab} className="space-y-6">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                     <TabsTrigger value="insights">Insights</TabsTrigger>
-                    <TabsTrigger value="reports">Reports</TabsTrigger>
+                    <TabsTrigger value="reports">Reports (Renewals)</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6" forceMount={true}>
@@ -723,7 +728,6 @@ export default async function DashboardPage({
                 <TabsContent value="reports" className="space-y-4" forceMount={true}>
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Reports...</span></div>}>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* @ts-ignore */}
                             <RenewalCommandCenter gymName={gym?.name || ''} waRenewalMsg={gym?.waRenewalMsg} />
                             <AtRiskMembers slug={slug} gymName={gym?.name || ''} />
                         </div>

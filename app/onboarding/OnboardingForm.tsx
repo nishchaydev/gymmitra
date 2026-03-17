@@ -95,13 +95,14 @@ export default function OnboardingForm() {
         }
     }
 
+    const { pincode } = formData;
     useEffect(() => {
         const controller = new AbortController()
 
         const fetchPincodeDetails = async () => {
-            if (formData.pincode?.length === 6) {
+            if (pincode?.length === 6) {
                 try {
-                    const res = await fetch(`https://api.postalpincode.in/pincode/${formData.pincode}`, { signal: controller.signal })
+                    const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, { signal: controller.signal })
                     const data = await res.json()
 
                     if (data && data[0] && data[0].Status === 'Success') {
@@ -109,7 +110,7 @@ export default function OnboardingForm() {
                         const fetchedState = postOffice.State
                         const fetchedCity = postOffice.District
 
-                        // If state doesn't exist in our current dropdown list or it's empty, add it 
+                        // If state does not exist in our current dropdown list or it is empty, add it 
                         setStates(prev => {
                             if (!prev.includes(fetchedState)) return [...prev, fetchedState].sort()
                             return prev
@@ -135,7 +136,7 @@ export default function OnboardingForm() {
             clearTimeout(timeoutId)
             controller.abort()
         }
-    }, [formData.pincode])
+    }, [pincode])
 
     const removeLogo = () => {
         setLogoFile(null)

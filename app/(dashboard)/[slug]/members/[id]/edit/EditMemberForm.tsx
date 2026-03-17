@@ -116,6 +116,21 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
 
         setSaving(true)
         try {
+            // Check for duplicate phone (if changed)
+            if (form.phone !== member.phone) {
+                const checkRes = await fetch(`/api/${gymSlug}/members/check-phone?phone=${form.phone}`)
+                if (checkRes.ok) {
+                    const checkData = await checkRes.json()
+                    if (checkData.exists && checkData.memberId !== member.id) {
+                        toast.error("Duplicate Phone Number", {
+                            description: `${checkData.memberName} is already registered with ${form.phone}.`
+                        })
+                        setSaving(false)
+                        return
+                    }
+                }
+            }
+
             const res = await fetch(`/api/members/${member.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },

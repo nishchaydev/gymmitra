@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         img-src 'self' blob: data: https:;
         font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://sentry.io;
+        connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://sentry.io https://api.postalpincode.in;
         object-src 'none';
         base-uri 'self';
         form-action 'self';

@@ -38,11 +38,49 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'gymId required' }, { status: 400 })
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9fabe3c7-5a18-4ee1-8658-5542d056de00', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Debug-Session-Id': '69a8f3'
+            },
+            body: JSON.stringify({
+                sessionId: '69a8f3',
+                runId: 'pre-fix',
+                hypothesisId: 'H2-gym-activated-email',
+                location: 'app/api/webhooks/gym-activated/route.ts:POST:entry',
+                message: 'Gym activated webhook received',
+                data: { gymId },
+                timestamp: Date.now()
+            })
+        }).catch(() => { })
+        // #endregion agent log
+
         const gym = await prisma.gymProfile.findUnique({
             where: { id: gymId }
         })
 
         if (!gym || !gym.email) {
+            // #region agent log
+            fetch('http://127.0.0.1:7246/ingest/9fabe3c7-5a18-4ee1-8658-5542d056de00', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Debug-Session-Id': '69a8f3'
+                },
+                body: JSON.stringify({
+                    sessionId: '69a8f3',
+                    runId: 'pre-fix',
+                    hypothesisId: 'H2-gym-activated-email',
+                    location: 'app/api/webhooks/gym-activated/route.ts:POST:gym-missing',
+                    message: 'Gym missing or has no email',
+                    data: { gymId, hasGym: !!gym, email: gym?.email ?? null },
+                    timestamp: Date.now()
+                })
+            }).catch(() => { })
+            // #endregion agent log
+
             return NextResponse.json({ error: 'Gym or email not found' }, { status: 404 })
         }
 
@@ -138,8 +176,47 @@ export async function POST(request: NextRequest) {
 
         if (error) {
             console.error('[Webhooks] Gym activation email failed', error)
+
+            // #region agent log
+            fetch('http://127.0.0.1:7246/ingest/9fabe3c7-5a18-4ee1-8658-5542d056de00', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Debug-Session-Id': '69a8f3'
+                },
+                body: JSON.stringify({
+                    sessionId: '69a8f3',
+                    runId: 'pre-fix',
+                    hypothesisId: 'H2-gym-activated-email',
+                    location: 'app/api/webhooks/gym-activated/route.ts:POST:resend-error',
+                    message: 'Resend email API returned error',
+                    data: { gymId, errorMessage: error.message },
+                    timestamp: Date.now()
+                })
+            }).catch(() => { })
+            // #endregion agent log
+
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
+
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9fabe3c7-5a18-4ee1-8658-5542d056de00', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Debug-Session-Id': '69a8f3'
+            },
+            body: JSON.stringify({
+                sessionId: '69a8f3',
+                runId: 'pre-fix',
+                hypothesisId: 'H2-gym-activated-email',
+                location: 'app/api/webhooks/gym-activated/route.ts:POST:success',
+                message: 'Gym activation email sent successfully',
+                data: { gymId, email: gym.email },
+                timestamp: Date.now()
+            })
+        }).catch(() => { })
+        // #endregion agent log
 
         // Temporarily commented out as onboardingEmailsSentAt doesn't exist in Prisma schema
         // await prisma.gymProfile.update({

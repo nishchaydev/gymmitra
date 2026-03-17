@@ -66,6 +66,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
     const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
     const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const [step, setStep] = useState(1)
+    const [checkingPhone, setCheckingPhone] = useState(false)
 
     useEffect(() => {
         return () => {
@@ -182,8 +183,38 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
 
     const onNextStep = async () => {
         const isValid = await form.trigger(["name", "phone", "email", "dateOfBirth"])
-        if (isValid) {
+        if (!isValid) return
+
+        const phone = form.getValues("phone")
+
+        if (member && member.phone === phone) {
             setStep(2)
+            return
+        }
+
+        setCheckingPhone(true)
+        try {
+            const res = await fetch(`/api/${gymSlug}/members/check-phone?phone=${phone}`)
+            if (!res.ok) throw new Error("API failed")
+            const data = await res.json()
+
+            if (data.exists && data.memberId !== member?.id) {
+                form.setError("phone", {
+                    type: "manual",
+                    message: `A member named ${data.memberName} already exists with this phone number.`
+                })
+                toast.error("Duplicate Phone Number", {
+                    description: `${data.memberName} is already registered with ${phone}.`
+                })
+                return
+            }
+
+            setStep(2)
+        } catch (error) {
+            console.error("Phone check failed:", error)
+            setStep(2)
+        } finally {
+            setCheckingPhone(false)
         }
     }
 
@@ -448,8 +479,9 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
 
                         {!member && activePlans.length > 0 ? (
                             <div className="flex justify-end pt-4 border-t mt-8">
-                                <Button type="button" onClick={onNextStep}>
-                                    Next: Select Plan <ArrowRight className="ml-2 w-4 h-4" />
+                                <Button type="button" onClick={onNextStep} disabled={checkingPhone}>
+                                    {checkingPhone ? "Checking phone..." : "Next: Select Plan"}
+                                    {!checkingPhone && <ArrowRight className="ml-2 w-4 h-4" />}
                                 </Button>
                             </div>
                         ) : (

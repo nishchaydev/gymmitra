@@ -45,7 +45,7 @@ export default async function MembersPage({
     }
 
     let gymId = 'demo'
-    let hasGymError = false
+    const hasGymError = false
     let hasNoGym = false
 
     if (auth && !isDemo) {

@@ -2,8 +2,128 @@ import { PrismaClient } from '@prisma/client'
 
 const SOFT_DELETE_MODELS = ['Member', 'Invoice', 'GymProfile', 'MemberSubscription', 'Sale']
 
+function withSslMode(url: string): string {
+  try {
+    const u = new URL(url)
+    if (!u.searchParams.get('sslmode')) u.searchParams.set('sslmode', 'require')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
+function buildDirectSupabaseUrlFromPooler(databaseUrl: string): string | null {
+  try {
+    const u = new URL(databaseUrl)
+    // IMPORTANT: URL.username / URL.password are already normalized; do not double-decode.
+    // Preserve credentials exactly to avoid auth failures on derived URLs.
+    const username = u.username || ''
+    const password = u.password || ''
+    const database = (u.pathname || '/').replace(/^\//, '') || 'postgres'
+
+    const refFromUser = username.startsWith('postgres.') ? username.slice('postgres.'.length) : null
+    const refFromSiteUrl = (() => {
+      const site = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!site) return null
+      try {
+        const su = new URL(site)
+        const host = su.hostname || ''
+        // e.g. lguifuhryubjzxrayoiu.supabase.co → ref is first label
+        const ref = host.split('.')[0]
+        return ref || null
+      } catch {
+        return null
+      }
+    })()
+
+    const ref = refFromUser || refFromSiteUrl
+    if (!ref) return null
+
+    // NOTE: We previously attempted to derive the direct DB host (db.<ref>.supabase.co),
+    // but runtime evidence showed auth failures with current credentials.
+    // Keep this helper around, but do not use it by default.
+    const directHost = `db.${ref}.supabase.co`
+    const direct = new URL(`postgresql://@${directHost}:5432/${database}`)
+    direct.username = username
+    direct.password = password
+    direct.search = u.search
+    direct.searchParams.delete('pgbouncer')
+    return withSslMode(direct.toString())
+  } catch {
+    return null
+  }
+}
+
+function normalizeSupabaseDirectUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    // Keep DIRECT_URL as-is; just ensure SSL and remove pgbouncer flag if present.
+    u.searchParams.delete('pgbouncer')
+    return withSslMode(u.toString())
+  } catch {
+    return withSslMode(url)
+  }
+}
+
+function pickPrismaUrl(): { url: string; reason: string; host: string | null } {
+  const rawDb = process.env.DATABASE_URL || ''
+  const rawDirect = process.env.DIRECT_URL || ''
+
+  const db = rawDb ? withSslMode(rawDb) : ''
+  const direct = rawDirect ? withSslMode(rawDirect) : ''
+
+  const getHost = (v: string) => {
+    try {
+      return new URL(v).hostname
+    } catch {
+      return null
+    }
+  }
+
+  const dbHost = getHost(db)
+  const directHost = getHost(direct)
+  const describe = (v: string) => {
+    try {
+      const u = new URL(v)
+      return { host: u.hostname || null, port: u.port || null }
+    } catch {
+      return { host: null, port: null }
+    }
+  }
+
+  // In local dev, prefer DIRECT_URL when present (commonly port 5432).
+  // Only derive a db.<ref>.supabase.co URL when DIRECT_URL is missing.
+  const isPooler = (h: string | null) => (h || '').includes('pooler.supabase.com')
+
+  if (process.env.NODE_ENV !== 'production') {
+    if (direct) {
+      // In dev, prefer DIRECT_URL exactly as configured (port 5432 in Supabase),
+      // because the pooler (6543) can be unreachable on some networks.
+      const normalized = normalizeSupabaseDirectUrl(direct)
+      return { url: normalized, reason: 'dev:using normalized DIRECT_URL', host: getHost(normalized) }
+    }
+    // Do not derive db.<ref>.supabase.co automatically; it can fail auth depending on credentials.
+  }
+
+  if (db) return { url: db, reason: 'default:using DATABASE_URL', host: dbHost }
+  if (direct) return { url: direct, reason: 'fallback:using DIRECT_URL', host: directHost }
+  return { url: '', reason: 'missing DATABASE_URL/DIRECT_URL', host: null }
+}
+
 function createPrismaClient(): PrismaClient {
-  const client = new PrismaClient()
+  const picked = pickPrismaUrl()
+
+
+
+  const client = new PrismaClient(
+    picked.url
+      ? {
+        datasources: {
+          db: { url: picked.url }
+        }
+      }
+      : undefined
+  )
 
   // ── Soft-Delete Middleware ──────────────────────────────────────────
   // Intercepts queries on Member and Invoice to:

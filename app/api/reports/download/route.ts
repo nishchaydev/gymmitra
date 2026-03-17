@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
         let data: any[] = []
         let csvContent = ""
-        let filename = `report-${type}-${new Date().toISOString().split('T')[0]}.csv`
+        const filename = `report-${type}-${new Date().toISOString().split('T')[0]}.csv`
 
         if (type === 'members') {
             data = await prisma.member.findMany({

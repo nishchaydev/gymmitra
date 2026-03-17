@@ -102,7 +102,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 const planPrice = (validatedData.customPrice !== undefined && validatedData.customPrice > 0) ? validatedData.customPrice : Number(plan.price)
                 const discount = validatedData.discount || 0
                 const total = Math.max(0, planPrice - discount)
-                let amountPaid = validatedData.amountPaid ?? total
+                const amountPaid = validatedData.amountPaid ?? total
                 const balanceDue = Math.max(0, total - amountPaid)
 
                 let paymentStatus: PaymentStatus = 'PAID'
@@ -352,91 +352,129 @@ export const importMembers = withAuth(async (context, data: any[]) => {
         const existingPlans = await prisma.membershipPlan.findMany({
             where: { gymId, isActive: true }
         })
-        const planMap = new Map(existingPlans.map(p => [p.name.trim().toLowerCase(), p]))
+        const planMap = new Map<string, any>(existingPlans.map(p => [p.name.trim().toLowerCase(), p]))
 
-        // 3. Process rows INDIVIDUALLY — no single $transaction to avoid timeout
-        for (let i = 0; i < data.length; i++) {
-            const row = data[i]
-            const rawPhone = String(row.phone || "").trim()
-            const name = String(row.name || "").trim()
-
-            // Validate name
-            if (!name) {
-                skippedInvalidData++
-                failedRows.push({ row, reason: 'Missing name' })
-                continue
+        // 2b. Auto-create missing plans (Pre-pass)
+        const uniquePlanNames = new Set<string>()
+        for (const row of data) {
+            const rowPlanName = String(row.planname || "").trim()
+            if (rowPlanName) {
+                uniquePlanNames.add(rowPlanName)
             }
+        }
 
-            // Normalize & validate phone
-            const phone = normalizePhone(rawPhone)
-            if (!phone) {
-                skippedInvalidData++
-                failedRows.push({ row, reason: `Invalid phone: "${rawPhone}" (must be 10 digits)` })
-                continue
+        for (const originalPlanName of uniquePlanNames) {
+            const lowerPlanName = originalPlanName.toLowerCase()
+            if (!planMap.has(lowerPlanName)) {
+                try {
+                    const newPlan = await prisma.membershipPlan.create({
+                        data: {
+                            name: originalPlanName,
+                            duration: 30, // Default to 30 days
+                            price: 0,    // Default to 0 price
+                            features: [],
+                            isActive: true,
+                            gymId,
+                        }
+                    })
+                    planMap.set(lowerPlanName, newPlan)
+                } catch (createErr) {
+                    console.error(`Failed to auto-create plan: ${originalPlanName}`, createErr)
+                }
             }
+        }
 
-            // Duplicate check (against DB + already-imported in this batch)
-            if (existingPhones.has(phone)) {
-                skippedDuplicate++
-                failedRows.push({ row, reason: `Duplicate phone: ${phone}` })
-                continue
-            }
+        // 3. Process rows in batches to avoid timeout
+        const BATCH_SIZE = 25;
+        for (let i = 0; i < data.length; i += BATCH_SIZE) {
+            const batch = data.slice(i, i + BATCH_SIZE);
 
-            // Plan matching
-            const planName = String(row.planname || "").trim().toLowerCase()
-            const plan = planName ? planMap.get(planName) : undefined
+            await Promise.all(batch.map(async (row) => {
+                const rawPhone = String(row.phone || "").trim()
+                const name = String(row.name || "").trim()
 
-            if (planName && !plan) {
-                skippedPlanNotFound++
-                failedRows.push({ row, reason: `Plan not found: "${row.planname}"` })
-                continue
-            }
-
-            // Per-row try/catch — one bad row doesn't kill the entire import
-            try {
-                const member = await prisma.member.create({
-                    data: {
-                        name,
-                        phone,
-                        email: row.email ? String(row.email).trim() : null,
-                        dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
-                        joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
-                        gymId,
-                        status: 'ACTIVE',
-                        city: row.city ? String(row.city).trim() : undefined,
-                        emergencyName: '',
-                        emergencyPhone: '',
-                        emergencyRelation: '',
-                    }
-                })
-
-                // Create Subscription if plan exists
-                if (plan) {
-                    const startDate = row.joindate ? new Date(row.joindate) : new Date()
-                    const expiryDate = row.expirydate ? new Date(row.expirydate) : null
-
-                    if (expiryDate && isValid(new Date(expiryDate))) {
-                        await prisma.memberSubscription.create({
-                            data: {
-                                memberId: member.id,
-                                planId: plan.id,
-                                gymId,
-                                startDate: new Date(startDate),
-                                endDate: new Date(expiryDate),
-                                price: plan.price,
-                                status: 'ACTIVE',
-                                paymentStatus: 'PAID'
-                            }
-                        })
-                    }
+                // Validate name
+                if (!name) {
+                    skippedInvalidData++
+                    failedRows.push({ row, reason: 'Missing name' })
+                    return
                 }
 
-                imported++
+                // Normalize & validate phone
+                const phone = normalizePhone(rawPhone)
+                if (!phone) {
+                    skippedInvalidData++
+                    failedRows.push({ row, reason: `Invalid phone: "${rawPhone}" (must be 10 digits)` })
+                    return
+                }
+
+                // Duplicate check (against DB + already-imported)
+                if (existingPhones.has(phone)) {
+                    skippedDuplicate++
+                    failedRows.push({ row, reason: `Duplicate phone: ${phone}` })
+                    return
+                }
+                
+                // Add to existing phones immediately before DB syncs to prevent batch parallel duplicates
                 existingPhones.add(phone)
-            } catch (rowError: any) {
-                skippedInvalidData++
-                failedRows.push({ row, reason: `DB error: ${rowError?.message || 'Unknown error'}` })
-            }
+
+                // Plan matching
+                const planName = String(row.planname || "").trim().toLowerCase()
+                const plan = planName ? planMap.get(planName) : undefined
+
+                if (planName && !plan) {
+                    skippedPlanNotFound++
+                    failedRows.push({ row, reason: `Plan not found: "${row.planname}"` })
+                    existingPhones.delete(phone) // remove if failed
+                    return
+                }
+
+                // Per-row try/catch — one bad row doesn't kill the entire import
+                try {
+                    const member = await prisma.member.create({
+                        data: {
+                            name,
+                            phone,
+                            email: row.email ? String(row.email).trim() : null,
+                            dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
+                            joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
+                            gymId,
+                            status: 'ACTIVE',
+                            city: row.city ? String(row.city).trim() : undefined,
+                            emergencyName: '',
+                            emergencyPhone: '',
+                            emergencyRelation: '',
+                        }
+                    })
+
+                    // Create Subscription if plan exists
+                    if (plan) {
+                        const startDate = row.joindate ? new Date(row.joindate) : new Date()
+                        const expiryDate = row.expirydate ? new Date(row.expirydate) : null
+
+                        if (expiryDate && isValid(new Date(expiryDate))) {
+                            await prisma.memberSubscription.create({
+                                data: {
+                                    memberId: member.id,
+                                    planId: plan.id,
+                                    gymId,
+                                    startDate: new Date(startDate),
+                                    endDate: new Date(expiryDate),
+                                    price: plan.price,
+                                    status: 'ACTIVE',
+                                    paymentStatus: 'PAID'
+                                }
+                            })
+                        }
+                    }
+
+                    imported++
+                } catch (rowError: any) {
+                    skippedInvalidData++
+                    failedRows.push({ row, reason: `DB error: ${rowError?.message || 'Unknown error'}` })
+                    existingPhones.delete(phone)
+                }
+            }));
         }
 
         // Audit Log

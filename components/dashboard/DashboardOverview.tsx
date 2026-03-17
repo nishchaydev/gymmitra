@@ -2,7 +2,6 @@
 
 import { useDashboardQuery } from '@/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Overview } from '@/components/dashboard/Overview'
 import { RevenueSnapshot } from '@/components/dashboard/RevenueSnapshot'
 import { AtRiskMembers } from '@/components/dashboard/AtRiskMembers'
 import dynamic from 'next/dynamic'
@@ -80,111 +79,121 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </div>
             )}
 
-            {/* Stat Cards - 2x2 on mobile for better density */}
-            <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
-                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                            Total Revenue
-                        </CardTitle>
-                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                            <IndianRupee className="h-5 w-5 text-[#0066FF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                        <div className="space-y-1">
-                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">₹{d.revenue}</div>
-                            {!isDemo && (
-                                <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">LIVE</span>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+             {/* Stat Cards - 2x2 on mobile for better density */}
+             <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                 <Link href={`/${slug}/invoices`} className="block">
+                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] hover:shadow-lg cursor-pointer">
+                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
+                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
+                                 Total Revenue
+                             </CardTitle>
+                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                                 <IndianRupee className="h-5 w-5 text-[#0066FF]" />
+                             </div>
+                         </CardHeader>
+                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                             <div className="space-y-1">
+                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">₹{d.revenue}</div>
+                                 {!isDemo && (
+                                     <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
+                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                         <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">LIVE</span>
+                                     </div>
+                                 )}
+                             </div>
+                         </CardContent>
+                     </Card>
+                 </Link>
 
-                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
-                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                            Active Members
-                        </CardTitle>
-                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                            <Users className="h-5 w-5 text-[#0066FF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                        <div className="space-y-1">
-                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.activeMembers}</div>
-                            <p className="text-xs text-[#64748B] mt-2 font-medium">
-                                {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                 <Link href={`/${slug}/members`} className="block">
+                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] hover:shadow-lg cursor-pointer">
+                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
+                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
+                                 Active Members
+                             </CardTitle>
+                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                                 <Users className="h-5 w-5 text-[#0066FF]" />
+                             </div>
+                         </CardHeader>
+                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                             <div className="space-y-1">
+                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.activeMembers}</div>
+                                 <p className="text-xs text-[#64748B] mt-2 font-medium">
+                                     {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
+                                 </p>
+                             </div>
+                         </CardContent>
+                     </Card>
+                 </Link>
 
-                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-3 xl:order-none">
-                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                            Net Income
-                        </CardTitle>
-                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                            <TrendingUp className="h-5 w-5 text-[#0066FF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                        <div className="space-y-1">
-                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">
-                                ₹{netIncome.toLocaleString('en-IN')}
-                            </div>
-                            <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
-                                {expenseRatio.toFixed(1)}% EXPENSE RATIO (₹{totalExp.toLocaleString('en-IN')})
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                 <Link href={`/${slug}/invoices`} className="block">
+                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-3 xl:order-none hover:shadow-lg cursor-pointer">
+                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
+                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
+                                 Net Income
+                             </CardTitle>
+                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                                 <TrendingUp className="h-5 w-5 text-[#0066FF]" />
+                             </div>
+                         </CardHeader>
+                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                             <div className="space-y-1">
+                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">
+                                     ₹{netIncome.toLocaleString('en-IN')}
+                                 </div>
+                                 <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
+                                     {expenseRatio.toFixed(1)}% EXPENSE RATIO (₹{totalExp.toLocaleString('en-IN')})
+                                 </p>
+                             </div>
+                         </CardContent>
+                     </Card>
+                 </Link>
 
-                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-4 xl:order-none">
-                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                            Product Sales
-                        </CardTitle>
-                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                            <ShoppingBag className="h-5 w-5 text-[#0066FF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                        <div className="space-y-1">
-                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.productSalesCount}</div>
-                            <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
-                                ALL-TIME ITEMS
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                 <Link href={`/${slug}/products`} className="block">
+                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-4 xl:order-none hover:shadow-lg cursor-pointer">
+                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
+                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
+                                 Product Sales
+                             </CardTitle>
+                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                                 <ShoppingBag className="h-5 w-5 text-[#0066FF]" />
+                             </div>
+                         </CardHeader>
+                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                             <div className="space-y-1">
+                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.productSalesCount}</div>
+                                 <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
+                                     ALL-TIME ITEMS
+                                 </p>
+                             </div>
+                         </CardContent>
+                     </Card>
+                 </Link>
 
-                <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-5 xl:order-none">
-                    <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                            Today&apos;s Attendance
-                        </CardTitle>
-                        <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                            <CalendarCheck className="h-5 w-5 text-[#0066FF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                        <div className="space-y-1">
-                            <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.dailyCheckins}</div>
-                            {!isDemo && (
-                                <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">REAL-TIME</span>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                 <Link href={`/${slug}/attendance`} className="block">
+                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-5 xl:order-none hover:shadow-lg cursor-pointer">
+                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
+                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
+                                 Today&apos;s Attendance
+                             </CardTitle>
+                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
+                                 <CalendarCheck className="h-5 w-5 text-[#0066FF]" />
+                             </div>
+                         </CardHeader>
+                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                             <div className="space-y-1">
+                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.dailyCheckins}</div>
+                                 {!isDemo && (
+                                     <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
+                                         <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                         <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">REAL-TIME</span>
+                                     </div>
+                                 )}
+                             </div>
+                         </CardContent>
+                     </Card>
+                 </Link>
+             </div>
 
             {/* Dashboard Content - Masonry style to prevent vertical overlap anomalies */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">

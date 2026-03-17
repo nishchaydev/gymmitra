@@ -101,14 +101,19 @@ async function uploadToCloudinary(file: File): Promise<string> {
 }
 
 export async function completeOnboarding(formData: FormData): Promise<{ redirectTo?: string; warnings?: string[], error?: string }> {
-    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
+    // Use Supabase auth directly — getAuthGym() requires an existing GymProfile,
+    // which doesn't exist yet for new users completing onboarding for the first time.
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const { data, error: authError } = await supabase.auth.getUser()
 
-    if (!auth || !auth.userId) {
+    if (authError || !data?.user) {
         return { error: "Unauthorized" }
     }
 
-    // We will use authId where user.id was used before
-    const userId = auth.userId
+    const userId = data.user.id
+
+
 
     const rawData = {
         businessName: formData.get("businessName"),
@@ -272,7 +277,9 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
     const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
 
     // We reuse the gymProfile we upserted
-    if (gymProfile) {
+        if (gymProfile) {
+
+
         await recordAuditLog({
             gymId: gymProfile.id,
             actorId: userId,

@@ -11,6 +11,10 @@ const pwa = withPWA({
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  turbopack: {
+    // Ensure Next picks this repo as workspace root even if parent has lockfiles.
+    root: __dirname,
+  },
   async headers() {
     return [
       {

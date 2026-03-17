@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         const { memberId } = checkInSchema.parse(body)
 
         // Check if member exists AND belongs to gym
-        let member = await prisma.member.findFirst({
+        const member = await prisma.member.findFirst({
             where: {
                 id: memberId,
                 gymId: gym.id // Enforce ownership

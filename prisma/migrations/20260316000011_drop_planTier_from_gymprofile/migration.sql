@@ -1,0 +1,1 @@
+ALTER TABLE "GymProfile" DROP COLUMN IF EXISTS "planTier";

@@ -28,20 +28,24 @@ export function getBaseUrl(): string {
     const url = process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
     // Don't return localhost if we're in Vercel environment
     if (url.includes('localhost') && (process.env.VERCEL || process.env.VERCEL_URL)) {
-      if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-        return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      const vercelProd = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/\/$/, '').replace(/^https?:\/\//, '')
+      if (vercelProd) {
+        return `https://${vercelProd}`
       }
-      if (process.env.VERCEL_URL) {
-        return `https://${process.env.VERCEL_URL}`
+      const vUrl = process.env.VERCEL_URL?.replace(/\/$/, '').replace(/^https?:\/\//, '')
+      if (vUrl) {
+        return `https://${vUrl}`
       }
     }
     return url
   }
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  const vercelProd = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/\/$/, '').replace(/^https?:\/\//, '')
+  if (vercelProd) {
+    return `https://${vercelProd}`
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+  const vUrl = process.env.VERCEL_URL?.replace(/\/$/, '').replace(/^https?:\/\//, '')
+  if (vUrl) {
+    return `https://${vUrl}`
   }
 
   return 'https://gym.emitra.dev'
