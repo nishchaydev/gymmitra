@@ -1,5 +1,5 @@
 import React from 'react'
-import { Zap } from 'lucide-react'
+import Image from 'next/image'
 import { cn } from "@/lib/utils"
 
 interface GymMitraLogoProps {
@@ -20,11 +20,17 @@ export function GymMitraLogo({
     return (
         <div className={cn("flex items-center gap-2", className)}>
             <div className={cn(
-                "flex items-center justify-center rounded-xl",
-                variant === 'default' ? "bg-primary text-white" : "bg-white text-primary",
-                iconClassName || "p-2"
+                "flex items-center justify-center rounded-xl overflow-hidden",
+                iconClassName || "w-10 h-10"
             )}>
-                <Zap className={cn("fill-current", showText ? "w-6 h-6" : "w-full h-full")} />
+                <Image
+                    src="/icon.png"
+                    alt="Gym Mitra"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-contain"
+                    priority
+                />
             </div>
             {showText && (
                 <span className={cn(

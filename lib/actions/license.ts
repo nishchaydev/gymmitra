@@ -15,44 +15,53 @@ export async function activateLicense(licenseKey: string) {
         throw new Error("Invalid license key format")
     }
 
-    // 2. Verify license key in the RegistrationCode table
-    const registrationCode = await prisma.registrationCode.findUnique({
-        where: { code: licenseKey.trim() }
-    })
+    const trimmedKey = licenseKey.trim()
 
-    if (!registrationCode || !registrationCode.isActive) {
-        throw new Error("Invalid or inactive license key")
-    }
+    // 2. Perform atomic update using an interactive transaction to prevent race conditions
+    await prisma.$transaction(async (tx) => {
+        // Find existing code to check expiration before attempting atomic update
+        const existingCode = await tx.registrationCode.findUnique({
+            where: { code: trimmedKey }
+        })
 
-    if (registrationCode.expiresAt && new Date() > registrationCode.expiresAt) {
-        throw new Error("License key has expired")
-    }
+        if (!existingCode || !existingCode.isActive) {
+            throw new Error("Invalid or inactive license key")
+        }
 
-    if (registrationCode.usedCount >= registrationCode.maxUses) {
-        throw new Error("License key has already been used")
-    }
+        if (existingCode.expiresAt && new Date() > existingCode.expiresAt) {
+            throw new Error("License key has expired")
+        }
 
-    if (registrationCode.plan !== 'MAIN_PLAN') {
-        throw new Error("This license key is not valid for the MAIN_PLAN")
-    }
+        if (existingCode.plan !== 'MAIN_PLAN') {
+            throw new Error("This license key is not valid for the MAIN_PLAN")
+        }
 
-    // 3. Update GymProfile and RegistrationCode usage in a transaction
-    await prisma.$transaction([
-        prisma.gymProfile.update({
-            where: { id: gym.id },
-            data: {
-                saasPlan: 'MAIN_PLAN',
-                licenseKey: licenseKey.trim(),
-                licenseActivatedAt: new Date(),
-            }
-        }),
-        prisma.registrationCode.update({
-            where: { id: registrationCode.id },
+        // Atomically increment if under the limit
+        const result = await tx.registrationCode.updateMany({
+            where: { 
+                id: existingCode.id,
+                usedCount: { lt: existingCode.maxUses },
+                isActive: true
+            },
             data: {
                 usedCount: { increment: 1 }
             }
         })
-    ])
+
+        if (result.count === 0) {
+            throw new Error("License key has already been used to its maximum capacity")
+        }
+
+        // 3. Update GymProfile 
+        await tx.gymProfile.update({
+            where: { id: gym.id },
+            data: {
+                saasPlan: 'MAIN_PLAN',
+                licenseKey: trimmedKey,
+                licenseActivatedAt: new Date(),
+            }
+        })
+    })
 
     revalidatePath(`/${gym.slug}/settings/billing`)
     revalidatePath(`/${gym.slug}/dashboard`)

@@ -49,36 +49,62 @@ export default function OnboardingForm() {
         invoicePrefix: '',
         termsAndConditions: '1. Fees once paid are non-refundable.\n2. Management is not responsible for personal belongings.',
         gymRules: '1. Always wipe down equipment after use.\n2. Re-rack weights after finishing your set.\n3. Appropriate gym attire and closed-toe shoes are mandatory.',
-        plans: [
-            { name: 'Monthly', durationMonths: 1, price: 1500, enabled: true },
-            { name: 'Quarterly', durationMonths: 3, price: 4000, enabled: true },
-            { name: 'Half-Yearly', durationMonths: 6, price: 7500, enabled: false },
-            { name: 'Yearly', durationMonths: 12, price: 14000, enabled: true },
-        ],
+        plans: [] as { name: string; durationMonths: number; price: number; enabled: boolean }[],
         futurePlanPreference: 'BASIC',
     })
+
+    // Pre-fill from existing GymProfile (trial signup already saves gymName, ownerName, email, phone, city)
+    useEffect(() => {
+        const prefill = async () => {
+            try {
+                const res = await fetch('/api/settings')
+                if (!res.ok) return
+                const data = await res.json()
+                setFormData(prev => ({
+                    ...prev,
+                    businessName: data.name || data.businessName || prev.businessName,
+                    ownerName: data.ownerName || prev.ownerName,
+                    email: data.email || prev.email,
+                    phone: data.phone || prev.phone,
+                    city: data.city || prev.city,
+                    address: data.address || prev.address,
+                }))
+                if (data.logo) setLogoPreview(data.logo)
+            } catch {
+                // Silently fail — user can fill manually
+            }
+        }
+        prefill()
+    }, [])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
-    const togglePlan = (index: number) => {
+    const addPlan = () => {
+        setFormData(prev => ({
+            ...prev,
+            plans: [...prev.plans, { name: '', durationMonths: 1, price: 0, enabled: true }],
+        }))
+    }
+
+    const removePlan = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            plans: prev.plans.filter((_, i) => i !== index),
+        }))
+    }
+
+    const updatePlan = (index: number, field: 'name' | 'durationMonths', value: string | number) => {
         setFormData(prev => {
             const newPlans = [...prev.plans]
-            newPlans[index] = { ...newPlans[index], enabled: !newPlans[index].enabled }
+            newPlans[index] = { ...newPlans[index], [field]: value }
             return { ...prev, plans: newPlans }
         })
     }
 
-    const updatePlanPrice = (index: number, price: string) => {
-        setFormData(prev => {
-            const newPlans = [...prev.plans]
-            const parsedPrice = parseInt(price, 10) || 0
-            newPlans[index] = { ...newPlans[index], price: Math.max(0, parsedPrice) }
-            return { ...prev, plans: newPlans }
-        })
-    }
+
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -146,8 +172,12 @@ export default function OnboardingForm() {
 
     const nextStep = () => {
         const form = document.querySelector('form')
-        if (currentStep === 3 && !formData.plans.some(p => p.enabled)) {
-            toast.error("Please select at least one membership plan to continue.")
+        if (currentStep === 3 && formData.plans.length === 0) {
+            toast.error("Please add at least one membership plan to continue.")
+            return
+        }
+        if (currentStep === 3 && formData.plans.some(p => !p.name.trim())) {
+            toast.error("Please give each plan a name.")
             return
         }
         if (form && form.reportValidity()) {
@@ -267,7 +297,7 @@ export default function OnboardingForm() {
                                     <div className="space-y-6">
                                         {/* Logo Upload Section */}
                                         <div className="space-y-3">
-                                            <Label className="text-sm font-bold text-drift-700">Gym Logo (Optional)</Label>
+                                            <Label htmlFor="gymLogo" className="text-sm font-bold text-drift-700">Gym Logo (Optional)</Label>
                                             <div className="flex items-center gap-6">
                                                 <div className="relative group">
                                                     <div className={`w-28 h-28 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${logoPreview ? 'border-ion-500 bg-white' : 'border-drift-200 bg-drift-50 hover:bg-drift-100 hover:border-ion-300'}`}>
@@ -290,6 +320,7 @@ export default function OnboardingForm() {
                                                         </button>
                                                     )}
                                                     <input
+                                                        id="gymLogo"
                                                         type="file"
                                                         accept="image/*"
                                                         value=""
@@ -452,45 +483,61 @@ export default function OnboardingForm() {
                                 {currentStep === 3 && (
                                     <div className="space-y-4">
                                         <div className="space-y-2 mb-4">
-                                            <Label>Set your Membership Plans</Label>
-                                            <p className="text-xs text-muted-foreground">Select the plans you offer and set their default prices. You can always change this later in Settings.</p>
+                                            <Label>Create your Membership Plans</Label>
+                                            <p className="text-xs text-muted-foreground">Add the plans you offer to members. You can set the price later in Settings.</p>
                                         </div>
+
+                                        {formData.plans.length === 0 && (
+                                            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                                                <p className="text-sm text-muted-foreground mb-2">No plans added yet</p>
+                                                <p className="text-xs text-muted-foreground">Click the button below to create your first plan</p>
+                                            </div>
+                                        )}
+
                                         <div className="grid gap-3">
                                             {formData.plans.map((plan, index) => (
-                                                <div key={plan.name} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${plan.enabled ? 'border-primary bg-primary/5' : 'border-slate-200 bg-white'}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div
-                                                            role="checkbox"
-                                                            tabIndex={0}
-                                                            aria-checked={plan.enabled}
-                                                            aria-label={`Enable ${plan.name} Plan`}
-                                                            className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${plan.enabled ? 'bg-primary border-primary text-white' : 'border-slate-300'}`}
-                                                            onClick={() => togglePlan(index)}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                                    e.preventDefault();
-                                                                    togglePlan(index);
-                                                                }
-                                                            }}
-                                                        >
-                                                            {plan.enabled && <CheckCircle2 className="w-3.5 h-3.5" />}
-                                                        </div>
-                                                        <span className="font-medium text-sm">{plan.name} Plan</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm text-slate-500">₹</span>
+                                                <div key={index} className="flex items-center gap-3 p-3 border rounded-lg border-slate-200 bg-white">
+                                                    <div className="flex-1">
                                                         <Input
-                                                            type="number"
-                                                            min="0"
-                                                            value={plan.price}
-                                                            onChange={(e) => updatePlanPrice(index, e.target.value)}
-                                                            disabled={!plan.enabled}
-                                                            className="w-24 h-8 text-right bg-white disabled:bg-slate-100"
+                                                            placeholder="Plan name (e.g. Monthly, Premium, Student)"
+                                                            value={plan.name}
+                                                            onChange={(e) => updatePlan(index, 'name', e.target.value)}
+                                                            className="text-sm"
                                                         />
                                                     </div>
+                                                    <div className="w-28">
+                                                        <select
+                                                            value={plan.durationMonths}
+                                                            onChange={(e) => updatePlan(index, 'durationMonths', parseInt(e.target.value))}
+                                                            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                                        >
+                                                            <option value={1}>1 Month</option>
+                                                            <option value={2}>2 Months</option>
+                                                            <option value={3}>3 Months</option>
+                                                            <option value={6}>6 Months</option>
+                                                            <option value={12}>12 Months</option>
+                                                        </select>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removePlan(index)}
+                                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                                        aria-label={`Remove ${plan.name || 'plan'}`}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full border-dashed"
+                                            onClick={addPlan}
+                                        >
+                                            <span className="mr-2">+</span> Add Plan
+                                        </Button>
                                     </div>
                                 )}
 
@@ -537,7 +584,7 @@ export default function OnboardingForm() {
                                         <div className="space-y-4 text-left mt-8 border-t pt-6">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <CreditCard className="w-4 h-4 text-primary" />
-                                                <Label htmlFor="futurePlanPreference-select" className="font-bold cursor-pointer">Select Preferred Plan After 2-Month Trial</Label>
+                                                <Label htmlFor="futurePlanPreference-select" className="font-bold cursor-pointer">Select Preferred Plan After 1-Month Trial</Label>
                                             </div>
                                             <Select
                                                 value={formData.futurePlanPreference}
@@ -553,7 +600,7 @@ export default function OnboardingForm() {
                                                 </SelectContent>
                                             </Select>
                                             <p className="text-[10px] text-slate-500 font-medium italic bg-slate-100 p-2 rounded-lg border border-slate-200">
-                                                ✨ Trial Duration: 60 Days. You won't be charged today. We'll use this preference to customize your initial experience and setup.
+                                                ✨ Trial Duration: 30 Days. You won't be charged today. We'll use this preference to customize your initial experience and setup.
                                             </p>
                                         </div>
                                         <div className="p-6 bg-slate-50 rounded-xl border-2 border-dashed border-primary/20 mt-8">

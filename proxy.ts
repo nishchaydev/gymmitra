@@ -28,7 +28,6 @@ export async function proxy(request: NextRequest) {
     // Clone headers
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-nonce', nonce)
-    // Removed requestHeaders.set('Content-Security-Policy', cspHeader) because updateSession doesn't use it natively within supabase client logic unless implicitly required by backend handlers fetching cookies, avoiding redundant header bloat.
 
     const response = await updateSession(request, requestHeaders)
 

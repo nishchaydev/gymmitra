@@ -122,8 +122,9 @@ export function PlanManagement() {
                             <Input type="number" value={formData.duration} onChange={e => setFormData({ ...formData, duration: Number(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Price (₹)</Label>
+                            <Label>Suggested Price (₹)</Label>
                             <Input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
+                            <p className="text-[10px] text-muted-foreground">Shown as a reference when adding members. Actual price is set per-member.</p>
                         </div>
                     </div>
                     <div className="space-y-2">
@@ -159,7 +160,7 @@ export function PlanManagement() {
                         <div key={plan.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50">
                             <div>
                                 <h4 className="font-bold text-slate-900">{plan.name}</h4>
-                                <p className="text-sm text-slate-500">{plan.duration} Month{plan.duration !== 1 ? 's' : ''} · ₹{plan.price}</p>
+                                <p className="text-sm text-slate-500">{plan.duration} Month{plan.duration !== 1 ? 's' : ''} · Suggested ₹{plan.price}</p>
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="ghost" size="icon" onClick={() => openEdit(plan)}>

@@ -44,7 +44,7 @@ export default function Home() {
            '@type': 'Offer',
            price: '0',
            priceCurrency: 'INR',
-           description: '2-month free trial',
+           description: '1-month free trial',
          },
         description: 'Gym Mitra – India\'s #1 gym management software. Automate billing, WhatsApp reminders, attendance tracking, and member management.',
         aggregateRating: {
@@ -178,7 +178,7 @@ export default function Home() {
                 <ul className="space-y-4">
                   <li><Link href="#features" className="text-sm hover:text-ocean transition-colors duration-200">Features</Link></li>
                   <li><Link href="#pricing" className="text-sm hover:text-ocean transition-colors duration-200">Pricing</Link></li>
-                  <li><Link href="/login?view=register" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</Link></li>
+                  <li><Link href="/start-trial" className="text-sm hover:text-ocean transition-colors duration-200">Start Free Trial</Link></li>
                 </ul>
               </div>
 

@@ -141,7 +141,7 @@ export function Pricing() {
                                         // For Custom plan, link to WhatsApp or contact section
                                         window.location.href = `${getBaseUrl()}#contact`;
                                     } else {
-                                        window.location.href = `${getBaseUrl()}/login?view=register`;
+                                        window.location.href = `${getBaseUrl()}/start-trial`;
                                     }
                                 }}
                             >

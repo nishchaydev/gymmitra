@@ -20,9 +20,10 @@ import { activateLicense as coreActivateLicense } from "@/lib/actions/license"
  * Server action wrapper for license activation.
  * Calls the core logic and handles errors for the UI.
  */
-export async function activateLicense(licenseKey: string) {
+export async function activateLicense(licenseKey: string): Promise<{ success: boolean, error?: string }> {
     try {
-        return await coreActivateLicense(licenseKey)
+        await coreActivateLicense(licenseKey)
+        return { success: true }
     } catch (error: any) {
         // Sanitize for the client
         const errorMessage = error instanceof Error ? error.message : "Activation failed"

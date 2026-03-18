@@ -187,3 +187,65 @@ export const getInvoiceWhatsAppLink = (
     const message = templates.invoiceShare(safeMember, safeGym, formattedAmount, url, customTemplate)
     return getWhatsAppLink(phone, message)
 }
+
+
+/**
+ * Send a WhatsApp template message via Meta Cloud API.
+ * Requires WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_ACCESS_TOKEN env vars.
+ * Silently skips if env vars are not configured.
+ */
+export async function sendWhatsAppTemplate(params: {
+    to: string
+    templateName: string
+    languageCode?: string
+    components?: Array<{
+        type: string
+        parameters: Array<{ type: string; text?: string }>
+    }>
+}): Promise<{ success: boolean; error?: string }> {
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN
+
+    if (!phoneNumberId || !accessToken) {
+        console.warn('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN not set, skipping template send')
+        return { success: false, error: 'WhatsApp not configured' }
+    }
+
+    // Normalize phone: strip non-digits, add 91 prefix if 10 digits
+    const stripped = params.to.replace(/\D/g, '')
+    const formattedPhone = stripped.length === 10 ? `91${stripped}` : stripped
+
+    try {
+        const response = await fetch(
+            `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: formattedPhone,
+                    type: 'template',
+                    template: {
+                        name: params.templateName,
+                        language: { code: params.languageCode || 'en' },
+                        ...(params.components && { components: params.components }),
+                    },
+                }),
+            }
+        )
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}))
+            console.error('[WhatsApp] Template send failed:', err)
+            return { success: false, error: JSON.stringify(err) }
+        }
+
+        return { success: true }
+    } catch (error: any) {
+        console.error('[WhatsApp] Network error:', error)
+        return { success: false, error: error.message }
+    }
+}

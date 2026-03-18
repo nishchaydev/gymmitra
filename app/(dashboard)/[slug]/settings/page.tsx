@@ -132,7 +132,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="space-y-6 p-10 pb-16 block">
+        <div className="space-y-6 p-4 md:p-10 pb-16 block">
             <div className="space-y-0.5">
                 <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
                 <p className="text-muted-foreground">
@@ -143,7 +143,7 @@ export default function SettingsPage() {
 
             <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
                 <aside className="-mx-4 lg:w-1/5">
-                    <nav className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
+                    <nav className="flex overflow-x-auto whitespace-nowrap px-4 pb-2 lg:px-0 lg:pb-0 space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
                         <Button
                             variant={activeTab === 'profile' ? "secondary" : "ghost"}
                             className="justify-start"
@@ -199,7 +199,7 @@ export default function SettingsPage() {
                             <CardContent>
                                 <Form {...form}>
                                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <FormField
                                                 control={form.control}
                                                 name="name"
@@ -233,7 +233,7 @@ export default function SettingsPage() {
                                                 )}
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <FormField
                                                 control={form.control}
                                                 name="email"

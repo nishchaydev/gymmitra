@@ -69,6 +69,7 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         pathname.startsWith('/reset-password') ||
         pathname.startsWith('/onboarding') || // Explicitly public to prevent redirect loops
         pathname.startsWith('/register') || // Allow registration flow
+        pathname.startsWith('/start-trial') || // Public trial signup page
         pathname.startsWith('/invoice/') || // Public invoice sharing
         pathname === '/manifest.webmanifest' || // PWA manifest
         pathname === '/api/csp-report' || // CSP Violation Reporting
@@ -91,6 +92,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         return supabaseResponse
     }
 
+    // 1. SUPABASE AUTH & SESSION REFRESH (ALREADY DONE ABOVE)
+
     // 2. AUTHENTICATION ENFORCEMENT
     if (!user && !isDemoMode) {
         const url = request.nextUrl.clone()
@@ -99,17 +102,51 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         return NextResponse.redirect(url)
     }
 
-    // 3. ONBOARDING ENFORCEMENT
-    const protectedPaths = ['dashboard', 'members', 'invoices', 'products', 'attendance', 'settings']
+    // 3. TRIAL & ACCESS ENFORCEMENT
+    const protectedPaths = ['dashboard', 'members', 'invoices', 'products', 'attendance', 'settings', 'leads', 'staff']
     const isProtectedRoute = 
         protectedPaths.some(p => pathname.startsWith(`/${p}`)) ||
         pathname.match(new RegExp(`^/[^/]+/(?:${protectedPaths.join('|')})`)) !== null ||
         (pathname.startsWith('/api') && !pathname.startsWith('/api/contact') && !pathname.startsWith('/api/auth') && !pathname.startsWith('/api/csp-report') && !pathname.startsWith('/api/webhooks'))
 
-    if (user && !isDemoMode && isProtectedRoute && !isOnboarded) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/onboarding'
-        return NextResponse.redirect(url)
+    if (user && !isDemoMode && isProtectedRoute) {
+        // Extract slug from path if present (/[slug]/...)
+        const slugMatch = pathname.match(/^\/([^/]+)/)
+        const currentSlug = slugMatch ? slugMatch[1] : null
+
+        // Fetch gym profile with trial info
+        const { data: gym } = await supabase
+            .from('GymProfile')
+            .select('saasPlan, trialExpiresAt, onboardingStep')
+            .eq('userId', user.id)
+            .single()
+
+        if (gym) {
+            // A. ONBOARDING ENFORCEMENT
+            if (gym.onboardingStep < 2 && !pathname.includes('/onboarding')) {
+                const url = request.nextUrl.clone()
+                url.pathname = '/onboarding'
+                return NextResponse.redirect(url)
+            }
+
+            // B. TRIAL ENFORCEMENT
+            const now = new Date()
+            const isTrial = gym.saasPlan === 'TRIAL'
+            const isExpired = gym.trialExpiresAt && new Date(gym.trialExpiresAt) < now
+
+            // Redirect to trial-expired if appropriate
+            // BUT exempt billing/settings, dashboard, and trial-expired page itself
+            const isExempt = pathname.includes('/settings/billing') || 
+                             pathname.includes('/trial-expired') ||
+                             pathname.includes('/onboarding') ||
+                             pathname.endsWith('/dashboard')
+
+            if (isTrial && isExpired && !isExempt && currentSlug && !['dashboard', 'login', 'auth', 'register', 'onboarding'].includes(currentSlug)) {
+                const url = request.nextUrl.clone()
+                url.pathname = `/${currentSlug}/trial-expired`
+                return NextResponse.redirect(url)
+            }
+        }
     }
 
     if (isDemoMode) {

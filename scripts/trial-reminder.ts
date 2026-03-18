@@ -89,7 +89,7 @@ async function runTrialReminders() {
         } else if (daysLeft === 0) {
             subject = `🚨 Trial Expired: Action Needed for ${gym.name}`;
             html = `<p>Hi ${gym.ownerName || 'Gym Owner'},</p>
-                    <p>Your 2-month trial of <strong>Gym Mitra</strong> has officially expired.</p>
+                    <p>Your 1-month trial of <strong>Gym Mitra</strong> has officially expired.</p>
                     <p><strong>What happens next?</strong></p>
                     <ul>
                         <li>Your dashboard access is now restricted.</li>

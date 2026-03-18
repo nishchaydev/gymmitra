@@ -548,19 +548,19 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                         const selectedPlan = activePlans.find(p => p.id === form.watch('planId'))
                                         return (
                                             <FormItem className="animate-in fade-in duration-300">
-                                                <FormLabel className="text-base font-semibold text-slate-800">Custom Price Override (₹)</FormLabel>
+                                                <FormLabel className="text-base font-semibold text-slate-800">Membership Price (₹)</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="number"
                                                         min="0"
-                                                        placeholder={selectedPlan ? `Plan default: ₹${Number(selectedPlan.price).toLocaleString('en-IN')}` : '0'}
+                                                        placeholder={selectedPlan ? `Suggested: ₹${Number(selectedPlan.price).toLocaleString('en-IN')}` : 'Enter price'}
                                                         className="h-12 bg-white"
                                                         {...field}
                                                         value={field.value ?? ''}
                                                         onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                                     />
                                                 </FormControl>
-                                                <p className="text-[10px] text-slate-500 font-medium">Leave blank to use the plan&apos;s standard price. Set a value to charge a different rate for this member.</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">Set the price for this member&apos;s plan. Each member can have a different rate.</p>
                                                 <FormMessage />
                                             </FormItem>
                                         )

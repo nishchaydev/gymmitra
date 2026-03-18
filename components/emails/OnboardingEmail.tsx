@@ -163,7 +163,7 @@ export const OnboardingEmail = ({
                             {trialExpiresAt && (
                                 <Section className="bg-[#fff7ed] rounded-[10px] p-[16px] mb-[24px] border border-solid border-[#ffedd5]">
                                     <Text className="text-[14px] font-bold text-[#9a3412] m-0 mb-[4px]">
-                                        ⏱️ Your 60-Day Trial Has Begun
+                                        ⏱️ Your 30-Day Trial Has Begun
                                     </Text>
                                     <Text className="text-[13px] text-[#c2410c] m-0">
                                         Your premium trial expires on <strong>{new Date(trialExpiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 

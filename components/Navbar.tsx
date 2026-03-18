@@ -96,13 +96,13 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
 
     // Calculate trial days left
     const trialDaysLeft = trialExpiresAt 
-        ? Math.max(0, Math.ceil((new Date(trialExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+        ? Math.min(30, Math.max(0, Math.ceil((new Date(trialExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))))
         : 0;
 
     return (
         <nav className="border-b bg-white shadow-sm border-drift-200 sticky top-0 z-50">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
-                <div className="flex items-center gap-4 mr-8">
+                <div className="flex items-center gap-3 mr-6 shrink-0">
                     <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary-500 font-display">
                         <Image
                             src="/icon.png"
@@ -113,30 +113,6 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
                         />
                         <span>GymMitra</span>
                     </Link>
-
-                    {plan === 'TRIAL' && (
-                        <div className={cn(
-                            "hidden sm:flex items-center gap-2 px-2 py-1 rounded-full border",
-                            isExpired 
-                                ? "bg-rose-50 border-rose-200" 
-                                : "bg-amber-50 border-amber-200"
-                        )}>
-                            <span className={cn(
-                                "text-[10px] font-bold uppercase tracking-tight",
-                                isExpired ? "text-rose-700" : "text-amber-700"
-                            )}>{isExpired ? 'Expired' : 'Trial'}</span>
-                            <span className={cn(
-                                "w-1 h-1 rounded-full",
-                                isExpired ? "bg-rose-400" : "bg-amber-400"
-                            )} />
-                            <span className={cn(
-                                "text-[10px] font-medium italic tracking-tight",
-                                isExpired ? "text-rose-600" : "text-amber-600"
-                            )}>
-                                {isExpired ? 'Unlock Now' : `${trialDaysLeft} days left`}
-                            </span>
-                        </div>
-                    )}
                 </div>
 
                 <Button
@@ -150,13 +126,13 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
                     {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </Button>
 
-                <div className="hidden md:flex items-center space-x-4 lg:space-x-4 h-full">
+                <div className="hidden md:flex items-center space-x-4 lg:space-x-5 h-full">
                     {(user || isDemo) && routes.map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "text-sm font-medium transition-all duration-150 h-full flex items-center relative py-1",
+                                "text-sm font-medium transition-all duration-150 h-full flex items-center relative py-1 whitespace-nowrap",
                                 route.active
                                     ? "text-primary-500 font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary-500 after:rounded-full"
                                     : "text-drift-500 hover:text-drift-900"
@@ -171,20 +147,25 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
                     {loading ? (
                         <div className="h-10 w-24 bg-drift-100 animate-pulse rounded-md" />
                     ) : user || isDemo ? (
-                        <div className="flex items-center gap-4">
-                            {plan === 'TRIAL' && role === 'OWNER' && (
-                                <Button asChild variant="default" size="sm" className="bg-amber-600 hover:bg-amber-700 h-8 px-3 text-xs font-bold animate-pulse">
-                                    <Link href={`/${slug}/settings`}>Activate License</Link>
-                                </Button>
-                            )}
+                        <div className="flex items-center gap-3">
                             <div className="hidden lg:flex flex-col items-end">
                                 <span className="text-xs font-medium text-drift-500 max-w-[150px] truncate">
                                     {user?.email || "showcase@gym-mitra.com"}
                                 </span>
                                 <span className="text-[10px] text-primary-600 uppercase tracking-widest font-bold">
-                                    {isDemo ? "Showcase" : (role?.toLowerCase() || "staff")}
+                                    {isDemo ? "Showcase" : (role || "Staff")}
                                 </span>
                             </div>
+                            {plan === 'TRIAL' && (
+                                <span className={cn(
+                                    "text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap",
+                                    isExpired
+                                        ? "bg-rose-50 text-rose-600 border border-rose-200"
+                                        : "bg-amber-50 text-amber-600 border border-amber-200"
+                                )}>
+                                    {isExpired ? 'Trial Expired' : `Trial · ${trialDaysLeft}d left`}
+                                </span>
+                            )}
                             <Button variant="ghost" size="icon" onClick={handleLogout} className="text-drift-500 hover:text-red-600 h-9 w-9">
                                 <LogOut className="h-5 w-5" />
                             </Button>
@@ -224,7 +205,7 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
                                     <div className="flex flex-col p-2 space-y-4">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-drift-900">{user?.email || "showcase@gym-mitra.com"}</span>
-                                            <span className="text-xs text-primary uppercase font-bold">{isDemo ? "Showcase Mode" : role || "Administrator"}</span>
+                                            <span className="text-xs text-primary uppercase font-bold">{isDemo ? "Showcase" : (role || "Staff")}</span>
                                         </div>
                                         <Button variant="outline" size="sm" onClick={handleLogout} className="text-red-600 border-red-100 hover:bg-red-50 justify-start w-full">
                                             <LogOut className="h-5 w-5 mr-2" /> Logout

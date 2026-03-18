@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { ShieldAlert, Mail, Phone, ExternalLink } from "lucide-react"
 
-export default function TrialExpiredPage({ params }: { params: { slug: string } }) {
+export default async function TrialExpiredPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    
     return (
         <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans">
             <div className="max-w-2xl w-full bg-slate-900 border border-red-500/30 rounded-3xl p-8 shadow-2xl shadow-red-500/10">
@@ -14,7 +16,7 @@ export default function TrialExpiredPage({ params }: { params: { slug: string } 
                 </h1>
                 
                 <p className="text-slate-400 text-center text-lg mb-8 leading-relaxed">
-                    Your 2-month trial of <span className="text-white font-semibold">Gym Mitra ERP</span> has ended. 
+                    Your 1-month trial of <span className="text-white font-semibold">Gym Mitra ERP</span> has ended. 
                     To continue managing your gym and access your data, please activate your license.
                 </p>
 
@@ -56,7 +58,7 @@ export default function TrialExpiredPage({ params }: { params: { slug: string } 
 
                 <div className="flex flex-col gap-4">
                     <Link 
-                        href={`/${params.slug}/settings/billing`}
+                        href={`/${slug}/settings/billing`}
                         className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-center transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]"
                     >
                         Activate Main Plan License

@@ -5,7 +5,6 @@ import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-import { getBaseUrl } from "@/lib/utils"
 
 export function BeforeAfter() {
     return (
@@ -108,7 +107,7 @@ export function BeforeAfter() {
                     <p className="text-primary text-2xl font-black mb-8 animate-pulse font-display uppercase tracking-widest">
                         ⚡ Save 90% of your admin time
                     </p>
-                    <Link href={`${getBaseUrl()}/login?view=register`}>
+                    <Link href="/start-trial">
                         <Button className="h-14 px-8 md:px-12 text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/25 transition-all active:scale-95 uppercase tracking-widest rounded-2xl">
                             Start Saving Time Now
                         </Button>

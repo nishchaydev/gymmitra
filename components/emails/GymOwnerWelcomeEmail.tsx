@@ -46,7 +46,7 @@ export const GymOwnerWelcomeEmail = ({
                         <Text style={greeting}>Hi {ownerName},</Text>
 
                         <Text style={paragraph}>
-                            Thank you for joining GymMitra! Your account for <strong>{gymName}</strong> is now fully active with a <strong>60-day premium trial</strong>. 
+                            Thank you for joining GymMitra! Your account for <strong>{gymName}</strong> is now fully active with a <strong>30-day premium trial</strong>. 
                         </Text>
 
                         {expiryDate && (

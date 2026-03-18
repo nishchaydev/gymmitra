@@ -4,17 +4,14 @@ import { SubmitButton } from "@/components/auth/SubmitButton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
 import { AlertCircle, Building2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ClientRegistrationForm } from './ClientRegistrationForm'
 
 export default async function LoginPage(props: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const searchParams = await props.searchParams
-    const defaultTab = searchParams.view === 'register' ? 'register' : 'login'
 
     const getErrorMessage = (msg: string | string[] | undefined) => {
         if (!msg) return null
@@ -57,33 +54,29 @@ export default async function LoginPage(props: {
                             </AlertDescription>
                         </Alert>
                     )}
-                    <Tabs defaultValue={defaultTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="login">Login</TabsTrigger>
-                            <TabsTrigger value="register">Register</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="login">
-                            <form className="space-y-4 pt-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input id="email" name="email" type="email" required placeholder="m@example.com" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">Password</Label>
-                                    <Input id="password" name="password" type="password" required />
-                                </div>
-                                <div className="flex justify-end">
-                                    <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                                        Forgot Password?
-                                    </a>
-                                </div>
-                                <SubmitButton formAction={login} className="w-full" text="Log in" loadingText="Logging in..." />
-                            </form>
-                        </TabsContent>
-                        <TabsContent value="register">
-                            <ClientRegistrationForm />
-                        </TabsContent>
-                    </Tabs>
+                    <form className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" name="email" type="email" required placeholder="m@example.com" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input id="password" name="password" type="password" required />
+                        </div>
+                        <div className="flex justify-end">
+                            <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                                Forgot Password?
+                            </a>
+                        </div>
+                        <SubmitButton formAction={login} className="w-full" text="Log in" loadingText="Logging in..." />
+                    </form>
+                    
+                    <div className="mt-6 text-center text-sm">
+                        <span className="text-muted-foreground">Don't have an account? </span>
+                        <a href="/trial" className="font-medium text-primary hover:underline transition-colors">
+                            Start Free Trial
+                        </a>
+                    </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4 border-t p-4">
                     <form className="w-full">

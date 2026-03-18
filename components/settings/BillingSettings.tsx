@@ -54,7 +54,6 @@ export function BillingSettings({}: BillingSettingsProps) {
                 setLicenseKey('')
                 fetchBillingData()
             } else {
-                // @ts-ignore - Handle possible error field from server action response
                 toast.error(result.error || "Invalid license key")
             }
         } catch (err) {
@@ -70,10 +69,10 @@ export function BillingSettings({}: BillingSettingsProps) {
     const expiryDate = gymData?.trialExpiresAt ? new Date(gymData.trialExpiresAt) : null
     const isExpired = expiryDate ? !isAfter(expiryDate, new Date()) : false
     
-    // Calculate progress (Trial starts at 60 days)
-    const totalTrialDays = 60
+    // Calculate progress (Trial starts at 30 days)
+    const totalTrialDays = 30
     const remainingDays = expiryDate 
-        ? Math.max(0, Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+        ? Math.min(totalTrialDays, Math.max(0, Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))))
         : 0
     const progressPercent = Math.min(100, Math.max(0, (remainingDays / totalTrialDays) * 100))
 
@@ -101,7 +100,7 @@ export function BillingSettings({}: BillingSettingsProps) {
                                     <CreditCard className="w-6 h-6 text-blue-600" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-slate-900 mb-1">Trial Version (60 Days)</h3>
+                                    <h3 className="font-bold text-slate-900 mb-1">Trial Version (30 Days)</h3>
                                     <p className="text-slate-500 text-sm mb-4">
                                         You are currently using the full-featured trial of Gym Mitra ERP. 
                                         {isExpired ? (
@@ -201,8 +200,11 @@ export function BillingSettings({}: BillingSettingsProps) {
                                                 {showKey ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
                                             </Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                                                navigator.clipboard.writeText(gymData?.licenseKey || '')
-                                                toast.success("License key copied")
+                                                if (gymData?.licenseKey) {
+                                                    navigator.clipboard.writeText(gymData.licenseKey)
+                                                        .then(() => toast.success("License key copied"))
+                                                        .catch(() => toast.error("Failed to copy license key to clipboard"))
+                                                }
                                             }}>
                                                 <Copy className="w-3 h-3 text-slate-400" />
                                             </Button>

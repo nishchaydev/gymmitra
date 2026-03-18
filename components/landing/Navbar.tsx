@@ -113,8 +113,8 @@ export function Navbar() {
                                     </Link>
                                 </Button>
                                 <Button asChild className="hidden md:flex bg-midnight text-white font-semibold px-6 rounded-full shadow-lg shadow-midnight/20 hover:bg-midnight/90 hover:shadow-midnight/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                                    <Link href="#contact">
-                                        Request a Demo
+                                    <Link href="/start-trial">
+                                        Start Free Trial
                                     </Link>
                                 </Button>
                             </>
@@ -155,7 +155,7 @@ export function Navbar() {
                                     <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
                                 </Button>
                                 <Button asChild variant="outline" className="w-full font-bold rounded-full">
-                                    <Link href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Request Demo</Link>
+                                    <Link href="/start-trial" onClick={() => setIsMobileMenuOpen(false)}>Start Free Trial</Link>
                                 </Button>
                             </>
                         )}

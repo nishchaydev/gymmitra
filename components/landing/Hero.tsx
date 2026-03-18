@@ -103,7 +103,7 @@ export function Hero() {
                     </MotionWrapper>
 
                     <MotionWrapper delay={0.4} className="flex flex-col sm:flex-row gap-6 justify-center w-full items-center mb-8">
-                        <Link href="/login" className="w-full sm:w-auto">
+                        <Link href="/start-trial" className="w-full sm:w-auto">
                             <Button className="w-full h-14 px-8 text-lg font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/25 transition-all active:scale-95 uppercase tracking-widest rounded-2xl">
                                 Start Free Trial
                                 <ArrowRight className="ml-2 h-6 w-6" />

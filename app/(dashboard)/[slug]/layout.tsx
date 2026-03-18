@@ -63,59 +63,41 @@ export default async function BrandedDashboardLayout({
         redirect(`/${auth.gym.slug}/dashboard`);
     }
 
-    // Check for trial expiry (60 days)
+    // Check for trial status
     const isTrial = auth.gym.saasPlan === 'TRIAL'
     const trialExpiresAt = auth.gym.trialExpiresAt
     const isExpired = Boolean(isTrial && trialExpiresAt && new Date() > new Date(trialExpiresAt))
-
-    // If expired, only allow access to the billing page
-    const requestHeaders = await headers()
-    const url = requestHeaders.get('x-url') || ''
-    const isBillingPage = url.includes('/settings/billing')
-
-    if (isExpired && !isBillingPage) {
-        // We don't redirect to /settings/billing immediately here using 'redirect' 
-        // to avoid infinite loops if headers are wonky, or just show a partial block.
-        // But for strict SaaS enforcement, we should block.
-        // For now, let's just pass an 'isExpired' flag to the Navbar if we want a banner
-    }
+    
+    // Calculate days left
+    const trialDaysLeft = trialExpiresAt 
+        ? Math.ceil((new Date(trialExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+    
+    const showWarningBanner = isTrial && !isExpired && trialDaysLeft <= 7 && auth.role === 'OWNER';
 
     return (
         <>
+            {showWarningBanner && (
+                <div className="bg-amber-600 text-white py-2 px-4 shadow-md sticky top-0 z-[60] flex items-center justify-center gap-3 animate-in slide-in-from-top duration-500">
+                    <AlertTriangle className="w-5 h-5 animate-bounce" />
+                    <p className="text-sm font-bold">
+                        Friendly Alert: Your trial ends in <span className="underline decoration-2 underline-offset-2">{trialDaysLeft} days</span>. 
+                        Please activate your license to avoid any data loss.
+                    </p>
+                    <Button asChild size="sm" variant="secondary" className="h-7 px-3 text-xs font-black uppercase text-amber-700 hover:text-amber-800 bg-white hover:bg-slate-100 border-none">
+                        <Link href={`/${slug}/settings/billing`}>Activate Now</Link>
+                    </Button>
+                </div>
+            )}
             <Navbar 
                 plan={auth.gym.saasPlan} 
                 trialExpiresAt={auth.gym.trialExpiresAt?.toISOString()} 
                 role={auth.role}
                 isExpired={isExpired}
             />
-            <div className={`flex-1 overflow-y-auto pt-4 ${isExpired && !isBillingPage ? 'pointer-events-none opacity-50 blur-[2px]' : ''}`}>
+            <div className="flex-1 overflow-y-auto pt-4 transition-all duration-300">
                 {children}
             </div>
-            {isExpired && !isBillingPage && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/20 backdrop-blur-md">
-                    <div className="max-w-md w-full p-8 bg-white border-2 border-rose-500 rounded-3xl shadow-2xl text-center space-y-6 animate-in fade-in zoom-in duration-300">
-                        <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto">
-                            <AlertTriangle className="w-10 h-10 text-rose-600" />
-                        </div>
-                        <div className="space-y-2">
-                            <h2 className="text-2xl font-black text-slate-900">Trial Period Expired!</h2>
-                            <p className="text-slate-500 font-medium leading-relaxed">
-                                Your 60-day trial of Gym Mitra ERP has ended. To continue managing your gym and access your data, please activate your license.
-                            </p>
-                        </div>
-                        <div className="pt-4 flex flex-col gap-3">
-                            <Button asChild className="w-full bg-slate-900 hover:bg-slate-800 h-12 text-lg font-bold rounded-xl shadow-lg shadow-slate-900/20">
-                                <Link href={`/${slug}/settings/billing`}>
-                                    Go to Billing & Activate
-                                </Link>
-                            </Button>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-                                E-MITRA TECHNOLOGIES SUPPORT: +91 811 881 8812
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

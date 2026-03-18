@@ -5,8 +5,7 @@ import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { ArrowRight, Calculator } from "lucide-react"
-
-import { getBaseUrl } from "@/lib/utils"
+import Link from "next/link"
 
 export function ROICalculator() {
     const [adminHours, setAdminHours] = useState([3])
@@ -101,12 +100,12 @@ export function ROICalculator() {
                                 </div>
                             </div>
 
-                            <a href={`${getBaseUrl()}/login?view=register`} className="block" target="_blank" rel="noopener noreferrer" aria-label="Open registration page">
+                            <Link href="/start-trial" className="block" aria-label="Start free trial">
                                 <Button className="w-full h-16 text-lg font-black rounded-xl bg-primary hover:bg-primary-600 shadow-xl shadow-primary/20 uppercase tracking-widest transition-all hover:-translate-y-1">
                                     Start Saving Now
                                     <ArrowRight className="ml-2 h-6 w-6" />
                                 </Button>
-                            </a>
+                            </Link>
                             <p className="text-center text-[10px] font-bold text-slate-400 mt-6 uppercase tracking-wider">
                                 *Estimated savings based on typical admin efficiency gains.
                             </p>
