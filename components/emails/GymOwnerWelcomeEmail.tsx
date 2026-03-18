@@ -17,6 +17,7 @@ interface GymOwnerWelcomeEmailProps {
     gymName: string
     slug: string
     loginUrl: string
+    trialExpiresAt?: Date
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gym.emitra.dev'
@@ -25,7 +26,8 @@ export const GymOwnerWelcomeEmail = ({
     ownerName = 'Gym Owner',
     gymName = 'Your Gym',
     slug = 'demo',
-    loginUrl = 'https://gym.emitra.dev/login'
+    loginUrl = 'https://gym.emitra.dev/login',
+    trialExpiresAt
 }: GymOwnerWelcomeEmailProps) => {
     const checkinUrl = `${baseUrl}/${slug}/checkin`
 
@@ -43,7 +45,20 @@ export const GymOwnerWelcomeEmail = ({
                         <Text style={greeting}>Hi {ownerName},</Text>
 
                         <Text style={paragraph}>
-                            Thank you for joining GymMitra! Your account for <strong>{gymName}</strong> is now fully active. We're excited to help you streamline your gym operations, save time, and grow your business.
+                            Thank you for joining GymMitra! Your account for <strong>{gymName}</strong> is now fully active with a <strong>60-day premium trial</strong>. 
+                        </Text>
+
+                        {trialExpiresAt && (
+                            <Section style={{...boxSection, backgroundColor: '#fff7ed', borderColor: '#ffedd5', padding: '16px'}}>
+                                <Text style={{...paragraph, margin: 0, fontSize: '14px', color: '#9a3412'}}>
+                                    ⏱️ <strong>Trial Alert:</strong> Your trial expires on <strong>{trialExpiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
+                                    Please activate your license before then to avoid service interruption and data deletion (15 days grace period applies).
+                                </Text>
+                            </Section>
+                        )}
+
+                        <Text style={paragraph}>
+                            We're excited to help you streamline your gym operations, save time, and grow your business.
                         </Text>
 
                         <Section style={boxSection}>

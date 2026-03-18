@@ -24,6 +24,7 @@ interface OnboardingEmailProps {
     loginUrl: string;
     serviceAgreementUrl: string;
     saasPlan: string;
+    trialExpiresAt?: Date;
 }
 
 
@@ -34,6 +35,7 @@ export const OnboardingEmail = ({
     loginUrl,
     serviceAgreementUrl,
     saasPlan,
+    trialExpiresAt,
 }: OnboardingEmailProps) => {
     const previewText = `Welcome to Gym Mitra, ${ownerName}! Your workspace "${gymName}" is ready.`;
     const year = new Date().getFullYear();
@@ -156,6 +158,23 @@ export const OnboardingEmail = ({
                                     </Row>
                                 </Section>
                             </Section>
+
+                            {/* Trial Expiry Notice */}
+                            {trialExpiresAt && (
+                                <Section className="bg-[#fff7ed] rounded-[10px] p-[16px] mb-[24px] border border-solid border-[#ffedd5]">
+                                    <Text className="text-[14px] font-bold text-[#9a3412] m-0 mb-[4px]">
+                                        ⏱️ Your 60-Day Trial Has Begun
+                                    </Text>
+                                    <Text className="text-[13px] text-[#c2410c] m-0">
+                                        Your premium trial expires on <strong>{trialExpiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
+                                        After this, you&apos;ll need a License Key to continue. 
+                                        <br />
+                                        <span className="text-[11px] font-medium mt-[4px] block">
+                                            Important: If not activated within 15 days of expiry, all data will be permanently deleted.
+                                        </span>
+                                    </Text>
+                                </Section>
+                            )}
 
                             {/* CTA Button */}
                             <Section className="text-center mt-[12px] mb-[28px]">

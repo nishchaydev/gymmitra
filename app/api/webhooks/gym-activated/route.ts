@@ -122,7 +122,8 @@ export async function POST(request: NextRequest) {
                 ownerName: fallbackOwnerName,
                 gymName: gym.name,
                 slug: gym.slug || 'demo',
-                loginUrl: `${baseUrl}/login`
+                loginUrl: `${baseUrl}/login`,
+                trialExpiresAt: (gym as any).trialExpiresAt || undefined
             })
         );
 

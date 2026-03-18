@@ -17,15 +17,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Loader2, Save, Building2, Users, Upload, QrCode } from "lucide-react"
+import { Loader2, Save, Building2, Users, Upload, QrCode, CreditCard, ClipboardList } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { StaffManagement } from "@/components/settings/StaffManagement"
 import { PlanManagement } from "@/components/settings/PlanManagement"
+import { BillingSettings } from "@/components/settings/BillingSettings"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { QRPosterSection } from "@/components/settings/QRPosterSection"
-import { ClipboardList } from "lucide-react"
 
 import { WhatsAppTemplates } from "@/components/settings/WhatsAppTemplates"
 
@@ -41,8 +41,6 @@ const settingsSchema = z.object({
     waInvoiceMsg: z.string().max(2000).optional().nullable(),
     waRenewalMsg: z.string().max(2000).optional().nullable(),
     waOverdueMsg: z.string().max(2000).optional().nullable(),
-    saasPlan: z.enum(['BASIC', 'GROWTH', 'ENTERPRISE']).optional(),
-    planTier: z.enum(['STARTER', 'GROWTH', 'PRO', 'ELITE']).optional(),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -54,22 +52,22 @@ export default function SettingsPage() {
     const [gymName, setGymName] = useState('')
     const [saving, setSaving] = useState(false)
 
-     const form = useForm<SettingsFormValues>({
-         resolver: zodResolver(settingsSchema),
-         defaultValues: {
-             name: "",
-             ownerName: "",
-             email: "",
-             phone: "",
-             address: "",
-             gst: "",
-             termsAndConditions: "",
-             waWelcomeMsg: "",
-             waInvoiceMsg: "",
-             waRenewalMsg: "",
-             waOverdueMsg: "",
-         },
-     })
+    const form = useForm<SettingsFormValues>({
+        resolver: zodResolver(settingsSchema),
+        defaultValues: {
+            name: "",
+            ownerName: "",
+            email: "",
+            phone: "",
+            address: "",
+            gst: "",
+            termsAndConditions: "",
+            waWelcomeMsg: "",
+            waInvoiceMsg: "",
+            waRenewalMsg: "",
+            waOverdueMsg: "",
+        },
+    })
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -77,19 +75,19 @@ export default function SettingsPage() {
                 const response = await fetch("/api/settings")
                 if (response.ok) {
                     const data = await response.json()
-                     form.reset({
-                          name: data.name || "",
-                          ownerName: data.ownerName || "",
-                          email: data.email || "",
-                          phone: data.phone || "",
-                          address: data.address || "",
-                          gst: data.gst || "",
-                          termsAndConditions: data.termsAndConditions || "",
-                          waWelcomeMsg: data.waWelcomeMsg || "",
-                          waInvoiceMsg: data.waInvoiceMsg || "",
-                          waRenewalMsg: data.waRenewalMsg || "",
-                          waOverdueMsg: data.waOverdueMsg || "",
-                      })
+                    form.reset({
+                        name: data.name || "",
+                        ownerName: data.ownerName || "",
+                        email: data.email || "",
+                        phone: data.phone || "",
+                        address: data.address || "",
+                        gst: data.gst || "",
+                        termsAndConditions: data.termsAndConditions || "",
+                        waWelcomeMsg: data.waWelcomeMsg || "",
+                        waInvoiceMsg: data.waInvoiceMsg || "",
+                        waRenewalMsg: data.waRenewalMsg || "",
+                        waOverdueMsg: data.waOverdueMsg || "",
+                    })
                     setGymName(data.name || '')
                 }
             } catch {
@@ -169,6 +167,14 @@ export default function SettingsPage() {
                         >
                             <ClipboardList className="mr-2 h-4 w-4" />
                             WhatsApp Templates
+                        </Button>
+                        <Button
+                            variant={activeTab === 'billing' ? "secondary" : "ghost"}
+                            className="justify-start"
+                            onClick={() => setActiveTab('billing')}
+                        >
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Billing & Subscription
                         </Button>
                         <Link href={`/${slug}/settings/import`}>
                             <Button
@@ -268,23 +274,23 @@ export default function SettingsPage() {
                                                 </FormItem>
                                             )}
                                         />
-                                         <FormField
-                                             control={form.control}
-                                             name="gst"
-                                             render={({ field }) => (
-                                                 <FormItem>
-                                                     <FormLabel>GST Number (Optional)</FormLabel>
-                                                     <FormControl>
-                                                         <Input placeholder="22AAAAA0000A1Z5" {...field} />
-                                                     </FormControl>
-                                                     <FormMessage />
-                                                 </FormItem>
-                                             )}
-                                         />
+                                        <FormField
+                                            control={form.control}
+                                            name="gst"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>GST Number (Optional)</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="22AAAAA0000A1Z5" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                         <FormField
-                                             control={form.control}
-                                             name="termsAndConditions"
+                                        <FormField
+                                            control={form.control}
+                                            name="termsAndConditions"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Custom Terms &amp; Conditions</FormLabel>
@@ -316,6 +322,8 @@ export default function SettingsPage() {
                         <QRPosterSection slug={slug} gymName={gymName} />
                     ) : activeTab === 'whatsapp' ? (
                         <WhatsAppTemplates form={form} onSubmit={onSubmit} saving={saving} />
+                    ) : activeTab === 'billing' ? (
+                        <BillingSettings slug={slug} />
                     ) : null}
                 </div>
             </div>

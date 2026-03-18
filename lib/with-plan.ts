@@ -1,11 +1,10 @@
 import { getAuthGym, AuthContext } from '@/lib/auth'
 
-export type SaaSPlan = 'BASIC' | 'GROWTH' | 'ENTERPRISE'
+export type SaaSPlan = 'TRIAL' | 'MAIN_PLAN'
 
 const planHierarchy: Record<SaaSPlan, number> = {
-    BASIC: 0,
-    GROWTH: 1,
-    ENTERPRISE: 2
+    TRIAL: 0,
+    MAIN_PLAN: 1,
 }
 
 /**
@@ -27,7 +26,8 @@ export function withPlan<TArgs extends any[], TReturn>(
             throw new Error('Unauthorized: Authentication required.')
         }
 
-        const currentPlanLevel = planHierarchy[context.gym.saasPlan as SaaSPlan] ?? -1
+        const currentPlan = context.gym.saasPlan as SaaSPlan
+        const currentPlanLevel = planHierarchy[currentPlan] ?? -1
         const requiredPlanLevel = planHierarchy[minimumPlan]
 
         // 2. Enforce SaaS Tier Access
@@ -36,7 +36,16 @@ export function withPlan<TArgs extends any[], TReturn>(
             throw new Error(`Upgrade Required: This action requires the ${minimumPlan} plan or higher.`)
         }
 
-        // 3. Execute the action, passing the secure context down
+        // 3. TRIAL EXPIRATION CHECK
+        if (currentPlan === 'TRIAL' && (context.gym as any).trialExpiresAt) {
+            const hasExpired = new Date() > new Date((context.gym as any).trialExpiresAt)
+            if (hasExpired) {
+                console.warn(`[TRIAL EXPIRED] Gym ${context.gym.id} attempted to perform action after trial expired on ${(context.gym as any).trialExpiresAt}.`)
+                throw new Error('Trial Expired: Your 2-month trial has ended. Please activate your license to continue using Gym Mitra.')
+            }
+        }
+
+        // 4. Execute the action, passing the secure context down
         return action(context, ...args)
     }
 }

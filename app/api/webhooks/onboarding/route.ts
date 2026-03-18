@@ -148,6 +148,7 @@ export async function POST(req: NextRequest) {
                 loginUrl: gymProfile.slug ? `${baseUrl}/${gymProfile.slug}/dashboard` : `${baseUrl}/login`,
                 serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
                 saasPlan: (gymProfile as any).saasPlan || 'BASIC',
+                trialExpiresAt: gymProfile.trialExpiresAt || undefined,
             }));
 
             const { data, error } = await resend.emails.send({

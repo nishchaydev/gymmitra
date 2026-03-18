@@ -15,6 +15,7 @@ import { render } from '@react-email/render'
 import type { GymProfile } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import cryptoLib from 'crypto'
+import { addDays } from 'date-fns'
 
 const onboardingSchema = z.object({
     businessName: z.string().min(2, "Business name is required"),
@@ -30,6 +31,7 @@ const onboardingSchema = z.object({
     plans: z.string().optional(),
     termsAndConditions: z.string().optional(),
     gymRules: z.string().optional(),
+    futurePlanPreference: z.enum(['BASIC', 'PRO', 'ENTERPRISE']).default('BASIC'),
 })
 
 const ONBOARDING_COMPLETE_STEP = 4
@@ -129,6 +131,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         plans: formData.get("plans"),
         termsAndConditions: formData.get("termsAndConditions"),
         gymRules: formData.get("gymRules"),
+        futurePlanPreference: formData.get("futurePlanPreference") || 'PRO',
     }
 
     let gymProfile: GymProfile | undefined;
@@ -169,7 +172,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             select: { slug: true },
         });
 
-        // Generate slug — preserves existing slug if business name base hasn't changed
+        const trialExpiresAt = addDays(new Date(), 60)
         let slug = generateSlug(validatedData.businessName, existingProfile?.slug);
 
         // Retry-on-conflict loop to handle TOCTOU race on the unique slug constraint
@@ -183,6 +186,10 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                         slug,
                         isVerified: true,
                         onboardingStep: ONBOARDING_COMPLETE_STEP,
+                        saasPlan: 'TRIAL' as any,
+                        planTier: 'TRIAL' as any,
+                        futurePlanPreference: validatedData.futurePlanPreference as any,
+                        trialExpiresAt,
                     },
                     create: {
                         userId: userId,
@@ -191,6 +198,10 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                         slug,
                         isVerified: true,
                         onboardingStep: ONBOARDING_COMPLETE_STEP,
+                        saasPlan: 'TRIAL' as any,
+                        planTier: 'TRIAL' as any,
+                        futurePlanPreference: validatedData.futurePlanPreference as any,
+                        trialExpiresAt,
                     }
                 })
                 break; // Success — exit retry loop

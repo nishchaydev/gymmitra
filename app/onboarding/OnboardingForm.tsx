@@ -54,7 +54,8 @@ export default function OnboardingForm() {
             { name: 'Quarterly', durationMonths: 3, price: 4000, enabled: true },
             { name: 'Half-Yearly', durationMonths: 6, price: 7500, enabled: false },
             { name: 'Yearly', durationMonths: 12, price: 14000, enabled: true },
-        ]
+        ],
+        futurePlanPreference: 'BASIC',
     })
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -531,6 +532,29 @@ export default function OnboardingForm() {
                                                 placeholder="Enter gym rules here (e.g. Dress code, equipment use)..."
                                             />
                                             <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md font-medium mt-2">🔔 You can edit these terms and rules later anytime from your Dashboard Settings!</p>
+                                        </div>
+
+                                        <div className="space-y-4 text-left mt-8 border-t pt-6">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <CreditCard className="w-4 h-4 text-primary" />
+                                                <Label className="font-bold">Select Preferred Plan After 2-Month Trial</Label>
+                                            </div>
+                                            <Select
+                                                value={formData.futurePlanPreference}
+                                                onValueChange={(val) => setFormData(prev => ({ ...prev, futurePlanPreference: val }))}
+                                            >
+                                                <SelectTrigger className="bg-white border-2 border-primary/20 focus:border-primary">
+                                                    <SelectValue placeholder="Select Plan" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="BASIC">Basic Plan (Single Location)</SelectItem>
+                                                    <SelectItem value="PRO">Pro Plan (Multi-location & Advanced Features)</SelectItem>
+                                                    <SelectItem value="ENTERPRISE">Enterprise (Custom Setup)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-[10px] text-slate-500 font-medium italic bg-slate-100 p-2 rounded-lg border border-slate-200">
+                                                ✨ Trial Duration: 60 Days. You won't be charged today. We'll use this preference to customize your initial experience and setup.
+                                            </p>
                                         </div>
                                         <div className="p-6 bg-slate-50 rounded-xl border-2 border-dashed border-primary/20 mt-8">
                                             <h3 className="font-bold text-primary mb-2">Almost there!</h3>

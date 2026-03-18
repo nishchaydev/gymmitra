@@ -29,8 +29,12 @@ model GymProfile {
   isVerified         Boolean           @default(false)
   onboardingStep     Int               @default(0)
   timezone           String            @default("Asia/Kolkata")
-  saasPlan           SaaSPlan          @default(BASIC)
-  planTier           PlanTier          @default(STARTER)
+  saasPlan               SaaSPlan          @default(TRIAL)
+  planTier               PlanTier          @default(TRIAL)
+  trialExpiresAt         DateTime?
+  futurePlanPreference   String?
+  licenseKey             String?           @unique
+  licenseActivatedAt     DateTime?
   taxPercentage          Decimal           @default(18.0) @db.Decimal(5, 2)
   invoiceLinkExpiryDays  Int               @default(30) // Days before shared invoice links expire (0 = never)
   onboardingEmailsSentAt DateTime?
@@ -359,16 +363,13 @@ enum SessionStatus {
 }
 
 enum SaaSPlan {
-  BASIC
-  GROWTH
-  ENTERPRISE
+  TRIAL
+  MAIN_PLAN
 }
 
 enum PlanTier {
-  STARTER
-  GROWTH
+  TRIAL
   PRO
-  ELITE
 }
 
 enum LeadStatus {
