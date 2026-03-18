@@ -184,7 +184,7 @@ export function StaffManagement() {
                                             <FormItem>
                                                 <FormLabel>Full Name</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Jane Doe" {...field} />
+                                                    <Input placeholder="Pratibha Shah" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -197,7 +197,7 @@ export function StaffManagement() {
                                             <FormItem>
                                                 <FormLabel>Email Address</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="jane@yourgym.com" {...field} />
+                                                    <Input placeholder="pratibha@yourgym.com" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

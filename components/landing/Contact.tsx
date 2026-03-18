@@ -121,7 +121,7 @@ export function Contact() {
                                             <Input
                                                 id="name"
                                                 name="name"
-                                                placeholder="John Doe"
+                                                placeholder="Nishchay Gupta"
                                                 className="pl-10 h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary"
                                                 required
                                                 disabled={isSubmitting}
@@ -151,7 +151,7 @@ export function Contact() {
                                     <Input
                                         id="gymName"
                                         name="gymName"
-                                        placeholder="Elite Fitness Hub"
+                                        placeholder="Fit India Gym"
                                         className="h-10 bg-white border-slate-200 focus:border-primary focus:ring-primary"
                                         required
                                         disabled={isSubmitting}

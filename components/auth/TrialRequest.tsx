@@ -54,7 +54,7 @@ export function TrialRequest() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" required placeholder="John Doe" />
+                        <Input id="name" required placeholder="Nikhil Pal" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>

@@ -153,7 +153,7 @@ export default function NewInvoiceForm({
                                                 <Input
                                                     value={walkInName}
                                                     onChange={(e) => setWalkInName(e.target.value)}
-                                                    placeholder="John Doe"
+                                                    placeholder="Nishchay Gupta"
                                                     className="bg-white border-drift-200 focus:ring-ion-500"
                                                 />
                                             </div>

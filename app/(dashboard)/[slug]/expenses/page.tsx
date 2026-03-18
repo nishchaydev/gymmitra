@@ -23,7 +23,6 @@ export default async function ExpensesPage({
         redirect('/login')
     }
 
-    // @ts-ignore - Check for schema drift loud during development
     const expenseModel = prisma.expense
     if (!expenseModel) {
         throw new Error("Expense model is missing from Prisma schema!")

@@ -733,7 +733,6 @@ export default async function DashboardPage({
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* @ts-ignore */}
                             <OutstandingBalances data={dashboardData.outstandingInvoices} gymName={gym?.name || ''} slug={slug} waOverdueMsg={gym?.waOverdueMsg} />
                             <UpcomingBirthdays data={upcomingBirthdays} gymName={gym?.name || ''} />
                         </div>
@@ -769,7 +768,6 @@ export default async function DashboardPage({
                                         }) || []
 
                                         const overdue = overdueInvoices.map((inv: any) => {
-                                            // @ts-ignore
                                             const msg = templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'GymMitra', gym?.waOverdueMsg || undefined)
                                             return {
                                                 type: 'OVERDUE',
@@ -784,7 +782,6 @@ export default async function DashboardPage({
                                         const expiring = dashboardData.expiringSubscriptions?.map((sub: any) => {
                                             const diffTime = new Date(sub.endDate).getTime() - today.getTime();
                                             const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
-                                            // @ts-ignore
                                             const msg = templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'GymMitra', gym?.waRenewalMsg || undefined)
                                             return {
                                                 type: 'EXPIRING',

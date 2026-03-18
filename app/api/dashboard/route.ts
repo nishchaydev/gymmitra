@@ -220,7 +220,7 @@ export async function GET(req: NextRequest) {
             .slice(0, 5)
 
          // Process monthly revenue chart - now includes year data
-         let monthlyRevenueData: { name: string; total: number }[] = []
+         const monthlyRevenueData: { name: string; total: number }[] = []
          if (monthlyRevenue && Array.isArray(monthlyRevenue)) {
              // Group by year-month for proper historical data
              const revenueMap = new Map<string, number>()

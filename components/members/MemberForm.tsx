@@ -290,7 +290,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                     <FormLabel>Full Name</FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder="John Doe"
+                                            placeholder="Nikhil Pal"
                                             {...field}
                                             onChange={(e) => {
                                                 const val = e.target.value;
@@ -329,7 +329,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                     <FormItem>
                                         <FormLabel>Email Address <span className="text-red-500">*</span></FormLabel>
                                         <FormControl>
-                                            <Input placeholder="john@example.com" type="email" {...field} />
+                                            <Input placeholder="nikhil@example.com" type="email" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -442,7 +442,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                         <FormItem>
                                             <FormLabel>Name</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Jane Doe" {...field} />
+                                                <Input placeholder="Pratibha Shah" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

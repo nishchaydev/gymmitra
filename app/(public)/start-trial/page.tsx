@@ -18,8 +18,6 @@ export default function StartTrialPage() {
 
             <TrialRequestForm />
 
-            <p className="text-gray-600 text-lg">Join 100+ gyms using GymMitra to automate their business.</p>
-
             <p className="mt-6 text-sm text-muted-foreground">
                 Already have an account?{' '}
                 <Link href="/login" className="text-primary font-medium hover:underline">

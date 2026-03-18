@@ -108,7 +108,7 @@ export default function TrialRequestForm() {
                             name="gymName"
                             value={form.gymName}
                             onChange={handleChange}
-                            placeholder="e.g. Iron Temple Fitness"
+                            placeholder="e.g. Fit India Gym"
                             required
                             minLength={2}
                             className="h-11"
@@ -122,7 +122,7 @@ export default function TrialRequestForm() {
                             name="ownerName"
                             value={form.ownerName}
                             onChange={handleChange}
-                            placeholder="Your full name"
+                            placeholder="e.g. Nishchay Gupta"
                             required
                             minLength={2}
                             className="h-11"
