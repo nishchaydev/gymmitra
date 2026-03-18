@@ -24,7 +24,7 @@ import { StaffManagement } from "@/components/settings/StaffManagement"
 import { PlanManagement } from "@/components/settings/PlanManagement"
 import { BillingSettings } from "@/components/settings/BillingSettings"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { QRPosterSection } from "@/components/settings/QRPosterSection"
 
 import { WhatsAppTemplates } from "@/components/settings/WhatsAppTemplates"
@@ -47,7 +47,11 @@ type SettingsFormValues = z.infer<typeof settingsSchema>
 
 export default function SettingsPage() {
     const { slug } = useParams() as { slug: string }
-    const [activeTab, setActiveTab] = useState('profile')
+    const searchParams = useSearchParams()
+    
+    // Default to the tab specified in the URL, or 'profile' if not provided
+    const defaultTab = searchParams.get('tab') || 'profile'
+    const [activeTab, setActiveTab] = useState(defaultTab)
     const [loading, setLoading] = useState(true)
     const [gymName, setGymName] = useState('')
     const [saving, setSaving] = useState(false)

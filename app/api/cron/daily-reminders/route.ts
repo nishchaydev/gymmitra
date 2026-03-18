@@ -268,6 +268,20 @@ export async function GET(request: NextRequest) {
                         include: { member: { select: { name: true } }, plan: { select: { name: true } } }
                     })
 
+                    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000)
+                    const yesterdayEnd = new Date(todayEnd.getTime() - 24 * 60 * 60 * 1000)
+                    
+                    const yesterdayCheckInsCount = await prisma.attendance.count({
+                        where: {
+                            gymId: gym.id,
+                            date: { gte: yesterdayStart, lte: yesterdayEnd }
+                        }
+                    })
+                    
+                    const activeMembersCount = await prisma.member.count({
+                        where: { gymId: gym.id, status: 'ACTIVE' }
+                    })
+
                     const Component = (await import('@/components/emails/DailyBriefingEmail')).DailyBriefingEmail
                     emailBatch.push({
                         from: FROM_EMAIL,
@@ -293,7 +307,9 @@ export async function GET(request: NextRequest) {
                             overdueInvoices: [], // Overdue logic handled by separate overdue block
                             lowStockItems: lowStockProducts.map((p: any) => ({
                                 id: p.id, name: p.name, stock: p.stock, category: p.category
-                            }))
+                            })),
+                            yesterdayCheckIns: yesterdayCheckInsCount,
+                            activeMembers: activeMembersCount
                         }) as React.ReactElement
                     })
 

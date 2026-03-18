@@ -24,6 +24,8 @@ interface DailyBriefingEmailProps {
     partialPayments: { id: string, memberName: string, amountDue: number, invoiceNumber: string }[]
     overdueInvoices: { id: string, name: string, amount: number }[]
     lowStockItems: { id: string, name: string, stock: number, category: string }[]
+    yesterdayCheckIns?: number
+    activeMembers?: number
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gym.emitra.dev'
@@ -37,7 +39,9 @@ export const DailyBriefingEmail = ({
     followUps = [],
     partialPayments = [],
     overdueInvoices = [],
-    lowStockItems = []
+    lowStockItems = [],
+    yesterdayCheckIns = 0,
+    activeMembers = 0
 }: DailyBriefingEmailProps) => {
     const isAllClear =
         urgentRenewals.length === 0 &&
@@ -59,6 +63,19 @@ export const DailyBriefingEmail = ({
 
                     <Section style={content}>
                         <Text style={greeting}>Good morning, {ownerName} 👋</Text>
+
+                        <Section style={statsBox}>
+                            <Row>
+                                <Column>
+                                    <Text style={statValue}>{activeMembers}</Text>
+                                    <Text style={statLabel}>Active Members</Text>
+                                </Column>
+                                <Column>
+                                    <Text style={statValue}>{yesterdayCheckIns}</Text>
+                                    <Text style={statLabel}>Yesterday's Check-ins</Text>
+                                </Column>
+                            </Row>
+                        </Section>
 
                         {isAllClear ? (
                             <Section style={allClearBox}>
@@ -313,6 +330,27 @@ const footerText = {
     textAlign: 'center' as const,
     padding: '0 40px 30px',
     lineHeight: '1.5',
+}
+
+const statsBox = {
+    backgroundColor: '#f1f5f9',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '24px',
+    textAlign: 'center' as const,
+}
+
+const statValue = {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: '#0f172a',
+    margin: '0',
+}
+
+const statLabel = {
+    fontSize: '14px',
+    color: '#64748b',
+    margin: '4px 0 0 0',
 }
 
 export default DailyBriefingEmail
