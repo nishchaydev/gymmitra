@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { GymMitraLogo } from '@/components/brand/GymMitraLogo'
 
 export const metadata = {
-    title: 'Start Free Trial | Gym Mitra',
-    description: 'Start your 30-day free trial of Gym Mitra. No credit card required. Full access to all features.',
+    title: 'Start Free Trial | GymMitra',
+    description: 'Start your 30-day free trial of GymMitra. No credit card required. Full access to all features.',
 }
 
 export default function StartTrialPage() {
@@ -17,6 +17,8 @@ export default function StartTrialPage() {
             </div>
 
             <TrialRequestForm />
+
+            <p className="text-gray-600 text-lg">Join 100+ gyms using GymMitra to automate their business.</p>
 
             <p className="mt-6 text-sm text-muted-foreground">
                 Already have an account?{' '}

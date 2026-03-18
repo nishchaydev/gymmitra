@@ -18,7 +18,7 @@ export async function GET() {
         const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
         const result = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'Gym Mitra <adminnotification@mail.emitra.dev>',
+            from: process.env.RESEND_FROM_EMAIL || 'GymMitra <adminnotification@mail.emitra.dev>',
             to: ADMIN_EMAILS,
             subject: `🧪 Test Email — Admin Notification (${now})`,
             html: `
@@ -28,11 +28,11 @@ export async function GET() {
                     <table style="border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 16px;">
                         <tr><td style="padding: 6px 12px; color: #64748b;">Sent At</td><td style="padding: 6px 12px; font-weight: 600;">${now}</td></tr>
                         <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Recipients</td><td style="padding: 6px 12px; font-weight: 600;">${ADMIN_EMAILS.join(', ')}</td></tr>
-                        <tr><td style="padding: 6px 12px; color: #64748b;">From</td><td style="padding: 6px 12px; font-weight: 600;">${process.env.RESEND_FROM_EMAIL || 'Admin@mail.emitra.dev'}</td></tr>
+                        <tr><td style="padding: 6px 12px; color: #64748b;">From</td><td style="padding: 6px 12px; font-weight: 600;">${process.env.RESEND_FROM_EMAIL || 'GymMitra <hello@mail.emitra.dev>'}</td></tr>
                         <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Status</td><td style="padding: 6px 12px; font-weight: 600; color: green;">✅ Delivered</td></tr>
                     </table>
                     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                    <p style="color: #94a3b8; font-size: 12px;">Gym Mitra Admin Test — You can delete /api/test-email after verification.</p>
+                    <p style="color: #94a3b8; font-size: 12px;">GymMitra Admin Test — You can delete /api/test-email after verification.</p>
                 </div>
             `,
         })

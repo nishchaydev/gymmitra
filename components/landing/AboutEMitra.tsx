@@ -26,22 +26,22 @@ export function AboutEMitra() {
 
                     <MotionWrapper delay={0.3}>
                         <p className="text-xl text-slate-600 mb-16 leading-relaxed font-medium max-w-2xl mx-auto">
-                            Gym Mitra (GymMitra) is the flagship product of eMitra Technologies – also known as Gym eMitra.
+                            GymMitra (Gym eMitra) is the flagship product of eMitra Technologies.
                             A team obsessed with solving India&apos;s small business challenges through <span className="text-midnight font-black">intelligent automation</span>.
                         </p>
                     </MotionWrapper>
 
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                         {/* Gym Mitra */}
+                         {/* GymMitra */}
                          <MotionWrapper delay={0.4} className="h-full">
                              <div className="bg-white rounded-3xl p-8 border border-primary/20 shadow-xl shadow-primary/5 hover:shadow-primary/10 hover:-translate-y-2 transition-all duration-500 h-full flex flex-col relative overflow-hidden group">
                                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-4 -mt-4 transition-all group-hover:scale-150" />
                                  <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-inner">
                                      <span className="text-3xl" role="img" aria-label="weightlifter emoji">🏋️</span>
                                  </div>
-                                 <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">Gym Mitra</h3>
+                                 <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">GymMitra</h3>
                                  <p className="text-slate-600 font-medium mb-6 flex-1 leading-relaxed">
-                                     Gym Mitra – Complete fitness center management with automated billing, WhatsApp reminders, and member app.
+                                     GymMitra – Complete fitness center management with automated billing, WhatsApp reminders, and member app.
                                  </p>
                                  <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black uppercase tracking-widest w-fit shadow-sm">
                                      Live Now

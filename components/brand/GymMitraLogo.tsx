@@ -25,7 +25,7 @@ export function GymMitraLogo({
             )}>
                 <Image
                     src="/icon.png"
-                    alt="Gym Mitra"
+                    alt="GymMitra"
                     width={40}
                     height={40}
                     className="w-full h-full object-contain"

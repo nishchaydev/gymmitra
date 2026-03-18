@@ -216,7 +216,7 @@ function PosterContent({
                     color: "#0EA5E9",
                     marginBottom: isPreview ? "12px" : "24px",
                 }}>
-                    Powered by Gym Mitra
+                    Powered by GymMitra
                 </p>
                 <h1 style={{
                     fontSize: isPreview ? "52px" : "110px",

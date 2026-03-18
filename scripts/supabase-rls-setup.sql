@@ -1,5 +1,5 @@
 -- ============================================================================
--- Gym Mitra — Supabase Row Level Security (RLS) Setup
+-- GymMitra — Supabase Row Level Security (RLS) Setup
 -- ============================================================================
 -- INSTRUCTIONS:
 -- 1. Go to Supabase Dashboard → SQL Editor

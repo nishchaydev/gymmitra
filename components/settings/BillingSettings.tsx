@@ -83,7 +83,7 @@ export function BillingSettings({}: BillingSettingsProps) {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="text-xl">SaaS Subscription</CardTitle>
-                            <CardDescription>Manage your Gym Mitra ERP plan and license.</CardDescription>
+                            <CardDescription>Manage your GymMitra ERP plan and license.</CardDescription>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                             isTrial ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-green-100 text-green-700 border border-green-200'
@@ -102,7 +102,7 @@ export function BillingSettings({}: BillingSettingsProps) {
                                 <div className="flex-1">
                                     <h3 className="font-bold text-slate-900 mb-1">Trial Version (30 Days)</h3>
                                     <p className="text-slate-500 text-sm mb-4">
-                                        You are currently using the full-featured trial of Gym Mitra ERP. 
+                                        You are currently using the full-featured trial of GymMitra ERP. 
                                         {isExpired ? (
                                             <span className="text-rose-600 font-semibold block mt-1">
                                                 Your trial expired {expiryDate ? formatDistanceToNow(expiryDate) : ''} ago.

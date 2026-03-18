@@ -3,7 +3,7 @@ import { getAuthGym } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
 export const metadata = {
-    title: "PT Schedule - Gym Mitra ERP",
+    title: "PT Schedule - GymMitra ERP",
     description: "Manage personal training sessions and slots.",
 }
 

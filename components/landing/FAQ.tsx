@@ -13,8 +13,8 @@ import Link from "next/link"
 export function FAQ() {
     const faqs = [
         {
-            q: "What is Gym Mitra (GymMitra)?",
-            a: "Gym Mitra, also known as GymMitra or Gym eMitra, is India's #1 gym management software built by eMitra Technologies. It automates member management, billing, WhatsApp reminders, attendance tracking, and invoicing – helping gym owners save 20+ hours every month."
+            q: "What is GymMitra?",
+            a: "GymMitra (also known as Gym eMitra) is India's #1 gym management software built by eMitra Technologies. It automates member management, billing, WhatsApp reminders, attendance tracking, and invoicing – helping gym owners save 20+ hours every month."
         },
         {
             q: "Do I need to pay a setup fee?",

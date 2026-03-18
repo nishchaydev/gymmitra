@@ -7,7 +7,7 @@ const HELP_CATEGORIES = [
     {
         title: "Getting Started",
         icon: Zap,
-        description: "New to Gym Mitra? Start here with our quick setup guides.",
+        description: "New to GymMitra? Start here with our quick setup guides.",
         links: ["System Requirements", "Setting up your Gym Profile", "First 10 minutes"]
     },
     {
@@ -36,7 +36,7 @@ export default function HelpPage() {
             <div className="text-center space-y-4">
                 <h1 className="text-4xl font-black text-slate-900">Help Center</h1>
                 <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
-                    Everything you need to know about growing your gym with Gym Mitra.
+                    Everything you need to know about growing your gym with GymMitra.
                 </p>
                 <div className="relative max-w-xl mx-auto mt-8">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />

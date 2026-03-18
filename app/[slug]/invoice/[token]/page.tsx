@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
 
     // Quick validation before DB hit
     if (!token || token.length < MIN_TOKEN_LENGTH) {
-        return { title: 'Invalid Invoice | Gym Mitra' }
+        return { title: 'Invalid Invoice | GymMitra' }
     }
 
     const invoice = await prisma.invoice.findFirst({
@@ -45,11 +45,11 @@ export async function generateMetadata({ params }: PublicInvoicePageProps): Prom
         }
     })
 
-    if (!invoice) return { title: 'Invoice Not Found or Expired | Gym Mitra' }
+    if (!invoice) return { title: 'Invoice Not Found or Expired | GymMitra' }
 
     return {
-        title: `Invoice ${invoice.invoiceNumber} - ${invoice.gym?.businessName || 'Gym Mitra'}`,
-        description: `View your secure invoice from ${invoice.gym?.businessName || 'your gym'}. Managed by Gym Mitra.`,
+        title: `Invoice ${invoice.invoiceNumber} - ${invoice.gym?.businessName || 'GymMitra'}`,
+        description: `View your secure invoice from ${invoice.gym?.businessName || 'your gym'}. Managed by GymMitra.`,
     }
 }
 
@@ -105,7 +105,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                         <p className="font-semibold text-slate-900">
                             Secure Invoice from {dbInvoice.gym?.businessName || 'Merchant'}
                         </p>
-                        <p className="text-xs text-slate-500">Verified by Gym Mitra</p>
+                        <p className="text-xs text-slate-500">Verified by GymMitra</p>
                     </div>
                 </div>
 
@@ -130,7 +130,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                 {/* Footer */}
                 <div className="max-w-4xl mx-auto mt-8 text-center">
                     <p className="text-sm text-slate-400 font-medium">
-                        Managed with <span className="text-slate-900 font-bold">Gym Mitra</span> - #1 Gym ERP
+                        Managed with <span className="text-slate-900 font-bold">GymMitra</span> - #1 Gym ERP
                     </p>
                     <p className="text-[10px] text-slate-300 mt-1 uppercase tracking-widest font-bold">Secure Public Link</p>
                 </div>

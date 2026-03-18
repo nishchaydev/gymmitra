@@ -211,7 +211,7 @@ export default function SettingsPage() {
                                                     <FormItem>
                                                         <FormLabel>Gym Name</FormLabel>
                                                         <FormControl>
-                                                            <Input placeholder="Gym Mitra" {...field} />
+                                                            <Input placeholder="GymMitra" {...field} />
                                                         </FormControl>
                                                         <FormDescription>
                                                             This is your public display name.

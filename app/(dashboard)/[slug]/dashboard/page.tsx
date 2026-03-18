@@ -26,8 +26,8 @@ import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 export const revalidate = 60
 
 export const metadata: Metadata = {
-    title: "Dashboard",
-    description: "Manage your gym's members, revenue, and attendance with ease.",
+    title: "GymMitra Dashboard",
+    description: "Manage your gym with ease.",
 }
 
 function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName, slug }: { ownerName: string, urgentCount: number, birthdayCount: number, gymName: string, slug: string }) {
@@ -85,7 +85,7 @@ export default async function DashboardPage({
     let dbError = false
     try {
         if (isDemo) {
-            gym = { id: "demo-gym", name: "Gym Mitra Showcase", isVerified: true }
+            gym = { id: "demo-gym", name: "GymMitra Showcase", isVerified: true }
         } else if (auth) {
             gym = auth.gym
         }
@@ -99,7 +99,7 @@ export default async function DashboardPage({
             <div className="flex h-[80vh] items-center justify-center">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <CardTitle>System Maintenance</CardTitle>
+                        <CardTitle className="text-destructive">Error Loading Profile</CardTitle>
                         <CardDescription>We&apos;re experiencing temporary database issues.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -126,7 +126,7 @@ export default async function DashboardPage({
             <div className="flex h-[80vh] items-center justify-center">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <CardTitle>Welcome to Gym Mitra!</CardTitle>
+                        <CardTitle>Welcome to GymMitra Showcase!</CardTitle>
                         <CardDescription>We&apos;re finishing setting up your profile.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -655,7 +655,7 @@ export default async function DashboardPage({
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Overview...</span></div>}>
                         <DashboardOverview
                             slug={slug}
-                            gymName={(gym as any)?.businessName || gym?.name}
+                            gymName={(gym as any)?.businessName || gym?.name || "GymMitra Showcase"}
                             isDemo={isDemo}
                             initialData={{
                                 totalMembers: dashboardData.totalMembers,
@@ -739,7 +739,7 @@ export default async function DashboardPage({
                         </div>
                         <Reports
                             isDemo={isDemo}
-                            gymName={gym?.name || "Gym Mitra"}
+                            gymName={gym?.name || "GymMitra"}
                             initialData={isDemo ? undefined : {
                                 revenue: monthlyRevenueData,
                                 attendance: dashboardData.weeklyAttendance || [],
@@ -770,7 +770,7 @@ export default async function DashboardPage({
 
                                         const overdue = overdueInvoices.map((inv: any) => {
                                             // @ts-ignore
-                                            const msg = templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'Gym Mitra', gym?.waOverdueMsg || undefined)
+                                            const msg = templates.paymentOverdue(inv.member?.name || 'Unknown', Number(inv.total), gym?.name || 'GymMitra', gym?.waOverdueMsg || undefined)
                                             return {
                                                 type: 'OVERDUE',
                                                 invoiceId: inv.id,
@@ -785,7 +785,7 @@ export default async function DashboardPage({
                                             const diffTime = new Date(sub.endDate).getTime() - today.getTime();
                                             const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
                                             // @ts-ignore
-                                            const msg = templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'Gym Mitra', gym?.waRenewalMsg || undefined)
+                                            const msg = templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'GymMitra', gym?.waRenewalMsg || undefined)
                                             return {
                                                 type: 'EXPIRING',
                                                 subId: sub.id,
@@ -801,7 +801,7 @@ export default async function DashboardPage({
                                                 type: 'BIRTHDAY',
                                                 memberId: m.id,
                                                 name: m.name,
-                                                link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym?.name || 'Gym Mitra')) : null
+                                                link: m.phone ? getWhatsAppLink(m.phone, templates.birthdayWish(m.name, gym?.name || 'GymMitra')) : null
                                             })),
                                             overdue: overdue,
                                             inactive: inactiveMembers.map((m: any) => {
@@ -811,7 +811,7 @@ export default async function DashboardPage({
                                                     memberId: m.member_id,
                                                     name: m.member_name,
                                                     daysInactive: daysSince,
-                                                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'Gym Mitra')) : null
+                                                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'GymMitra')) : null
                                                 }
                                             }),
                                             expiring: expiring

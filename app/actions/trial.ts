@@ -184,12 +184,12 @@ async function sendWelcomeEmail(params: {
     })
 
     await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'Gym Mitra <Admin@mail.emitra.dev>',
+        from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
         to: params.email,
-        subject: `Welcome to Gym Mitra, ${params.ownerName}! 🏋️`,
+        subject: `Welcome to GymMitra, ${params.ownerName}! 🏋️`,
         html: `
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px;">
-                <h1 style="font-size: 24px; margin-bottom: 8px;">Welcome to Gym Mitra! 🎉</h1>
+                <h1 style="font-size: 24px; margin-bottom: 8px;">Welcome to GymMitra! 🎉</h1>
                 <p>Hi ${params.ownerName},</p>
                 <p><strong>${params.gymName}</strong> is now set up with a <strong>30-day free trial</strong> (valid until ${trialEnd}).</p>
 
@@ -208,7 +208,7 @@ async function sendWelcomeEmail(params: {
                     Your dashboard: <a href="${baseUrl}/${params.slug}/dashboard">${baseUrl}/${params.slug}/dashboard</a>
                 </p>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 12px;">Gym Mitra · Smart Gym Management</p>
+                <p style="color: #94a3b8; font-size: 12px;">GymMitra · Smart Gym Management</p>
             </div>
         `,
     })
@@ -238,7 +238,7 @@ async function sendAdminNotification(params: {
     const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
     await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'Gym Mitra <Admin@mail.emitra.dev>',
+        from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
         to: ADMIN_EMAILS,
         subject: `🆕 New Trial Signup: ${params.gymName} (${params.city})`,
         html: `
@@ -255,7 +255,7 @@ async function sendAdminNotification(params: {
                     <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Signed Up</td><td style="padding: 6px 12px;">${now}</td></tr>
                 </table>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 12px;">Gym Mitra Admin Alert</p>
+                <p style="color: #94a3b8; font-size: 12px;">GymMitra Admin Alert</p>
             </div>
         `,
     })

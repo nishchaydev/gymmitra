@@ -37,7 +37,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             discount: 0,
             shareToken: "demo-token-123",
             gym: {
-                businessName: "Gym Mitra Showcase",
+                businessName: "GymMitra Showcase",
                 address: "Showcase Street, Digital District",
                 city: "Cloud City",
                 state: "Internet",
@@ -154,7 +154,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         <div className="flex-1 space-y-6 p-8 pt-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Invoice Detail</h2>
+                    <span className="text-xl font-bold tracking-tight text-slate-900">GymMitra</span>
                     <p className="text-slate-500 mt-1">Review, print or download this invoice.</p>
                 </div>
             </div>

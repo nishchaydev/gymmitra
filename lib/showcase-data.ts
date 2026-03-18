@@ -92,7 +92,7 @@ export const SHOWCASE_MEMBERS = [
 
 export const SHOWCASE_PRODUCTS = [
     { id: "p1", name: "Whey Protein Isolate", category: "Supplements", price: 2500, stock: 45, sold: 120 },
-    { id: "p2", name: "Gym Mitra T-Shirt", category: "Apparel", price: 499, stock: 100, sold: 50 },
+    { id: "p2", name: "GymMitra T-Shirt", category: "Apparel", price: 499, stock: 100, sold: 50 },
     { id: "p3", name: "Pre-Workout Blaze", category: "Supplements", price: 1800, stock: 30, sold: 85 },
     { id: "p4", name: "Lifting Straps", category: "Accessories", price: 350, stock: 200, sold: 45 },
     { id: "p5", name: "Protein Bar (Box)", category: "Snacks", price: 1200, stock: 15, sold: 200 },

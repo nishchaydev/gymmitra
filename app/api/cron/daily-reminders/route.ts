@@ -7,7 +7,7 @@ import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
 import React from 'react'
 
-const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
+const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
 const BATCH_SIZE = 100
 
 export const dynamic = 'force-dynamic'

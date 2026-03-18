@@ -125,7 +125,7 @@ export default function CheckInPage() {
             {/* Top Bar: Time and Gym Name */}
             <header className="w-full flex items-center justify-between relative z-20">
                 <div className="flex flex-col">
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter uppercase">{gymName || "Gym Mitra"}</h1>
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter uppercase">{gymName || "GymMitra"}</h1>
                     <div className="flex items-center gap-2 text-sky-400 font-bold text-xs tracking-widest uppercase mt-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
                         Kiosk Mode Active
@@ -309,7 +309,7 @@ export default function CheckInPage() {
                     <span>0xFF293</span>
                 </div>
                 <div className="text-center hidden md:block">
-                    POWERED BY GYM MITRA CORE • SECURE ACCESS SYSTEM
+                    POWERED BY GYMMITRA CORE • SECURE ACCESS SYSTEM
                 </div>
                 <div className="flex items-center gap-4">
                     <span>V4.2.0</span>

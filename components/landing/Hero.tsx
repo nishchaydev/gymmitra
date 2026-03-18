@@ -97,7 +97,7 @@ export function Hero() {
 
                     <MotionWrapper delay={0.3}>
                         <p className="text-xl text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
-                            <strong className="font-medium">Gym Mitra</strong> – The all-in-one platform to manage members, track attendance, and automate billing.
+                            <strong className="font-medium">GymMitra</strong> – The all-in-one platform to manage members, track attendance, and automate billing.
                             Used by high-performance gyms to reclaim 20+ hours every month.
                         </p>
                     </MotionWrapper>

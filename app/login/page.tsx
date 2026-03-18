@@ -41,7 +41,7 @@ export default async function LoginPage(props: {
                     </div>
                     <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
                     <CardDescription>
-                        Login to your Gym Mitra ERP account
+                        Login to your GymMitra account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -85,7 +85,7 @@ export default async function LoginPage(props: {
                         </Button>
                     </form>
                     <div className="flex items-center justify-center gap-4 text-center text-xs text-muted-foreground">
-                        <span>&copy; {new Date().getFullYear()} Gym Mitra ERP</span>
+                        <span>&copy; {new Date().getFullYear()} GymMitra</span>
                         <span className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
                         <div className="flex items-center gap-1.5 font-bold text-slate-400 dark:text-slate-300">
                             <Building2 className="h-3 w-3" />

@@ -18,7 +18,7 @@ interface AtRiskMembersProps {
     isDemo?: boolean
 }
 
-export function AtRiskMembers({ slug, gymName = "Gym Mitra", isDemo = false }: AtRiskMembersProps) {
+export function AtRiskMembers({ slug, gymName = "GymMitra", isDemo = false }: AtRiskMembersProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
 

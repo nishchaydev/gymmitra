@@ -16,7 +16,7 @@ export default async function TrialExpiredPage({ params }: { params: Promise<{ s
                 </h1>
                 
                 <p className="text-slate-400 text-center text-lg mb-8 leading-relaxed">
-                    Your 1-month trial of <span className="text-white font-semibold">Gym Mitra ERP</span> has ended. 
+                    Your 1-month trial of <span className="text-white font-semibold">GymMitra ERP</span> has ended. 
                     To continue managing your gym and access your data, please activate your license.
                 </p>
 

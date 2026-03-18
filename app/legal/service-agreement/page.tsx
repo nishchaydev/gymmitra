@@ -15,7 +15,7 @@ export default function ServiceAgreementPage() {
                         Software Service Agreement
                     </h1>
                     <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">
-                        Terms and Conditions for use of Gym Mitra ERP Platform
+                        Terms and Conditions for use of GymMitra ERP Platform
                     </p>
                     <div className="mt-2 text-sm text-gray-400 flex items-center justify-center gap-2">
                         <Building2 className="h-4 w-4" />
@@ -39,7 +39,7 @@ export default function ServiceAgreementPage() {
                         <section aria-labelledby="section-usage">
                             <h2 id="section-usage" className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4">1. Use of the Service</h2>
                             <p>
-                                <strong>1.1 Provision of Service:</strong> Provider will make the Gym Mitra ERP Software-as-a-Service (SaaS) platform available to the Customer pursuant to this Agreement and the applicable Subscription Plan.
+                                <strong>1.1 Provision of Service:</strong> Provider will make the GymMitra ERP Software-as-a-Service (SaaS) platform available to the Customer pursuant to this Agreement and the applicable Subscription Plan.
                             </p>
                             <p>
                                 <strong>1.2 Customer Responsibilities:</strong> Customer shall (i) be responsible for Users&apos; compliance with this Agreement, (ii) be responsible for the accuracy, quality and legality of Customer Data, and (iii) prevent unauthorized access to or use of the Service.
@@ -73,7 +73,7 @@ export default function ServiceAgreementPage() {
                         <section className="bg-blue-50 dark:bg-blue-950/30 p-6 rounded-lg mt-10 border border-blue-100 dark:border-blue-900">
                             <h4 className="text-lg font-bold text-blue-900 dark:text-blue-200 mb-2">Acceptance of Terms</h4>
                             <p className="text-sm text-blue-800 dark:text-blue-300 m-0">
-                                By logging into the Gym Mitra ERP dashboard, creating staff accounts, or adding members to the system, you acknowledge that you have read, understood, and agree to be bound by the terms of this Service Agreement.
+                                By logging into the GymMitra ERP dashboard, creating staff accounts, or adding members to the system, you acknowledge that you have read, understood, and agree to be bound by the terms of this Service Agreement.
                             </p>
                         </section>
 

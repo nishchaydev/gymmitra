@@ -30,7 +30,7 @@ export function WhatsAppMockup() {
                     </div>
                     <div className="flex flex-col">
                         <div className="font-semibold text-sm text-slate-900 flex items-center gap-1">
-                            Gym Mitra
+                            GymMitra
                             <span className="flex h-3 w-3 bg-[#25D366] rounded-full items-center justify-center">
                                 <CheckCheck className="h-2 w-2 text-white" />
                             </span>

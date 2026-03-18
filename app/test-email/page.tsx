@@ -17,7 +17,7 @@ export default async function TestEmailPage() {
         const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
 
         result = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'Gym Mitra <Admin@mail.emitra.dev>',
+            from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
             to: ADMIN_EMAILS,
             subject: `🧪 Test Email — Admin Notification (${now})`,
             html: `

@@ -21,7 +21,7 @@ function timingSafeEqual(a: string, b: string) {
     }
 }
 
-const FROM_EMAIL = 'Gym Mitra ERP <hello@mail.emitra.dev>'
+const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
 
 // ── Webhook to send Day 0 Welcome Email + Poster ──────────────────
 export async function POST(request: NextRequest) {

@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
-    title: 'Gym Onboarding | Gym Mitra',
+    title: 'Gym Onboarding | GymMitra',
     description: 'Verify your gym and set up your business profile.',
 }
 

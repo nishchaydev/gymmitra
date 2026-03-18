@@ -13,7 +13,7 @@ export async function generateMetadata({
         select: { name: true },
     })
     return {
-        title: gym ? `Check In — ${gym.name}` : "Member Check-In | Gym Mitra",
+        title: gym ? `Check In — ${gym.name}` : "Member Check-In | GymMitra",
         description: "Scan or enter your phone number to check in to the gym.",
     }
 }

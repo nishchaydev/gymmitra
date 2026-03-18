@@ -168,7 +168,7 @@ export function RetentionMetrics({ isDemo = false, initialData }: { isDemo?: boo
                                             Math.floor((new Date().getTime() - new Date(member.lastVisit).getTime()) / (1000 * 3600 * 24))
                                             : 30
 
-                                        const msg = templates.inactivityNudge(member.memberName, daysInactive, 'Gym Mitra')
+                                        const msg = templates.inactivityNudge(member.memberName, daysInactive, 'GymMitra')
                                         const link = getWhatsAppLink(member.phone, msg)
 
                                         return (

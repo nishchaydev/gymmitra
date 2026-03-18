@@ -24,7 +24,7 @@ async function main() {
        }
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Gym Mitra <Admin@mail.emitra.dev>';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>';
     const dummyPassword = 'test-password-123';
     const baseUrl = 'https://gym.emitra.dev';
     const now = new Date();
@@ -43,10 +43,10 @@ async function main() {
     const memberResult = await resend.emails.send({
         from: fromEmail,
         to: ADMIN_EMAILS,
-        subject: `Welcome to Gym Mitra, Test User! 🏋️`,
+        subject: `Welcome to GymMitra, Test User! 🏋️`,
         html: `
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px;">
-                <h1 style="font-size: 24px; margin-bottom: 8px;">Welcome to Gym Mitra! 🎉</h1>
+                <h1 style="font-size: 24px; margin-bottom: 8px;">Welcome to GymMitra! 🎉</h1>
                 <p>Hi Test User,</p>
                 <p><strong>Demo Gym Name</strong> is now set up with a <strong>30-day free trial</strong> (valid until ${trialEnd}).</p>
 
@@ -65,7 +65,7 @@ async function main() {
                     Your dashboard: <a href="${baseUrl}/demo-slug/dashboard">${baseUrl}/demo-slug/dashboard</a>
                 </p>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 12px;">Gym Mitra · Smart Gym Management</p>
+                <p style="color: #94a3b8; font-size: 12px;">GymMitra · Smart Gym Management</p>
             </div>
         `,
     });
@@ -91,7 +91,7 @@ async function main() {
                     <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Signed Up</td><td style="padding: 6px 12px;">${nowString}</td></tr>
                 </table>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 12px;">Gym Mitra Admin Alert</p>
+                <p style="color: #94a3b8; font-size: 12px;">GymMitra Admin Alert</p>
             </div>
         `,
     });

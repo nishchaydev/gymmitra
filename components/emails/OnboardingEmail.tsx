@@ -25,6 +25,7 @@ interface OnboardingEmailProps {
     serviceAgreementUrl: string;
     saasPlan: string;
     trialExpiresAt?: Date;
+    brandName?: string; // Added brandName to interface
 }
 
 
@@ -36,8 +37,9 @@ export const OnboardingEmail = ({
     serviceAgreementUrl,
     saasPlan,
     trialExpiresAt,
+    brandName = "GymMitra", // Added brandName with default value
 }: OnboardingEmailProps) => {
-    const previewText = `Welcome to Gym Mitra, ${ownerName}! Your workspace "${gymName}" is ready.`;
+    const previewText = `Welcome to ${brandName}, ${ownerName}! Your workspace "${gymName}" is ready.`; // Used brandName
     const year = new Date().getFullYear();
     const baseUrl = getBaseUrl();
 
@@ -59,7 +61,7 @@ export const OnboardingEmail = ({
                                 Gym<span style={{ color: '#60a5fa' }}>Mitra</span>
                             </Text>
                             <Text className="text-[11px] tracking-[4px] uppercase m-0 mt-[6px] font-medium" style={{ color: '#94a3b8' }}>
-                                Smart Gym Management
+                                SMART GYM MANAGEMENT
                             </Text>
                         </Section>
 
@@ -251,7 +253,7 @@ export const OnboardingEmail = ({
 
                             {/* Service Agreement */}
                             <Text className="text-[12px] leading-[20px] text-[#94a3b8] m-0 mt-[20px]">
-                                📋 By continuing to use Gym Mitra, you agree to our{' '}
+                                📋 By continuing to use GymMitra, you agree to our{' '}
                                 <Link href={serviceAgreementUrl} className="text-[#3b82f6] underline">
                                     Service Agreement
                                 </Link>. Please review it for your records.
@@ -260,7 +262,7 @@ export const OnboardingEmail = ({
                             <Text className="text-[14px] leading-[22px] text-[#374151] mt-[24px] mb-[0px]">
                                 Best regards,
                                 <br />
-                                <strong>The Gym Mitra Team</strong>
+                                <strong>The GymMitra Team</strong>
                             </Text>
                         </Section>
 
@@ -294,7 +296,7 @@ export const OnboardingEmail = ({
                                 © {year} Gym Emitra Technologies Pvt. Ltd. All rights reserved.
                             </Text>
                             <Text className="text-[11px] text-[#64748b] text-center m-0 mb-[4px]">
-                                Gym Mitra — India&apos;s #1 Gym Management Platform
+                                GymMitra — India&apos;s #1 Gym Management Platform
                             </Text>
                             <Text className="text-[11px] text-[#475569] text-center m-0">
                                 <Link href="mailto:support@emitra.dev" className="text-[#64748b] no-underline">
@@ -309,7 +311,7 @@ export const OnboardingEmail = ({
 
                         {/* Unsubscribe */}
                         <Text className="text-[11px] text-[#9ca3af] text-center mt-[16px]">
-                            You received this email because you signed up for Gym Mitra.
+                            You received this email because you signed up for GymMitra.
                             <br />
                             If you did not create this account, you can safely ignore this email.
                         </Text>

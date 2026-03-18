@@ -152,9 +152,9 @@ export async function POST(req: NextRequest) {
             }));
 
             const { data, error } = await resend.emails.send({
-                from: 'Gym Mitra <hello@mail.emitra.dev>',
+                from: 'GymMitra <hello@mail.emitra.dev>',
                 to: [ownerEmail],
-                subject: `Welcome to Gym Mitra, ${ownerName}! 🎉`,
+                subject: `Welcome to GymMitra, ${ownerName}! 🎉`,
                 html: emailHtml,
             });
 
