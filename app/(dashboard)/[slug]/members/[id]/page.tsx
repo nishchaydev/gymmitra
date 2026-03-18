@@ -90,6 +90,7 @@ export default async function MemberDetailPage({
     }
 
     const activeSubscription = member.subscriptions[0]
+    const hasSimplifiedMembership = member.membershipDuration && member.subscriptionEndDate
 
     // Calculate total outstanding balance
     const outstandingInvoices = member.invoices.filter((inv: any) =>
@@ -136,14 +137,30 @@ export default async function MemberDetailPage({
                             <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Profile Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-6">
-                            <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                                 <div>
                                     <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Phone</p>
                                     <p className="font-bold text-slate-900">{member.phone}</p>
                                 </div>
                                 <div>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Gender</p>
+                                    <p className="font-bold text-slate-900 uppercase text-xs">{member.gender || 'N/A'}</p>
+                                </div>
+                                <div>
                                     <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Joined</p>
                                     <p className="font-bold text-slate-900">{new Date(member.joiningDate).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Birthday</p>
+                                    <p className="font-bold text-slate-900">{member.dob ? new Date(member.dob).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Weight</p>
+                                    <p className="font-bold text-slate-900">{member.weight ? `${member.weight} kg` : 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-drift-400 uppercase tracking-wider mb-1">Height</p>
+                                    <p className="font-bold text-slate-900">{member.height ? `${member.height} cm` : 'N/A'}</p>
                                 </div>
                             </div>
                             {member.email && (
@@ -214,21 +231,26 @@ export default async function MemberDetailPage({
                                     <Activity className="h-4 w-4 text-primary" />
                                 </CardHeader>
                                 <CardContent className="pt-6">
-                                    {activeSubscription ? (
+                                    {activeSubscription || hasSimplifiedMembership ? (
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-start">
-                                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{activeSubscription.plan.name}</h3>
+                                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                                                    {activeSubscription ? activeSubscription.plan.name : `${member.membershipDuration} Month Plan`}
+                                                </h3>
                                                 <Badge className={cn(
                                                     "rounded-full font-black text-[10px] uppercase px-3 h-6",
-                                                    activeSubscription.status === 'ACTIVE' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+                                                    (activeSubscription?.status === 'ACTIVE' || member.status === 'ACTIVE') ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
                                                 )}>
-                                                    {activeSubscription.status}
+                                                    {activeSubscription ? activeSubscription.status : member.status}
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-slate-600 font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
                                                 <Calendar className="h-4 w-4 text-primary" />
                                                 <span>
-                                                    {new Date(activeSubscription.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(activeSubscription.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {activeSubscription 
+                                                        ? `${new Date(activeSubscription.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — ${new Date(activeSubscription.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                                        : `Expires on ${new Date(member.subscriptionEndDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                                    }
                                                 </span>
                                             </div>
                                         </div>

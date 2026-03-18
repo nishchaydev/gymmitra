@@ -9,6 +9,7 @@ interface MembersParams {
     birthday?: string
     page?: number
     take?: number
+    duration?: string
 }
 
 interface MembersResponse {
@@ -26,6 +27,7 @@ async function fetchMembers(params: MembersParams): Promise<MembersResponse> {
     if (params.birthday) searchParams.set('birthday', params.birthday)
     if (params.page !== undefined) searchParams.set('page', String(params.page))
     if (params.take !== undefined) searchParams.set('take', String(params.take))
+    if (params.duration) searchParams.set('duration', params.duration)
 
     const res = await fetch(`/api/members?${searchParams.toString()}`)
     if (!res.ok) throw new Error('Failed to fetch members')

@@ -41,6 +41,8 @@ const settingsSchema = z.object({
     waInvoiceMsg: z.string().max(2000).optional().nullable(),
     waRenewalMsg: z.string().max(2000).optional().nullable(),
     waOverdueMsg: z.string().max(2000).optional().nullable(),
+    saasPlan: z.enum(['BASIC', 'GROWTH', 'ENTERPRISE']).optional(),
+    planTier: z.enum(['STARTER', 'GROWTH', 'PRO', 'ELITE']).optional(),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -52,22 +54,22 @@ export default function SettingsPage() {
     const [gymName, setGymName] = useState('')
     const [saving, setSaving] = useState(false)
 
-    const form = useForm<SettingsFormValues>({
-        resolver: zodResolver(settingsSchema),
-        defaultValues: {
-            name: "",
-            ownerName: "",
-            email: "",
-            phone: "",
-            address: "",
-            gst: "",
-            termsAndConditions: "",
-            waWelcomeMsg: "",
-            waInvoiceMsg: "",
-            waRenewalMsg: "",
-            waOverdueMsg: "",
-        },
-    })
+     const form = useForm<SettingsFormValues>({
+         resolver: zodResolver(settingsSchema),
+         defaultValues: {
+             name: "",
+             ownerName: "",
+             email: "",
+             phone: "",
+             address: "",
+             gst: "",
+             termsAndConditions: "",
+             waWelcomeMsg: "",
+             waInvoiceMsg: "",
+             waRenewalMsg: "",
+             waOverdueMsg: "",
+         },
+     })
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -75,19 +77,19 @@ export default function SettingsPage() {
                 const response = await fetch("/api/settings")
                 if (response.ok) {
                     const data = await response.json()
-                    form.reset({
-                        name: data.name || "",
-                        ownerName: data.ownerName || "",
-                        email: data.email || "",
-                        phone: data.phone || "",
-                        address: data.address || "",
-                        gst: data.gst || "",
-                        termsAndConditions: data.termsAndConditions || "",
-                        waWelcomeMsg: data.waWelcomeMsg || "",
-                        waInvoiceMsg: data.waInvoiceMsg || "",
-                        waRenewalMsg: data.waRenewalMsg || "",
-                        waOverdueMsg: data.waOverdueMsg || "",
-                    })
+                     form.reset({
+                          name: data.name || "",
+                          ownerName: data.ownerName || "",
+                          email: data.email || "",
+                          phone: data.phone || "",
+                          address: data.address || "",
+                          gst: data.gst || "",
+                          termsAndConditions: data.termsAndConditions || "",
+                          waWelcomeMsg: data.waWelcomeMsg || "",
+                          waInvoiceMsg: data.waInvoiceMsg || "",
+                          waRenewalMsg: data.waRenewalMsg || "",
+                          waOverdueMsg: data.waOverdueMsg || "",
+                      })
                     setGymName(data.name || '')
                 }
             } catch {
@@ -266,22 +268,23 @@ export default function SettingsPage() {
                                                 </FormItem>
                                             )}
                                         />
-                                        <FormField
-                                            control={form.control}
-                                            name="gst"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>GST Number (Optional)</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="22AAAAA0000A1Z5" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="termsAndConditions"
+                                         <FormField
+                                             control={form.control}
+                                             name="gst"
+                                             render={({ field }) => (
+                                                 <FormItem>
+                                                     <FormLabel>GST Number (Optional)</FormLabel>
+                                                     <FormControl>
+                                                         <Input placeholder="22AAAAA0000A1Z5" {...field} />
+                                                     </FormControl>
+                                                     <FormMessage />
+                                                 </FormItem>
+                                             )}
+                                         />
+
+                                         <FormField
+                                             control={form.control}
+                                             name="termsAndConditions"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Custom Terms &amp; Conditions</FormLabel>

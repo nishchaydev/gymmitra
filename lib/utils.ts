@@ -15,18 +15,29 @@ export function getBaseUrl(): string {
     return window.location.origin;
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  const isVercel = process.env.VERCEL === "1";
+  const prodUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/\/$/, "");
+  const vUrl = process.env.VERCEL_URL?.replace(/\/$/, "");
+
+  // If on Vercel and APP_URL is localhost, prefer the production URL
+  if (isVercel && prodUrl && appUrl?.includes("localhost")) {
+    return `https://${prodUrl.replace(/^https?:\/\//, "")}`;
+  }
+
+  if (appUrl) {
+    return appUrl;
+  }
+
+  if (process.env.NODE_ENV === "development") {
     return `http://localhost:${process.env.PORT || 3000}`;
   }
 
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  const fallbackUrl = prodUrl || vUrl;
+  if (fallbackUrl) {
+    return `https://${fallbackUrl.replace(/^https?:\/\//, "")}`;
   }
 
-  const vUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-  if (vUrl) {
-    return `https://${vUrl.replace(/^https?:\/\//, '')}`;
-  }
-
-  return 'https://gym.emitra.dev';
+  return "https://gym.emitra.dev";
 }
+

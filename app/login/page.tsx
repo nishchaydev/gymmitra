@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dumbbell, AlertCircle, Building2 } from "lucide-react"
+import Image from "next/image"
+import { AlertCircle, Building2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ClientRegistrationForm } from './ClientRegistrationForm'
 
@@ -31,8 +32,14 @@ export default async function LoginPage(props: {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="bg-primary/10 p-3 rounded-full">
-                            <Dumbbell className="h-8 w-8 text-primary" />
+                        <div className="bg-primary/10 p-2.5 rounded-full">
+                            <Image
+                                src="/icon.png"
+                                alt="GymMitra Logo"
+                                width={32}
+                                height={32}
+                                className="rounded-lg object-contain"
+                            />
                         </div>
                     </div>
                     <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>

@@ -53,6 +53,7 @@ export function MemberFilters() {
     const [isPending, startTransition] = useTransition()
     const currentStatus = searchParams.get('status') || 'ALL'
     const currentMonth = searchParams.get('dobMonth') || 'ALL'
+    const currentDuration = searchParams.get('duration') || 'ALL'
 
     const handleFilter = (status: string) => {
         if (!slug) return // guard: no slug → don't navigate
@@ -88,6 +89,42 @@ export function MemberFilters() {
         })
     }
 
+    const handleFilterBirthday = () => {
+        if (!slug) return
+
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('page')
+
+        if (searchParams.get('birthday') === 'today') {
+            params.delete('birthday')
+        } else {
+            params.set('birthday', 'today')
+            // Optionally clear dobMonth if today is selected
+            params.delete('dobMonth')
+        }
+
+        startTransition(() => {
+            router.push(`/${slug}/members?${params.toString()}`)
+        })
+    }
+
+    const handleFilterDuration = (duration: string) => {
+        if (!slug) return
+
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('page')
+
+        if (duration === 'ALL') {
+            params.delete('duration')
+        } else {
+            params.set('duration', duration)
+        }
+
+        startTransition(() => {
+            router.push(`/${slug}/members?${params.toString()}`)
+        })
+    }
+
     return (
         <div className="flex gap-2 items-center flex-wrap">
             <Select value={currentMonth} onValueChange={handleFilterMonth} disabled={isPending}>
@@ -111,9 +148,32 @@ export function MemberFilters() {
                 </SelectContent>
             </Select>
 
+            <Select value={currentDuration} onValueChange={handleFilterDuration} disabled={isPending}>
+                <SelectTrigger className="w-[140px] h-9 bg-white">
+                    <SelectValue placeholder="Plan Duration" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="ALL">All Durations</SelectItem>
+                    <SelectItem value="1">1 Month</SelectItem>
+                    <SelectItem value="3">3 Months</SelectItem>
+                    <SelectItem value="6">6 Months</SelectItem>
+                    <SelectItem value="12">12 Months</SelectItem>
+                </SelectContent>
+            </Select>
+
             <div className="flex gap-2">
                 <Button
-                    variant={currentStatus === 'ALL' ? 'default' : 'outline'}
+                    variant={searchParams.get('birthday') === 'today' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={handleFilterBirthday}
+                    disabled={isPending}
+                    className={searchParams.get('birthday') === 'today' ? 'bg-pink-600 hover:bg-pink-700 text-white' : ''}
+                >
+                    🎂 Today's Birthday
+                </Button>
+                <div className="w-[1px] h-6 bg-gray-200 mx-1" />
+                <Button
+                    variant={currentStatus === 'ALL' && !searchParams.get('birthday') ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handleFilter('ALL')}
                     disabled={isPending}

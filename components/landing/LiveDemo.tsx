@@ -267,7 +267,7 @@ export function LiveDemo() {
                     <p className="text-slate-300 mb-6 font-bold uppercase tracking-widest text-xs">See how easy it is?</p>
                     <Link href="/login?view=register">
                         <Button size="lg" className="h-16 px-12 text-xl rounded-full bg-primary text-white hover:bg-primary-600 shadow-2xl shadow-primary/20 font-black transition-all hover:-translate-y-1 uppercase tracking-widest">
-                            Start Your Free 14-Day Trial
+                             Start Your Free 2-Month Trial
                             <ArrowRight className="ml-2 h-6 w-6" />
                         </Button>
                     </Link>

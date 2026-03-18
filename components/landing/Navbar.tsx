@@ -5,7 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Dumbbell, Menu, X } from "lucide-react"
+import Image from "next/image"
+import { Menu, X } from "lucide-react"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
@@ -62,8 +63,14 @@ export function Navbar() {
             >
                 <div className="container flex h-20 items-center justify-between px-4 md:px-6 mx-auto">
                     <Link href="/" className="flex items-center gap-3 group">
-                        <div className="bg-primary/10 p-2 rounded-xl shadow-lg shadow-primary/5 group-hover:scale-105 transition-transform duration-300">
-                            <Dumbbell className="h-5 w-5 text-primary" />
+                        <div className="bg-primary/10 p-1.5 rounded-xl shadow-lg shadow-primary/5 group-hover:scale-105 transition-transform duration-300">
+                            <Image
+                                src="/icon.png"
+                                alt="GymMitra Logo"
+                                width={32}
+                                height={32}
+                                className="rounded-lg object-contain"
+                            />
                         </div>
                         <div className="flex flex-col leading-none">
                             <span className="font-display font-bold text-xl text-drift-900 tracking-tight">Gym<span className="text-primary">Mitra</span></span>

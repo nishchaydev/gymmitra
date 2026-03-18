@@ -19,7 +19,7 @@ export function PlanManagement() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        duration: 30,
+        duration: 1,
         price: 0,
     })
 
@@ -97,7 +97,7 @@ export function PlanManagement() {
     }
 
     const openCreate = () => {
-        setFormData({ name: '', description: '', duration: 30, price: 0 })
+        setFormData({ name: '', description: '', duration: 1, price: 0 })
         setEditingId(null)
         setIsFormOpen(true)
     }
@@ -118,7 +118,7 @@ export function PlanManagement() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Duration (Days)</Label>
+                            <Label>Duration (Months)</Label>
                             <Input type="number" value={formData.duration} onChange={e => setFormData({ ...formData, duration: Number(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
@@ -159,7 +159,7 @@ export function PlanManagement() {
                         <div key={plan.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50">
                             <div>
                                 <h4 className="font-bold text-slate-900">{plan.name}</h4>
-                                <p className="text-sm text-slate-500">{plan.duration} Days · ₹{plan.price}</p>
+                                <p className="text-sm text-slate-500">{plan.duration} Month{plan.duration !== 1 ? 's' : ''} · ₹{plan.price}</p>
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="ghost" size="icon" onClick={() => openEdit(plan)}>

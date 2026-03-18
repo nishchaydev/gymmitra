@@ -40,12 +40,12 @@ export default function Home() {
         alternateName: ['GymMitra', 'Gym eMitra'],
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'INR',
-          description: '14-day free trial',
-        },
+         offers: {
+           '@type': 'Offer',
+           price: '0',
+           priceCurrency: 'INR',
+           description: '2-month free trial',
+         },
         description: 'Gym Mitra – India\'s #1 gym management software. Automate billing, WhatsApp reminders, attendance tracking, and member management.',
         aggregateRating: {
           '@type': 'AggregateRating',
@@ -153,8 +153,8 @@ export default function Home() {
                   </div>
                 </Link>
                 <p className="mt-6 text-slate-400 leading-relaxed max-w-sm font-medium">
-                  Gym Mitra (Gym eMitra) – The most advanced ERP solution for modern gyms in India.
-                  Streamlining operations and accelerating growth for 50+ fitness businesses.
+                   Gym Mitra (Gym eMitra) – The most advanced ERP solution for modern gyms in India.
+                   Streamlining operations and accelerating growth for fitness businesses across India.
                 </p>
               </div>
 
@@ -181,15 +181,7 @@ export default function Home() {
                   <li><Link href="/login?view=register" className="text-sm hover:text-ocean transition-colors duration-200">Request Demo</Link></li>
                 </ul>
               </div>
-              <div className="space-y-6">
-                <h4 className="text-sm font-black text-white uppercase tracking-[0.2em] font-display">Resources</h4>
-                <ul className="space-y-4">
-                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">Support Center <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
-                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">API Documentation <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
-                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">Community Forum <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
-                  <li><Link href="#!" aria-disabled="true" className="text-sm text-slate-500 cursor-not-allowed pointer-events-none">Video Tutorials <span className="text-[10px] uppercase ml-1 opacity-70">Soon</span></Link></li>
-                </ul>
-              </div>
+
               <div className="space-y-6 col-span-2 sm:col-span-1">
                 <h4 className="text-sm font-black text-white uppercase tracking-[0.2em] font-display">Legal</h4>
                 <ul className="space-y-4">

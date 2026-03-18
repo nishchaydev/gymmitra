@@ -18,16 +18,18 @@ interface MembersListProps {
     status?: string
     dobMonth?: string
     birthday?: string
+    duration?: string
     page: number
     take: number
 }
 
-export function MembersList({ slug, query, status, dobMonth, birthday, page, take }: MembersListProps) {
+export function MembersList({ slug, query, status, dobMonth, birthday, duration, page, take }: MembersListProps) {
     const { data, isLoading, isFetching, error } = useMembers({
         q: query || undefined,
         status: status || undefined,
         dobMonth: dobMonth || undefined,
         birthday: birthday || undefined,
+        duration: duration || undefined,
         page,
         take,
     })
@@ -72,18 +74,19 @@ export function MembersList({ slug, query, status, dobMonth, birthday, page, tak
                     <div className="hidden md:block border rounded-md overflow-x-auto bg-white">
                         <Table>
                             <TableHeader className="bg-slate-50">
-                                <TableRow>
-                                    <TableHead>Member</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Joined Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
+                                 <TableRow>
+                                     <TableHead>Member</TableHead>
+                                     <TableHead>Phone</TableHead>
+                                     <TableHead>Status</TableHead>
+                                     <TableHead>Joined Date</TableHead>
+                                     <TableHead className="text-center">Days Remaining</TableHead>
+                                     <TableHead className="text-right">Actions</TableHead>
+                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {members.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-auto p-0 border-0">
+                                        <TableCell colSpan={6} className="h-auto p-0 border-0">
                                             {(() => {
                                                 let emptyTitle = "No members yet"
                                                 let emptyDescription = "Start building your community by adding your first gym member."
@@ -104,6 +107,14 @@ export function MembersList({ slug, query, status, dobMonth, birthday, page, tak
                                                 } else if (status === 'INACTIVE') {
                                                     emptyTitle = "No inactive members"
                                                     emptyDescription = "There are no members currently marked as inactive."
+                                                    showAction = false
+                                                } else if (duration && duration !== 'ALL') {
+                                                    emptyTitle = `No ${duration}-month members`
+                                                    emptyDescription = `There are currently no members on a ${duration}-month plan.`
+                                                    showAction = false
+                                                } else if (dobMonth) {
+                                                    emptyTitle = "No birthdays this month"
+                                                    emptyDescription = "No members have birthdays in the selected month."
                                                     showAction = false
                                                 }
 
@@ -141,17 +152,57 @@ export function MembersList({ slug, query, status, dobMonth, birthday, page, tak
                                                     {member.status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell suppressHydrationWarning className="text-slate-500">
-                                                {(() => {
-                                                    const date = new Date(member.joiningDate || member.createdAt);
-                                                    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                                                })()}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm" asChild className="h-8 text-ion-600 hover:text-ion-700 hover:bg-ion-50">
-                                                    <Link href={`/${slug}/members/${member.id}`}>View Profile</Link>
-                                                </Button>
-                                            </TableCell>
+                                             <TableCell suppressHydrationWarning className="text-slate-500">
+                                                 {(() => {
+                                                     const date = new Date(member.joiningDate || member.createdAt);
+                                                     return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                                                 })()}
+                                             </TableCell>
+                                             <TableCell className="text-center">
+                                                 {(() => {
+                                                     const endDate = member.subscriptionEndDate ? new Date(member.subscriptionEndDate) : null;
+                                                     if (!endDate || isNaN(endDate.getTime())) {
+                                                         return <span className="text-xs">No active plan</span>;
+                                                     }
+                                                     
+                                                     const today = new Date();
+                                                     const diffTime = endDate.getTime() - today.getTime();
+                                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                     
+                                                     if (diffDays < 0) {
+                                                         return <span className="text-xs text-destructive">Expired</span>;
+                                                     } else if (diffDays < 3) {
+                                                         return <span className="text-xs text-destructive">{diffDays} days</span>;
+                                                     } else if (diffDays <= 7) {
+                                                         return <span className="text-xs text-warning">{diffDays} days</span>;
+                                                     } else {
+                                                         return <span className="text-xs text-success">{diffDays} days</span>;
+                                                     }
+                                                 })()}
+                                             </TableCell>
+                                             <TableCell className="text-right">
+                                                 <div className="flex space-x-2">
+                                                     <Button variant="ghost" size="sm" asChild className="h-8 text-ion-600 hover:text-ion-700 hover:bg-ion-50">
+                                                         <Link href={`/${slug}/members/${member.id}`}>View Profile</Link>
+                                                     </Button>
+                                                     {member.status === 'ACTIVE' && (
+                                                         <Button
+                                                           variant="outline"
+                                                           size="sm"
+                                                           asChild
+                                                           className="h-8 text-primary hover:text-primary-600 hover:bg-primary/5 border-primary"
+                                                           onClick={(e) => {
+                                                             e.preventDefault();
+                                                             // Open invoice creation flow pre-filled with member details
+                                                             const invoiceUrl = `/${slug}/invoices/new?memberId=${member.id}`;
+                                                             window.location.href = invoiceUrl;
+                                                           }}
+                                                         >
+                                                           Renew
+                                                         </Button>
+                                                     )}
+                                                 </div>
+                                             </TableCell>
                                         </TableRow>
                                     ))
                                 )}
@@ -184,17 +235,43 @@ export function MembersList({ slug, query, status, dobMonth, birthday, page, tak
                                             <p className="font-bold text-slate-900 text-lg leading-tight">{member.name}</p>
                                             <p className="text-sm text-slate-500 font-medium">{member.phone}</p>
                                         </div>
-                                        <Badge
-                                            variant="outline"
-                                            className={`
-                                                text-[10px] uppercase font-bold
-                                                ${member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ''}
-                                                ${member.status === 'EXPIRED' ? 'bg-rose-50 text-rose-700 border-rose-200' : ''}
-                                                ${member.status === 'INACTIVE' ? 'bg-slate-50 text-slate-700 border-slate-200' : ''}
-                                            `}
-                                        >
-                                            {member.status}
-                                        </Badge>
+                                         <Badge
+                                             variant="outline"
+                                             className={`
+                                                 text-[10px] uppercase font-bold
+                                                 ${member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ''}
+                                                 ${member.status === 'EXPIRED' ? 'bg-rose-50 text-rose-700 border-rose-200' : ''}
+                                                 ${member.status === 'INACTIVE' ? 'bg-slate-50 text-slate-700 border-slate-200' : ''}
+                                             `}
+                                         >
+                                             {member.status}
+                                         </Badge>
+                                         {member.status === 'ACTIVE' && (
+                                             <>
+                                                 <div className="mt-1 flex items-center text-xs">
+                                                     {(() => {
+                                                         const endDate = member.subscriptionEndDate ? new Date(member.subscriptionEndDate) : null;
+                                                         if (!endDate || isNaN(endDate.getTime())) {
+                                                             return <span className="ml-2">No active plan</span>;
+                                                         }
+                                                         
+                                                         const today = new Date();
+                                                         const diffTime = endDate.getTime() - today.getTime();
+                                                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                         
+                                                         if (diffDays < 0) {
+                                                             return <span className="ml-2 text-destructive">Expired</span>;
+                                                         } else if (diffDays < 3) {
+                                                             return <span className="ml-2 text-destructive">{diffDays} days</span>;
+                                                         } else if (diffDays <= 7) {
+                                                             return <span className="ml-2 text-warning">{diffDays} days</span>;
+                                                         } else {
+                                                             return <span className="ml-2 text-success">{diffDays} days</span>;
+                                                         }
+                                                     })()}
+                                                 </div>
+                                             </>
+                                         )}
                                     </div>
                                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
                                         <div className="text-[11px] text-slate-500">
@@ -225,7 +302,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, page, tak
                             <Button variant="outline" size="sm" disabled>Previous</Button>
                         ) : (
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/${slug}/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}`}>
+                                <Link href={`/${slug}/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}${duration ? `&duration=${encodeURIComponent(duration)}` : ''}${birthday ? `&birthday=${encodeURIComponent(birthday)}` : ''}`}>
                                     Previous
                                 </Link>
                             </Button>
@@ -234,7 +311,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, page, tak
                             <Button variant="outline" size="sm" disabled>Next</Button>
                         ) : (
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/${slug}/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}`}>
+                                <Link href={`/${slug}/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}${duration ? `&duration=${encodeURIComponent(duration)}` : ''}${birthday ? `&birthday=${encodeURIComponent(birthday)}` : ''}`}>
                                     Next
                                 </Link>
                             </Button>

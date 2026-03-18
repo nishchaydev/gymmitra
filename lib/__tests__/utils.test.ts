@@ -62,4 +62,10 @@ describe('getBaseUrl', () => {
     process.env.VERCEL_PROJECT_PRODUCTION_URL = 'gym-mitra.vercel.app'
     expect(getBaseUrl()).toBe('https://gym-mitra.vercel.app')
   })
+
+  it('prefers NEXT_PUBLIC_APP_URL over development check when both are present', () => {
+    process.env.NODE_ENV = 'development'
+    process.env.NEXT_PUBLIC_APP_URL = 'https://gym.custom-domain.com'
+    expect(getBaseUrl()).toBe('https://gym.custom-domain.com')
+  })
 })

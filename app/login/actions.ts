@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { cookies, headers } from 'next/headers'
 import { recordAuditLog } from '@/lib/audit-logger'
+import { getBaseUrl } from '@/lib/utils'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -102,6 +103,9 @@ export async function signup(formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+            emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+        },
     })
 
     if (authError || !authData.user) {

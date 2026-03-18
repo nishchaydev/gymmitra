@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dumbbell, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react"
+import Image from "next/image"
+import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react"
 import Link from 'next/link'
 
 export default function ForgotPasswordPage() {
@@ -38,8 +39,14 @@ export default function ForgotPasswordPage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="bg-primary/10 p-3 rounded-full">
-                            <Dumbbell className="h-8 w-8 text-primary" />
+                        <div className="bg-primary/10 p-2.5 rounded-full">
+                            <Image
+                                src="/icon.png"
+                                alt="GymMitra Logo"
+                                width={32}
+                                height={32}
+                                className="rounded-lg object-contain"
+                            />
                         </div>
                     </div>
                     <CardTitle className="text-2xl font-bold">Reset your password</CardTitle>

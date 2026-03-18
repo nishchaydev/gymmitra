@@ -9,9 +9,26 @@ import { getBaseUrl } from "@/lib/utils"
 export function Pricing() {
     const plans = [
         {
-            name: "Standard",
-            price: "₹15,000",
-            description: "Full automation for your gym",
+            name: "Pay Per Member",
+            price: "₹8",
+            description: "Best for gyms under 150 members",
+            isPopular: false,
+            features: [
+                "Member management",
+                "Billing & invoicing",
+                "Attendance tracking",
+                "WhatsApp renewal reminders",
+                "WhatsApp birthday wishes",
+                "Expense tracking",
+                "Lead management (CRM)",
+                "Daily briefing emails",
+                "Branded dashboard"
+            ]
+        },
+        {
+            name: "Annual Flat",
+            price: "₹12,000",
+            description: "All features. One payment. No surprises.",
             isPopular: true,
             features: [
                 "Member management",
@@ -26,16 +43,20 @@ export function Pricing() {
             ]
         },
         {
-            name: "Enterprise",
-            price: "Custom",
-            description: "For gym chains & custom needs",
+            name: "Custom",
+            price: "",
+            description: "For larger gyms & chains",
+            isPopular: false,
             features: [
-                "Everything in Standard, plus:",
-                "Multi-branch support",
-                "Advanced analytics & insights",
-                "Custom integrations",
-                "Priority support",
-                "API access"
+                "Member management",
+                "Billing & invoicing",
+                "Attendance tracking",
+                "WhatsApp renewal reminders",
+                "WhatsApp birthday wishes",
+                "Expense tracking",
+                "Lead management (CRM)",
+                "Daily briefing emails",
+                "Branded dashboard"
             ]
         }
     ]
@@ -58,8 +79,13 @@ export function Pricing() {
                         </p>
                     </MotionWrapper>
                 </div>
+                
+                {/* Additional text above cards */}
+                <div className="text-center max-w-2xl mx-auto mb-10 text-sm text-slate-500">
+                    Every plan includes every feature. No limits, no upgrades required.
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map((plan, i) => (
                         <MotionWrapper
                             key={i}
@@ -81,8 +107,14 @@ export function Pricing() {
                             <div className="mb-8">
                                 <h3 className={`text-xl font-black mb-2 font-display ${plan.isPopular ? "text-primary" : "text-midnight"}`}>{plan.name}</h3>
                                 <div className="flex items-baseline gap-1 mb-2">
-                                    <span className="text-3xl font-black text-slate-900 tracking-tight font-display">{plan.price}</span>
-                                    <span className="text-sm text-slate-500 font-bold">{plan.price !== "Custom" ? "/year" : ""}</span>
+                                    {plan.price ? (
+                                        <>
+                                            <span className="text-3xl font-black text-slate-900 tracking-tight font-display">{plan.price}</span>
+                                            <span className="text-sm text-slate-500 font-bold">{plan.name === "Pay Per Member" ? "/member/month" : "/year"}</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-sm text-slate-500 font-bold">Custom</span>
+                                    )}
                                 </div>
                                 <p className="text-sm text-slate-500 leading-relaxed font-medium">{plan.description}</p>
                             </div>
@@ -103,13 +135,29 @@ export function Pricing() {
                                 className={`w-full font-black rounded-xl h-12 transition-all duration-300 uppercase tracking-wider text-xs ${plan.isPopular
                                     ? "bg-primary hover:bg-primary-600 text-white shadow-lg shadow-primary/30 hover:-translate-y-1"
                                     : "border-drift-silver text-slate-600 hover:text-primary hover:border-primary hover:bg-primary/5 bg-transparent"
-                                    }`}
-                                onClick={() => window.location.href = plan.price === "Custom" ? `mailto:${process.env.NEXT_PUBLIC_SALES_EMAIL || 'hello@gymmitra.in'}` : `${getBaseUrl()}/login?view=register`}
+                                }`}
+                                onClick={() => {
+                                    if (plan.name === "Custom") {
+                                        // For Custom plan, link to WhatsApp or contact section
+                                        window.location.href = `${getBaseUrl()}#contact`;
+                                    } else {
+                                        window.location.href = `${getBaseUrl()}/login?view=register`;
+                                    }
+                                }}
                             >
-                                {plan.price === "Custom" ? "Contact Sales" : "Start Free Trial"}
+                                {plan.name === "Custom" 
+                                    ? "Need better pricing? Get in touch" 
+                                    : plan.price === "" 
+                                        ? "Contact Sales" 
+                                        : "Start Free Trial"}
                             </Button>
                         </MotionWrapper>
                     ))}
+                </div>
+                
+                {/* Additional text below cards */}
+                <div className="text-center max-w-2xl mx-auto mt-10 text-sm text-slate-500">
+                    Reply within 5 hours, 7 days a week — WhatsApp support included in every plan.
                 </div>
             </div>
         </section>

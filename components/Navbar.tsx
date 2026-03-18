@@ -7,7 +7,8 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 import { Button } from "./ui/button"
-import { LogOut, User as UserIcon, Dumbbell, Menu, X } from "lucide-react"
+import Image from "next/image"
+import { LogOut, User as UserIcon, Menu, X } from "lucide-react"
 
 export function Navbar() {
     const pathname = usePathname()
@@ -90,7 +91,13 @@ export function Navbar() {
         <nav className="border-b bg-white shadow-sm border-drift-200 sticky top-0 z-50">
             <div className="flex h-16 items-center px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
                 <Link href="/" className="mr-8 flex items-center gap-2 font-bold text-xl text-primary-500 font-display">
-                    <Dumbbell className="h-6 w-6" />
+                    <Image
+                        src="/icon.png"
+                        alt="GymMitra Logo"
+                        width={28}
+                        height={28}
+                        className="rounded-md object-contain"
+                    />
                     <span>GymMitra</span>
                 </Link>
 

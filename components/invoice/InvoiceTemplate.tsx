@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Card, CardContent } from "@/components/ui/card"
-import { Dumbbell, Phone, Mail, MapPin } from 'lucide-react'
+import { Zap, Phone, Mail, MapPin } from 'lucide-react'
 import { UpiQrCode } from './UpiQrCode'
 import { generateUpiQrData } from '@/lib/invoice-utils'
 
@@ -66,7 +66,7 @@ export function InvoiceTemplate({
             <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 text-primary">
-                        <Dumbbell className="w-8 h-8 sm:w-10 sm:h-10" />
+                        <Zap className="w-8 h-8 sm:w-10 sm:h-10 fill-current" />
                         <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase break-words break-all sm:break-normal">{gymInfo.name}</h1>
                     </div>
                     <div className="text-sm text-slate-500 space-y-1">
@@ -233,7 +233,7 @@ export function InvoiceTemplate({
             <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center opacity-50 print:mt-10">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Generated via GymMitra</div>
                 <div className="flex gap-2 text-primary font-black text-lg italic tracking-tighter">
-                    <Dumbbell className="w-5 h-5" />
+                    <Zap className="w-5 h-5 fill-current" />
                     {gymInfo.name}
                 </div>
             </div>

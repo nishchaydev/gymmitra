@@ -33,7 +33,7 @@ export function FAQ() {
             a: "GymMitra is compatible with most standard essl and Realtime biometric devices. Contact our support to verify your specific model."
         },
         {
-            q: "What happens after the 14-day trial?",
+            q: "What happens after the 2-month trial?",
             a: "You can choose a plan to continue. If you decide not to, your account effectively pauses. We don't deduct money automatically as no credit card is required for the trial."
         }
     ]
@@ -73,12 +73,12 @@ export function FAQ() {
                         Ready to automate your gym?
                     </h2>
                     <p className="text-slate-300 text-lg mb-8 max-w-xl mx-auto relative z-10 font-medium">
-                        Join 50+ other smart gym owners today. No credit card required.
+                         Join smart gym owners across India. No credit card required.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
                         <Link href="https://gym.emitra.dev/login?view=register" className="w-full sm:w-auto">
                             <Button size="lg" className="w-full h-16 px-12 text-xl font-bold rounded-full bg-primary hover:bg-primary-600 text-white shadow-2xl shadow-primary/20 transition-all hover:-translate-y-1">
-                                Start 14-Day Free Trial
+                                 Start 2-Month Free Trial
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                         </Link>

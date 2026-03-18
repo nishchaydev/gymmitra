@@ -1,6 +1,6 @@
 "use client"
 
-import { QrCode, Dumbbell, Calendar, User, ChevronRight, Zap, Trophy, Flame } from "lucide-react"
+import { QrCode, Calendar, User, ChevronRight, Zap, Trophy, Flame } from "lucide-react"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
 
 export function MemberAppMockup() {
