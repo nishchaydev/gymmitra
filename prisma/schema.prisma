@@ -38,6 +38,7 @@ model GymProfile {
   taxPercentage          Decimal           @default(18.0) @db.Decimal(5, 2)
   invoiceLinkExpiryDays  Int               @default(30) // Days before shared invoice links expire (0 = never)
   onboardingEmailsSentAt DateTime?
+  lastTrialReminderMilestone Int?    // Days left at last reminder (e.g. 30, 15, 7)
   termsAndConditions     String?           @db.Text
   gymRules               String?           @db.Text
   waWelcomeMsg       String?           @db.Text
@@ -335,8 +336,8 @@ enum PaymentMethod {
 
 enum InvoiceType {
   MEMBERSHIP
-  PRODUCT
-  WALK_IN
+  PRODUCT    // Product sale invoices
+  WALK_IN    // Sales to non-members
   SALE
   RENEWAL
 }
@@ -363,13 +364,15 @@ enum SessionStatus {
 }
 
 enum SaaSPlan {
-  TRIAL
-  MAIN_PLAN
+  // NOTE: BASIC, GROWTH, ENTERPRISE were removed in favor of MAIN_PLAN. 
+  // Migrations handle the data mapping.
+  TRIAL     // Default for new gyms
+  MAIN_PLAN // Licensed gyms
 }
 
 enum PlanTier {
-  TRIAL
-  PRO
+  TRIAL // 60-day premium trial window
+  PRO   // Licensed/Commercial usage
 }
 
 enum LeadStatus {

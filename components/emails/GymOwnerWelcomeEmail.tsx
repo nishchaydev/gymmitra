@@ -30,6 +30,7 @@ export const GymOwnerWelcomeEmail = ({
     trialExpiresAt
 }: GymOwnerWelcomeEmailProps) => {
     const checkinUrl = `${baseUrl}/${slug}/checkin`
+    const expiryDate = trialExpiresAt ? new Date(trialExpiresAt) : null
 
     return (
         <Html>
@@ -48,10 +49,10 @@ export const GymOwnerWelcomeEmail = ({
                             Thank you for joining GymMitra! Your account for <strong>{gymName}</strong> is now fully active with a <strong>60-day premium trial</strong>. 
                         </Text>
 
-                        {trialExpiresAt && (
+                        {expiryDate && (
                             <Section style={{...boxSection, backgroundColor: '#fff7ed', borderColor: '#ffedd5', padding: '16px'}}>
                                 <Text style={{...paragraph, margin: 0, fontSize: '14px', color: '#9a3412'}}>
-                                    ⏱️ <strong>Trial Alert:</strong> Your trial expires on <strong>{trialExpiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
+                                    ⏱️ <strong>Trial Alert:</strong> Your trial expires on <strong>{expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
                                     Please activate your license before then to avoid service interruption and data deletion (15 days grace period applies).
                                 </Text>
                             </Section>

@@ -323,7 +323,7 @@ export default function SettingsPage() {
                     ) : activeTab === 'whatsapp' ? (
                         <WhatsAppTemplates form={form} onSubmit={onSubmit} saving={saving} />
                     ) : activeTab === 'billing' ? (
-                        <BillingSettings slug={slug} />
+                        <BillingSettings />
                     ) : null}
                 </div>
             </div>

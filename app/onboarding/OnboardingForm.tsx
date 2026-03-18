@@ -537,13 +537,13 @@ export default function OnboardingForm() {
                                         <div className="space-y-4 text-left mt-8 border-t pt-6">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <CreditCard className="w-4 h-4 text-primary" />
-                                                <Label className="font-bold">Select Preferred Plan After 2-Month Trial</Label>
+                                                <Label htmlFor="futurePlanPreference-select" className="font-bold cursor-pointer">Select Preferred Plan After 2-Month Trial</Label>
                                             </div>
                                             <Select
                                                 value={formData.futurePlanPreference}
                                                 onValueChange={(val) => setFormData(prev => ({ ...prev, futurePlanPreference: val }))}
                                             >
-                                                <SelectTrigger className="bg-white border-2 border-primary/20 focus:border-primary">
+                                                <SelectTrigger id="futurePlanPreference-select" className="bg-white border-2 border-primary/20 focus:border-primary">
                                                     <SelectValue placeholder="Select Plan" />
                                                 </SelectTrigger>
                                                 <SelectContent>

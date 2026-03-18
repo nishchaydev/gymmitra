@@ -30,8 +30,18 @@ ALTER TYPE "InvoiceType" ADD VALUE 'WALK_IN';
 BEGIN;
 CREATE TYPE "SaaSPlan_new" AS ENUM ('TRIAL', 'MAIN_PLAN');
 ALTER TABLE "GymProfile" ALTER COLUMN "saasPlan" DROP DEFAULT;
-ALTER TABLE "GymProfile" ALTER COLUMN "saasPlan" TYPE "SaaSPlan_new" USING ("saasPlan"::text::"SaaSPlan_new");
-ALTER TABLE "RegistrationCode" ALTER COLUMN "plan" TYPE "SaaSPlan_new" USING ("plan"::text::"SaaSPlan_new");
+ALTER TABLE "GymProfile" ALTER COLUMN "saasPlan" TYPE "SaaSPlan_new" USING (
+  CASE 
+    WHEN "saasPlan"::text IN ('BASIC', 'GROWTH', 'ENTERPRISE') THEN 'MAIN_PLAN'::"SaaSPlan_new"
+    ELSE "saasPlan"::text::"SaaSPlan_new"
+  END
+);
+ALTER TABLE "RegistrationCode" ALTER COLUMN "plan" TYPE "SaaSPlan_new" USING (
+  CASE 
+    WHEN "plan"::text IN ('BASIC', 'GROWTH', 'ENTERPRISE') THEN 'MAIN_PLAN'::"SaaSPlan_new"
+    ELSE "plan"::text::"SaaSPlan_new"
+  END
+);
 ALTER TYPE "SaaSPlan" RENAME TO "SaaSPlan_old";
 ALTER TYPE "SaaSPlan_new" RENAME TO "SaaSPlan";
 DROP TYPE "SaaSPlan_old";
@@ -62,9 +72,11 @@ DROP INDEX "MemberSubscription_gymId_endDate_status_idx";
 -- DropIndex
 DROP INDEX "Product_gymId_isActive_idx";
 
--- AlterTable
 ALTER TABLE "Attendance" ADD COLUMN     "staffId" TEXT,
 ALTER COLUMN "memberId" DROP NOT NULL;
+
+-- Add check constraint for attendance
+ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_member_or_staff_check" CHECK (("memberId" IS NOT NULL AND "staffId" IS NULL) OR ("memberId" IS NULL AND "staffId" IS NOT NULL));
 
 -- AlterTable
 ALTER TABLE "GymProfile" ADD COLUMN     "futurePlanPreference" TEXT,
@@ -82,6 +94,9 @@ ALTER COLUMN "saasPlan" SET DEFAULT 'TRIAL';
 -- AlterTable
 ALTER TABLE "Invoice" ADD COLUMN     "amountPaid" DECIMAL(10,2) NOT NULL DEFAULT 0.0,
 ADD COLUMN     "balanceDue" DECIMAL(10,2) NOT NULL DEFAULT 0.0;
+
+-- Backfill balanceDue for existing invoices
+UPDATE "Invoice" SET "balanceDue" = "amount";
 
 -- AlterTable
 ALTER TABLE "Member" ADD COLUMN     "city" TEXT,

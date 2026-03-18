@@ -6,20 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Loader2, ShieldCheck, CreditCard, AlertTriangle, CheckCircle2, Copy, ExternalLink, Mail, Phone } from "lucide-react"
+import { Loader2, ShieldCheck, CreditCard, AlertTriangle, CheckCircle2, Copy, ExternalLink, Mail, Phone, Eye, EyeOff } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { activateLicense } from "@/app/actions/saas-actions"
 import { formatDistanceToNow, isAfter } from "date-fns"
 
-interface BillingSettingsProps {
-    slug: string
-}
+interface BillingSettingsProps {}
 
-export function BillingSettings({ slug }: BillingSettingsProps) {
+export function BillingSettings({}: BillingSettingsProps) {
     const [loading, setLoading] = useState(true)
     const [gymData, setGymData] = useState<any>(null)
     const [licenseKey, setLicenseKey] = useState('')
     const [activating, setActivating] = useState(false)
+    const [showKey, setShowKey] = useState(false)
 
     const fetchBillingData = async () => {
         try {
@@ -27,6 +26,8 @@ export function BillingSettings({ slug }: BillingSettingsProps) {
             if (res.ok) {
                 const data = await res.json()
                 setGymData(data)
+            } else {
+                toast.error("Failed to load billing data: Server error")
             }
         } catch (err) {
             toast.error("Failed to load billing data")
@@ -53,6 +54,7 @@ export function BillingSettings({ slug }: BillingSettingsProps) {
                 setLicenseKey('')
                 fetchBillingData()
             } else {
+                // @ts-ignore - Handle possible error field from server action response
                 toast.error(result.error || "Invalid license key")
             }
         } catch (err) {
@@ -64,7 +66,7 @@ export function BillingSettings({ slug }: BillingSettingsProps) {
 
     if (loading) return <div className="flex h-32 items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
 
-    const isTrial = gymData?.plan === 'TRIAL'
+    const isTrial = gymData?.saasPlan === 'TRIAL'
     const expiryDate = gymData?.trialExpiresAt ? new Date(gymData.trialExpiresAt) : null
     const isExpired = expiryDate ? !isAfter(expiryDate, new Date()) : false
     
@@ -190,14 +192,21 @@ export function BillingSettings({ slug }: BillingSettingsProps) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-4 bg-slate-50 border rounded-xl">
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">License Key</span>
-                                    <div className="flex items-center justify-between">
-                                        <code className="text-slate-900 font-mono font-bold">•••• •••• •••• {gymData?.licenseKey?.slice(-4) || '••••'}</code>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                                            navigator.clipboard.writeText(gymData?.licenseKey || '')
-                                            toast.success("License key copied")
-                                        }}>
-                                            <Copy className="w-3 h-3 text-slate-400" />
-                                        </Button>
+                                    <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <code className="text-slate-900 font-mono font-bold flex-1">
+                                            {showKey ? gymData?.licenseKey : `•••• •••• •••• ${gymData?.licenseKey?.slice(-4) || '••••'}`}
+                                        </code>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowKey(!showKey)}>
+                                                {showKey ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                                navigator.clipboard.writeText(gymData?.licenseKey || '')
+                                                toast.success("License key copied")
+                                            }}>
+                                                <Copy className="w-3 h-3 text-slate-400" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-4 bg-slate-50 border rounded-xl">

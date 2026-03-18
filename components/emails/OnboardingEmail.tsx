@@ -166,7 +166,7 @@ export const OnboardingEmail = ({
                                         ⏱️ Your 60-Day Trial Has Begun
                                     </Text>
                                     <Text className="text-[13px] text-[#c2410c] m-0">
-                                        Your premium trial expires on <strong>{trialExpiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
+                                        Your premium trial expires on <strong>{new Date(trialExpiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
                                         After this, you&apos;ll need a License Key to continue. 
                                         <br />
                                         <span className="text-[11px] font-medium mt-[4px] block">

@@ -131,7 +131,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         plans: formData.get("plans"),
         termsAndConditions: formData.get("termsAndConditions"),
         gymRules: formData.get("gymRules"),
-        futurePlanPreference: formData.get("futurePlanPreference") || 'PRO',
+        futurePlanPreference: formData.get("futurePlanPreference") || 'BASIC',
     }
 
     let gymProfile: GymProfile | undefined;

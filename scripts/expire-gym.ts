@@ -25,13 +25,15 @@ async function expireGymTrial() {
         const gym = await prisma.gymProfile.update({
             where: { slug },
             data: {
-                plan: 'TRIAL',
+                saasPlan: 'TRIAL',
                 trialExpiresAt: subDays(new Date(), 10)
             }
         });
         console.log(`✅ Updated ${gym.name}. Trial expired at: ${gym.trialExpiresAt}`);
+        process.exit(0);
     } catch (e) {
         console.error('Error:', e);
+        process.exit(1);
     }
 }
 

@@ -64,7 +64,7 @@ describe('getBaseUrl', () => {
   })
 
   it('prefers NEXT_PUBLIC_APP_URL over development check when both are present', () => {
-    process.env.NODE_ENV = 'development'
+    vi.stubEnv('NODE_ENV', 'development')
     process.env.NEXT_PUBLIC_APP_URL = 'https://gym.custom-domain.com'
     expect(getBaseUrl()).toBe('https://gym.custom-domain.com')
   })

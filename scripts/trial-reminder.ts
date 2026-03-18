@@ -22,7 +22,7 @@ async function runTrialReminders() {
     // 1. Get all gyms on TRIAL plan
     const trialGyms = await prisma.gymProfile.findMany({
         where: {
-            plan: 'TRIAL',
+            saasPlan: 'TRIAL',
             trialExpiresAt: { not: null }
         },
         select: {
@@ -31,7 +31,8 @@ async function runTrialReminders() {
             email: true,
             ownerName: true,
             trialExpiresAt: true,
-            slug: true
+            slug: true,
+            lastTrialReminderMilestone: true
         }
     });
 
@@ -100,7 +101,13 @@ async function runTrialReminders() {
         }
 
         if (subject && html) {
-            console.log(`Sending reminder to ${gym.email} (${daysLeft} days left)`);
+            // Check if reminder for this milestone was already sent
+            if (gym.lastTrialReminderMilestone === daysLeft) {
+                console.log(`- Skipping ${daysLeft}d reminder for ${gym.slug} (milestone already met)`);
+                continue;
+            }
+
+            console.log(`Sending reminder to ${gym.slug} (${daysLeft} days left)`);
             try {
                 await resend.emails.send({
                     from: FROM_EMAIL,
@@ -108,9 +115,15 @@ async function runTrialReminders() {
                     subject: subject,
                     html: html
                 });
+                
+                await prisma.gymProfile.update({
+                    where: { id: gym.id },
+                    data: { lastTrialReminderMilestone: daysLeft }
+                });
+
                 console.log(`✅ Sent reminder to ${gym.name}`);
             } catch (err) {
-                console.error(`❌ Failed to send email to ${gym.name}:`, err);
+                console.error(`❌ Failed to send email for ${gym.slug}:`, err);
             }
         }
     }

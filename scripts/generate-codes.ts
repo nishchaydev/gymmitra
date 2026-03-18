@@ -23,7 +23,7 @@ Usage:
   npx tsx scripts/generate-codes.ts [PLAN] [COUNT] [MAX_USES]
   
 Plans:
-  BASIC, GROWTH, ENTERPRISE
+  TRIAL, MAIN_PLAN
   
 Examples:
   npx tsx scripts/generate-codes.ts GROWTH
@@ -68,7 +68,7 @@ Examples:
         await prisma.registrationCode.create({
             data: {
                 code: 'MITRA-GROWTH-VIP',
-                plan: SaaSPlan.GROWTH,
+                plan: SaaSPlan.MAIN_PLAN,
                 maxUses: 999
             }
         });
