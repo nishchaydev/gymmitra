@@ -78,8 +78,11 @@ export default async function BrandedDashboardLayout({
                 <div className="bg-amber-600 text-white py-2 px-4 shadow-md sticky top-0 z-[60] flex items-center justify-center gap-3 animate-in slide-in-from-top duration-500">
                     <AlertTriangle className="w-5 h-5 animate-bounce" />
                     <p className="text-sm font-bold">
-                        Friendly Alert: Your trial ends in <span className="underline decoration-2 underline-offset-2">{daysRemaining} days</span>. 
-                        Please activate your license to avoid any service interruption.
+                        {daysRemaining === 0 ? (
+                            <>Your trial <span className="underline decoration-2 underline-offset-2 font-black uppercase tracking-tight">ends today!</span> Please activate your license to avoid any service interruption.</>
+                        ) : (
+                            <>Friendly Alert: Your trial ends in <span className="underline decoration-2 underline-offset-2">{daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}</span>. Please activate your license to avoid any service interruption.</>
+                        )}
                     </p>
                     <Button asChild size="sm" variant="secondary" className="h-7 px-3 text-xs font-black uppercase text-amber-700 hover:text-amber-800 bg-white hover:bg-slate-100 border-none">
                         <Link href={`/${slug}/settings?tab=billing`}>Activate Now</Link>

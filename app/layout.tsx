@@ -60,6 +60,7 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  manifest: '/manifest.webmanifest',
 };
 
 import { Toaster } from "@/components/ui/sonner"

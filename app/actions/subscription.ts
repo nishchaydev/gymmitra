@@ -35,25 +35,55 @@ export async function activateSubscription(code: string) {
             return { success: false, error: "This code has expired" };
         }
 
-        // Process the activation
+        // Process the activation inside a transaction
         await prisma.$transaction(async (tx) => {
-            // Update code usage
-            await tx.registrationCode.update({
-                where: { id: registrationCode.id },
-                data: {
-                    usedCount: { increment: 1 },
-                    // If this was the last use, mark as used up
-                    isActive: (registrationCode.usedCount + 1) >= registrationCode.maxUses ? false : true,
-                },
+            // Re-verify the code inside the transaction to prevent race conditions
+            const registrationCode = await tx.registrationCode.findUnique({
+                where: { code: code.trim() },
             });
 
+            if (!registrationCode || !registrationCode.isActive) {
+                throw new Error("Invalid or inactive license key");
+            }
+
+            if (registrationCode.usedCount >= registrationCode.maxUses) {
+                throw new Error("License key has reached its maximum uses");
+            }
+
+            if (registrationCode.expiresAt && new Date() > new Date(registrationCode.expiresAt)) {
+                throw new Error("License key has expired");
+            }
+
+            // Atomically increment the usedCount only if it's still below maxUses
+            const updateResult = await tx.registrationCode.updateMany({
+                where: {
+                    id: registrationCode.id,
+                    usedCount: { lt: registrationCode.maxUses },
+                    isActive: true
+                },
+                data: {
+                    usedCount: { increment: 1 },
+                    // If this was the last use, we'll mark as inactive later or rely on the lt check
+                }
+            });
+
+            if (updateResult.count === 0) {
+                throw new Error("This code has just been reached its maximum uses by another user");
+            }
+
+            // Update isActive status if it's now used up
+            if ((registrationCode.usedCount + 1) >= registrationCode.maxUses) {
+                await tx.registrationCode.update({
+                    where: { id: registrationCode.id },
+                    data: { isActive: false }
+                });
+            }
+
             // Update gym profile
-            // If the code doesn't specify trial days, assume lifetime for MAIN_PLAN unless otherwise specified
             await tx.gymProfile.update({
                 where: { id: auth.gym.id },
                 data: {
                     saasPlan: registrationCode.plan,
-                    // Typically a purchased license code removes the trial expiry
                     trialExpiresAt: null, 
                     licenseKey: code.trim(),
                     licenseActivatedAt: new Date(),

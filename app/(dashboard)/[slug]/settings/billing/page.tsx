@@ -77,7 +77,7 @@ export default async function BillingPage({
                                             {isExpired ? "Expired" : `${trialDaysLeft} Days Left`}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Ends {format(new Date(trialDocs!), "MMM d, yyyy")}
+                                            Ends {trialDocs ? format(new Date(trialDocs), "MMM d, yyyy") : "N/A"}
                                         </p>
                                     </div>
                                 ) : (

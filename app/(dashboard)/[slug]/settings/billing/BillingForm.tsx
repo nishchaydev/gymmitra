@@ -69,13 +69,21 @@ export function BillingForm() {
                         />
                     </div>
                     {status.type === "error" && (
-                        <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                        <div 
+                            role="alert" 
+                            aria-atomic="true"
+                            className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md"
+                        >
                             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                             <p>{status.message}</p>
                         </div>
                     )}
                     {status.type === "success" && (
-                        <div className="flex items-start gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
+                        <div 
+                            role="alert" 
+                            aria-atomic="true"
+                            className="flex items-start gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200"
+                        >
                             <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                             <p>{status.message}</p>
                         </div>
