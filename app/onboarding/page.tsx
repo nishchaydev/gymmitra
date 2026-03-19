@@ -1,7 +1,5 @@
 import OnboardingForm from './OnboardingForm'
 import { Metadata } from 'next'
-import { prisma } from '@/lib/prisma'
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 
@@ -19,7 +17,6 @@ export default async function OnboardingPage() {
 
     let shouldRedirect = false
     try {
-        // Access restricted to gyms that are not yet verified
         if (auth.gym.isVerified) {
             shouldRedirect = true
         }
@@ -35,16 +32,15 @@ export default async function OnboardingPage() {
     }
 
     return (
-        <div className="container mx-auto py-10">
-            <div className="text-center mb-10">
-                <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-slate-900 mb-2">
-                    Verify Your Gym
-                </h1>
-                <p className="text-slate-500 max-w-lg mx-auto">
-                    Let&apos;s get your business details set up for professional invoicing and member management.
-                </p>
+        <div className="min-h-screen relative overflow-hidden bg-background premium-bg">
+            {/* Background Blobs */}
+            <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob opacity-40" />
+            <div className="absolute top-0 -right-4 w-72 h-72 bg-ocean/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000 opacity-40" />
+            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-midnight/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000 opacity-40" />
+
+            <div className="relative z-10 min-h-screen">
+                <OnboardingForm />
             </div>
-            <OnboardingForm />
         </div>
     )
 }

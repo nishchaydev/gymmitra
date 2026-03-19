@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, AlertTriangle } from "lucide-react"
+import { Loader2, AlertTriangle, TrendingUp, Users, Calendar, Bell } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +17,6 @@ interface ReportsProps {
 }
 
 const tooltipStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }
-
 
 interface RevenueData {
     name: string
@@ -44,36 +42,94 @@ interface ExpiringMembership {
     daysLeft?: number
 }
 
-export function Reports({ isDemo = false, initialData, gymName = "Your Gym" }: ReportsProps & { initialData?: any }) {
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * SECTION HEADER — consistent premium header for each section
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function SectionHeader({ icon, title, subtitle, accentColor }: {
+    icon: React.ReactNode
+    title: string
+    subtitle: string
+    accentColor: string
+}) {
     return (
-        <div className="space-y-4">
-            <Tabs defaultValue="revenue" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="revenue">Revenue</TabsTrigger>
-                    <TabsTrigger value="attendance">Attendance</TabsTrigger>
-                    <TabsTrigger value="expiring">Expiring Memberships</TabsTrigger>
-                    <TabsTrigger value="reminders" className="relative">
-                        Reminders
-                        <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-                    </TabsTrigger>
-                </TabsList>
+        <div className="flex items-center gap-3 mb-4">
+            <div className={`flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${accentColor} shadow-sm`}>
+                {icon}
+            </div>
+            <div>
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h3>
+                <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
+            </div>
+        </div>
+    )
+}
 
-                <TabsContent value="revenue" className="space-y-4">
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * MAIN REPORTS — all sections scroll vertically, no sub-tabs
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+export function Reports({ isDemo = false, initialData, gymName = "Your Gym" }: ReportsProps & { initialData?: any }) {
+    const sectionCard = "border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl overflow-hidden"
+
+    return (
+        <div className="space-y-8">
+            {/* ── Section 1: Revenue ── */}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <SectionHeader
+                    icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
+                    title="Revenue Overview"
+                    subtitle="Monthly income from memberships & product sales"
+                    accentColor="from-emerald-50 to-emerald-100"
+                />
+                <Card className={sectionCard}>
                     <RevenueReport initialData={initialData?.revenue} />
-                </TabsContent>
+                </Card>
+            </div>
 
-                <TabsContent value="attendance" className="space-y-4">
+            {/* Divider */}
+            <div className="border-t border-slate-100" />
+
+            {/* ── Section 2: Attendance ── */}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+                <SectionHeader
+                    icon={<Users className="h-5 w-5 text-blue-600" />}
+                    title="Attendance Trends"
+                    subtitle="Daily check-in counts for the past week"
+                    accentColor="from-blue-50 to-blue-100"
+                />
+                <Card className={sectionCard}>
                     <AttendanceReport initialData={initialData?.attendance} />
-                </TabsContent>
+                </Card>
+            </div>
 
-                <TabsContent value="expiring" className="space-y-4">
+            {/* Divider */}
+            <div className="border-t border-slate-100" />
+
+            {/* ── Section 3: Expiring Memberships ── */}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                <SectionHeader
+                    icon={<Calendar className="h-5 w-5 text-amber-600" />}
+                    title="Expiring Memberships"
+                    subtitle="Members whose plans end within 7 days"
+                    accentColor="from-amber-50 to-amber-100"
+                />
+                <Card className={sectionCard}>
                     <ExpiringMembershipsReport initialData={initialData?.expiring} gymName={gymName} />
-                </TabsContent>
+                </Card>
+            </div>
 
-                <TabsContent value="reminders" className="space-y-4">
-                    <RemindersReport isDemo={isDemo} initialData={initialData?.reminders} />
-                </TabsContent>
-            </Tabs>
+            {/* Divider */}
+            <div className="border-t border-slate-100" />
+
+            {/* ── Section 4: Reminders ── */}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+                <SectionHeader
+                    icon={<Bell className="h-5 w-5 text-rose-600" />}
+                    title="Smart Reminders"
+                    subtitle="Birthdays, overdue payments, and inactive members"
+                    accentColor="from-rose-50 to-rose-100"
+                />
+                <RemindersReport isDemo={isDemo} initialData={initialData?.reminders} />
+            </div>
         </div>
     )
 }
@@ -115,15 +171,25 @@ function RemindersReport({ isDemo = false, initialData }: { isDemo?: boolean, in
             })
     }, [isDemo, initialData])
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+    if (loading) return (
+        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl">
+            <CardContent className="flex justify-center p-8">
+                <Loader2 className="animate-spin text-primary" />
+            </CardContent>
+        </Card>
+    )
 
-    if (!data) return <div className="text-center p-8 text-muted-foreground">Failed to load reminders.</div>
+    if (!data) return (
+        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl">
+            <CardContent className="text-center p-8 text-muted-foreground">Failed to load reminders.</CardContent>
+        </Card>
+    )
 
     const totalReminders = (data.birthdays?.length || 0) + (data.overdue?.length || 0) + (data.inactive?.length || 0) + (data.expiring?.length || 0)
 
     if (totalReminders === 0) {
         return (
-            <Card>
+            <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl">
                 <CardContent className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
                     <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
                         <MessageSquare className="h-6 w-6 text-emerald-600" />
@@ -135,41 +201,54 @@ function RemindersReport({ isDemo = false, initialData }: { isDemo?: boolean, in
         )
     }
 
-    const renderActionList = (title: string, items: any[], icon: any, colorClass: string, subtitleFunc: (item: any) => string) => {
-        if (!items || items.length === 0) return null
+    const categoryConfig = [
+        { key: 'birthdays', title: 'Birthdays Today', icon: '🎂', gradient: 'from-rose-500 to-pink-500', bg: 'bg-rose-50', text: 'text-rose-700', subtitleFn: () => 'Wish them a happy birthday!' },
+        { key: 'overdue', title: 'Overdue Payments', icon: '💳', gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-50', text: 'text-amber-700', subtitleFn: (i: any) => `₹${i.amount} pending` },
+        { key: 'expiring', title: 'Expiring Soon', icon: '📅', gradient: 'from-blue-500 to-indigo-500', bg: 'bg-blue-50', text: 'text-blue-700', subtitleFn: (i: any) => `Expires in ${i.daysLeft} days` },
+        { key: 'inactive', title: 'Inactive Members', icon: '⚠️', gradient: 'from-slate-500 to-gray-600', bg: 'bg-slate-50', text: 'text-slate-700', subtitleFn: (i: any) => `Absent for ${i.daysInactive} days` },
+    ]
 
-        return (
-            <div className="space-y-3 mb-6">
-                <h3 className={`text-sm font-bold flex items-center gap-2 ${colorClass}`}>
-                    {icon} {title} ({items.length})
-                </h3>
-                <div className="grid gap-3 md:grid-cols-2">
-                    {items.map((item, i) => (
-                        <Card key={i} className="shadow-sm border-slate-200">
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <div>
-                                    <p className="font-semibold text-slate-900">{item.name}</p>
-                                    <p className="text-xs font-medium text-slate-500 mt-0.5">{subtitleFunc(item)}</p>
-                                </div>
-                                <a href={item.link} target="_blank" rel="noopener noreferrer">
-                                    <Button size="sm" className="bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm gap-2">
-                                        <MessageSquare className="h-4 w-4" /> Send
-                                    </Button>
-                                </a>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </div>
-        )
-    }
+    const activeCategories = categoryConfig.filter(c => data[c.key]?.length > 0)
 
     return (
-        <div className="space-y-2">
-            {renderActionList("Birthdays Today", data.birthdays, <span className="text-xl">🎂</span>, "text-rose-500", () => "Wish them a happy birthday!")}
-            {renderActionList("Overdue Payments", data.overdue, <span className="text-xl">💳</span>, "text-amber-600", (i) => `₹${i.amount} pending`)}
-            {renderActionList("Expiring Soon (≤ 7 days)", data.expiring, <span className="text-xl">📅</span>, "text-blue-600", (i) => `Expires in ${i.daysLeft} days`)}
-            {renderActionList("Inactive (> 14 days)", data.inactive, <span className="text-xl">⚠️</span>, "text-slate-600", (i) => `Absent for ${i.daysInactive} days`)}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            {activeCategories.map(cat => (
+                <Card key={cat.key} className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl overflow-hidden">
+                    {/* Gradient top strip */}
+                    <div className={`h-1 bg-gradient-to-r ${cat.gradient}`} />
+                    <CardHeader className="px-4 py-3 pb-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base">{cat.icon}</span>
+                                <CardTitle className={`text-sm font-bold ${cat.text}`}>{cat.title}</CardTitle>
+                            </div>
+                            <Badge variant="secondary" className={`text-[10px] font-bold ${cat.bg} ${cat.text} border-0 px-2`}>
+                                {data[cat.key].length}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0 space-y-2">
+                        {data[cat.key].map((item: any, i: number) => (
+                            <div key={i} className={`flex items-center justify-between p-3 rounded-xl ${cat.bg}/50 border border-slate-100/80 hover:shadow-sm transition-all duration-200`}>
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className={`flex-shrink-0 h-8 w-8 rounded-lg ${cat.bg} flex items-center justify-center`}>
+                                        <span className={`text-xs font-black ${cat.text}`}>{(item.name || '?')[0]}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-slate-900 text-[13px] truncate">{item.name}</p>
+                                        <p className="text-[11px] font-medium text-slate-500 truncate">{cat.subtitleFn(item)}</p>
+                                    </div>
+                                </div>
+                                <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 ml-2">
+                                    <Button size="sm" className="h-7 bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm gap-1.5 rounded-lg text-[11px] font-bold px-2.5">
+                                        <MessageSquare className="h-3 w-3" /> Send
+                                    </Button>
+                                </a>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            ))}
         </div>
     )
 }
@@ -197,25 +276,29 @@ function RevenueReport({ initialData }: { initialData?: RevenueData[] }) {
             })
     }, [initialData])
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
+    if (loading) return (
+        <CardContent className="flex justify-center p-8">
+            <Loader2 className="animate-spin text-primary" />
+        </CardContent>
+    )
 
     return (
-        <Card>
-            <CardHeader>
+        <>
+            <CardHeader className="px-5 py-4 bg-gradient-to-r from-emerald-50/40 to-transparent border-b border-slate-100/50">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle>Monthly Revenue</CardTitle>
-                        <CardDescription>Income from memberships and product sales over the last 6 months.</CardDescription>
+                        <CardTitle className="text-base font-bold text-slate-900">Monthly Revenue</CardTitle>
+                        <CardDescription className="text-xs text-slate-500 font-medium mt-0.5">Income from memberships and sales over 6 months</CardDescription>
                     </div>
                     <a href="/api/reports/download?type=invoices" download>
-                        <Button variant="outline" size="sm">
-                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        <Button variant="outline" size="sm" className="rounded-lg text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm">
+                            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
                         </Button>
                     </a>
                 </div>
             </CardHeader>
-            <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
+            <CardContent className="pl-2 pr-4 py-4">
+                <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={data}>
                         <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} tickFormatter={(value) => {
@@ -226,14 +309,14 @@ function RevenueReport({ initialData }: { initialData?: RevenueData[] }) {
                         }} />
                         <Tooltip
                             formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
-                            cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
+                            cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
                             contentStyle={tooltipStyle}
                         />
-                        <Bar dataKey="total" radius={[6, 6, 0, 0]} className="fill-primary" />
+                        <Bar dataKey="total" radius={[8, 8, 0, 0]} className="fill-primary" />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
-        </Card>
+        </>
     )
 }
 
@@ -259,37 +342,41 @@ function AttendanceReport({ initialData }: { initialData?: AttendanceData[] }) {
             })
     }, [initialData])
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
+    if (loading) return (
+        <CardContent className="flex justify-center p-8">
+            <Loader2 className="animate-spin text-primary" />
+        </CardContent>
+    )
 
     return (
-        <Card>
-            <CardHeader>
+        <>
+            <CardHeader className="px-5 py-4 bg-gradient-to-r from-blue-50/40 to-transparent border-b border-slate-100/50">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle>Weekly Footfall</CardTitle>
-                        <CardDescription>Daily check-in counts for the past 7 days.</CardDescription>
+                        <CardTitle className="text-base font-bold text-slate-900">Weekly Footfall</CardTitle>
+                        <CardDescription className="text-xs text-slate-500 font-medium mt-0.5">Daily check-in counts for the past 7 days</CardDescription>
                     </div>
                     <a href="/api/reports/download?type=attendance" download>
-                        <Button variant="outline" size="sm">
-                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        <Button variant="outline" size="sm" className="rounded-lg text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm">
+                            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
                         </Button>
                     </a>
                 </div>
             </CardHeader>
-            <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
+            <CardContent className="pl-2 pr-4 py-4">
+                <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={data}>
                         <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
                         <Tooltip
-                            cursor={{ fill: 'var(--color-primary-light, rgba(0, 102, 255, 0.05))' }}
+                            cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                             contentStyle={tooltipStyle}
                         />
-                        <Bar dataKey="total" radius={[6, 6, 0, 0]} className="fill-primary" />
+                        <Bar dataKey="total" radius={[8, 8, 0, 0]} className="fill-primary" />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
-        </Card>
+        </>
     )
 }
 
@@ -323,60 +410,68 @@ function ExpiringMembershipsReport({ initialData, gymName = "this gym" }: { init
             })
     }, [initialData])
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
+    if (loading) return (
+        <CardContent className="flex justify-center p-8">
+            <Loader2 className="animate-spin text-primary" />
+        </CardContent>
+    )
 
     return (
-        <Card>
-            <CardHeader>
+        <>
+            <CardHeader className="px-5 py-4 bg-gradient-to-r from-amber-50/40 to-transparent border-b border-slate-100/50">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                        <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
                             Expiring Soon
                         </CardTitle>
-                        <CardDescription>Memberships ending in the next 7 days.</CardDescription>
+                        <CardDescription className="text-xs text-slate-500 font-medium mt-0.5">Memberships ending in the next 7 days</CardDescription>
                     </div>
                     <a href="/api/reports/download?type=members" download>
-                        <Button variant="outline" size="sm">
-                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        <Button variant="outline" size="sm" className="rounded-lg text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm">
+                            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
                         </Button>
                     </a>
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5">
                 {data.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                        No memberships expiring soon.
+                        <div className="h-10 w-10 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                            <Calendar className="h-5 w-5 text-emerald-500" />
+                        </div>
+                        <p className="font-medium text-slate-700">No memberships expiring soon</p>
+                        <p className="text-xs text-slate-400 mt-1">All members are safely within their plan period</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {data.map((sub) => (
-                            <div key={sub.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                                <div className="flex items-center gap-4">
-                                    <Avatar>
+                            <div key={sub.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm">
                                         <AvatarImage src={sub.member.photo || undefined} />
-                                        <AvatarFallback>
+                                        <AvatarFallback className="bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 font-bold text-xs">
                                             {(sub.member?.name || "?")[0]}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <p className="font-medium">{sub.member.name}</p>
-                                        <p className="text-sm text-muted-foreground">{sub.plan.name}</p>
+                                        <p className="font-semibold text-sm text-slate-900">{sub.member.name}</p>
+                                        <p className="text-xs text-slate-500">{sub.plan.name}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2.5">
                                     <div className="text-right">
-                                        <div className="font-medium text-sm">
-                                            Expires: {format(new Date(sub.endDate), "dd/MM/yyyy")}
+                                        <div className="text-xs font-medium text-slate-600">
+                                            {format(new Date(sub.endDate), "dd MMM yyyy")}
                                         </div>
-                                        <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600 bg-yellow-50">
-                                            {sub.daysLeft ?? 0} days left
+                                        <Badge variant="outline" className="mt-1 text-[10px] font-bold border-amber-200 text-amber-700 bg-amber-50">
+                                            {sub.daysLeft ?? 0}d left
                                         </Badge>
                                     </div>
                                     <Button
                                         size="icon"
                                         variant="ghost"
-                                        className="text-brand-primary hover:text-emerald-700 hover:bg-emerald-50"
+                                        className="h-8 w-8 rounded-lg text-[#25D366] hover:text-emerald-700 hover:bg-emerald-50"
                                         onClick={() => {
                                             const link = getWhatsAppLink(
                                                 sub.member.phone,
@@ -393,6 +488,6 @@ function ExpiringMembershipsReport({ initialData, gymName = "this gym" }: { init
                     </div>
                 )}
             </CardContent>
-        </Card>
+        </>
     )
 }

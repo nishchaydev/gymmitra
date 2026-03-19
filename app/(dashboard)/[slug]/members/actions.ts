@@ -384,97 +384,119 @@ export const importMembers = withAuth(async (context, data: any[]) => {
             }
         }
 
-        // 3. Process rows in batches to avoid timeout
-        const BATCH_SIZE = 25;
-        for (let i = 0; i < data.length; i += BATCH_SIZE) {
-            const batch = data.slice(i, i + BATCH_SIZE);
+        // 3. Process rows in memory to prepare insert batches
+        const newMembers: any[] = []
+        const newSubscriptions: any[] = []
 
-            await Promise.all(batch.map(async (row) => {
-                const rawPhone = String(row.phone || "").trim()
-                const name = String(row.name || "").trim()
+        for (const row of data) {
+            const rawPhone = String(row.phone || "").trim()
+            let name = String(row.name || "").trim()
 
-                // Validate name
-                if (!name) {
-                    skippedInvalidData++
-                    failedRows.push({ row, reason: 'Missing name' })
-                    return
-                }
+            // Validate name
+            if (!name) {
+                skippedInvalidData++
+                failedRows.push({ row, reason: 'Missing name' })
+                continue
+            }
+            name = name.substring(0, 190) // Prevent "value too long" errors
 
-                // Normalize & validate phone
-                const phone = normalizePhone(rawPhone)
-                if (!phone) {
-                    skippedInvalidData++
-                    failedRows.push({ row, reason: `Invalid phone: "${rawPhone}" (must be 10 digits)` })
-                    return
-                }
+            // Normalize & validate phone
+            const phone = normalizePhone(rawPhone)
+            if (!phone) {
+                skippedInvalidData++
+                failedRows.push({ row, reason: `Invalid phone: "${rawPhone}" (must be 10 digits)` })
+                continue
+            }
 
-                // Duplicate check (against DB + already-imported)
-                if (existingPhones.has(phone)) {
-                    skippedDuplicate++
-                    failedRows.push({ row, reason: `Duplicate phone: ${phone}` })
-                    return
-                }
-                
-                // Add to existing phones immediately before DB syncs to prevent batch parallel duplicates
-                existingPhones.add(phone)
+            // Duplicate check (against DB + already-imported)
+            if (existingPhones.has(phone)) {
+                skippedDuplicate++
+                failedRows.push({ row, reason: `Duplicate phone: ${phone}` })
+                continue
+            }
+            // Add to existing phones immediately to prevent in-batch duplicates
+            existingPhones.add(phone)
 
-                // Plan matching
-                const planName = String(row.planname || "").trim().toLowerCase()
-                const plan = planName ? planMap.get(planName) : undefined
+            // Plan matching
+            const planName = String(row.planname || "").trim().toLowerCase()
+            const plan = planName ? planMap.get(planName) : undefined
 
-                if (planName && !plan) {
-                    skippedPlanNotFound++
-                    failedRows.push({ row, reason: `Plan not found: "${row.planname}"` })
-                    existingPhones.delete(phone) // remove if failed
-                    return
-                }
+            if (planName && !plan) {
+                skippedPlanNotFound++
+                failedRows.push({ row, reason: `Plan not found: "${row.planname}"` })
+                existingPhones.delete(phone) // remove if failed
+                continue
+            }
 
-                // Per-row try/catch — one bad row doesn't kill the entire import
-                try {
-                    const member = await prisma.member.create({
-                        data: {
-                            name,
-                            phone,
-                            email: row.email ? String(row.email).trim() : null,
-                            dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
-                            joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
-                            gymId,
-                            status: 'ACTIVE',
-                            city: row.city ? String(row.city).trim() : undefined,
-                            emergencyName: '',
-                            emergencyPhone: '',
-                            emergencyRelation: '',
-                        }
+            // Prepare Member record
+            const email = row.email ? String(row.email).trim().substring(0, 190) : null
+            const city = row.city ? String(row.city).trim().substring(0, 190) : undefined
+            
+            // To ensure Subscriptions can be linked, pre-generate a UUID for the Member.
+            // Prisma supports passing custom IDs for default cuid fields.
+            const newMemberId = crypto.randomUUID()
+
+            newMembers.push({
+                id: newMemberId,
+                name,
+                phone,
+                email,
+                dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
+                joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
+                gymId,
+                status: 'ACTIVE',
+                city,
+                emergencyName: '',
+                emergencyPhone: '',
+                emergencyRelation: '',
+            })
+
+            // Prepare Subscription if plan exists
+            if (plan) {
+                const startDate = row.joindate ? new Date(row.joindate) : new Date()
+                const expiryDate = row.expirydate ? new Date(row.expirydate) : null
+
+                if (expiryDate && isValid(new Date(expiryDate))) {
+                    newSubscriptions.push({
+                        id: crypto.randomUUID(),
+                        memberId: newMemberId,
+                        planId: plan.id,
+                        gymId,
+                        startDate: new Date(startDate),
+                        endDate: new Date(expiryDate),
+                        price: plan.price,
+                        status: 'ACTIVE',
+                        paymentStatus: 'PAID'
                     })
-
-                    // Create Subscription if plan exists
-                    if (plan) {
-                        const startDate = row.joindate ? new Date(row.joindate) : new Date()
-                        const expiryDate = row.expirydate ? new Date(row.expirydate) : null
-
-                        if (expiryDate && isValid(new Date(expiryDate))) {
-                            await prisma.memberSubscription.create({
-                                data: {
-                                    memberId: member.id,
-                                    planId: plan.id,
-                                    gymId,
-                                    startDate: new Date(startDate),
-                                    endDate: new Date(expiryDate),
-                                    price: plan.price,
-                                    status: 'ACTIVE',
-                                    paymentStatus: 'PAID'
-                                }
-                            })
-                        }
-                    }
-
-                    imported++
-                } catch (rowError: any) {
-                    skippedInvalidData++
-                    failedRows.push({ row, reason: `DB error: ${rowError?.message || 'Unknown error'}` })
-                    existingPhones.delete(phone)
                 }
-            }));
+            }
+
+            imported++
+        }
+
+        // 4. Perform bulk inserts using createMany
+        if (newMembers.length > 0) {
+            try {
+                await prisma.member.createMany({
+                    data: newMembers,
+                    skipDuplicates: true
+                })
+            } catch (err: any) {
+                console.error("Bulk insert failed for Members:", err)
+                throw new Error("Bulk insert failed for Members: " + (err?.message || "Unknown error"))
+            }
+
+            if (newSubscriptions.length > 0) {
+                try {
+                    await prisma.memberSubscription.createMany({
+                        data: newSubscriptions,
+                        skipDuplicates: true
+                    })
+                } catch (err: any) {
+                    console.error("Bulk insert failed for Subscriptions:", err)
+                    throw new Error("Bulk insert failed for Subscriptions: " + (err?.message || "Unknown error"))
+                }
+            }
         }
 
         // Audit Log

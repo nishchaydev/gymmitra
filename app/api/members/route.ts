@@ -114,9 +114,9 @@ export async function GET(req: Request) {
       page,
       take,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[MEMBERS_GET]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return new NextResponse(`Internal error: ${error?.message || error}`, { status: 500 });
   }
 }
 

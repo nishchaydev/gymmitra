@@ -47,7 +47,7 @@ export async function resendVerificationEmail(email?: string) {
             }
         } else {
             // Unauthenticated check: verify the email exists as a pending profile in DB
-            const pendingProfile = await (prisma as any).gymProfile.findUnique({
+            const pendingProfile = await prisma.gymProfile.findFirst({
                 where: { email: userEmail },
                 select: { id: true }
             })

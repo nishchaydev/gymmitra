@@ -32,7 +32,7 @@ export default async function MembersPage({
     const duration = resolvedSearchParams.duration
     const parsedPage = parseInt(resolvedSearchParams.page || '1', 10)
     const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
-    const take = 50
+    const take = 10
     const skip = (page - 1) * take
 
     const cookieStore = await cookies()

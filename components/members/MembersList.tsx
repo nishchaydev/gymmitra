@@ -6,6 +6,15 @@ import { Button } from '@/components/ui/button'
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -48,7 +57,27 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
         )
     }
 
-    const { members = [], totalCount = 0, hasMore = false } = data || {}
+    const { members = [] } = data || {}
+    const totalCount = data?.totalCount || 0
+    const hasMore = data?.hasMore || false
+    const totalPages = Math.max(1, Math.ceil(totalCount / take))
+
+    const getPageNumbers = () => {
+        const pages = []
+        const delta = 1
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
+                pages.push(i)
+            } else if (pages[pages.length - 1] !== '...') {
+                pages.push('...')
+            }
+        }
+        return pages
+    }
+
+    const createPageUrl = (targetPage: number) => {
+        return `/${slug}/members?page=${targetPage}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}${duration ? `&duration=${encodeURIComponent(duration)}` : ''}${birthday ? `&birthday=${encodeURIComponent(birthday)}` : ''}`
+    }
 
     return (
         <Card className="border-slate-200 relative">
@@ -293,29 +322,42 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                     </div>
                 </div>
 
-                {totalCount > take && (
-                    <div className="flex items-center justify-between mt-6 px-2">
-                        <p className="text-sm text-muted-foreground">
+                {(totalCount > take || page > 1) && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between mt-6 px-2 gap-4">
+                        <p className="text-sm text-muted-foreground whitespace-nowrap">
                             Showing <span className="font-bold">{(page - 1) * take + 1}</span> to <span className="font-bold">{Math.min(page * take, totalCount)}</span> of <span className="font-bold">{totalCount}</span> members
                         </p>
-                        {page === 1 ? (
-                            <Button variant="outline" size="sm" disabled>Previous</Button>
-                        ) : (
-                            <Button asChild variant="outline" size="sm">
-                                <Link href={`/${slug}/members?page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}${duration ? `&duration=${encodeURIComponent(duration)}` : ''}${birthday ? `&birthday=${encodeURIComponent(birthday)}` : ''}`}>
-                                    Previous
-                                </Link>
-                            </Button>
-                        )}
-                        {!hasMore ? (
-                            <Button variant="outline" size="sm" disabled>Next</Button>
-                        ) : (
-                            <Button asChild variant="outline" size="sm">
-                                <Link href={`/${slug}/members?page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${dobMonth ? `&dobMonth=${encodeURIComponent(dobMonth)}` : ''}${duration ? `&duration=${encodeURIComponent(duration)}` : ''}${birthday ? `&birthday=${encodeURIComponent(birthday)}` : ''}`}>
-                                    Next
-                                </Link>
-                            </Button>
-                        )}
+                        <Pagination className="justify-end cursor-pointer">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    {page === 1 ? (
+                                        <PaginationPrevious href="#" className="pointer-events-none opacity-50" />
+                                    ) : (
+                                        <PaginationPrevious href={createPageUrl(page - 1)} />
+                                    )}
+                                </PaginationItem>
+                                
+                                {getPageNumbers().map((p, i) => (
+                                    <PaginationItem key={i}>
+                                        {p === '...' ? (
+                                            <PaginationEllipsis />
+                                        ) : (
+                                            <PaginationLink isActive={p === page} href={createPageUrl(p as number)}>
+                                                {p}
+                                            </PaginationLink>
+                                        )}
+                                    </PaginationItem>
+                                ))}
+
+                                <PaginationItem>
+                                    {!hasMore ? (
+                                        <PaginationNext href="#" className="pointer-events-none opacity-50" />
+                                    ) : (
+                                        <PaginationNext href={createPageUrl(page + 1)} />
+                                    )}
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
                     </div>
                 )}
             </CardContent>

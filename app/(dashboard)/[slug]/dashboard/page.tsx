@@ -725,17 +725,24 @@ export default async function DashboardPage({
                     </React.Suspense>
                 </TabsContent>
 
-                <TabsContent value="reports" className="space-y-4" forceMount={true}>
+                <TabsContent value="reports" className="space-y-6" forceMount={true}>
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Reports...</span></div>}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <RenewalCommandCenter gymName={gym?.name || ''} waRenewalMsg={gym?.waRenewalMsg} />
-                            <AtRiskMembers slug={slug} gymName={gym?.name || ''} />
+                      <div className="relative premium-bg rounded-3xl p-1 space-y-6">
+                        {/* Decorative background blobs */}
+                        <div className="absolute top-0 -left-4 w-48 h-48 bg-primary/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none" />
+                        <div className="absolute top-0 -right-4 w-48 h-48 bg-ocean/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none" />
+                        <div className="absolute -bottom-8 left-20 w-48 h-48 bg-midnight/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 pointer-events-none" />
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-[1]">
+                            <RenewalCommandCenter gymName={gym?.name || ''} isDemo={isDemo} waRenewalMsg={gym?.waRenewalMsg} />
+                            <AtRiskMembers slug={slug} gymName={gym?.name || ''} isDemo={isDemo} />
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-[1]">
                             <OutstandingBalances data={dashboardData.outstandingInvoices} gymName={gym?.name || ''} slug={slug} waOverdueMsg={gym?.waOverdueMsg} />
                             <UpcomingBirthdays data={upcomingBirthdays} gymName={gym?.name || ''} />
                         </div>
+                        <div className="relative z-[1]">
                         <Reports
                             isDemo={isDemo}
                             gymName={gym?.name || "GymMitra"}
@@ -817,6 +824,8 @@ export default async function DashboardPage({
                                 }
                             }}
                         />
+                        </div>
+                      </div>
                     </React.Suspense>
                 </TabsContent>
             </Tabs>

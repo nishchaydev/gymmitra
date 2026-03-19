@@ -9,9 +9,10 @@ import React from 'react'
 
 const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
 const BATCH_SIZE = 100
+const GYMS_PER_RUN = 5 // Process only 5 gyms per cron invocation
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 60 // Vercel Hobby plan max
 
 // ── Currency formatter ──────────────────────────────────────────────
 function formatINR(amount: number): string {
@@ -26,8 +27,6 @@ function formatINR(amount: number): string {
         return `₹${amount.toFixed(2).replace(/\B(?=(\d{2})+(\d)(?!\d))/g, ',')}`
     }
 }
-
-// ── Batch processor removed (using Resend Batch API instead) ─────────
 
 export async function GET(request: NextRequest) {
     // Basic rate limit for cron to prevent DDOS attempts against the URL
@@ -68,7 +67,9 @@ export async function GET(request: NextRequest) {
         expiryReminders: 0,
         overdueReminders: 0,
         birthdayWishes: 0,
-        errors: 0
+        errors: 0,
+        gymsProcessed: 0,
+        gymsRemaining: 0
     }
 
     // ── TARGET_DAYS: exact milestone days before expiry ─────────────────
@@ -85,12 +86,32 @@ export async function GET(request: NextRequest) {
         // Midnight IST mapped to UTC (IST is UTC+5:30, so 00:00 IST = 18:30 UTC the previous day)
         const istMidnightUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0, 0))
 
+        // ── BATCH: Fetch only gyms not yet processed today ──────────────
         const gyms = await prisma.gymProfile.findMany({
+            where: {
+                OR: [
+                    { lastBriefingSentAt: null },
+                    { lastBriefingSentAt: { lt: istMidnightUTC } }
+                ]
+            },
             select: {
                 id: true, name: true, email: true, ownerName: true, slug: true,
                 createdAt: true, isVerified: true
+            },
+            take: GYMS_PER_RUN,
+            orderBy: { createdAt: 'asc' } // Process oldest gyms first
+        })
+
+        // Count remaining gyms for diagnostics
+        const totalUnprocessed = await prisma.gymProfile.count({
+            where: {
+                OR: [
+                    { lastBriefingSentAt: null },
+                    { lastBriefingSentAt: { lt: istMidnightUTC } }
+                ]
             }
         })
+        results.gymsRemaining = Math.max(0, totalUnprocessed - gyms.length)
 
         for (const gym of gyms) {
             try {
@@ -417,13 +438,21 @@ export async function GET(request: NextRequest) {
                         }
                     }
                 }
+
+                // ── Mark gym as processed for today ──────────────────
+                await prisma.gymProfile.update({
+                    where: { id: gym.id },
+                    data: { lastBriefingSentAt: new Date() }
+                })
+                results.gymsProcessed++
+
             } catch (gymError) {
                 console.error(`[Cron] Failed processing gymId=${gym.id}:`, gymError)
                 results.errors++
             }
         }
 
-        console.log(`[Cron] Daily reminders completed:`, results)
+        console.log(`[Cron] Daily reminders batch completed:`, results)
         return NextResponse.json({ success: true, ...results })
     } catch (error) {
         console.error('[Cron] Fatal error in daily reminders:', error)

@@ -27,6 +27,7 @@ model GymProfile {
   logoUrl                    String?
   invoicePrefix              String    @default("GM")
   isVerified                 Boolean   @default(false)
+  membersAdded               Boolean   @default(false)
   emailVerifiedAt            DateTime?
   onboardingStep             Int       @default(0)
   timezone                   String    @default("Asia/Kolkata")
@@ -39,6 +40,7 @@ model GymProfile {
   taxPercentage              Decimal   @default(18.0) @db.Decimal(5, 2)
   invoiceLinkExpiryDays      Int       @default(30) // Days before shared invoice links expire (0 = never)
   onboardingEmailsSentAt     DateTime?
+  lastBriefingSentAt         DateTime?
   lastTrialReminderMilestone Int? // Days left at last reminder (e.g. 30, 15, 7)
   termsAndConditions         String?   @db.Text
   gymRules                   String?   @db.Text
@@ -355,8 +357,11 @@ enum NotificationType {
 }
 
 enum Role {
+  OWNER
+  MANAGER
   STAFF
   TRAINER
+  FRONT_DESK
 }
 
 enum SessionStatus {

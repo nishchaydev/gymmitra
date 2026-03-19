@@ -96,7 +96,7 @@ export async function GET(request: Request) {
     const { prisma } = await import('@/lib/prisma')
     const gym = await prisma.gymProfile.findFirst({
         where: { userId: user.id }
-    }) as any
+    })
 
     const isTrainerProfile = !gym ? await prisma.staffMember.findFirst({
         where: { userId: user.id },
@@ -118,14 +118,13 @@ export async function GET(request: Request) {
     }
 
     // First time verification logic
-    // First time verification logic
     if (gym && !gym.isVerified) {
         if (gym.tempPassword && !gym.onboardingEmailsSentAt) {
             try {
                 const actualPassword = decryptPassword(gym.tempPassword)
 
                 // Atomic check and update to prevent race conditions
-                const updateClaim = await (prisma.gymProfile.updateMany as any)({
+                const updateClaim = await prisma.gymProfile.updateMany({
                     where: {
                         id: gym.id,
                         onboardingEmailsSentAt: null
@@ -141,12 +140,12 @@ export async function GET(request: Request) {
                     // Send credentials and welcome notifications
                     const [emailRef, whatsappRef] = await Promise.allSettled([
                         sendWelcomeEmail({
-                            ownerName: gym.ownerName,
+                            ownerName: gym.ownerName ?? gym.name,
                             gymName: gym.name,
                             email: gym.email,
                             password: actualPassword,
-                            slug: gym.slug,
-                            trialExpiresAt: gym.trialExpiresAt,
+                            slug: gym.slug ?? gym.id,
+                            trialExpiresAt: gym.trialExpiresAt ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
                         }),
                         sendWhatsAppTemplate({
                             to: gym.phone,
@@ -156,7 +155,7 @@ export async function GET(request: Request) {
                                 {
                                     type: 'body',
                                     parameters: [
-                                        { type: 'text', text: gym.ownerName },
+                                        { type: 'text', text: gym.ownerName ?? gym.name },
                                         { type: 'text', text: gym.name },
                                         { type: 'text', text: gym.email },
                                         { type: 'text', text: `${baseUrl}/login` },
@@ -180,7 +179,7 @@ export async function GET(request: Request) {
         } else {
             // Apply all updates (email verification + clear temp password)
             try {
-                await (prisma.gymProfile.updateMany as any)({
+                await prisma.gymProfile.updateMany({
                     where: { id: gym.id },
                     data: {
                         emailVerifiedAt: new Date(),

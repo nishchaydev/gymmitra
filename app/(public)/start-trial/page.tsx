@@ -18,30 +18,30 @@ export default function StartTrialPage() {
 
             <div className="relative z-10 flex min-h-screen">
                 {/* Left Side: Value Props (Desktop Only) */}
-                <div className="hidden lg:flex flex-1 flex-col justify-center px-12 xl:px-24 bg-midnight/5 border-r border-border/50">
+                <div className="hidden lg:flex flex-1 flex-col justify-center px-8 xl:px-16 bg-midnight/5 border-r border-border/50 overflow-y-auto py-6">
                     <div className="max-w-md">
-                        <Link href="/" className="mb-12 block">
-                            <GymMitraLogo iconClassName="w-12 h-12" />
+                        <Link href="/" className="mb-5 block">
+                            <GymMitraLogo iconClassName="w-9 h-9" />
                         </Link>
-                        <h1 className="text-5xl font-bold text-midnight leading-tight mb-6">
+                        <h1 className="text-2xl xl:text-3xl font-bold text-midnight leading-snug mb-3">
                             Transform Your <span className="text-primary italic">Gym</span> into a Digital Powerhouse
                         </h1>
-                        <p className="text-xl text-muted-foreground mb-12">
+                        <p className="text-sm text-muted-foreground mb-6">
                             Join 500+ gym owners who are scaling their businesses with GymMitra. No credit card, no risk, just results.
                         </p>
 
-                        <div className="space-y-6">
+                        <div className="space-y-3">
                             {[
                                 "Complete member management",
                                 "Automated payment tracking",
                                 "Diet & workout plan builder",
                                 "Real-time analytics dashboard"
                             ].map((prop, i) => (
-                                <div key={i} className="flex items-center gap-4 group">
-                                    <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-border group-hover:border-primary transition-colors">
-                                        <CheckCircle className="w-5 h-5 text-ocean" />
+                                <div key={i} className="flex items-center gap-3 group">
+                                    <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center border border-border group-hover:border-primary transition-colors shrink-0">
+                                        <CheckCircle className="w-4 h-4 text-ocean" />
                                     </div>
-                                    <span className="text-lg font-medium text-slate-700">{prop}</span>
+                                    <span className="text-sm font-medium text-slate-700">{prop}</span>
                                 </div>
                             ))}
                         </div>

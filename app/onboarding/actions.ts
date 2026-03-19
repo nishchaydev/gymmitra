@@ -32,6 +32,7 @@ const onboardingSchema = z.object({
     termsAndConditions: z.string().optional(),
     gymRules: z.string().optional(),
     futurePlanPreference: z.enum(['BASIC', 'PRO', 'ENTERPRISE']).default('BASIC'),
+    staffList: z.string().optional(),
     members: z.string().optional(),
     products: z.string().optional(),
 })
@@ -134,6 +135,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         termsAndConditions: formData.get("termsAndConditions"),
         gymRules: formData.get("gymRules"),
         futurePlanPreference: formData.get("futurePlanPreference") || 'BASIC',
+        staffList: formData.get("staffList"),
         members: formData.get("members"),
         products: formData.get("products"),
     }
@@ -265,25 +267,66 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             }
         }
 
+        // Process Staff
+        if (validatedData.staffList) {
+            try {
+                const staffSchema = z.array(z.object({
+                    name: z.string().min(1),
+                    phone: z.string().min(10),
+                    email: z.string().email(),
+                    role: z.enum(['OWNER', 'MANAGER', 'TRAINER', 'FRONT_DESK']),
+                }))
+
+                const parsedStaff = JSON.parse(validatedData.staffList)
+                const validStaff = staffSchema.parse(parsedStaff)
+
+                if (validStaff.length > 0) {
+                    await prisma.staffMember.createMany({
+                        data: validStaff.map(s => ({
+                            gymId,
+                            name: s.name,
+                            email: s.email,
+                            phone: s.phone,
+                            role: s.role as any,
+                            isActive: true,
+                        })),
+                        skipDuplicates: true,
+                    })
+                }
+            } catch (staffError) {
+                console.error("Failed to parse or create onboarding staff:", staffError)
+                warnings.push("Some staff could not be saved. You can add them later in Settings.")
+            }
+        }
+
         // Process Members
         if (validatedData.members) {
             try {
                 const memberSchema = z.array(z.object({
                     name: z.string().min(1),
                     phone: z.string().min(10),
-                    joiningDate: z.string().optional(),
+                    planName: z.string().optional(),
+                    joinDate: z.string().optional(),
                 }))
 
                 const parsedMembers = JSON.parse(validatedData.members)
                 const validMembers = memberSchema.parse(parsedMembers)
 
+                // Pre-fetch gym plans so we can link members to their plan
+                const gymPlans = await prisma.membershipPlan.findMany({
+                    where: { gymId },
+                    select: { id: true, name: true, duration: true, price: true },
+                })
+
                 for (const m of validMembers) {
-                    await prisma.member.create({
+                    const joinDate = m.joinDate ? new Date(m.joinDate) : new Date()
+
+                    const member = await prisma.member.create({
                         data: {
                             gymId,
                             name: m.name,
                             phone: m.phone,
-                            joiningDate: m.joiningDate ? new Date(m.joiningDate) : new Date(),
+                            joiningDate: joinDate,
                             dateOfBirth: new Date(1990, 0, 1),
                             emergencyName: "Contact",
                             emergencyPhone: m.phone,
@@ -291,6 +334,29 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                             status: 'ACTIVE' as any,
                         }
                     })
+
+                    // Auto-create subscription if plan was selected
+                    if (m.planName) {
+                        const plan = gymPlans.find(p => p.name.toLowerCase() === m.planName!.toLowerCase())
+                        if (plan) {
+                            const startDate = joinDate
+                            const endDate = new Date(startDate)
+                            endDate.setMonth(endDate.getMonth() + plan.duration)
+
+                            await prisma.memberSubscription.create({
+                                data: {
+                                    memberId: member.id,
+                                    planId: plan.id,
+                                    gymId,
+                                    startDate,
+                                    endDate,
+                                    price: plan.price,
+                                    status: 'ACTIVE' as any,
+                                    paymentStatus: 'PAID' as any,
+                                }
+                            })
+                        }
+                    }
                 }
             } catch (memberError) {
                 console.error("Failed to parse or create onboarding members:", memberError)

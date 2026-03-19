@@ -23,7 +23,7 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
     if (error || !data?.user) {
 
 
-        if (error && error.status !== 401) {
+        if (error && error.status !== 401 && error.message !== 'Auth session missing!') {
             console.error("Auth context error:", error.message)
         }
         return null

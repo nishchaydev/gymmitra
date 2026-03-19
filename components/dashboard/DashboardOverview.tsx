@@ -71,134 +71,117 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
     const netIncome = totalRev - totalExp
     const expenseRatio = totalRev > 0 ? (totalExp / totalRev) * 100 : 0
 
+    const statCardBase = "group relative overflow-hidden border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+
     return (
-        <div className="space-y-6 relative">
+        <div className="space-y-6 relative premium-bg rounded-3xl p-1">
+            {/* Decorative background blobs */}
+            <div className="absolute top-0 -left-4 w-48 h-48 bg-primary/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none" />
+            <div className="absolute top-0 -right-4 w-48 h-48 bg-ocean/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none" />
+            <div className="absolute -bottom-8 left-20 w-48 h-48 bg-midnight/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 pointer-events-none" />
+
             {isFetching && !isLoading && (
-                <div className="absolute -top-2 right-0 z-10">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <div className="absolute top-3 right-3 z-10">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    </div>
                 </div>
             )}
 
-             {/* Stat Cards - 2x2 on mobile for better density */}
-             <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                 <Link href={`/${slug}/invoices`} className="block">
-                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] hover:shadow-lg cursor-pointer">
-                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                                 Total Revenue
-                             </CardTitle>
-                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                                 <IndianRupee className="h-5 w-5 text-[#0066FF]" />
-                             </div>
-                         </CardHeader>
-                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                             <div className="space-y-1">
-                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">₹{d.revenue}</div>
-                                 {!isDemo && (
-                                     <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-emerald-100">
-                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                         <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">LIVE</span>
-                                     </div>
-                                 )}
-                             </div>
-                         </CardContent>
-                     </Card>
-                 </Link>
+            {/* ━━━ ROW 1: Four Stat Cards ━━━ */}
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 relative z-[1]">
+                <Link href={`/${slug}/invoices`} className="block animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className={statCardBase}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardHeader className="p-4 sm:p-5 pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-[10px] font-black text-drift-500 uppercase tracking-[0.15em]">
+                                Total Revenue
+                            </CardTitle>
+                            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-2.5 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300">
+                                <IndianRupee className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-5 pt-0">
+                            <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 truncate">₹{d.revenue}</div>
+                            {!isDemo && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full mt-2.5 border border-emerald-100/80">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">LIVE</span>
+                                </div>
+                            )}
+                        </CardContent>
+                    </div>
+                </Link>
 
-                 <Link href={`/${slug}/members`} className="block">
-                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] hover:shadow-lg cursor-pointer">
-                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                                 Active Members
-                             </CardTitle>
-                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                                 <Users className="h-5 w-5 text-[#0066FF]" />
-                             </div>
-                         </CardHeader>
-                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                             <div className="space-y-1">
-                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.activeMembers}</div>
-                                 <p className="text-xs text-[#64748B] mt-2 font-medium">
-                                     {d.totalMembers} TOTAL · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% ACTIVE
-                                 </p>
-                             </div>
-                         </CardContent>
-                     </Card>
-                 </Link>
+                <Link href={`/${slug}/members`} className="block animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+                    <div className={statCardBase}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-ocean/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardHeader className="p-4 sm:p-5 pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-[10px] font-black text-drift-500 uppercase tracking-[0.15em]">
+                                Active Members
+                            </CardTitle>
+                            <div className="bg-gradient-to-br from-ocean-50 to-ocean-100 rounded-xl p-2.5 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300">
+                                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-ocean" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-5 pt-0">
+                            <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 truncate">{d.activeMembers}</div>
+                            <p className="text-[11px] text-drift-400 mt-2.5 font-semibold tracking-tight">
+                                {d.totalMembers} total · {d.totalMembers > 0 ? Math.round((d.activeMembers / d.totalMembers) * 100) : 0}% active
+                            </p>
+                        </CardContent>
+                    </div>
+                </Link>
 
-                 <Link href={`/${slug}/invoices`} className="block">
-                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-3 xl:order-none hover:shadow-lg cursor-pointer">
-                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                                 Net Income
-                             </CardTitle>
-                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                                 <TrendingUp className="h-5 w-5 text-[#0066FF]" />
-                             </div>
-                         </CardHeader>
-                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                             <div className="space-y-1">
-                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">
-                                     ₹{netIncome.toLocaleString('en-IN')}
-                                 </div>
-                                 <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
-                                     {expenseRatio.toFixed(1)}% EXPENSE RATIO (₹{totalExp.toLocaleString('en-IN')})
-                                 </p>
-                             </div>
-                         </CardContent>
-                     </Card>
-                 </Link>
+                <Link href={`/${slug}/invoices`} className="block animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                    <div className={statCardBase}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-midnight/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardHeader className="p-4 sm:p-5 pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-[10px] font-black text-drift-500 uppercase tracking-[0.15em]">
+                                Net Income
+                            </CardTitle>
+                            <div className="bg-gradient-to-br from-midnight-50 to-midnight-100 rounded-xl p-2.5 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300">
+                                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-midnight" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-5 pt-0">
+                            <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 truncate">
+                                ₹{netIncome.toLocaleString('en-IN')}
+                            </div>
+                            <p className="text-[11px] text-drift-400 mt-2.5 font-semibold tracking-tight">
+                                {expenseRatio.toFixed(1)}% expense ratio
+                            </p>
+                        </CardContent>
+                    </div>
+                </Link>
 
-                 <Link href={`/${slug}/products`} className="block">
-                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-4 xl:order-none hover:shadow-lg cursor-pointer">
-                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                                 Product Sales
-                             </CardTitle>
-                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                                 <ShoppingBag className="h-5 w-5 text-[#0066FF]" />
-                             </div>
-                         </CardHeader>
-                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                             <div className="space-y-1">
-                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.productSalesCount}</div>
-                                 <p className="text-xs text-[#64748B] mt-2 font-medium uppercase tracking-tight">
-                                     ALL-TIME ITEMS
-                                 </p>
-                             </div>
-                         </CardContent>
-                     </Card>
-                 </Link>
+                <Link href={`/${slug}/attendance`} className="block animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+                    <div className={statCardBase}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardHeader className="p-4 sm:p-5 pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-[10px] font-black text-drift-500 uppercase tracking-[0.15em]">
+                                Today&apos;s Check-ins
+                            </CardTitle>
+                            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-2.5 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300">
+                                <CalendarCheck className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-5 pt-0">
+                            <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 truncate">{d.dailyCheckins}</div>
+                            {!isDemo && (
+                                <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2.5 border border-amber-100/80">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">REAL-TIME</span>
+                                </div>
+                            )}
+                        </CardContent>
+                    </div>
+                </Link>
+            </div>
 
-                 <Link href={`/${slug}/attendance`} className="block">
-                     <Card className="hover:-translate-y-0.5 transition-all duration-200 border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] lg:order-5 xl:order-none hover:shadow-lg cursor-pointer">
-                         <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between space-y-0">
-                             <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">
-                                 Today&apos;s Attendance
-                             </CardTitle>
-                             <div className="bg-[#E6F0FF] rounded-lg p-2.5">
-                                 <CalendarCheck className="h-5 w-5 text-[#0066FF]" />
-                             </div>
-                         </CardHeader>
-                         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                             <div className="space-y-1">
-                                 <div className="text-lg sm:text-2xl xl:text-3xl font-black tracking-tight text-[#0F172A] truncate">{d.dailyCheckins}</div>
-                                 {!isDemo && (
-                                     <div className="flex items-center gap-1.5 bg-amber-50 w-fit px-2 py-0.5 rounded-full mt-2 border border-amber-100">
-                                         <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                         <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">REAL-TIME</span>
-                                     </div>
-                                 )}
-                             </div>
-                         </CardContent>
-                     </Card>
-                 </Link>
-             </div>
-
-            {/* Dashboard Content - Masonry style to prevent vertical overlap anomalies */}
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
-                {/* Left Column */}
-                <div className="lg:col-span-8 flex flex-col space-y-6">
+            {/* ━━━ ROW 2: Daily Briefing (40%) + Revenue Insights (60%) ━━━ */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-5 items-start relative z-[1]">
+                <div className="lg:col-span-2 animate-in fade-in slide-in-from-left-4 duration-600">
                     <DailyBriefing
                         slug={slug}
                         ownerName={gymName?.split(' ')[0] || 'Owner'}
@@ -222,6 +205,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         })) || []}
                         lowStockItems={d.lowStockItems || []}
                     />
+                </div>
+                <div className="lg:col-span-3 animate-in fade-in slide-in-from-right-4 duration-600">
                     <RevenueSnapshot
                         revenue={d.revenue}
                         revenueChange={d.revenueChange}
@@ -229,7 +214,13 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         monthlyRevenueData={d.monthlyRevenueData}
                         isDemo={isDemo}
                     />
-                    <div className="overflow-hidden rounded-xl">
+                </div>
+            </div>
+
+            {/* ━━━ ROW 3: Recent Invoices (50%) + Quick Actions & Attendance (50%) ━━━ */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 relative z-[1]">
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="overflow-hidden rounded-2xl h-full">
                         <RecentInvoices
                             isDemo={isDemo}
                             data={d.recentInvoices}
@@ -238,53 +229,67 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="lg:col-span-4 flex flex-col space-y-6">
-                    <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
-                        <CardHeader className="pl-4 py-4 bg-primary-50/20">
-                            <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>
-                            <CardDescription className="text-xs text-primary-700/70 font-medium tracking-tight">Most frequent operations</CardDescription>
+                <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+                    {/* Quick Actions */}
+                    <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl overflow-hidden">
+                        <CardHeader className="px-5 py-4 bg-gradient-to-r from-primary-50/40 to-transparent border-b border-drift-100/50">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                Quick Actions
+                            </CardTitle>
+                            <CardDescription className="text-[11px] text-drift-400 font-medium tracking-tight">Most frequent operations</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 pt-4">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4">
                             <Link href={`/${slug}/members/new`} className="w-full">
-                                <Button className="w-full justify-start h-14 text-sm font-bold bg-drift-50 border-drift-200 text-slate-700 hover:bg-primary-50 hover:border-primary-200 hover:text-primary group transition-all duration-150 rounded-xl" variant="outline">
-                                    <UserPlus className="mr-3 h-5 w-5 text-primary" /> <span className="flex-1">Add New Member</span>
+                                <Button className="w-full justify-start h-12 text-sm font-bold bg-white border border-drift-200/80 text-slate-700 hover:bg-primary-50 hover:border-primary-200 hover:text-primary group transition-all duration-200 rounded-xl shadow-sm hover:shadow-md" variant="outline">
+                                    <UserPlus className="mr-2.5 h-4 w-4 text-primary" /> Add Member
                                 </Button>
                             </Link>
                             <Link href={`/${slug}/products/new`} className="w-full">
-                                <Button className="w-full justify-start h-14 text-sm font-bold bg-drift-50 border-drift-200 text-slate-700 hover:bg-primary-50 hover:border-primary-200 hover:text-primary group transition-all duration-150 rounded-xl" variant="outline">
-                                    <ShoppingBag className="mr-3 h-5 w-5 text-primary" /> <span className="flex-1">Add Inventory</span>
+                                <Button className="w-full justify-start h-12 text-sm font-bold bg-white border border-drift-200/80 text-slate-700 hover:bg-ocean-50 hover:border-ocean-200 hover:text-ocean group transition-all duration-200 rounded-xl shadow-sm hover:shadow-md" variant="outline">
+                                    <ShoppingBag className="mr-2.5 h-4 w-4 text-ocean" /> Add Product
                                 </Button>
                             </Link>
-                            <Button className="w-full justify-start h-14 text-sm font-medium bg-drift-50/50 border-drift-100 text-drift-400 cursor-not-allowed rounded-xl" variant="outline" disabled>
-                                <ReceiptText className="mr-3 h-5 w-5 opacity-40" /> Generate Report
+                            <Button className="w-full justify-start h-12 text-sm font-medium bg-drift-50/50 border border-drift-100 text-drift-400 cursor-not-allowed rounded-xl" variant="outline" disabled>
+                                <ReceiptText className="mr-2.5 h-4 w-4 opacity-40" /> Report
                             </Button>
                         </CardContent>
                     </Card>
 
-                    <OutstandingBalances
-                        data={d.outstandingInvoices}
-                        gymName={gymName || 'your gym'}
-                        slug={slug}
-                    />
-
-                    <AtRiskMembers
-                        slug={slug}
-                        gymName={gymName}
-                        isDemo={isDemo}
-                    />
+                    {/* Attendance Widget */}
                     <AttendanceWidget
                         isDemo={isDemo}
                         data={d.todayAttendance}
                         slug={slug}
                     />
+                </div>
+            </div>
 
+            {/* ━━━ ROW 4: Outstanding Balances (50%) + Upcoming Birthdays (50%) ━━━ */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 relative z-[1]">
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <OutstandingBalances
+                        data={d.outstandingInvoices}
+                        gymName={gymName || 'your gym'}
+                        slug={slug}
+                    />
+                </div>
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
                     <UpcomingBirthdays
                         isDemo={isDemo}
                         gymName={gymName}
                         data={d.upcomingBirthdays}
                     />
                 </div>
+            </div>
+
+            {/* ━━━ ROW 5: At-Risk Members (full width) ━━━ */}
+            <div className="relative z-[1] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <AtRiskMembers
+                    slug={slug}
+                    gymName={gymName}
+                    isDemo={isDemo}
+                />
             </div>
         </div>
     )
