@@ -7,7 +7,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { SHOWCASE_STATS, SHOWCASE_MEMBERS, SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
-import { demoLogin } from "@/app/auth/actions"
+import { demoLogin } from "@/app/login/actions"
 
 export function LiveDemo() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'billing'>('dashboard')

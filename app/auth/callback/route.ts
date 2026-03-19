@@ -130,43 +130,49 @@ export async function GET(request: Request) {
             try {
                 const actualPassword = decryptPassword(gym.tempPassword)
 
-                // Send credentials and welcome notifications
-                const [emailRef, whatsappRef] = await Promise.allSettled([
-                    sendWelcomeEmail({
-                        ownerName: gym.ownerName,
-                        gymName: gym.name,
-                        email: gym.email,
-                        password: actualPassword,
-                        slug: gym.slug,
-                        trialExpiresAt: gym.trialExpiresAt,
-                    }),
-                    sendWhatsAppTemplate({
-                        to: gym.phone,
-                        templateName: 'gymmitra_welcome_trial_final',
-                        languageCode: 'en',
-                        components: [
-                            {
-                                type: 'body',
-                                parameters: [
-                                    { type: 'text', text: gym.ownerName },
-                                    { type: 'text', text: gym.name },
-                                    { type: 'text', text: gym.email },
-                                    { type: 'text', text: `${baseUrl}/login` },
-                                ],
-                            },
-                        ],
-                    })
-                ])
+                if (!gym.onboardingEmailsSentAt) {
+                    // Send credentials and welcome notifications
+                    const [emailRef, whatsappRef] = await Promise.allSettled([
+                        sendWelcomeEmail({
+                            ownerName: gym.ownerName,
+                            gymName: gym.name,
+                            email: gym.email,
+                            password: actualPassword,
+                            slug: gym.slug,
+                            trialExpiresAt: gym.trialExpiresAt,
+                        }),
+                        sendWhatsAppTemplate({
+                            to: gym.phone,
+                            templateName: 'gymmitra_welcome_trial_final',
+                            languageCode: 'en',
+                            components: [
+                                {
+                                    type: 'body',
+                                    parameters: [
+                                        { type: 'text', text: gym.ownerName },
+                                        { type: 'text', text: gym.name },
+                                        { type: 'text', text: gym.email },
+                                        { type: 'text', text: `${baseUrl}/login` },
+                                    ],
+                                },
+                            ],
+                        })
+                    ])
 
-                if (emailRef.status === 'fulfilled') {
+                    // ALWAYS clear tempPassword and set sent timestamp to prevent duplicate sends/infinite loops
                     updateData.tempPassword = null
                     updateData.onboardingEmailsSentAt = new Date()
-                } else {
-                    console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, emailRef.reason)
-                }
 
-                if (whatsappRef.status === 'rejected') {
-                    console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
+                    if (emailRef.status === 'rejected') {
+                        console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, emailRef.reason)
+                    }
+
+                    if (whatsappRef.status === 'rejected') {
+                        console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
+                    }
+                } else {
+                    // If already sent, just ensure temp password is cleared
+                    updateData.tempPassword = null
                 }
             } catch (cryptoError) {
                 console.error(`[Auth Callback] Decryption/Notification failed for gym ${gym.id}:`, cryptoError)

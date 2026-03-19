@@ -133,7 +133,8 @@ export default function TrialRequestForm() {
                                     onClick={async () => {
                                         setIsResending(true)
                                         try {
-                                            const result = await resendVerificationEmail()
+                                            const email = form.email
+                                            const result = await resendVerificationEmail(email)
                                             if (result.success) {
                                                 toast.success('Verification email resent! Check your inbox.')
                                             } else {

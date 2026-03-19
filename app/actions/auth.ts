@@ -4,14 +4,18 @@ import { createClient } from '@/lib/supabase/server'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gym.emitra.dev'
 
-export async function resendVerificationEmail() {
+export async function resendVerificationEmail(email?: string) {
     try {
         const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        const userEmail = user?.email
+        let userEmail = email
 
         if (!userEmail) {
-            return { success: false, error: 'No email found for current session. Please try signing up again.' }
+            const { data: { user } } = await supabase.auth.getUser()
+            userEmail = user?.email
+        }
+
+        if (!userEmail) {
+            return { success: false, error: 'No email found to resend verification. Please try signing up again.' }
         }
 
         const { error } = await supabase.auth.resend({
