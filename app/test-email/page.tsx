@@ -13,7 +13,10 @@ export default async function TestEmailPage() {
         }
 
         const resend = new Resend(resendKey)
-        const ADMIN_EMAILS = ['nikhilpal525@gmail.com', 'nishchaygupta54@gmail.com']
+        const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '')
+            .split(',')
+            .map(email => email.trim())
+            .filter(Boolean) as string[]
         const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
 
         result = await resend.emails.send({

@@ -14,7 +14,10 @@ async function main() {
     }
 
     const resend = new Resend(resendKey);
-    const ADMIN_EMAILS = ['nikhilpal525@gmail.com', 'nishchaygupta54@gmail.com'];
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '')
+      .split(',')
+      .map(email => email.trim())
+      .filter(Boolean) as string[];
     
     const fetchOptions: any = {};
     if (process.env.HTTPS_PROXY || process.env.http_proxy) {

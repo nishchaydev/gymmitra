@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
         const ownerName = record.raw_user_meta_data?.name || gymProfile.name || 'User'; // Generic 'User' if name missing
         const gymName = gymProfile.businessName || gymProfile.name || 'your local gym';
 
-        const baseUrl = getBaseUrl()
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl()
 
         console.log(`[Webhook] Event: ${type} | User: ${ownerEmail} | Gym: ${gymName} | Sending Welcome...`);
 

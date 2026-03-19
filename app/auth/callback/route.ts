@@ -6,11 +6,20 @@ import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 import { decryptPassword } from '@/lib/crypto'
 
 export async function GET(request: Request) {
-    const { searchParams, origin: baseUrl } = new URL(request.url)
+    const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/dashboard'
     const errorParam = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
+
+    // Use production URL from env or fallback to request origin (ensuring no hardcoded localhost for prod)
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
+    const baseUrl = origin.replace(/\/$/, '') // Remove trailing slash
+
+    // 1. Prevent "Invalid or expired link" errors caused by browser/email pre-fetching
+    if (request.headers.get('purpose') === 'prefetch' || request.headers.get('x-purpose') === 'preview') {
+        return new Response(null, { status: 204 })
+    }
 
     // Handle explicit errors from Supabase redirect (e.g. link expired, already used)
     if (errorParam || errorDescription) {
@@ -24,12 +33,11 @@ export async function GET(request: Request) {
         const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error && user) {
-            // Password recovery flow — detect via explicit param OR recent recovery_sent_at
+            // Password recovery flow
             if (next === '/reset-password') {
                 return NextResponse.redirect(`${baseUrl}/reset-password`)
             }
 
-            // Smart detection: if a recovery email was sent within the last hour, it's a password reset
             if (user.recovery_sent_at) {
                 const recoverySentAt = new Date(user.recovery_sent_at).getTime()
                 const oneHourAgo = Date.now() - 60 * 60 * 1000
@@ -49,24 +57,30 @@ export async function GET(request: Request) {
                 include: { gym: true }
             }) : null;
 
+            // Set session cookie for onboarded users
             if (gym?.isVerified || isTrainerProfile) {
                 const { cookies } = await import('next/headers')
                 const cookieStore = await cookies()
                 cookieStore.set('gym_onboarded', 'true', {
                     maxAge: 30 * 24 * 60 * 60, // 30 days
                     path: '/',
-                    secure: process.env.NODE_ENV === 'production',
+                    secure: true, // Always secure in verification flow
                     sameSite: 'lax'
-                    })
+                })
+            }
+
+            // First time verification logic
+            if (gym && !gym.isVerified) {
+                const updateData: any = {
+                    isVerified: true, // CRITICAL FIX: Mark as verified
+                    emailVerifiedAt: new Date()
                 }
 
-            // First time verification
-            if (gym && !gym.isVerified) {
                 if (gym.tempPassword) {
                     try {
                         const actualPassword = decryptPassword(gym.tempPassword)
                         
-                        // Send credentials using Promise.allSettled for Task 2
+                        // Send credentials and welcome notifications
                         const [emailRef, whatsappRef] = await Promise.allSettled([
                             sendWelcomeEmail({
                                 ownerName: gym.ownerName,
@@ -94,33 +108,28 @@ export async function GET(request: Request) {
                             })
                         ])
 
-                        const updateData: any = {}
-
-                        // Task 2 & 3: Only clear if email succeeded, and set timestamp
                         if (emailRef.status === 'fulfilled') {
                             updateData.tempPassword = null
                             updateData.onboardingEmailsSentAt = new Date()
                         } else {
-                            console.error(`[Auth Callback] Welcome email failed for gym ${gym.id} (${gym.email}):`, emailRef.reason)
+                            console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, emailRef.reason)
                         }
 
                         if (whatsappRef.status === 'rejected') {
                             console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
                         }
-
-                        if (Object.keys(updateData).length > 0) {
-                            await (prisma.gymProfile.update as any)({
-                                where: { id: gym.id },
-                                data: updateData
-                            })
-                        }
                     } catch (cryptoError) {
-                        console.error(`[Auth Callback] Decryption failed for gym ${gym.id}:`, cryptoError)
+                        console.error(`[Auth Callback] Decryption/Notification failed for gym ${gym.id}:`, cryptoError)
                     }
                 }
+
+                // Apply all updates (verification status + notification status)
+                await (prisma.gymProfile.update as any)({
+                    where: { id: gym.id },
+                    data: updateData
+                })
             }
 
-            // Always redirect to /email-verified after successful link click
             return NextResponse.redirect(`${baseUrl}/email-verified`)
         }
         
@@ -128,6 +137,6 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(error?.message || "Verification failed or link expired.")}`)
     }
 
-    console.error('[Auth Callback] No code provided in search params')
+    console.error('[Auth Callback] No code provided')
     return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent("No verification code found in the link.")}`)
 }

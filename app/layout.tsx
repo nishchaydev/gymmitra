@@ -27,24 +27,24 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "GymMitra",
-    template: "%s | GymMitra"
+    default: "Gym Mitra - Apka Gym, Apka Control",
+    template: "%s | Gym Mitra"
   },
-  description: "Complete gym management software for Indian gym owners",
+  description: "Complete gym management software for Indian gym owners. Manage members, billing, and automation efficiently.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_METADATA_BASE || 'https://gym.emitra.dev'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: "GymMitra — Apka Gym, Apka Control",
+    title: "Gym Mitra — Apka Gym, Apka Control",
     description: "Manage members, renewals, billing & WhatsApp automation from one dashboard",
     url: "https://gym.emitra.dev",
-    siteName: 'GymMitra',
+    siteName: 'Gym Mitra',
     images: [{
       url: '/og-image.png',
       width: 1200,
       height: 630,
-      alt: 'GymMitra - India\'s Best Gym Management Software',
+      alt: 'Gym Mitra - India\'s Best Gym Management Software',
     }],
     locale: 'en_IN',
     type: 'website',
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'GymMitra',
+    title: 'Gym Mitra',
   },
   formatDetection: {
     telephone: false,

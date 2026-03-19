@@ -157,7 +157,7 @@ export async function sendWelcomeEmail(params: {
 
     const { Resend } = await import('resend')
     const resend = new Resend(resendKey)
-    const baseUrl = getBaseUrl()
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl()
     const trialEnd = params.trialExpiresAt.toLocaleDateString('en-IN', {
         day: 'numeric', month: 'long', year: 'numeric',
     })
@@ -196,7 +196,10 @@ export async function sendWelcomeEmail(params: {
 // Admin notification — emails both founders
 // ──────────────────────────────────────────────
 
-const ADMIN_EMAILS = ['nikhilpal525@gmail.com', 'nishchaygupta54@gmail.com']
+const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '')
+    .split(',')
+    .map(email => email.trim())
+    .filter(Boolean) as string[]
 
 async function sendAdminNotification(params: {
     ownerName: string
@@ -212,7 +215,7 @@ async function sendAdminNotification(params: {
 
     const { Resend } = await import('resend')
     const resend = new Resend(resendKey)
-    const baseUrl = getBaseUrl()
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl()
     const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
     await resend.emails.send({
@@ -334,7 +337,7 @@ export async function adminCreateTrialGym(raw: {
         slug,
         password: tempPassword,
         trialExpiresAt,
-    }).catch(() => {})
+    }).catch(() => { })
 
     return { success: true, slug, tempPassword }
 }

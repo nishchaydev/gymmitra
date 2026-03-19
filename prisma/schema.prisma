@@ -27,6 +27,7 @@ model GymProfile {
   logoUrl                    String?
   invoicePrefix              String    @default("GM")
   isVerified                 Boolean   @default(false)
+  emailVerifiedAt            DateTime?
   onboardingStep             Int       @default(0)
   timezone                   String    @default("Asia/Kolkata")
   saasPlan                   SaaSPlan  @default(TRIAL)

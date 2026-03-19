@@ -55,8 +55,11 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
     if (authCode && !pathname.startsWith('/auth/callback')) {
         const url = request.nextUrl.clone()
         url.pathname = '/auth/callback'
-        // Preserve all existing query params (code, next, type, etc.)
-        return NextResponse.redirect(url)
+        // CRITICAL: Propagate headers (containing set-cookie) from supabaseResponse
+        // to the redirect response to avoid losing the PKCE verifier cookie.
+        return NextResponse.redirect(url, {
+            headers: supabaseResponse.headers
+        })
     }
 
     // 1. PUBLIC ROUTES & STATIC ASSETS EXEMPTION
@@ -99,6 +102,14 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         url.searchParams.set('returnTo', pathname)
+        return NextResponse.redirect(url)
+    }
+
+    // 2b. EMAIL VERIFICATION ENFORCEMENT
+    // If user is logged in but email isn't verified, restrict access to app routes.
+    if (user && !user.email_confirmed_at && !isPublicRoute && !pathname.includes('/verify-email')) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login/verify-email'
         return NextResponse.redirect(url)
     }
 

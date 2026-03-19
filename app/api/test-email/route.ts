@@ -18,7 +18,10 @@ export async function GET() {
         const { Resend } = await import('resend')
         const resend = new Resend(resendKey)
 
-        const ADMIN_EMAILS = ['nikhilpal525@gmail.com', 'nishchaygupta54@gmail.com']
+        const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '')
+            .split(',')
+            .map(email => email.trim())
+            .filter(Boolean) as string[]
         const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
         const result = await resend.emails.send({

@@ -10,13 +10,20 @@ export async function createClient() {
         {
             cookies: {
                 getAll() {
-                    return cookieStore.getAll()
+                    const allCookies = cookieStore.getAll()
+                    // Diagnostic: Check if PKCE code verifier exists
+                    const hasVerifier = allCookies.some(c => c.name.includes('code-verifier'))
+                    if (!hasVerifier && process.env.NODE_ENV === 'development') {
+                        // console.debug('[Supabase Server] No PKCE verifier found in cookies')
+                    }
+                    return allCookies
                 },
                 setAll(cookiesToSet) {
                     try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            // console.debug(`[Supabase Server] Setting cookie: ${name}`)
                             cookieStore.set(name, value, options)
-                        )
+                        })
                     } catch {
                         // The `setAll` method was called from a Server Component.
                         // This can be ignored if you have middleware refreshing
