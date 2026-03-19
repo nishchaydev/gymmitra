@@ -118,19 +118,26 @@ export async function GET(request: Request) {
     }
 
     // First time verification logic
+    // First time verification logic
     if (gym && !gym.isVerified) {
-        const updateData: any = {
-            // NOTE: isVerified is intentionally NOT set here.
-            // It should only be set when the user completes onboarding
-            // ("Complete & Verify" button on the final step).
-            emailVerifiedAt: new Date()
-        }
-
-        if (gym.tempPassword) {
+        if (gym.tempPassword && !gym.onboardingEmailsSentAt) {
             try {
                 const actualPassword = decryptPassword(gym.tempPassword)
 
-                if (!gym.onboardingEmailsSentAt) {
+                // Atomic check and update to prevent race conditions
+                const updateClaim = await (prisma.gymProfile.updateMany as any)({
+                    where: {
+                        id: gym.id,
+                        onboardingEmailsSentAt: null
+                    },
+                    data: {
+                        tempPassword: null,
+                        onboardingEmailsSentAt: new Date(),
+                        emailVerifiedAt: new Date()
+                    }
+                })
+
+                if (updateClaim.count > 0) {
                     // Send credentials and welcome notifications
                     const [emailRef, whatsappRef] = await Promise.allSettled([
                         sendWelcomeEmail({
@@ -159,35 +166,31 @@ export async function GET(request: Request) {
                         })
                     ])
 
-                    // ALWAYS clear tempPassword and set sent timestamp to prevent duplicate sends/infinite loops
-                    updateData.tempPassword = null
-                    updateData.onboardingEmailsSentAt = new Date()
-
                     if (emailRef.status === 'rejected') {
-                        console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, emailRef.reason)
+                        console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, (emailRef as PromiseRejectedResult).reason)
                     }
 
                     if (whatsappRef.status === 'rejected') {
-                        console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
+                        console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, (whatsappRef as PromiseRejectedResult).reason)
                     }
-                } else {
-                    // If already sent, just ensure temp password is cleared
-                    updateData.tempPassword = null
                 }
             } catch (cryptoError) {
                 console.error(`[Auth Callback] Decryption/Notification failed for gym ${gym.id}:`, cryptoError)
             }
-        }
-
-        // Apply all updates (email verification + notification status)
-        try {
-            await (prisma.gymProfile.update as any)({
-                where: { id: gym.id },
-                data: updateData
-            })
-        } catch (updateError) {
-            console.error(`[Auth Callback] DB update failed for gym ${gym.id}:`, updateError)
-            // Continue anyway, user has the session
+        } else {
+            // Apply all updates (email verification + clear temp password)
+            try {
+                await (prisma.gymProfile.updateMany as any)({
+                    where: { id: gym.id },
+                    data: {
+                        emailVerifiedAt: new Date(),
+                        tempPassword: null
+                    }
+                })
+            } catch (updateError) {
+                console.error(`[Auth Callback] DB update failed for gym ${gym.id}:`, updateError)
+                // Continue anyway, user has the session
+            }
         }
     }
 
