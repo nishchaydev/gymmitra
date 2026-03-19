@@ -71,6 +71,10 @@ export async function login(formData: FormData) {
         })
     }
 
+    if (gym && !gym.isVerified) {
+        return redirect('/onboarding')
+    }
+
     revalidatePath('/', 'layout')
     const finalSlug = (gym as any)?.slug || (isTrainerProfile as any)?.gym?.slug || 'gym'
     redirect(`/${finalSlug}/dashboard`)
@@ -266,6 +270,11 @@ export async function signup(formData: FormData) {
     }) : null
 
     const finalSlug = (userGym as any)?.slug || (staffGym as any)?.gym?.slug || 'gym'
+    
+    if (userGym && !userGym.isVerified) {
+        return redirect('/onboarding')
+    }
+
     return redirect(`/${finalSlug}/dashboard`)
 }
 

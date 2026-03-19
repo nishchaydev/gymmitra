@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getBaseUrl } from '@/lib/utils'
 import { sendWelcomeEmail } from '@/app/actions/trial'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
+import { decryptPassword } from '@/lib/crypto'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -59,59 +60,71 @@ export async function GET(request: Request) {
                     path: '/',
                     secure: process.env.NODE_ENV === 'production',
                     sameSite: 'lax'
-                })
-            }
+                    })
+                }
 
             // First time verification
             if (gym && !gym.isVerified) {
-                await prisma.gymProfile.update({
-                    where: { id: gym.id },
-                    data: { isVerified: true }
-                })
-                
                 if (gym.tempPassword) {
-                    // Send credentials now that email is verified
-                    sendWelcomeEmail({
-                        ownerName: gym.ownerName,
-                        gymName: gym.name,
-                        email: gym.email,
-                        password: gym.tempPassword,
-                        slug: gym.slug,
-                        trialExpiresAt: gym.trialExpiresAt,
-                    }).catch(() => { /* non-blocking */ })
-
-                    sendWhatsAppTemplate({
-                        to: gym.phone,
-                        templateName: 'gymmitra_welcome_trial_final',
-                        languageCode: 'en',
-                        components: [
-                            {
-                                type: 'body',
-                                parameters: [
-                                    { type: 'text', text: gym.ownerName },
-                                    { type: 'text', text: gym.name },
-                                    { type: 'text', text: gym.email },
-                                    { type: 'text', text: `${baseUrl}/login` },
+                    try {
+                        const actualPassword = decryptPassword(gym.tempPassword)
+                        
+                        // Send credentials using Promise.allSettled for Task 2
+                        const [emailRef, whatsappRef] = await Promise.allSettled([
+                            sendWelcomeEmail({
+                                ownerName: gym.ownerName,
+                                gymName: gym.name,
+                                email: gym.email,
+                                password: actualPassword,
+                                slug: gym.slug,
+                                trialExpiresAt: gym.trialExpiresAt,
+                            }),
+                            sendWhatsAppTemplate({
+                                to: gym.phone,
+                                templateName: 'gymmitra_welcome_trial_final',
+                                languageCode: 'en',
+                                components: [
+                                    {
+                                        type: 'body',
+                                        parameters: [
+                                            { type: 'text', text: gym.ownerName },
+                                            { type: 'text', text: gym.name },
+                                            { type: 'text', text: gym.email },
+                                            { type: 'text', text: `${baseUrl}/login` },
+                                        ],
+                                    },
                                 ],
-                            },
-                        ],
-                    }).catch(() => { /* non-blocking */ })
-                    
-                    // Clear the tempPassword after sending for security
-                    await (prisma.gymProfile.update as any)({
-                        where: { id: gym.id },
-                        data: { tempPassword: null }
-                    })
+                            })
+                        ])
+
+                        const updateData: any = {}
+
+                        // Task 2 & 3: Only clear if email succeeded, and set timestamp
+                        if (emailRef.status === 'fulfilled') {
+                            updateData.tempPassword = null
+                            updateData.onboardingEmailsSentAt = new Date()
+                        } else {
+                            console.error(`[Auth Callback] Welcome email failed for gym ${gym.id} (${gym.email}):`, emailRef.reason)
+                        }
+
+                        if (whatsappRef.status === 'rejected') {
+                            console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
+                        }
+
+                        if (Object.keys(updateData).length > 0) {
+                            await (prisma.gymProfile.update as any)({
+                                where: { id: gym.id },
+                                data: updateData
+                            })
+                        }
+                    } catch (cryptoError) {
+                        console.error(`[Auth Callback] Decryption failed for gym ${gym.id}:`, cryptoError)
+                    }
                 }
             }
 
-            const finalSlug = gym?.slug || (isTrainerProfile as any)?.gym?.slug
-            
-            if (finalSlug) {
-                return NextResponse.redirect(`${baseUrl}/${finalSlug}/dashboard`)
-            }
-
-            return NextResponse.redirect(`${baseUrl}${next}`)
+            // Always redirect to /email-verified after successful link click
+            return NextResponse.redirect(`${baseUrl}/email-verified`)
         }
         
         console.error('[Auth Callback] Code exchange failed:', error?.message, error?.status)

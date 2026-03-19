@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto'
 import { addDays } from 'date-fns'
 import { getBaseUrl } from '@/lib/utils'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
+import { encryptPassword } from '@/lib/crypto'
 
 const trialSchema = z.object({
     gymName: z.string().min(2, 'Gym name is required'),
@@ -107,7 +108,7 @@ export async function createTrialGym(raw: {
                 saasPlan: 'TRIAL',
                 planTier: 'TRIAL',
                 trialExpiresAt,
-                tempPassword: autoPassword,
+                tempPassword: encryptPassword(autoPassword),
             },
         })
     } catch (dbError) {
@@ -310,6 +311,7 @@ export async function adminCreateTrialGym(raw: {
                 saasPlan: 'TRIAL',
                 planTier: 'TRIAL',
                 trialExpiresAt,
+                tempPassword: encryptPassword(tempPassword),
             },
         })
     } catch {
