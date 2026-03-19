@@ -103,12 +103,18 @@ export async function signup(formData: FormData) {
         return redirect(`/login?view=register&message=${encodeURIComponent("Registration Code has reached maximum uses.")}`)
     }
 
+    // Get current origin for reliable redirect (fixes PKCE mismatch on custom domains)
+    const headerList = await headers()
+    const host = headerList.get('host')
+    const protocol = headerList.get('x-forwarded-proto') || 'https'
+    const origin = `${protocol}://${host}`
+
     // 2. Supabase Signup (External network call, pulled out of DB transaction)
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+            emailRedirectTo: `${origin}/auth/callback`,
         },
     })
 

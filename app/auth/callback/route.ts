@@ -6,14 +6,11 @@ import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 import { decryptPassword } from '@/lib/crypto'
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url)
+    const { searchParams, origin: baseUrl } = new URL(request.url)
     const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/dashboard'
     const errorParam = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
-
-    // Use configured app URL if available, fallback to request origin
-    const baseUrl = getBaseUrl()
 
     // Handle explicit errors from Supabase redirect (e.g. link expired, already used)
     if (errorParam || errorDescription) {

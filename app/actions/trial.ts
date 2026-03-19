@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { cookies, headers } from 'next/headers'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 import { addDays } from 'date-fns'
@@ -72,11 +73,17 @@ export async function createTrialGym(raw: {
 
     // 3. Create Supabase user with auto-generated password
     const autoPassword = randomBytes(6).toString('base64url') // 8-char URL-safe
+    // Get current origin for reliable redirect (fixes PKCE mismatch on custom domains)
+    const headerList = await headers()
+    const host = headerList.get('host')
+    const protocol = headerList.get('x-forwarded-proto') || 'https'
+    const origin = `${protocol}://${host}`
+
     const supabase = await createClient()
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password: autoPassword,
-        options: { emailRedirectTo: `${getBaseUrl()}/auth/callback` },
+        options: { emailRedirectTo: `${origin}/auth/callback` },
     })
 
     if (authError || !authData.user) {
