@@ -69,19 +69,18 @@ export default function TrialRequestForm() {
                         </p>
                     </div>
                     <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 text-sm text-left space-y-1">
-                        <p className="font-semibold text-slate-900">📧 Check your email &amp; WhatsApp</p>
+                        <p className="font-semibold text-slate-900">📧 Check your email to verify your account</p>
                         <p className="text-muted-foreground">
-                            We&apos;ve sent your login credentials to <strong>{form.email}</strong> and your WhatsApp.
+                            We&apos;ve sent a verification link to <strong>{form.email}</strong>. Please verify your email to receive your login credentials.
                         </p>
                     </div>
-                    <Button asChild className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary-600 shadow-lg shadow-primary/20">
-                        <Link href="/login">
-                            Login to Your Dashboard
-                            <ArrowRight className="ml-2 h-5 w-5" />
+                    <Button asChild variant="outline" className="w-full h-12 text-base font-semibold">
+                        <Link href="/">
+                            Back to Home
                         </Link>
                     </Button>
-                    <p className="text-xs text-muted-foreground">
-                        Use the credentials sent to your email/WhatsApp to login.
+                    <p className="text-xs text-muted-foreground pt-2">
+                        Don&apos;t see the email? Check your spam folder.
                     </p>
                 </CardContent>
             </Card>
@@ -212,7 +211,7 @@ export default function TrialRequestForm() {
                     <p className="text-xs text-center text-muted-foreground pt-1">
                         By signing up you agree to our Terms of Service.
                         <br />
-                        We&apos;ll send login details to your WhatsApp.
+                        We&apos;ll send a verification link to your email.
                     </p>
                 </form>
             </CardContent>

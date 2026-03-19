@@ -13,28 +13,32 @@ export const metadata: Metadata = {
 export default async function OnboardingPage() {
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    if (auth?.userId) {
-        let shouldRedirect = false
-        try {
-            if (auth.gym && auth.gym.isVerified) {
-                shouldRedirect = true
-            }
-        } catch (error) {
-            // If the DB is unreachable, fall through and show the onboarding form
-            // rather than crashing the page with a 500.
-            console.error('[onboarding] Failed to look up gym profile:', error instanceof Error ? error.message : String(error))
-        }
+    if (!auth?.userId) {
+        redirect('/login')
+    }
 
-        // In Next.js, calling redirect() from a Server Component during a Server Action 
-        // re-render causes a 500 error ("Error occurred in Server Components render").
-        // The action already returned `{ redirectTo }` for the client to handle, so we just
-        // shouldn't redirect if this is an action payload request.
-        const headerList = await headers()
-        const isAction = headerList.has('next-action')
-
-        if (shouldRedirect && !isAction) {
-            redirect('/api/auth/sync-cookie')
+    let shouldRedirect = false
+    try {
+        // Access restricted to trial users who are not yet verified
+        const isUnverifiedTrial = !auth.gym.isVerified && (auth.gym as any).tempPassword !== null
+        if (!isUnverifiedTrial) {
+            shouldRedirect = true
         }
+    } catch (error) {
+        // If the DB is unreachable, fall through and show the onboarding form
+        // rather than crashing the page with a 500.
+        console.error('[onboarding] Failed to verify gym status:', error instanceof Error ? error.message : String(error))
+    }
+
+    // In Next.js, calling redirect() from a Server Component during a Server Action 
+    // re-render causes a 500 error ("Error occurred in Server Components render").
+    // The action already returned `{ redirectTo }` for the client to handle, so we just
+    // shouldn't redirect if this is an action payload request.
+    const headerList = await headers()
+    const isAction = headerList.has('next-action')
+
+    if (shouldRedirect && !isAction) {
+        redirect('/api/auth/sync-cookie')
     }
 
     return (

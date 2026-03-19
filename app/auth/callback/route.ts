@@ -1,14 +1,25 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getBaseUrl } from '@/lib/utils'
+import { sendWelcomeEmail } from '@/app/actions/trial'
+import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/dashboard'
+    const errorParam = searchParams.get('error')
+    const errorDescription = searchParams.get('error_description')
 
     // Use configured app URL if available, fallback to request origin
     const baseUrl = getBaseUrl()
+
+    // Handle explicit errors from Supabase redirect (e.g. link expired, already used)
+    if (errorParam || errorDescription) {
+        console.error('[Auth Callback] Supabase redirect error:', errorParam, errorDescription)
+        const msg = errorDescription || errorParam || "Authentication failed"
+        return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(msg)}`)
+    }
 
     if (code) {
         const supabase = await createClient()
@@ -51,6 +62,49 @@ export async function GET(request: Request) {
                 })
             }
 
+            // First time verification
+            if (gym && !gym.isVerified) {
+                await prisma.gymProfile.update({
+                    where: { id: gym.id },
+                    data: { isVerified: true }
+                })
+                
+                if (gym.tempPassword) {
+                    // Send credentials now that email is verified
+                    sendWelcomeEmail({
+                        ownerName: gym.ownerName,
+                        gymName: gym.name,
+                        email: gym.email,
+                        password: gym.tempPassword,
+                        slug: gym.slug,
+                        trialExpiresAt: gym.trialExpiresAt,
+                    }).catch(() => { /* non-blocking */ })
+
+                    sendWhatsAppTemplate({
+                        to: gym.phone,
+                        templateName: 'gymmitra_welcome_trial_final',
+                        languageCode: 'en',
+                        components: [
+                            {
+                                type: 'body',
+                                parameters: [
+                                    { type: 'text', text: gym.ownerName },
+                                    { type: 'text', text: gym.name },
+                                    { type: 'text', text: gym.email },
+                                    { type: 'text', text: `${baseUrl}/login` },
+                                ],
+                            },
+                        ],
+                    }).catch(() => { /* non-blocking */ })
+                    
+                    // Clear the tempPassword after sending for security
+                    await (prisma.gymProfile.update as any)({
+                        where: { id: gym.id },
+                        data: { tempPassword: null }
+                    })
+                }
+            }
+
             const finalSlug = gym?.slug || (isTrainerProfile as any)?.gym?.slug
             
             if (finalSlug) {
@@ -59,11 +113,11 @@ export async function GET(request: Request) {
 
             return NextResponse.redirect(`${baseUrl}${next}`)
         }
-        console.error('[Auth Callback] Code exchange failed:', error?.message)
-    } else {
-        console.error('[Auth Callback] No code provided in search params')
+        
+        console.error('[Auth Callback] Code exchange failed:', error?.message, error?.status)
+        return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(error?.message || "Verification failed or link expired.")}`)
     }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent("Verification failed or link expired. Please try logging in or registering again.")}`)
+    console.error('[Auth Callback] No code provided in search params')
+    return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent("No verification code found in the link.")}`)
 }

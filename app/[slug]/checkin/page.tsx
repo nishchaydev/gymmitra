@@ -20,12 +20,13 @@ export default function CheckInPage() {
     const [message, setMessage] = useState("")
     const [memberName, setMemberName] = useState("")
     const [isReturningMember, setIsReturningMember] = useState(false)
-    const [time, setTime] = useState(new Date())
+    const [time, setTime] = useState<Date | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const storageKey = `${STORAGE_KEY_PREFIX}${slug}`
 
     // Clock effect
     useEffect(() => {
+        setTime(new Date())
         const timer = setInterval(() => setTime(new Date()), 1000)
         return () => clearInterval(timer)
     }, [])
@@ -106,16 +107,6 @@ export default function CheckInPage() {
         setPhone(prev => prev.slice(0, -1))
     }
 
-    const KeypadButton = ({ value, onClick, className = "" }: { value: string | React.ReactNode, onClick: () => void, className?: string }) => (
-        <button
-            onClick={onClick}
-            className={`h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold transition-all active:scale-95 active:bg-white/20 select-none ${className}`}
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-        >
-            {value}
-        </button>
-    )
-
     return (
         <div className="min-h-screen bg-[#050510] text-white flex flex-col items-center justify-between p-6 md:p-12 overflow-hidden relative">
             {/* Background elements */}
@@ -134,10 +125,10 @@ export default function CheckInPage() {
                 <div className="text-right">
                     <div className="text-3xl md:text-5xl font-black tracking-tighter flex items-center justify-end gap-3">
                         <Clock className="h-6 w-6 md:h-8 md:w-8 text-slate-500" />
-                        {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {time ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </div>
                     <div className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">
-                        {time.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' })}
+                        {time ? time.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }) : '---'}
                     </div>
                 </div>
             </header>
@@ -319,3 +310,13 @@ export default function CheckInPage() {
         </div>
     )
 }
+
+const KeypadButton = ({ value, onClick, className = "" }: { value: string | React.ReactNode, onClick: () => void, className?: string }) => (
+    <button
+        onClick={onClick}
+        className={`h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold transition-all active:scale-95 active:bg-white/20 select-none ${className}`}
+        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+    >
+        {value}
+    </button>
+)

@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Building2, MapPin, Contact, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, ImagePlus, X } from 'lucide-react'
+import { 
+    Building2, MapPin, Contact, CreditCard, CheckCircle2, 
+    ArrowRight, ArrowLeft, ImagePlus, X, Users, Package,
+    Plus, Trash2, Upload
+} from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { completeOnboarding } from './actions'
 
@@ -25,6 +29,8 @@ const steps = [
     { title: 'Business Info', icon: Building2 },
     { title: 'Location', icon: MapPin },
     { title: 'Contact', icon: Contact },
+    { title: 'Users', icon: Users },
+    { title: 'Inventory', icon: Package },
     { title: 'Membership Plans', icon: CheckCircle2 },
     { title: 'Invoice Setup', icon: CreditCard },
 ]
@@ -34,7 +40,6 @@ export default function OnboardingForm() {
     const [currentStep, setCurrentStep] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [states, setStates] = useState<string[]>(INDIAN_STATES)
-    const [logoFile, setLogoFile] = useState<File | null>(null)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [formData, setFormData] = useState({
         businessName: '',
@@ -46,11 +51,18 @@ export default function OnboardingForm() {
         pincode: '',
         phone: '',
         upiId: '',
-        invoicePrefix: '',
+        invoicePrefix: 'GM',
         termsAndConditions: '1. Fees once paid are non-refundable.\n2. Management is not responsible for personal belongings.',
         gymRules: '1. Always wipe down equipment after use.\n2. Re-rack weights after finishing your set.\n3. Appropriate gym attire and closed-toe shoes are mandatory.',
-        plans: [] as { name: string; durationMonths: number; price: number; enabled: boolean }[],
-        futurePlanPreference: 'BASIC',
+        plans: [
+            { name: 'Monthly', durationMonths: 1, price: 1000, enabled: true },
+            { name: 'Quarterly', durationMonths: 3, price: 2500, enabled: true },
+            { name: 'Yearly', durationMonths: 12, price: 8000, enabled: true },
+        ],
+        futurePlanPreference: 'BASIC' as 'BASIC' | 'PRO' | 'ENTERPRISE',
+        logo: null as File | null,
+        members: [] as { name: string; phone: string; email?: string }[],
+        products: [] as { name: string; price: number; stock: number }[],
     })
 
     // Pre-fill from existing GymProfile (trial signup already saves gymName, ownerName, email, phone, city)
@@ -104,7 +116,49 @@ export default function OnboardingForm() {
         })
     }
 
+    const addMember = () => {
+        setFormData(prev => ({
+            ...prev,
+            members: [...prev.members, { name: '', phone: '' }],
+        }))
+    }
 
+    const removeMember = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            members: prev.members.filter((_, i) => i !== index),
+        }))
+    }
+
+    const updateMember = (index: number, field: 'name' | 'phone', value: string) => {
+        setFormData(prev => {
+            const newMembers = [...prev.members]
+            newMembers[index] = { ...newMembers[index], [field]: value }
+            return { ...prev, members: newMembers }
+        })
+    }
+
+    const addProduct = () => {
+        setFormData(prev => ({
+            ...prev,
+            products: [...prev.products, { name: '', price: 0, stock: 0 }],
+        }))
+    }
+
+    const removeProduct = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            products: prev.products.filter((_, i) => i !== index),
+        }))
+    }
+
+    const updateProduct = (index: number, field: 'name' | 'price' | 'stock', value: string | number) => {
+        setFormData(prev => {
+            const newProducts = [...prev.products]
+            newProducts[index] = { ...newProducts[index], [field]: value } as any
+            return { ...prev, products: newProducts }
+        })
+    }
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -113,7 +167,7 @@ export default function OnboardingForm() {
                 toast.error("Logo size must be less than 2MB")
                 return
             }
-            setLogoFile(file)
+            setFormData(prev => ({ ...prev, logo: file }))
             const reader = new FileReader()
             reader.onloadend = () => {
                 setLogoPreview(reader.result as string)
@@ -137,7 +191,7 @@ export default function OnboardingForm() {
                         const fetchedState = postOffice.State
                         const fetchedCity = postOffice.District
 
-                        // If state does not exist in our current dropdown list or it is empty, add it 
+                        // If state does not exist in our current dropdown list or it is empty, add it
                         setStates(prev => {
                             if (!prev.includes(fetchedState)) return [...prev, fetchedState].sort()
                             return prev
@@ -166,17 +220,17 @@ export default function OnboardingForm() {
     }, [pincode])
 
     const removeLogo = () => {
-        setLogoFile(null)
+        setFormData(prev => ({ ...prev, logo: null }))
         setLogoPreview(null)
     }
 
     const nextStep = () => {
         const form = document.querySelector('form')
-        if (currentStep === 3 && formData.plans.length === 0) {
+        if (currentStep === 5 && formData.plans.length === 0) { // Membership Plans step
             toast.error("Please add at least one membership plan to continue.")
             return
         }
-        if (currentStep === 3 && formData.plans.some(p => !p.name.trim())) {
+        if (currentStep === 5 && formData.plans.some(p => !p.name.trim())) { // Membership Plans step
             toast.error("Please give each plan a name.")
             return
         }
@@ -201,15 +255,14 @@ export default function OnboardingForm() {
         try {
             const submissionData = new FormData()
             Object.entries(formData).forEach(([key, value]) => {
-                if (key === 'plans') {
+                if (['plans', 'members', 'products'].includes(key)) {
                     submissionData.append(key, JSON.stringify(value))
-                } else {
+                } else if (key === 'logo' && value instanceof File) {
+                    submissionData.append(key, value)
+                } else if (key !== 'logo') {
                     submissionData.append(key, value as string)
                 }
             })
-            if (logoFile) {
-                submissionData.append('logo', logoFile)
-            }
             result = await completeOnboarding(submissionData)
 
             if (result.error) {
@@ -482,6 +535,132 @@ export default function OnboardingForm() {
 
                                 {currentStep === 3 && (
                                     <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-1">
+                                                <Label className="text-lg font-bold">Add Staff/Users</Label>
+                                                <p className="text-xs text-muted-foreground">Add trainers, managers, or front desk staff.</p>
+                                            </div>
+                                            <Button type="button" variant="outline" size="sm" onClick={addMember}>
+                                                <Plus className="w-4 h-4 mr-2" /> Add User
+                                            </Button>
+                                        </div>
+
+                                        {formData.members.length === 0 && (
+                                            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                                                <Users className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                                                <p className="text-sm text-muted-foreground">No users added yet</p>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {formData.members.map((member, index) => (
+                                                <div key={index} className="grid grid-cols-12 gap-3 p-4 border rounded-xl bg-white shadow-sm transition-all hover:border-primary/30">
+                                                    <div className="col-span-5 space-y-1">
+                                                        <Label className="text-[10px] uppercase font-bold text-slate-400">Full Name</Label>
+                                                        <Input
+                                                            placeholder="John Doe"
+                                                            value={member.name}
+                                                            onChange={(e) => updateMember(index, 'name', e.target.value)}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-5 space-y-1">
+                                                        <Label className="text-[10px] uppercase font-bold text-slate-400">Phone</Label>
+                                                        <Input
+                                                            placeholder="9876543210"
+                                                            value={member.phone}
+                                                            onChange={(e) => updateMember(index, 'phone', e.target.value)}
+                                                            required
+                                                            pattern="^[0-9]{10}$"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 flex items-end justify-center pb-1">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => removeMember(index)}
+                                                            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentStep === 4 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-1">
+                                                <Label className="text-lg font-bold">Add Inventory/Products</Label>
+                                                <p className="text-xs text-muted-foreground">Add supplements, equipment, or merch for sale.</p>
+                                            </div>
+                                            <Button type="button" variant="outline" size="sm" onClick={addProduct}>
+                                                <Plus className="w-4 h-4 mr-2" /> Add Item
+                                            </Button>
+                                        </div>
+
+                                        {formData.products.length === 0 && (
+                                            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                                                <Package className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                                                <p className="text-sm text-muted-foreground">No inventory items yet</p>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {formData.products.map((product, index) => (
+                                                <div key={index} className="grid grid-cols-12 gap-3 p-4 border rounded-xl bg-white shadow-sm transition-all hover:border-primary/30">
+                                                    <div className="col-span-5 space-y-1">
+                                                        <Label className="text-[10px] uppercase font-bold text-slate-400">Product Name</Label>
+                                                        <Input
+                                                            placeholder="Whey Protein"
+                                                            value={product.name}
+                                                            onChange={(e) => updateProduct(index, 'name', e.target.value)}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-3 space-y-1">
+                                                        <Label className="text-[10px] uppercase font-bold text-slate-400">Price (₹)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Price"
+                                                            value={product.price}
+                                                            onChange={(e) => updateProduct(index, 'price', parseFloat(e.target.value))}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 space-y-1">
+                                                        <Label className="text-[10px] uppercase font-bold text-slate-400">Stock</Label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Qty"
+                                                            value={product.stock}
+                                                            onChange={(e) => updateProduct(index, 'stock', parseInt(e.target.value))}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 flex items-end justify-center pb-1">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => removeProduct(index)}
+                                                            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentStep === 5 && (
+                                    <div className="space-y-4">
                                         <div className="space-y-2 mb-4">
                                             <Label>Create your Membership Plans</Label>
                                             <p className="text-xs text-muted-foreground">Add the plans you offer to members. You can set the price later in Settings.</p>
@@ -541,7 +720,7 @@ export default function OnboardingForm() {
                                     </div>
                                 )}
 
-                                {currentStep === 4 && (
+                                {currentStep === 6 && (
                                     <div className="space-y-4 text-center">
                                         <div className="space-y-2 text-left">
                                             <Label htmlFor="invoicePrefix">Invoice Prefix</Label>
@@ -588,7 +767,7 @@ export default function OnboardingForm() {
                                             </div>
                                             <Select
                                                 value={formData.futurePlanPreference}
-                                                onValueChange={(val) => setFormData(prev => ({ ...prev, futurePlanPreference: val }))}
+                                                onValueChange={(val) => setFormData(prev => ({ ...prev, futurePlanPreference: val as "BASIC" | "PRO" | "ENTERPRISE" }))}
                                             >
                                                 <SelectTrigger id="futurePlanPreference-select" className="bg-white border-2 border-primary/20 focus:border-primary">
                                                     <SelectValue placeholder="Select Plan" />

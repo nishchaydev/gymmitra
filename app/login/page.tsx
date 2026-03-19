@@ -1,6 +1,7 @@
 import { login, signup, demoLogin } from './actions'
 import { Button } from "@/components/ui/button"
 import { SubmitButton } from "@/components/auth/SubmitButton"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -72,10 +73,12 @@ export default async function LoginPage(props: {
                     </form>
                     
                     <div className="mt-6 text-center text-sm">
-                        <span className="text-muted-foreground">Don't have an account? </span>
-                        <a href="/trial" className="font-medium text-primary hover:underline transition-colors">
-                            Start Free Trial
-                        </a>
+                        <p className="text-center text-sm text-drift-500 font-medium">
+                            Don&apos;t have an account?{" "}
+                            <Link href="/start-trial" className="font-medium text-primary hover:underline transition-colors">
+                                Start 30-day free trial
+                            </Link>
+                        </p>
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4 border-t p-4">

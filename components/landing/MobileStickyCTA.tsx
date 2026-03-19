@@ -33,7 +33,7 @@ export function MobileStickyCTA() {
                     exit={{ y: 100, opacity: 0 }}
                     className="md:hidden fixed bottom-0 inset-x-0 z-50 p-4 bg-white/80 backdrop-blur-lg border-t border-slate-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]"
                 >
-                    <Link href="#contact" className="w-full">
+                    <Link href="/start-trial" className="w-full">
                         <Button className="w-full h-14 rounded-2xl bg-primary text-white font-bold text-lg shadow-xl shadow-primary/20">
                             Start Free Trial
                             <ArrowRight className="ml-2 h-5 w-5" />

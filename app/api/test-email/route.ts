@@ -5,8 +5,12 @@ import { NextResponse } from 'next/server'
  * GET /api/test-email
  */
 export async function GET() {
-    const resendKey = process.env.RESEND_API_KEY
-    if (!resendKey) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available' }, { status: 404 })
+  }
+
+  const resendKey = process.env.RESEND_API_KEY
+  if (!resendKey) {
         return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 })
     }
 

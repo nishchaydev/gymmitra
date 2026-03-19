@@ -25,6 +25,7 @@ describe('getBaseUrl', () => {
     delete process.env.VERCEL
     delete process.env.VERCEL_URL
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL
+    vi.stubEnv('NODE_ENV', 'production')
   })
 
   afterEach(() => {

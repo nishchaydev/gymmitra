@@ -9,42 +9,44 @@ datasource db {
 }
 
 model GymProfile {
-  id                 String            @id @default(cuid())
-  name               String
-  slug               String?           @unique
-  email              String
-  phone              String
-  address            String?
-  logo               String?
-  gst                String?
-  userId             String            @unique
-  businessName       String?
-  ownerName          String?
-  city               String?
-  state              String?
-  pincode            String?
-  upiId              String?
-  logoUrl            String?
-  invoicePrefix      String            @default("GM")
-  isVerified         Boolean           @default(false)
-  onboardingStep     Int               @default(0)
-  timezone           String            @default("Asia/Kolkata")
-  saasPlan               SaaSPlan          @default(TRIAL)
-  planTier               PlanTier          @default(TRIAL)
-  trialExpiresAt         DateTime?
-  futurePlanPreference   String?
-  licenseKey             String?           @unique
-  licenseActivatedAt     DateTime?
-  taxPercentage          Decimal           @default(18.0) @db.Decimal(5, 2)
-  invoiceLinkExpiryDays  Int               @default(30) // Days before shared invoice links expire (0 = never)
-  onboardingEmailsSentAt DateTime?
-  lastTrialReminderMilestone Int?    // Days left at last reminder (e.g. 30, 15, 7)
-  termsAndConditions     String?           @db.Text
-  gymRules               String?           @db.Text
-  waWelcomeMsg       String?           @db.Text
-  waInvoiceMsg       String?           @db.Text
-  waRenewalMsg       String?           @db.Text
-  waOverdueMsg       String?           @db.Text
+  id                         String    @id @default(cuid())
+  name                       String
+  slug                       String?   @unique
+  email                      String
+  phone                      String
+  address                    String?
+  logo                       String?
+  gst                        String?
+  userId                     String    @unique
+  businessName               String?
+  ownerName                  String?
+  city                       String?
+  state                      String?
+  pincode                    String?
+  upiId                      String?
+  logoUrl                    String?
+  invoicePrefix              String    @default("GM")
+  isVerified                 Boolean   @default(false)
+  onboardingStep             Int       @default(0)
+  timezone                   String    @default("Asia/Kolkata")
+  saasPlan                   SaaSPlan  @default(TRIAL)
+  planTier                   PlanTier  @default(TRIAL)
+  trialExpiresAt             DateTime?
+  futurePlanPreference       String?
+  licenseKey                 String?   @unique
+  licenseActivatedAt         DateTime?
+  taxPercentage              Decimal   @default(18.0) @db.Decimal(5, 2)
+  invoiceLinkExpiryDays      Int       @default(30) // Days before shared invoice links expire (0 = never)
+  onboardingEmailsSentAt     DateTime?
+  lastTrialReminderMilestone Int? // Days left at last reminder (e.g. 30, 15, 7)
+  termsAndConditions         String?   @db.Text
+  gymRules                   String?   @db.Text
+  waWelcomeMsg               String?   @db.Text
+  waInvoiceMsg               String?   @db.Text
+  waRenewalMsg               String?   @db.Text
+  waOverdueMsg               String?   @db.Text
+
+  tempPassword String?
 
   deletedAt          DateTime?
   createdAt          DateTime          @default(now())
@@ -336,8 +338,8 @@ enum PaymentMethod {
 
 enum InvoiceType {
   MEMBERSHIP
-  PRODUCT    // Product sale invoices
-  WALK_IN    // Sales to non-members
+  PRODUCT // Product sale invoices
+  WALK_IN // Sales to non-members
   SALE
   RENEWAL
 }
@@ -366,13 +368,13 @@ enum SessionStatus {
 enum SaaSPlan {
   // NOTE: BASIC, GROWTH, ENTERPRISE were removed in favor of MAIN_PLAN. 
   // Migrations handle the data mapping.
-  TRIAL     // Default for new gyms
+  TRIAL // Default for new gyms
   MAIN_PLAN // Licensed gyms
 }
 
 enum PlanTier {
   TRIAL // 60-day premium trial window
-  PRO   // Licensed/Commercial usage
+  PRO // Licensed/Commercial usage
 }
 
 enum LeadStatus {
@@ -467,15 +469,15 @@ model AuditLog {
 }
 
 model Expense {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   gymId       String
-  amount      Decimal  @db.Decimal(10, 2)
+  amount      Decimal         @db.Decimal(10, 2)
   category    ExpenseCategory
   description String
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  gym         GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  gym         GymProfile      @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@index([gymId])
   @@index([gymId, date])

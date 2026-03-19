@@ -38,10 +38,10 @@ export function FinalCTA() {
                 </MotionWrapper>
 
                 <MotionWrapper delay={0.3} className="flex flex-col items-center">
-                    <Button asChild size="lg" className="h-16 px-12 text-xl rounded-full bg-white text-midnight hover:bg-primary hover:text-white font-black shadow-2xl shadow-primary/20 transition-all duration-300 hover:-translate-y-2 active:scale-95 group uppercase tracking-widest">
-                        <Link href="#contact" className="flex items-center">
-                            Start Your Free Trial
-                            <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                    <Button asChild size="lg" className="h-14 px-8 bg-primary hover:bg-primary-600 text-white font-bold rounded-full shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-1">
+                        <Link href="/start-trial" className="flex items-center">
+                            Start Your Free Trial Today
+                            <ArrowRight className="ml-2 w-5 h-5" />
                         </Link>
                     </Button>
                     <div className="flex items-center gap-2 text-sm text-slate-400 mt-10 font-black uppercase tracking-[0.2em]">

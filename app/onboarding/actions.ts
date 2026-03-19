@@ -32,6 +32,8 @@ const onboardingSchema = z.object({
     termsAndConditions: z.string().optional(),
     gymRules: z.string().optional(),
     futurePlanPreference: z.enum(['BASIC', 'PRO', 'ENTERPRISE']).default('BASIC'),
+    members: z.string().optional(),
+    products: z.string().optional(),
 })
 
 const ONBOARDING_COMPLETE_STEP = 4
@@ -132,6 +134,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         termsAndConditions: formData.get("termsAndConditions"),
         gymRules: formData.get("gymRules"),
         futurePlanPreference: formData.get("futurePlanPreference") || 'BASIC',
+        members: formData.get("members"),
+        products: formData.get("products"),
     }
 
     let gymProfile: GymProfile | undefined;
@@ -258,6 +262,69 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             } catch (planError) {
                 console.error("Failed to parse or create onboarding plans:", planError)
                 warnings.push("Your membership plans could not be saved. You can add them later in Settings.")
+            }
+        }
+
+        // Process Members
+        if (validatedData.members) {
+            try {
+                const memberSchema = z.array(z.object({
+                    name: z.string().min(1),
+                    phone: z.string().min(10),
+                    joiningDate: z.string().optional(),
+                }))
+
+                const parsedMembers = JSON.parse(validatedData.members)
+                const validMembers = memberSchema.parse(parsedMembers)
+
+                for (const m of validMembers) {
+                    await prisma.member.create({
+                        data: {
+                            gymId,
+                            name: m.name,
+                            phone: m.phone,
+                            joiningDate: m.joiningDate ? new Date(m.joiningDate) : new Date(),
+                            dateOfBirth: new Date(1990, 0, 1),
+                            emergencyName: "Contact",
+                            emergencyPhone: m.phone,
+                            emergencyRelation: "Self",
+                            status: 'ACTIVE' as any,
+                        }
+                    })
+                }
+            } catch (memberError) {
+                console.error("Failed to parse or create onboarding members:", memberError)
+                warnings.push("Some members could not be saved. You can add them later in Members section.")
+            }
+        }
+
+        // Process Products
+        if (validatedData.products) {
+            try {
+                const productSchema = z.array(z.object({
+                    name: z.string().min(1),
+                    price: z.number().nonnegative(),
+                    stock: z.number().int().nonnegative(),
+                }))
+
+                const parsedProducts = JSON.parse(validatedData.products)
+                const validProducts = productSchema.parse(parsedProducts)
+
+                for (const p of validProducts) {
+                    await prisma.product.create({
+                        data: {
+                            gymId,
+                            name: p.name,
+                            price: p.price,
+                            stock: p.stock,
+                            category: 'OTHER' as any,
+                            isActive: true
+                        }
+                    })
+                }
+            } catch (productError) {
+                console.error("Failed to parse or create onboarding products:", productError)
+                warnings.push("Some products could not be saved. You can add them later in Inventory.")
             }
         }
 

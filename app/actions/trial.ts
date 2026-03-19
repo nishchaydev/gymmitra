@@ -107,6 +107,7 @@ export async function createTrialGym(raw: {
                 saasPlan: 'TRIAL',
                 planTier: 'TRIAL',
                 trialExpiresAt,
+                tempPassword: autoPassword,
             },
         })
     } catch (dbError) {
@@ -115,37 +116,7 @@ export async function createTrialGym(raw: {
         return { success: false, error: 'Failed to create gym profile. Please try again.' }
     }
 
-    // 6. Send welcome email WITH credentials (non-blocking)
-    sendWelcomeEmail({
-        ownerName: data.ownerName,
-        gymName: data.gymName,
-        email,
-        password: autoPassword,
-        slug,
-        trialExpiresAt,
-    }).catch(() => { /* swallow — non-critical */ })
-
-    // 7. Fire WhatsApp template with credentials (non-blocking)
-    const trialEndFormatted = trialExpiresAt.toLocaleDateString('en-IN', {
-        day: 'numeric', month: 'short', year: 'numeric',
-    })
-    sendWhatsAppTemplate({
-        to: data.phone,
-        templateName: 'gymmitra_welcome_trial',
-        languageCode: 'en',
-        components: [
-            {
-                type: 'body',
-                parameters: [
-                    { type: 'text', text: data.ownerName },
-                    { type: 'text', text: trialEndFormatted },
-                    { type: 'text', text: email },
-                    { type: 'text', text: autoPassword },
-                    { type: 'text', text: `${getBaseUrl()}/login` },
-                ],
-            },
-        ],
-    }).catch(() => { /* swallow — non-critical */ })
+    // Welcome email and WhatsApp with credentials will be sent upon email verification in the auth callback.
 
     // 8. Notify founders about new signup (non-blocking)
     sendAdminNotification({
@@ -165,7 +136,7 @@ export async function createTrialGym(raw: {
 // Welcome email via Resend
 // ──────────────────────────────────────────────
 
-async function sendWelcomeEmail(params: {
+export async function sendWelcomeEmail(params: {
     ownerName: string
     gymName: string
     email: string
@@ -197,10 +168,9 @@ async function sendWelcomeEmail(params: {
                     <p style="margin: 0 0 8px; font-weight: 600; font-size: 14px; color: #334155;">🔐 Your Login Credentials</p>
                     <p style="margin: 4px 0; font-size: 14px;">Email: <strong>${params.email}</strong></p>
                     <p style="margin: 4px 0; font-size: 14px;">Password: <strong>${params.password}</strong></p>
-                    <p style="margin: 12px 0 0; font-size: 14px; color: #ef4444; font-weight: 600;">⚠️ IMPORTANT: You MUST verify your email address before you can log in! Please check your inbox for a verification link.</p>
                 </div>
 
-                <p>Once you've verified your email, complete your gym setup in just a few minutes:</p>
+                <p>Now that your email is verified, complete your gym setup in just a few minutes:</p>
                 <a href="${baseUrl}/login" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">
                     Log In & Complete Setup →
                 </a>
