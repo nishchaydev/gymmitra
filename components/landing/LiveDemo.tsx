@@ -7,6 +7,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { SHOWCASE_STATS, SHOWCASE_MEMBERS, SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
+import { demoLogin } from "@/app/auth/actions"
 
 export function LiveDemo() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'billing'>('dashboard')
@@ -122,7 +123,10 @@ export function LiveDemo() {
                                             </div>
 
                                             <div className="mb-8">
-                                                <Link href="/dashboard" className="block group">
+                                                <button 
+                                                    onClick={() => demoLogin()}
+                                                    className="w-full block group cursor-pointer border-none bg-transparent p-0 text-left"
+                                                >
                                                     <div className="w-full h-auto py-6 px-4 bg-slate-100/50 hover:bg-white text-slate-700 font-bold border-2 border-slate-200/50 hover:border-primary/30 transition-all rounded-2xl group-hover:shadow-[0_0_40px_-10px_rgba(0,102,255,0.3)] flex flex-col items-center justify-center text-center">
                                                         <p className="text-primary/60 text-[10px] font-black mb-1 uppercase tracking-[0.2em] italic">Experience the Full Power</p>
                                                         <h4 className="text-lg font-black mb-4 font-display">Wanna see how it feels to use our product?</h4>
@@ -131,7 +135,7 @@ export function LiveDemo() {
                                                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                                         </span>
                                                     </div>
-                                                </Link>
+                                                </button>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                 <div className="bg-white p-6 rounded-xl border border-drift-silver shadow-sm animate-in fade-in zoom-in duration-500">

@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { Loader2, ArrowRight, CheckCircle2, ChevronLeft, Building2, UserCircle2, Sparkles } from 'lucide-react'
 import { GymMitraLogo } from '@/components/brand/GymMitraLogo'
 import { createTrialGym } from '@/app/actions/trial'
+import { resendVerificationEmail } from '@/app/actions/auth'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -16,6 +17,7 @@ export default function TrialRequestForm() {
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState<{ slug: string } | null>(null)
+    const [isResending, setIsResending] = useState(false)
     const [form, setForm] = useState({
         gymName: '',
         ownerName: '',
@@ -124,7 +126,28 @@ export default function TrialRequestForm() {
                             </Button>
                             
                             <p className="text-xs text-muted-foreground">
-                                Didn&apos;t receive it? <button className="text-primary font-semibold hover:underline">Resend Verification</button>
+                                Didn&apos;t receive it?{' '}
+                                <button
+                                    className="text-primary font-semibold hover:underline disabled:opacity-50"
+                                    disabled={isResending}
+                                    onClick={async () => {
+                                        setIsResending(true)
+                                        try {
+                                            const result = await resendVerificationEmail()
+                                            if (result.success) {
+                                                toast.success('Verification email resent! Check your inbox.')
+                                            } else {
+                                                toast.error(result.error || 'Failed to resend email')
+                                            }
+                                        } catch {
+                                            toast.error('Something went wrong. Please try again.')
+                                        } finally {
+                                            setIsResending(false)
+                                        }
+                                    }}
+                                >
+                                    {isResending ? 'Sending...' : 'Resend Verification'}
+                                </button>
                             </p>
                         </div>
                     </CardContent>

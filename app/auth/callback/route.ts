@@ -4,10 +4,13 @@ import { getBaseUrl } from '@/lib/utils'
 import { sendWelcomeEmail } from '@/app/actions/trial'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 import { decryptPassword } from '@/lib/crypto'
+import type { EmailOtpType } from '@supabase/supabase-js'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
+    const token_hash = searchParams.get('token_hash')
+    const type = searchParams.get('type') as EmailOtpType | null
     const next = searchParams.get('next') ?? '/dashboard'
     const errorParam = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
@@ -23,120 +26,164 @@ export async function GET(request: Request) {
 
     // Handle explicit errors from Supabase redirect (e.g. link expired, already used)
     if (errorParam || errorDescription) {
-        console.error('[Auth Callback] Supabase redirect error:', errorParam, errorDescription)
+        console.error('[Auth Callback] Supabase redirect error:', {
+            error: errorParam,
+            description: errorDescription,
+            userAgent: request.headers.get('user-agent'),
+            purpose: request.headers.get('purpose'),
+            xPurpose: request.headers.get('x-purpose')
+        })
         const msg = errorDescription || errorParam || "Authentication failed"
         return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(msg)}`)
     }
 
-    if (code) {
-        const supabase = await createClient()
-        const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
+    const supabase = await createClient()
 
-        if (!error && user) {
-            // Password recovery flow
-            if (next === '/reset-password') {
-                return NextResponse.redirect(`${baseUrl}/reset-password`)
-            }
-
-            if (user.recovery_sent_at) {
-                const recoverySentAt = new Date(user.recovery_sent_at).getTime()
-                const oneHourAgo = Date.now() - 60 * 60 * 1000
-                if (recoverySentAt > oneHourAgo) {
-                    return NextResponse.redirect(`${baseUrl}/reset-password`)
-                }
-            }
-
-            // Normal login / signup flow
-            const { prisma } = await import('@/lib/prisma')
-            const gym = await prisma.gymProfile.findFirst({
-                where: { userId: user.id }
-            }) as any
-            
-            const isTrainerProfile = !gym ? await prisma.staffMember.findFirst({
-                where: { userId: user.id },
-                include: { gym: true }
-            }) : null;
-
-            // Set session cookie for onboarded users
-            if (gym?.isVerified || isTrainerProfile) {
-                const { cookies } = await import('next/headers')
-                const cookieStore = await cookies()
-                cookieStore.set('gym_onboarded', 'true', {
-                    maxAge: 30 * 24 * 60 * 60, // 30 days
-                    path: '/',
-                    secure: true, // Always secure in verification flow
-                    sameSite: 'lax'
-                })
-            }
-
-            // First time verification logic
-            if (gym && !gym.isVerified) {
-                const updateData: any = {
-                    isVerified: true, // CRITICAL FIX: Mark as verified
-                    emailVerifiedAt: new Date()
-                }
-
-                if (gym.tempPassword) {
-                    try {
-                        const actualPassword = decryptPassword(gym.tempPassword)
-                        
-                        // Send credentials and welcome notifications
-                        const [emailRef, whatsappRef] = await Promise.allSettled([
-                            sendWelcomeEmail({
-                                ownerName: gym.ownerName,
-                                gymName: gym.name,
-                                email: gym.email,
-                                password: actualPassword,
-                                slug: gym.slug,
-                                trialExpiresAt: gym.trialExpiresAt,
-                            }),
-                            sendWhatsAppTemplate({
-                                to: gym.phone,
-                                templateName: 'gymmitra_welcome_trial_final',
-                                languageCode: 'en',
-                                components: [
-                                    {
-                                        type: 'body',
-                                        parameters: [
-                                            { type: 'text', text: gym.ownerName },
-                                            { type: 'text', text: gym.name },
-                                            { type: 'text', text: gym.email },
-                                            { type: 'text', text: `${baseUrl}/login` },
-                                        ],
-                                    },
-                                ],
-                            })
-                        ])
-
-                        if (emailRef.status === 'fulfilled') {
-                            updateData.tempPassword = null
-                            updateData.onboardingEmailsSentAt = new Date()
-                        } else {
-                            console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, emailRef.reason)
-                        }
-
-                        if (whatsappRef.status === 'rejected') {
-                            console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
-                        }
-                    } catch (cryptoError) {
-                        console.error(`[Auth Callback] Decryption/Notification failed for gym ${gym.id}:`, cryptoError)
-                    }
-                }
-
-                // Apply all updates (verification status + notification status)
-                await (prisma.gymProfile.update as any)({
-                    where: { id: gym.id },
-                    data: updateData
-                })
-            }
-
-            return NextResponse.redirect(`${baseUrl}/email-verified`)
+    // --- Auth verification: token_hash (mobile/non-PKCE) or code (PKCE) ---
+    if (token_hash && type) {
+        // Mobile / non-PKCE flow: verify OTP via token_hash
+        console.log('[Auth Callback] Attempting OTP verification:', { type, token_hash: token_hash.slice(0, 5) + '...' })
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type })
+        if (error) {
+            console.error('[Auth Callback] OTP verification failed:', error)
+            return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(error.message || "Verification failed or link expired.")}`)
         }
-        
-        console.error('[Auth Callback] Code exchange failed:', error?.message, error?.status)
-        return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(error?.message || "Verification failed or link expired.")}`)
+    } else if (code) {
+        // Standard PKCE flow: exchange code for session
+        console.log('[Auth Callback] Attempting code exchange:', {
+            code: code.slice(0, 5) + '...',
+            origin,
+            baseUrl
+        })
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+            console.error('[Auth Callback] Code exchange failed:', {
+                message: error.message,
+                status: error.status,
+                code: error.code
+            })
+            return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent(error.message || "Verification failed or link expired.")}`)
+        }
+    } else {
+        console.error('[Auth Callback] No code or token_hash provided')
+        return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent("No verification code found in the link.")}`)
     }
 
-    console.error('[Auth Callback] No code provided')
-    return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent("No verification code found in the link.")}`)
+    // --- Auth succeeded, get user session ---
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        console.error('[Auth Callback] Auth succeeded but no user session found')
+        return NextResponse.redirect(`${baseUrl}/error?message=${encodeURIComponent("Verification failed or link expired.")}`)
+    }
+
+    console.log('[Auth Callback] Auth successful for user:', user.id)
+
+    // Password recovery flow
+    if (next === '/reset-password') {
+        return NextResponse.redirect(`${baseUrl}/reset-password`)
+    }
+
+    if (user.recovery_sent_at) {
+        const recoverySentAt = new Date(user.recovery_sent_at).getTime()
+        const oneHourAgo = Date.now() - 60 * 60 * 1000
+        if (recoverySentAt > oneHourAgo) {
+            return NextResponse.redirect(`${baseUrl}/reset-password`)
+        }
+    }
+
+    // Normal login / signup flow
+    const { prisma } = await import('@/lib/prisma')
+    const gym = await prisma.gymProfile.findFirst({
+        where: { userId: user.id }
+    }) as any
+
+    const isTrainerProfile = !gym ? await prisma.staffMember.findFirst({
+        where: { userId: user.id },
+        include: { gym: true }
+    }) : null;
+
+    // Set session cookie for onboarded users
+    if (gym?.isVerified || isTrainerProfile) {
+        const { cookies } = await import('next/headers')
+        const cookieStore = await cookies()
+        const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1')
+
+        cookieStore.set('gym_onboarded', 'true', {
+            maxAge: 30 * 24 * 60 * 60, // 30 days
+            path: '/',
+            secure: !isLocal, // Fix: Use non-secure for localhost
+            sameSite: 'lax'
+        })
+    }
+
+    // First time verification logic
+    if (gym && !gym.isVerified) {
+        const updateData: any = {
+            // NOTE: isVerified is intentionally NOT set here.
+            // It should only be set when the user completes onboarding
+            // ("Complete & Verify" button on the final step).
+            emailVerifiedAt: new Date()
+        }
+
+        if (gym.tempPassword) {
+            try {
+                const actualPassword = decryptPassword(gym.tempPassword)
+
+                // Send credentials and welcome notifications
+                const [emailRef, whatsappRef] = await Promise.allSettled([
+                    sendWelcomeEmail({
+                        ownerName: gym.ownerName,
+                        gymName: gym.name,
+                        email: gym.email,
+                        password: actualPassword,
+                        slug: gym.slug,
+                        trialExpiresAt: gym.trialExpiresAt,
+                    }),
+                    sendWhatsAppTemplate({
+                        to: gym.phone,
+                        templateName: 'gymmitra_welcome_trial_final',
+                        languageCode: 'en',
+                        components: [
+                            {
+                                type: 'body',
+                                parameters: [
+                                    { type: 'text', text: gym.ownerName },
+                                    { type: 'text', text: gym.name },
+                                    { type: 'text', text: gym.email },
+                                    { type: 'text', text: `${baseUrl}/login` },
+                                ],
+                            },
+                        ],
+                    })
+                ])
+
+                if (emailRef.status === 'fulfilled') {
+                    updateData.tempPassword = null
+                    updateData.onboardingEmailsSentAt = new Date()
+                } else {
+                    console.error(`[Auth Callback] Welcome email failed for gym ${gym.id}:`, emailRef.reason)
+                }
+
+                if (whatsappRef.status === 'rejected') {
+                    console.error(`[Auth Callback] WhatsApp failed for gym ${gym.id}:`, whatsappRef.reason)
+                }
+            } catch (cryptoError) {
+                console.error(`[Auth Callback] Decryption/Notification failed for gym ${gym.id}:`, cryptoError)
+            }
+        }
+
+        // Apply all updates (email verification + notification status)
+        try {
+            await (prisma.gymProfile.update as any)({
+                where: { id: gym.id },
+                data: updateData
+            })
+        } catch (updateError) {
+            console.error(`[Auth Callback] DB update failed for gym ${gym.id}:`, updateError)
+            // Continue anyway, user has the session
+        }
+    }
+
+    return NextResponse.redirect(`${baseUrl}/email-verified`)
 }

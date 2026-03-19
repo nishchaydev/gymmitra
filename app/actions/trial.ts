@@ -210,6 +210,8 @@ async function sendAdminNotification(params: {
     password: string
     slug: string
 }) {
+    if (ADMIN_EMAILS.length === 0) return
+
     const resendKey = process.env.RESEND_API_KEY
     if (!resendKey) return
 
