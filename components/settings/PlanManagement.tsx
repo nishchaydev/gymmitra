@@ -7,10 +7,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Loader2, Plus, Edit2, Trash2 } from "lucide-react"
+import { Loader2, Plus, Edit2, Trash2, Download } from "lucide-react"
+
+interface Plan {
+    id: string
+    name: string
+    description?: string
+    duration: number
+    price: number
+}
 
 export function PlanManagement() {
-    const [plans, setPlans] = useState<any[]>([])
+    const [plans, setPlans] = useState<Plan[]>([])
     const [loading, setLoading] = useState(true)
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [saving, setSaving] = useState(false)
@@ -64,8 +72,9 @@ export function PlanManagement() {
             setIsFormOpen(false)
             setEditingId(null)
             fetchPlans()
-        } catch (err: any) {
-            toast.error(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "An unexpected error occurred"
+            toast.error(message)
         } finally {
             setSaving(false)
         }
@@ -80,12 +89,13 @@ export function PlanManagement() {
 
             toast.success("Plan deleted successfully")
             fetchPlans()
-        } catch (err: any) {
-            toast.error(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "An unexpected error occurred"
+            toast.error(message)
         }
     }
 
-    const openEdit = (plan: any) => {
+    const openEdit = (plan: Plan) => {
         setFormData({
             name: plan.name,
             description: plan.description || '',
@@ -150,9 +160,19 @@ export function PlanManagement() {
                     <CardTitle>Membership Plans</CardTitle>
                     <CardDescription>Manage your gym's membership offerings.</CardDescription>
                 </div>
-                <Button onClick={openCreate} size="sm">
-                    <Plus className="w-4 h-4 mr-2" /> Add Plan
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open('/api/reports/download?type=plans', '_blank')}
+                    >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
+                    <Button onClick={openCreate} size="sm">
+                        <Plus className="w-4 h-4 mr-2" /> Add Plan
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">

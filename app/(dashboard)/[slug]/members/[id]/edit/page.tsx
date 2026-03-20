@@ -27,7 +27,7 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
                     <p className="text-muted-foreground">Update {member.name}&apos;s profile</p>
                 </div>
             </div>
-            <EditMemberForm member={member as any} gymSlug={slug} />
+            <EditMemberForm member={member as any} gymSlug={slug} dobMandatory={auth.gym.dobMandatory} />
         </div>
     )
 }

@@ -128,13 +128,13 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         // Fetch gym profile with trial info
         const { data: gym } = await supabase
             .from('GymProfile')
-            .select('saasPlan, trialExpiresAt, onboardingStep')
+            .select('saasPlan, trialExpiresAt, onboardingStep, isVerified')
             .eq('userId', user.id)
             .single()
 
         if (gym) {
             // A. ONBOARDING ENFORCEMENT
-            if (gym.onboardingStep < 2 && !pathname.includes('/onboarding')) {
+            if (!gym.isVerified && gym.onboardingStep < 2 && !pathname.includes('/onboarding')) {
                 const url = request.nextUrl.clone()
                 url.pathname = '/onboarding'
                 return NextResponse.redirect(url)

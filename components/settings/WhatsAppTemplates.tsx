@@ -4,7 +4,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
-export function WhatsAppTemplates({ form, onSubmit, saving }: { form: any, onSubmit: (data: any) => void, saving: boolean }) {
+import { UseFormReturn, FieldValues, Path } from "react-hook-form"
+
+interface WhatsAppFormValues {
+    waWelcomeMsg?: string | null
+    waInvoiceMsg?: string | null
+    waRenewalMsg?: string | null
+    waOverdueMsg?: string | null
+}
+
+export function WhatsAppTemplates<T extends FieldValues & WhatsAppFormValues>({ form, onSubmit, saving }: { 
+    form: UseFormReturn<T>, 
+    onSubmit: (data: T) => void, 
+    saving: boolean 
+}) {
     return (
         <Card>
             <CardHeader>
@@ -20,7 +33,7 @@ export function WhatsAppTemplates({ form, onSubmit, saving }: { form: any, onSub
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
                             control={form.control}
-                            name="waWelcomeMsg"
+                            name={"waWelcomeMsg" as Path<T>}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Welcome Message Template</FormLabel>
@@ -39,7 +52,7 @@ export function WhatsAppTemplates({ form, onSubmit, saving }: { form: any, onSub
                         />
                         <FormField
                             control={form.control}
-                            name="waInvoiceMsg"
+                            name={"waInvoiceMsg" as Path<T>}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Invoice Share Template</FormLabel>
@@ -58,7 +71,7 @@ export function WhatsAppTemplates({ form, onSubmit, saving }: { form: any, onSub
                         />
                         <FormField
                             control={form.control}
-                            name="waRenewalMsg"
+                            name={"waRenewalMsg" as Path<T>}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Renewal Reminder Template</FormLabel>
@@ -77,7 +90,7 @@ export function WhatsAppTemplates({ form, onSubmit, saving }: { form: any, onSub
                         />
                         <FormField
                             control={form.control}
-                            name="waOverdueMsg"
+                            name={"waOverdueMsg" as Path<T>}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Payment Overdue Template</FormLabel>

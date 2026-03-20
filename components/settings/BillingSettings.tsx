@@ -13,9 +13,17 @@ import { formatDistanceToNow, isAfter } from "date-fns"
 
 interface BillingSettingsProps {}
 
+interface GymData {
+    saasPlan?: string
+    trialExpiresAt?: string
+    licenseActivatedAt?: string
+    licenseKey?: string
+    id?: string
+}
+
 export function BillingSettings({}: BillingSettingsProps) {
     const [loading, setLoading] = useState(true)
-    const [gymData, setGymData] = useState<any>(null)
+    const [gymData, setGymData] = useState<GymData | null>(null)
     const [licenseKey, setLicenseKey] = useState('')
     const [activating, setActivating] = useState(false)
     const [showKey, setShowKey] = useState(false)
@@ -29,7 +37,7 @@ export function BillingSettings({}: BillingSettingsProps) {
             } else {
                 toast.error("Failed to load billing data: Server error")
             }
-        } catch (err) {
+        } catch {
             toast.error("Failed to load billing data")
         } finally {
             setLoading(false)
@@ -56,7 +64,7 @@ export function BillingSettings({}: BillingSettingsProps) {
             } else {
                 toast.error(result.error || "Invalid license key")
             }
-        } catch (err) {
+        } catch {
             toast.error("An error occurred during activation")
         } finally {
             setActivating(false)

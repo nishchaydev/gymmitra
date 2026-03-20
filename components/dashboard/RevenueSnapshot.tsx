@@ -21,6 +21,8 @@ export function RevenueSnapshot({
     const isNegative = revenueChange < 0
     const isNeutral = revenueChange === 0
 
+    const hasRevenueData = monthlyRevenueData.some(d => d.total > 0)
+
     return (
         <Card className="border-drift-200 shadow-sm flex flex-col bg-white overflow-hidden rounded-xl">
             <CardHeader className="pb-3 bg-drift-50/10 border-b border-drift-50">
@@ -56,11 +58,17 @@ export function RevenueSnapshot({
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="p-0 pt-6">
-                <div className="h-[280px] sm:h-[320px] w-full px-2">
-                    <Overview data={monthlyRevenueData} />
-                </div>
-            </CardContent>
+            {hasRevenueData ? (
+                <CardContent className="p-0 pt-6">
+                    <div className="h-[280px] sm:h-[320px] w-full px-2">
+                        <Overview data={monthlyRevenueData} />
+                    </div>
+                </CardContent>
+            ) : (
+                <CardContent className="px-5 py-4">
+                    <p className="text-xs text-drift-400 font-medium">Revenue data will appear after your first invoice</p>
+                </CardContent>
+            )}
         </Card>
     )
 }

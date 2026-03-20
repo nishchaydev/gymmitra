@@ -71,22 +71,33 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
     const netIncome = totalRev - totalExp
     const expenseRatio = totalRev > 0 ? (totalExp / totalRev) * 100 : 0
 
-    const statCardBase = "group relative overflow-hidden border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+    const statCardBase = "group relative overflow-hidden border-0 bg-white shadow-2xl rounded-3xl hover:shadow-primary/20 hover:-translate-y-1.5 transition-all duration-500 cursor-pointer"
 
     return (
-        <div className="space-y-6 relative premium-bg rounded-3xl p-1">
-            {/* Decorative background blobs */}
-            <div className="absolute top-0 -left-4 w-48 h-48 bg-primary/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none" />
-            <div className="absolute top-0 -right-4 w-48 h-48 bg-ocean/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none" />
-            <div className="absolute -bottom-8 left-20 w-48 h-48 bg-midnight/5 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 pointer-events-none" />
+        <div className="space-y-8 relative overflow-hidden min-h-screen">
+            {/* Elegant Background Accents */}
+            <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none animate-pulse duration-[10s]" />
+            <div className="absolute top-[10%] right-[-10%] w-[30%] h-[30%] bg-ocean-100/10 rounded-full blur-[100px] pointer-events-none animate-pulse duration-[8s] delay-700" />
+            <div className="absolute bottom-[-10%] left-[20%] w-[35%] h-[35%] bg-midnight/5 rounded-full blur-[110px] pointer-events-none animate-pulse duration-[12s] delay-1000" />
 
-            {isFetching && !isLoading && (
-                <div className="absolute top-3 right-3 z-10">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    </div>
+            {/* Dashboard Header */}
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight sm:text-4xl">
+                        Welcome back, <span className="text-primary">{gymName || 'Admin'}</span>
+                    </h1>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Dashboard Overiew • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
                 </div>
-            )}
+                {isFetching && !isLoading && (
+                    <div className="bg-white/80 backdrop-blur-md rounded-2xl px-3 py-1.5 shadow-xl border border-drift-100 flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Syncing Data</span>
+                    </div>
+                )}
+            </header>
 
             {/* ━━━ ROW 1: Four Stat Cards ━━━ */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 relative z-[1]">
@@ -220,19 +231,17 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
             {/* ━━━ ROW 3: Recent Invoices (50%) + Quick Actions & Attendance (50%) ━━━ */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 relative z-[1]">
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="overflow-hidden rounded-2xl h-full">
-                        <RecentInvoices
-                            isDemo={isDemo}
-                            data={d.recentInvoices}
-                            slug={slug}
-                        />
-                    </div>
+                    <RecentInvoices
+                        isDemo={isDemo}
+                        data={d.recentInvoices}
+                        slug={slug}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
                     {/* Quick Actions */}
-                    <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.06)] rounded-2xl overflow-hidden">
-                        <CardHeader className="px-5 py-4 bg-gradient-to-r from-primary-50/40 to-transparent border-b border-drift-100/50">
+                    <Card className="border-0 bg-white shadow-2xl rounded-3xl overflow-hidden hover:shadow-primary/5 transition-all duration-300">
+                        <CardHeader className="px-5 py-4 bg-gradient-to-r from-primary-50/20 to-transparent border-b border-drift-100/30">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                                 Quick Actions
@@ -265,8 +274,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </div>
             </div>
 
-            {/* ━━━ ROW 4: Outstanding Balances (50%) + Upcoming Birthdays (50%) ━━━ */}
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 relative z-[1]">
+            {/* ━━━ ROW 4: Outstanding Balances + Upcoming Birthdays (hidden when empty) ━━━ */}
+            <div className={`grid gap-6 grid-cols-1 ${(isDemo || d.upcomingBirthdays?.length > 0) ? 'lg:grid-cols-2' : ''} relative z-[1]`}>
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <OutstandingBalances
                         data={d.outstandingInvoices}
@@ -274,13 +283,15 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         slug={slug}
                     />
                 </div>
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
-                    <UpcomingBirthdays
-                        isDemo={isDemo}
-                        gymName={gymName}
-                        data={d.upcomingBirthdays}
-                    />
-                </div>
+                {(isDemo || d.upcomingBirthdays?.length > 0) && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+                        <UpcomingBirthdays
+                            isDemo={isDemo}
+                            gymName={gymName}
+                            data={d.upcomingBirthdays}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* ━━━ ROW 5: At-Risk Members (full width) ━━━ */}

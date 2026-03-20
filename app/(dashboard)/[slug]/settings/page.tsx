@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { Loader2, Save, Building2, Users, Upload, QrCode, CreditCard, ClipboardList } from "lucide-react"
+import { Loader2, Save, Building2, Users, Upload, QrCode, CreditCard, ClipboardList, Bell } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { StaffManagement } from "@/components/settings/StaffManagement"
 import { PlanManagement } from "@/components/settings/PlanManagement"
@@ -26,8 +28,15 @@ import { BillingSettings } from "@/components/settings/BillingSettings"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 import { QRPosterSection } from "@/components/settings/QRPosterSection"
-
 import { WhatsAppTemplates } from "@/components/settings/WhatsAppTemplates"
+import { NotificationSettings } from "@/components/settings/NotificationSettings"
+
+import { SettingsSidebar } from "@/components/settings/SettingsSidebar"
+import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
+
+const RESERVED_SLUGS = ['api', 'admin', 'settings', 'auth', 'login', 'register', 'dashboard', 'profile', 'root', 'static', 'public', 'gymmitra', 'official'];
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -41,6 +50,15 @@ const settingsSchema = z.object({
     waInvoiceMsg: z.string().max(2000).optional().nullable(),
     waRenewalMsg: z.string().max(2000).optional().nullable(),
     waOverdueMsg: z.string().max(2000).optional().nullable(),
+    dobMandatory: z.boolean().optional(),
+    slug: z.string()
+        .min(2, "Slug must be at least 2 characters")
+        .max(100, "Slug must be less than 100 characters")
+        .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens")
+        .refine(val => !RESERVED_SLUGS.includes(val.toLowerCase()), {
+            message: "This slug is reserved and cannot be used"
+        })
+        .optional(),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -55,6 +73,7 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true)
     const [gymName, setGymName] = useState('')
     const [saving, setSaving] = useState(false)
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
@@ -70,6 +89,8 @@ export default function SettingsPage() {
             waInvoiceMsg: "",
             waRenewalMsg: "",
             waOverdueMsg: "",
+            dobMandatory: false,
+            slug: "",
         },
     })
 
@@ -91,6 +112,8 @@ export default function SettingsPage() {
                         waInvoiceMsg: data.waInvoiceMsg || "",
                         waRenewalMsg: data.waRenewalMsg || "",
                         waOverdueMsg: data.waOverdueMsg || "",
+                        dobMandatory: data.dobMandatory || false,
+                        slug: data.slug || "",
                     })
                     setGymName(data.name || '')
                 }
@@ -104,13 +127,13 @@ export default function SettingsPage() {
         fetchSettings()
     }, [form])
 
-    const onSubmit = async (data: SettingsFormValues) => {
+    const onSubmit = async (values: SettingsFormValues) => {
         setSaving(true)
         try {
             const response = await fetch("/api/settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify(values),
             })
 
             if (!response.ok) {
@@ -119,12 +142,29 @@ export default function SettingsPage() {
             }
 
             toast.success("Settings updated successfully")
-            setGymName(data.name)
-        } catch (error: any) {
-            toast.error(error.message)
+            setGymName(values.name)
+
+            if (values.slug && values.slug !== slug) {
+                toast.loading("Slug changed. Redirecting to new dashboard...")
+                setTimeout(() => {
+                    window.location.href = `/${values.slug}/settings`
+                }, 1500)
+            }
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message)
+            } else {
+                toast.error("An unknown error occurred")
+            }
         } finally {
             setSaving(false)
         }
+    }
+
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab)
+        setIsMobileNavOpen(false)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     if (loading) {
@@ -136,200 +176,267 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="space-y-6 p-4 md:p-10 pb-16 block">
-            <div className="space-y-0.5">
-                <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-                <p className="text-muted-foreground">
-                    Manage your gym profile and preferences.
-                </p>
-            </div>
-            <Separator className="my-6" />
-
-            <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
-                <aside className="-mx-4 lg:w-1/5">
-                    <nav className="flex overflow-x-auto whitespace-nowrap px-4 pb-2 lg:px-0 lg:pb-0 space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
-                        <Button
-                            variant={activeTab === 'profile' ? "secondary" : "ghost"}
-                            className="justify-start"
-                            onClick={() => setActiveTab('profile')}
-                        >
-                            <Building2 className="mr-2 h-4 w-4" />
-                            Gym Profile
-                        </Button>
-                        <Button
-                            variant={activeTab === 'qr-poster' ? "secondary" : "ghost"}
-                            className="justify-start"
-                            onClick={() => setActiveTab('qr-poster')}
-                        >
-                            <QrCode className="mr-2 h-4 w-4" />
-                            QR Poster
-                        </Button>
-                        <Button
-                            variant={activeTab === 'whatsapp' ? "secondary" : "ghost"}
-                            className="justify-start"
-                            onClick={() => setActiveTab('whatsapp')}
-                        >
-                            <ClipboardList className="mr-2 h-4 w-4" />
-                            WhatsApp Templates
-                        </Button>
-                        <Button
-                            variant={activeTab === 'billing' ? "secondary" : "ghost"}
-                            className="justify-start"
-                            onClick={() => setActiveTab('billing')}
-                        >
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Billing & Subscription
-                        </Button>
-                        <Link href={`/${slug}/settings/import`}>
-                            <Button
-                                variant="ghost"
-                                className="justify-start w-full"
-                            >
-                                <Upload className="mr-2 h-4 w-4" />
-                                Import Members
-                            </Button>
-                        </Link>
-                    </nav>
-                </aside>
-                <div className="flex-1 lg:max-w-2xl">
-                    {activeTab === 'profile' ? (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Gym Profile</CardTitle>
-                                <CardDescription>
-                                    This information will be displayed on invoices and communications.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="name"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Gym Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="GymMitra" {...field} />
-                                                        </FormControl>
-                                                        <FormDescription>
-                                                            This is your public display name.
-                                                        </FormDescription>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="ownerName"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Owner Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="Nikhil Pal" {...field} />
-                                                        </FormControl>
-                                                        <FormDescription>
-                                                            Owner/Manager name.
-                                                        </FormDescription>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="email"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Email</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="admin@example.com" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="phone"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Phone</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="+91 98765 43210" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <FormField
-                                            control={form.control}
-                                            name="address"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Address</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="123 Main St, City, State" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="gst"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>GST Number (Optional)</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="22AAAAA0000A1Z5" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <FormField
-                                            control={form.control}
-                                            name="termsAndConditions"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Custom Terms &amp; Conditions</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea
-                                                            placeholder="1. Membership fees are non-refundable.&#10;2. Members must carry their ID card.&#10;3. Timings: 5AM–10PM daily."
-                                                            rows={5}
-                                                            maxLength={1000}
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormDescription className="flex justify-between">
-                                                        <span>These will appear on all your invoices. Max 1000 characters.</span>
-                                                        <span>{field.value?.length || 0}/1000</span>
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button type="submit" disabled={saving}>
-                                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            <Save className="mr-2 h-4 w-4" /> Save Changes
-                                        </Button>
-                                    </form>
-                                </Form>
-                            </CardContent>
-                        </Card>
-                    ) : activeTab === 'qr-poster' ? (
-                        <QRPosterSection slug={slug} gymName={gymName} />
-                    ) : activeTab === 'whatsapp' ? (
-                        <WhatsAppTemplates form={form} onSubmit={onSubmit} saving={saving} />
-                    ) : activeTab === 'billing' ? (
-                        <BillingSettings />
-                    ) : null}
+        <div className="p-4 md:p-10 pb-20 max-w-7xl mx-auto min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-3xl font-black tracking-tighter text-slate-900 capitalize">Settings</h1>
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-widest text-primary border-primary/20 bg-primary/5">Configuration</Badge>
+                    </div>
+                    <p className="text-slate-500 font-medium text-sm">
+                        Manage your gym profile, staff, billing and integrations.
+                    </p>
                 </div>
+
+                <div className="md:hidden">
+                    <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" className="w-full flex justify-between items-center group">
+                                <div className="flex items-center gap-2 uppercase text-[10px] font-black tracking-widest text-slate-500 group-hover:text-primary transition-colors">
+                                    <Menu className="h-4 w-4" />
+                                    Menu
+                                </div>
+                                <span className="text-xs font-bold text-slate-900 capitalize px-2 py-0.5 rounded-md bg-slate-100 uppercase tracking-tighter">
+                                    {activeTab.replace('-', ' ')}
+                                </span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-[85vw] p-0">
+                            <SheetHeader className="p-6 border-b border-slate-50">
+                                <SheetTitle className="text-xl font-black tracking-tighter uppercase italic">GymMitra Settings</SheetTitle>
+                            </SheetHeader>
+                            <div className="p-4">
+                                <SettingsSidebar activeTab={activeTab} setActiveTab={handleTabChange} slug={slug} />
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <aside className="hidden lg:block lg:col-span-3">
+                    <div className="sticky top-24">
+                        <SettingsSidebar activeTab={activeTab} setActiveTab={handleTabChange} slug={slug} />
+                        
+                        <div className="mt-8 p-6 rounded-2xl bg-slate-950 text-white relative overflow-hidden group">
+                           <div className="relative z-10">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-1">Need Help?</h4>
+                                <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Our support team is available 24/7 to assist you. Contact us for any technical issues.</p>
+                                <Button size="sm" className="mt-4 w-full h-8 text-[10px] font-black uppercase tracking-widest bg-white text-slate-950 hover:bg-slate-100 rounded-lg border-none shadow-lg">
+                                    Contact Support
+                                </Button>
+                           </div>
+                           <div className="absolute -right-4 -bottom-4 h-24 w-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+                        </div>
+                    </div>
+                </aside>
+
+                <main className="lg:col-span-9 min-h-[600px]">
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        {activeTab === 'profile' ? (
+                            <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-3xl overflow-hidden ring-1 ring-slate-100">
+                                <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-8">
+                                    <CardTitle className="text-xl font-bold text-slate-900">Gym Profile</CardTitle>
+                                    <CardDescription className="text-slate-500 font-medium italic">
+                                        This information will be displayed on invoices and communications.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-8">
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="name"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="font-bold text-slate-700">Gym Name</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="GymMitra" className="rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all" {...field} />
+                                                            </FormControl>
+                                                            <FormDescription className="text-[10px] font-medium text-slate-400">
+                                                                This is your public display name.
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="slug"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="font-bold text-slate-700">Gym Subdomain / Slug</FormLabel>
+                                                            <FormControl>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-slate-400 text-sm font-medium">gymmitra.site/</span>
+                                                                    <Input 
+                                                                        placeholder="gym-name" 
+                                                                        {...field} 
+                                                                        value={field.value || ""}
+                                                                        className="font-mono text-sm rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all text-primary font-bold" 
+                                                                    />
+                                                                </div>
+                                                            </FormControl>
+                                                            <FormDescription className="text-[10px] font-medium text-slate-400">
+                                                                Unique URL identifier. Supports lowercase letters, numbers, and hyphens.
+                                                                <span className="block text-red-400/80 mt-1 uppercase font-black tracking-tighter">Changing this will update your dashboard's link.</span>
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="ownerName"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="font-bold text-slate-700">Owner Name</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Nikhil Pal" className="rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all" {...field} />
+                                                            </FormControl>
+                                                            <FormDescription className="text-[10px] font-medium text-slate-400">
+                                                                Owner or Manager name.
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="email"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="font-bold text-slate-700">Email</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="admin@example.com" className="rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="phone"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="font-bold text-slate-700">Phone</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="9876543210" className="rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <FormField
+                                                control={form.control}
+                                                name="address"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-bold text-slate-700">Address</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="123 Main St, City, State" className="rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="gst"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-bold text-slate-700">GST Number <span className="text-[10px] text-slate-400 font-medium">(Optional)</span></FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="22AAAAA0000A1Z5" className="rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="dobMandatory"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
+                                                        <div className="space-y-0.5">
+                                                            <FormLabel className="text-base font-bold text-slate-700">Make Date of Birth Mandatory</FormLabel>
+                                                            <FormDescription className="text-xs text-slate-500">
+                                                                If enabled, members will be required to provide their DOB during registration.
+                                                            </FormDescription>
+                                                        </div>
+                                                        <FormControl>
+                                                            <Switch
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="termsAndConditions"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-bold text-slate-700">Custom Terms & Conditions</FormLabel>
+                                                        <FormControl>
+                                                            <Textarea
+                                                                placeholder="1. Membership fees are non-refundable.&#10;2. Members must carry their ID card.&#10;3. Timings: 5AM–10PM daily."
+                                                                className="rounded-2xl min-h-[120px] bg-slate-50/50 border-slate-200 focus:bg-white transition-all resize-none"
+                                                                maxLength={1000}
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <div className="flex justify-between items-center mt-2 px-1">
+                                                            <span className="text-[10px] font-medium text-slate-400 italic">These will appear on all your invoices. Max 1000 characters.</span>
+                                                            <Badge variant="outline" className="text-[10px] font-black tracking-tighter tabular-nums bg-slate-50 border-slate-200">
+                                                                {field.value?.length || 0}/1000
+                                                            </Badge>
+                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            
+                                            <div className="flex justify-end pt-4">
+                                                <Button type="submit" disabled={saving} className="h-12 rounded-xl px-8 font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-transform active:scale-95">
+                                                    {saving ? (
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Save className="mr-2 h-4 w-4" />
+                                                    )}
+                                                    Save Changes
+                                                </Button>
+                                            </div>
+                                        </form>
+                                    </Form>
+                                </CardContent>
+                            </Card>
+                        ) : activeTab === 'qr-poster' ? (
+                            <QRPosterSection slug={slug} gymName={gymName} />
+                        ) : activeTab === 'staff' ? (
+                            <StaffManagement />
+                        ) : activeTab === 'billing' ? (
+                            <BillingSettings />
+                        ) : activeTab === 'notifications' ? (
+                            <NotificationSettings />
+                        ) : activeTab === 'integrations' ? (
+                            <IntegrationsSettings />
+                        ) : activeTab === 'whatsapp' ? (
+                            <WhatsAppTemplates form={form} onSubmit={onSubmit} saving={saving} />
+                        ) : activeTab === 'plans' ? (
+                            <PlanManagement />
+                        ) : null}
+                    </div>
+                </main>
             </div>
         </div>
     )

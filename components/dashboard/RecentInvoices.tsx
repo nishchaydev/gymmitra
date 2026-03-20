@@ -7,12 +7,10 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { FileText, ArrowUpRight } from "lucide-react"
+import { FileText, ArrowUpRight, Receipt, User, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "../ui/button"
-import { EmptyState } from "@/components/ui/empty-state"
 
 import { SHOWCASE_STATS } from "@/lib/showcase-data"
 
@@ -31,80 +29,107 @@ export function RecentInvoices({ isDemo, data, slug }: { isDemo?: boolean, data?
     }
 
     return (
-        <Card className="col-span-4 border-drift-200 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 border-l-4 border-l-ion-500 pl-4 py-4">
-                <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2 text-lg font-semibold text-drift-900">
-                        <FileText className="h-5 w-5 text-ion-500" />
+        <Card className="col-span-4 border-0 shadow-2xl rounded-3xl overflow-hidden bg-white group/card hover:shadow-indigo-500/10 transition-all duration-500">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-gradient-to-r from-indigo-50/30 to-transparent border-b border-drift-100/30 px-6 py-6">
+                <div className="space-y-1.5">
+                    <CardTitle className="flex items-center gap-2.5 text-lg font-black text-slate-900 uppercase tracking-tight">
+                        <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
                         Recent Invoices
                     </CardTitle>
-                    <CardDescription className="text-sm text-drift-400">Latest generated invoices for memberships and products.</CardDescription>
+                    <CardDescription className="text-xs text-slate-400 font-bold uppercase tracking-wider">Latest membership and product bills</CardDescription>
                 </div>
-                <Link href={`/${slug}/invoices/new`}>
-                    <Button variant="ghost" size="sm" className="h-9 gap-2 text-drift-500 hover:text-ion-500 hover:bg-ion-50 font-medium transition-all">
-                        New Invoice <ArrowUpRight className="h-4 w-4" />
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link href={`/${slug}/invoices/new`}>
+                        <Button variant="outline" size="sm" className="h-10 px-4 gap-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 font-black transition-all duration-300 rounded-xl shadow-sm uppercase text-[10px] tracking-widest">
+                            New Invoice <ArrowUpRight className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                </div>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="overflow-x-auto max-h-[450px] overflow-y-auto custom-scrollbar">
-                    <Table>
-                        <TableHeader className="sticky top-0 z-10 bg-white shadow-sm">
-                            <TableRow className="hover:bg-transparent border-b border-drift-100 bg-drift-50/30">
-                                <TableHead className="w-[120px] text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Invoice</TableHead>
-                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Status</TableHead>
-                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Member</TableHead>
-                                <TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-drift-400 py-3">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {invoices.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-[300px] text-center p-0 border-0">
-                                        <EmptyState
-                                            icon={FileText}
-                                            title="No recent invoices"
-                                            description="Start billing members to see history here."
-                                            actionLabel="Create Invoice"
-                                            actionHref={`/${slug}/invoices/new`}
-                                            className="border-0 bg-transparent py-12"
-                                        />
-                                    </TableCell>
+                {invoices.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-4">
+                        <div className="h-14 w-14 rounded-full bg-slate-50 flex items-center justify-center">
+                            <Receipt className="h-7 w-7 text-slate-300" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-xs font-black text-slate-900 uppercase tracking-widest">No invoices yet</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Start billing to see activity here</p>
+                        </div>
+                        <Link href={`/${slug}/invoices/new`}>
+                            <Button size="sm" className="h-9 px-6 text-[10px] font-black rounded-xl bg-indigo-500 text-white uppercase tracking-widest shadow-lg shadow-indigo-500/20">
+                                Create Invoice
+                            </Button>
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
+                        <Table>
+                            <TableHeader className="sticky top-0 z-10 bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+                                <TableRow className="hover:bg-transparent border-0">
+                                    <TableHead className="w-[140px] text-[10px] font-black uppercase tracking-widest text-slate-400 py-5 px-6">Invoice #</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-5">Status</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-5">Member</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-400 py-5 pr-8">Amount</TableHead>
                                 </TableRow>
-                            ) : (
-                                invoices.map((invoice: any) => (
-                                    <TableRow key={invoice.id} className="hover:bg-drift-50/50 transition-colors border-b border-drift-100 last:border-0">
-                                        <TableCell className="font-semibold text-ion-500 py-4 text-xs">
-                                            <Link href={`/${slug}/invoices/${invoice.id}`} className="hover:underline hover:text-ion-600 transition-all underline-offset-4 decoration-2">
-                                                {invoice.invoiceNumber}
+                            </TableHeader>
+                            <TableBody>
+                                {invoices.map((invoice: any) => (
+                                    <TableRow key={invoice.id} className="hover:bg-indigo-50/30 transition-colors border-b border-slate-50 group/row last:border-0">
+                                        <TableCell className="py-6 px-6">
+                                            <Link href={`/${slug}/invoices/${invoice.id}`} className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover/row:bg-white transition-colors border border-slate-100 group-hover/row:border-indigo-100 group-hover/row:shadow-sm">
+                                                    <FileText className="h-4 w-4 text-slate-400 group-hover/row:text-indigo-500 transition-colors" />
+                                                </div>
+                                                <span className="text-xs font-black text-slate-900 group-hover/row:text-indigo-600 transition-colors tracking-tight">
+                                                    #{invoice.invoiceNumber.split('-').pop()}
+                                                </span>
                                             </Link>
                                         </TableCell>
-                                        <TableCell className="py-4">
+                                        <TableCell className="py-6">
                                             <span className={cn(
-                                                "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border",
+                                                "inline-flex items-center rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest border shadow-sm transition-all duration-300",
                                                 invoice.paymentStatus === 'PAID'
-                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100 group-hover/row:bg-emerald-500 group-hover/row:text-white"
                                                     : invoice.paymentStatus === 'PENDING'
-                                                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                        : "bg-red-50 text-red-700 border-red-200"
+                                                        ? "bg-amber-50 text-amber-600 border-amber-100 group-hover/row:bg-amber-500 group-hover/row:text-white"
+                                                        : "bg-red-50 text-red-600 border-red-100 group-hover/row:bg-red-500 group-hover/row:text-white"
                                             )}>
                                                 {invoice.paymentStatus}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="max-w-[150px] truncate py-4 font-medium text-drift-700 text-xs text-nowrap">
-                                            {invoice.member?.name || 'Walk-in'}
+                                        <TableCell className="py-6">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-100">
+                                                    <User className="h-3 w-3 text-slate-400" />
+                                                </div>
+                                                <span className="text-xs font-black text-slate-700 max-w-[150px] truncate uppercase tracking-tight">
+                                                    {invoice.member?.name || 'Walk-in Customer'}
+                                                </span>
+                                            </div>
                                         </TableCell>
-                                        <TableCell className="text-right font-bold tracking-tight text-drift-900 py-4 text-xs">
-                                            ₹{Number(invoice.total).toLocaleString('en-IN')}
+                                        <TableCell className="text-right py-6 pr-8">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-sm font-black text-slate-900 tracking-tight group-hover/row:text-indigo-600 transition-colors">
+                                                    ₹{Number(invoice.total).toLocaleString('en-IN')}
+                                                </span>
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                                                    {new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                </span>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
             </CardContent>
+            <div className="p-4 bg-slate-50/50 border-t border-slate-100/50 flex items-center justify-center">
+                <Link href={`/${slug}/invoices`} className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-2 group/all">
+                    View Billing History <ArrowRight className="h-3 w-3 group-hover/all:translate-x-1 transition-transform" />
+                </Link>
+            </div>
         </Card>
     )
 }
-

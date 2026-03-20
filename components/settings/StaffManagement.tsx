@@ -119,8 +119,9 @@ export function StaffManagement() {
             setIsInviteOpen(false)
             form.reset()
             fetchStaff()
-        } catch (error: any) {
-            toast.error(error.message)
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unexpected error occurred"
+            toast.error(message)
         } finally {
             setInviting(false)
         }
@@ -140,8 +141,9 @@ export function StaffManagement() {
 
             toast.success("Staff member removed")
             fetchStaff()
-        } catch (error: any) {
-            toast.error(error.message)
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unexpected error occurred"
+            toast.error(message)
         } finally {
             setDeletingId(null)
             setIdToDelete(null)

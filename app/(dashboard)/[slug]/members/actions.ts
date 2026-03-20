@@ -22,9 +22,8 @@ const memberSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
     email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.string()
-        .refine(val => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-        .transform(str => new Date(str)),
+    dateOfBirth: z.string().optional().or(z.literal(''))
+        .transform(str => str && !isNaN(Date.parse(str)) ? new Date(str) : new Date(1990, 0, 1)),
     pincode: z.string().optional(),
     state: z.string().optional(),
     city: z.string().optional(),

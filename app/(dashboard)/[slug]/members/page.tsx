@@ -98,29 +98,33 @@ export default async function MembersPage({
 
 
     return (
-        <div className="container mx-auto p-8 space-y-6">
+        <div className="container mx-auto p-4 md:p-8 space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Members</h1>
-                    <p className="text-muted-foreground">Manage your gym members</p>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900">Members</h1>
+                    <p className="text-drift-400 font-medium">Manage your gym members and their subscriptions</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <a href={`/api/reports/download?type=members`} download>
-                        <Button variant="outline">
-                            <Download className="mr-2 h-4 w-4" /> Download CSV
+                        <Button variant="outline" className="h-11 px-6 rounded-xl border-slate-200 hover:bg-white hover:border-slate-300 font-bold transition-all shadow-sm">
+                            <Download className="mr-2 h-4 w-4 text-slate-500" /> Download CSV
                         </Button>
                     </a>
                     <Link href={`/${slug}/members/new`}>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> Add Member
+                        <Button className="h-11 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all shadow-xl shadow-slate-200">
+                            <Plus className="mr-2 h-5 w-5" /> Add Member
                         </Button>
                     </Link>
                 </div>
             </div>
 
-            <div className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm flex-wrap">
-                <MemberSearch />
-                <MemberFilters />
+            <div className="flex flex-col lg:flex-row gap-4 lg:items-center bg-slate-50/50 p-2 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex-1 min-w-[300px]">
+                    <MemberSearch />
+                </div>
+                <div className="flex-shrink-0">
+                    <MemberFilters />
+                </div>
             </div>
             <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500 font-medium">Loading Members...</span></div>}>
                 <MembersList

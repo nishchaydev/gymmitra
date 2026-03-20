@@ -42,6 +42,7 @@ model GymProfile {
   onboardingEmailsSentAt     DateTime?
   lastBriefingSentAt         DateTime?
   lastTrialReminderMilestone Int? // Days left at last reminder (e.g. 30, 15, 7)
+  dobMandatory               Boolean   @default(true)
   termsAndConditions         String?   @db.Text
   gymRules                   String?   @db.Text
   waWelcomeMsg               String?   @db.Text

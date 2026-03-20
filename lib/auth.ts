@@ -37,6 +37,9 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
     })
 
     if (gymAsOwner) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[Auth] User ${user.id} matched Gym Owner role for gym: ${gymAsOwner.slug}`)
+        }
         return { gym: gymAsOwner, role: 'OWNER', userId: user.id }
     }
 
@@ -57,6 +60,9 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
 
 
 
+    if (process.env.NODE_ENV === 'development') {
+        console.warn(`[Auth] User ${user.id} has no matching GymProfile or StaffMember record.`)
+    }
     return null
 })
 

@@ -1,0 +1,30 @@
+Searching for exact userId match: 0415b00a-73a8-4adf-a3a1-dae4f106055d
+Total GymRecords: 26
+ - ID: f75ff160-91f1-4f51-a0b1-9a4a86c5070d | Name: Test
+ - ID: 53c12093-9c16-415d-8486-8507a7f2e011 | Name: Test Gym
+ - ID: 1411e86e-5938-442f-bdc1-826d7ca20e5f | Name: Test2
+ - ID: 0d7bddf3-c6ca-4ab5-a43e-aaf163219a52 | Name: TRI-STAR FITNESS
+ - ID: 2993de0c-b83b-40bf-96b9-72d3290d2c90 | Name: Wealthify Investments
+ - ID: 14409cff-5b49-4377-b8b2-712445ac828c | Name: eMitra Tech
+ - ID: 517c773b-5cb9-4b00-b95f-b5e96e1144be | Name: Harvester fitness
+ - ID: 2fe44edf-32ee-498a-872e-b218fb64fec0 | Name: Emitra jym
+ - ID: 114326bd-eceb-4db2-a4ab-a57a44033d73 | Name: Emitra fitness
+ - ID: 6a120c29-384c-42cb-9fb7-99fb52f171c6 | Name: TRI-STAR FITNESS 
+ - ID: 16ac90a7-569d-40dd-8608-c41f2610d2ff | Name: Emitra jym
+ - ID: 55347913-c84f-4e8b-80be-ed967e0ed83d | Name: Fit India
+ - ID: 3f2aaae1-baa5-4a43-b7ad-642541e1fd16 | Name: emitra JIM
+ - ID: 12f01bd2-e313-4d6b-a1f2-4727e59d9fee | Name: Test
+ - ID: 9dfcdcc7-3f15-427a-bbf3-ce3f297d02e2 | Name: fit Emitra
+ - ID: 3b42557e-0813-4fc2-a723-3b82ab9ca2ec | Name: fit hut
+ - ID: d448ef90-5e7a-4cab-96ca-7454dbcf8bd6 | Name: emItra production
+ - ID: a510e60f-574f-469e-b0b8-a9703b77049c | Name: Elite Fitness Zone
+ - ID: 72c65e51-2dee-403b-91c0-d38da3c3555c | Name: nikhil
+ - ID: c89d3be3-7dd7-4803-aa14-d57ef46ff36e | Name: Emitra jym
+ - ID: ddbde8aa-1af5-4844-9576-98d641d5b774 | Name: Emitra jym
+ - ID: 70e5ad4e-a7f3-4347-a445-71663649a9de | Name: Test
+ - ID: 9542fd17-12b7-4c37-9158-312b33e3f61b | Name: NA
+ - ID: 48711b4f-79e7-4e9c-a760-9613985bf0cd | Name: Test
+ - ID: 6aa34a6b-939c-4303-bdd3-a262fa54e550 | Name: Emitra jym
+ - ID: 89b3a4cd-a3f0-46e0-b9d4-6ccc697f6603 | Name: nikhil
+Total StaffRecords: 1
+ - ID: null | Name: Nishchay Gupta | Role: TRAINER

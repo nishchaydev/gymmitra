@@ -28,7 +28,7 @@ interface Member {
     notes?: string | null
 }
 
-export default function EditMemberForm({ member, gymSlug }: { member: Member, gymSlug: string }) {
+export default function EditMemberForm({ member, gymSlug, dobMandatory = true }: { member: Member, gymSlug: string, dobMandatory?: boolean }) {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
     const safeDate = member.dateOfBirth ? new Date(member.dateOfBirth) : null
@@ -113,6 +113,10 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
             toast.error('Emergency contact information is required')
             return
         }
+        if (dobMandatory && !form.dateOfBirth) {
+            toast.error('Date of Birth is required')
+            return
+        }
 
         setSaving(true)
         try {
@@ -192,7 +196,7 @@ export default function EditMemberForm({ member, gymSlug }: { member: Member, gy
                             <Input id="email" type="email" value={form.email} onChange={e => update('email', e.target.value)} />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="dob">Date of Birth</Label>
+                            <Label htmlFor="dob">Date of Birth {dobMandatory && <span className="text-red-500">*</span>}</Label>
                             <Input id="dob" type="date" value={form.dateOfBirth} onChange={e => update('dateOfBirth', e.target.value)} />
                         </div>
                     </div>

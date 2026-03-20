@@ -30,10 +30,12 @@ export function OutstandingBalances({ data, gymName, slug, waOverdueMsg }: Outst
     }
 
     return (
-        <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px] overflow-hidden">
-            <CardHeader className="pl-4 py-4 bg-amber-50/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-amber-500" />
+        <Card className="border-0 bg-white shadow-2xl rounded-3xl overflow-hidden group/card hover:shadow-amber-500/5 transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-amber-50/40 to-transparent px-6 py-5 border-b border-drift-100/30">
+                <CardTitle className="text-base font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-amber-100 text-amber-600">
+                        <CreditCard className="w-4 h-4" />
+                    </div>
                     Outstanding Balances
                 </CardTitle>
             </CardHeader>

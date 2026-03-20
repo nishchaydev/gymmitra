@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select' // Added Select components
 import { useRenewalsQuery, RenewalMember } from '@/hooks/use-renewals'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
-import { Loader2, Send, AlertTriangle, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
+import { Loader2, Send, AlertTriangle, CheckCircle2, AlertCircle, Clock, Download, Filter } from 'lucide-react' // Added Download and Filter
 import { format, addDays, subDays } from 'date-fns'
 
 interface RenewalCommandCenterProps {
@@ -52,6 +53,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false, waRenewalMsg }: 
     const [sendProgress, setSendProgress] = useState(0)
     const [showFallbackList, setShowFallbackList] = useState(false)
     const [fallbackMembers, setFallbackMembers] = useState<RenewalMember[]>([])
+    const [statusFilter, setStatusFilter] = useState('all') // Added state for status filter
 
     const handleSelectAll = (members: RenewalMember[]) => {
         if (selectedIds.size === members.length && members.length > 0) {
@@ -307,6 +309,14 @@ export function RenewalCommandCenter({ gymName, isDemo = false, waRenewalMsg }: 
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <Button
+                        variant="outline"
+                        onClick={() => window.open('/api/reports/download?type=renewals', '_blank')}
+                        className="flex items-center gap-2"
+                    >
+                        <Download className="h-4 w-4" />
+                        Export CSV
+                    </Button>
                     {totalSelected > 0 && (
                         <div className="flex items-center gap-3 justify-between w-full sm:w-auto p-2 sm:p-0 bg-blue-50 sm:bg-transparent rounded-md border sm:border-0 border-blue-100">
                             <span className="text-sm font-semibold text-blue-700">

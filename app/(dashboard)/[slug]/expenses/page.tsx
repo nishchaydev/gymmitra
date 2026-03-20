@@ -5,7 +5,8 @@ import { ExpenseForm } from '@/components/expenses/ExpenseForm'
 import { ExpensesList } from '@/components/expenses/ExpensesList'
 import { ExpenseCharts } from '@/components/expenses/ExpenseCharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { IndianRupee, TrendingDown, Calendar } from 'lucide-react'
+import { Button } from '@/components/ui/button' // Added for the new button
+import { IndianRupee, TrendingDown, Calendar, Download } from 'lucide-react'
 
 export const metadata = { title: "Expenses" };
 
@@ -109,7 +110,14 @@ export default async function ExpensesPage({
                     <h1 className="text-3xl font-black tracking-tight text-slate-900">Expense Management</h1>
                     <p className="text-drift-400 font-medium">Track your gym overheads and operational costs</p>
                 </div>
-                <ExpenseForm slug={slug} />
+                <div className="flex gap-2">
+                    <a href={`/api/reports/download?type=expenses`} download>
+                        <Button variant="outline">
+                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        </Button>
+                    </a>
+                    <ExpenseForm slug={slug} />
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">

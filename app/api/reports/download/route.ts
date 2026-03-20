@@ -9,92 +9,170 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url)
         const type = searchParams.get('type') || 'members'
+        const gymId = auth.gym.id
 
-        let data: any[] = []
         let csvContent = ""
-        const filename = `report-${type}-${new Date().toISOString().split('T')[0]}.csv`
+        const filename = `${type}-${new Date().toISOString().split('T')[0]}.csv`
 
-        if (type === 'members') {
-            data = await prisma.member.findMany({
-                where: { gymId: auth.gym.id },
-                include: {
-                    subscriptions: {
-                        where: { status: 'ACTIVE' },
-                        include: { plan: true }
+        switch (type) {
+            case 'members': {
+                const members = await prisma.member.findMany({
+                    where: { gymId },
+                    include: {
+                        subscriptions: {
+                            where: { status: 'ACTIVE' },
+                            include: { plan: true }
+                        }
                     }
-                }
-            })
+                })
+                const headers = ['Name', 'Phone', 'Email', 'Status', 'Joining Date', 'Active Plan']
+                csvContent = [
+                    headers.join(','),
+                    ...members.map(m => [
+                        `"${m.name}"`,
+                        `"${m.phone}"`,
+                        `"${m.email || ''}"`,
+                        m.status,
+                        m.joiningDate.toISOString().split('T')[0],
+                        `"${m.subscriptions[0]?.plan.name || 'None'}"`
+                    ].join(','))
+                ].join('\n')
+                break
+            }
+            case 'invoices': {
+                const invoices = await prisma.invoice.findMany({
+                    where: { gymId },
+                    include: { member: { select: { name: true } } },
+                    orderBy: { issueDate: 'desc' }
+                })
+                const headers = ['Invoice Number', 'Member', 'Status', 'Date', 'Amount']
+                csvContent = [
+                    headers.join(','),
+                    ...invoices.map(i => [
+                        i.invoiceNumber,
+                        `"${i.member?.name || 'Walk-in'}"`,
+                        i.paymentStatus,
+                        i.issueDate.toISOString().split('T')[0],
+                        i.total
+                    ].join(','))
+                ].join('\n')
+                break
+            }
+            case 'attendance': {
+                const attendance = await prisma.attendance.findMany({
+                    where: { gymId },
+                    include: { member: true, staff: true },
+                    orderBy: { date: 'desc' },
+                    take: 1000
+                })
+                const headers = ['Date', 'Check-in Time', 'Name', 'Type', 'Phone']
+                csvContent = [
+                    headers.join(','),
+                    ...attendance.map(a => [
+                        a.localDateString,
+                        a.checkInTime.toISOString(),
+                        `"${a.member?.name || a.staff?.name || 'Unknown'}"`,
+                        a.memberId ? 'Member' : 'Staff',
+                        `"${a.member?.phone || a.staff?.phone || ''}"`
+                    ].join(','))
+                ].join('\n')
+                break
+            }
+            case 'products':
+            case 'inventory': {
+                const products = await prisma.product.findMany({
+                    where: { gymId, isActive: true }
+                })
+                const headers = ['Name', 'Category', 'Price', 'Cost', 'Stock', 'Low Stock Alert']
+                csvContent = [
+                    headers.join(','),
+                    ...products.map(p => [
+                        `"${p.name}"`,
+                        p.category,
+                        p.price,
+                        p.purchasePrice || 0,
+                        p.stock,
+                        p.lowStockAlert
+                    ].join(','))
+                ].join('\n')
+                break
+            }
+            case 'plans': {
+                const plans = await prisma.membershipPlan.findMany({
+                    where: { gymId },
+                    orderBy: { name: 'asc' }
+                })
+                const headers = ['Name', 'Duration (Months)', 'Price', 'Description']
+                csvContent = [
+                    headers.join(','),
+                    ...plans.map(p => [
+                        `"${p.name}"`,
+                        p.duration,
+                        p.price,
+                        `"${(p.description || '').replace(/"/g, '""')}"`
+                    ].join(','))
+                ].join('\n')
+                break
+            }
+            case 'renewals': {
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const plus30Days = new Date(today); plus30Days.setDate(today.getDate() + 30)
+                const minus30Days = new Date(today); minus30Days.setDate(today.getDate() - 30)
 
-            const headers = ['Name', 'Phone', 'Email', 'Status', 'Joining Date', 'Active Plan']
-            csvContent = [
-                headers.join(','),
-                ...data.map(m => [
-                    `"${m.name}"`,
-                    `"${m.phone}"`,
-                    `"${m.email || ''}"`,
-                    m.status,
-                    m.joiningDate.toISOString().split('T')[0],
-                    `"${m.subscriptions[0]?.plan.name || 'None'}"`
-                ].join(','))
-            ].join('\n')
-        }
-        else if (type === 'invoices') {
-            data = await prisma.invoice.findMany({
-                where: { gymId: auth.gym.id },
-                include: { member: true }
-            })
+                const subscriptions = await prisma.memberSubscription.findMany({
+                    where: {
+                        gymId,
+                        OR: [
+                            { status: 'ACTIVE', endDate: { gte: today, lte: plus30Days } },
+                            { endDate: { gte: minus30Days, lt: today } }
+                        ]
+                    },
+                    include: {
+                        member: { select: { name: true, phone: true } },
+                        plan: { select: { name: true } }
+                    },
+                    orderBy: { endDate: 'asc' }
+                })
 
-            const headers = ['Invoice #', 'Member', 'Total', 'Paid', 'Balance', 'Status', 'Date']
-            csvContent = [
-                headers.join(','),
-                ...data.map(inv => [
-                    inv.invoiceNumber,
-                    `"${inv.member?.name || 'Deleted Member'}"`,
-                    inv.total,
-                    inv.amountPaid,
-                    inv.balanceDue,
-                    inv.paymentStatus,
-                    inv.issueDate.toISOString().split('T')[0]
-                ].join(','))
-            ].join('\n')
-        }
-        else if (type === 'inventory') {
-            data = await prisma.product.findMany({
-                where: { gymId: auth.gym.id, isActive: true }
-            })
-
-            const headers = ['Name', 'Category', 'Price', 'Cost', 'Stock', 'Low Stock Alert']
-            csvContent = [
-                headers.join(','),
-                ...data.map(p => [
-                    `"${p.name}"`,
-                    p.category,
-                    p.price,
-                    p.purchasePrice || 0,
-                    p.stock,
-                    p.lowStockAlert
-                ].join(','))
-            ].join('\n')
-        }
-        else if (type === 'attendance') {
-            data = await prisma.attendance.findMany({
-                where: { gymId: auth.gym.id },
-                include: { member: true, staff: true },
-                orderBy: { date: 'desc' },
-                take: 1000
-            })
-
-            const headers = ['Date', 'Check-in Time', 'Name', 'Type', 'Phone']
-            csvContent = [
-                headers.join(','),
-                ...data.map(a => [
-                    a.localDateString,
-                    a.checkInTime.toISOString(),
-                    `"${a.member?.name || a.staff?.name || 'Unknown'}"`,
-                    a.memberId ? 'Member' : 'Staff',
-                    `"${a.member?.phone || a.staff?.phone || ''}"`
-                ].join(','))
-            ].join('\n')
+                const headers = ['Member Name', 'Phone', 'Plan Name', 'Expiry Date', 'Days Offset']
+                csvContent = [
+                    headers.join(','),
+                    ...subscriptions.map(sub => {
+                        const endDate = new Date(sub.endDate)
+                        endDate.setHours(0, 0, 0, 0)
+                        const diffTime = endDate.getTime() - today.getTime()
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                        return [
+                            `"${sub.member?.name || 'Unknown'}"`,
+                            sub.member?.phone || '',
+                            `"${sub.plan?.name || 'Unknown'}"`,
+                            sub.endDate.toISOString().split('T')[0],
+                            diffDays
+                        ].join(',')
+                    })
+                ].join('\n')
+                break
+            }
+            case 'expenses': {
+                const expenses = await prisma.expense.findMany({
+                    where: { gymId },
+                    orderBy: { date: 'desc' }
+                })
+                const headers = ['Date', 'Category', 'Amount', 'Description']
+                csvContent = [
+                    headers.join(','),
+                    ...expenses.map(e => [
+                        e.date.toISOString().split('T')[0],
+                        e.category,
+                        e.amount,
+                        `"${(e.description || '').replace(/"/g, '""')}"`
+                    ].join(','))
+                ].join('\n')
+                break
+            }
+            default:
+                return NextResponse.json({ error: 'Invalid report type' }, { status: 400 })
         }
 
         return new NextResponse(csvContent, {

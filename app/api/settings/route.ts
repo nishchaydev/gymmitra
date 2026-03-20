@@ -7,6 +7,8 @@ import { guardRateLimit } from '@/lib/rate-limit'
 // Fix 13 request: rate limit 20
 const SETTINGS_RATE_LIMIT = 20
 
+const RESERVED_SLUGS = ['api', 'admin', 'settings', 'auth', 'login', 'register', 'dashboard', 'profile', 'root', 'static', 'public', 'gymmitra', 'official'];
+
 const settingsSchema = z.object({
     name: z.string().min(2, "Name is required"),
     email: z.string().email("Invalid email"),
@@ -20,6 +22,15 @@ const settingsSchema = z.object({
     waInvoiceMsg: z.string().max(2000).optional().nullable(),
     waRenewalMsg: z.string().max(2000).optional().nullable(),
     waOverdueMsg: z.string().max(2000).optional().nullable(),
+    dobMandatory: z.boolean().optional(),
+    slug: z.string()
+        .min(2, "Slug must be at least 2 characters")
+        .max(100, "Slug must be less than 100 characters")
+        .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens")
+        .refine(val => !RESERVED_SLUGS.includes(val.toLowerCase()), {
+            message: "This slug is reserved and cannot be used"
+        })
+        .optional(),
 })
 
 export async function GET() {
@@ -70,6 +81,16 @@ export async function PUT(request: NextRequest) {
         }
 
         const data = settingsSchema.parse(body)
+
+        // If slug is provided, check for uniqueness
+        if (data.slug && data.slug !== auth.gym.slug) {
+            const existingSlug = await prisma.gymProfile.findUnique({
+                where: { slug: data.slug }
+            })
+            if (existingSlug) {
+                return NextResponse.json({ error: 'This subdomain is already taken' }, { status: 400 })
+            }
+        }
 
         const gymProfile = await prisma.gymProfile.upsert({
             where: { userId: auth.userId },

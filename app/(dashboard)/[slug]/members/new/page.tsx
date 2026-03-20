@@ -19,6 +19,8 @@ export default async function NewMemberPage({
 
     if (!gym) notFound()
 
+
+
     const rawPlans = gym ? await prisma.membershipPlan.findMany({
         where: { gymId: gym.id, isActive: true },
         select: { id: true, name: true, price: true, duration: true }
@@ -41,7 +43,12 @@ export default async function NewMemberPage({
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-sm border">
-                <MemberForm gymSlug={slug} onSubmitAction={createMember} activePlans={activePlans} />
+                <MemberForm 
+                    gymSlug={slug} 
+                    onSubmitAction={createMember} 
+                    activePlans={activePlans} 
+                    dobMandatory={gym.dobMandatory}
+                />
             </div>
         </div>
     )

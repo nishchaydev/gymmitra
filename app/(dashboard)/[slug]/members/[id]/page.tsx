@@ -92,6 +92,13 @@ export default async function MemberDetailPage({
     const activeSubscription = member.subscriptions[0]
     const hasSimplifiedMembership = member.membershipDuration && member.subscriptionEndDate
 
+    // Compute effective status — override ACTIVE→EXPIRED if latest sub has expired
+    const subEndDate = activeSubscription?.endDate || member.subscriptionEndDate
+    const effectiveStatus =
+        member.status === 'ACTIVE' && subEndDate && new Date(subEndDate) < now
+            ? 'EXPIRED'
+            : member.status
+
     // Calculate total outstanding balance
     const outstandingInvoices = member.invoices.filter((inv: any) =>
         inv.paymentStatus === 'PARTIAL' || inv.paymentStatus === 'PENDING'
@@ -109,11 +116,12 @@ export default async function MemberDetailPage({
                     </Button>
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
                         <h1 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">{member.name}</h1>
-                        <Badge variant={member.status === 'ACTIVE' ? 'default' : 'secondary'} className={cn(
+                        <Badge variant={effectiveStatus === 'ACTIVE' ? 'default' : 'secondary'} className={cn(
                             "rounded-full font-black text-[10px] uppercase px-2 w-fit h-5",
-                            member.status === 'ACTIVE' ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"
+                            effectiveStatus === 'ACTIVE' ? "bg-emerald-500 hover:bg-emerald-600 text-white" :
+                            effectiveStatus === 'EXPIRED' ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
                         )}>
-                            {member.status}
+                            {effectiveStatus}
                         </Badge>
                     </div>
                 </div>
@@ -239,9 +247,9 @@ export default async function MemberDetailPage({
                                                 </h3>
                                                 <Badge className={cn(
                                                     "rounded-full font-black text-[10px] uppercase px-3 h-6",
-                                                    (activeSubscription?.status === 'ACTIVE' || member.status === 'ACTIVE') ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+                                                    effectiveStatus === 'ACTIVE' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
                                                 )}>
-                                                    {activeSubscription ? activeSubscription.status : member.status}
+                                                    {effectiveStatus}
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-slate-600 font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">

@@ -2,16 +2,14 @@ import {
     Avatar,
     AvatarFallback,
 } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Clock, UserCheck, ArrowRight } from "lucide-react"
+import { Clock, ArrowRight, UserCheck } from "lucide-react"
 import Link from "next/link"
-import { MOCKUP_DATA } from "@/lib/showcase-data"
-
+import { cn } from "@/lib/utils"
 
 type Props = {
     isDemo?: boolean
-
     data?: {
         count: number
         recentInitials: string[]
@@ -21,102 +19,93 @@ type Props = {
 }
 
 export function AttendanceWidget({ isDemo, data, slug }: Props) {
-    if (isDemo || !data) {
-        // Demo mode or missing data: render mock/pre-calculated props
-        const memberCount = data?.count ?? 15
-        const lastCheckinLabel = data?.lastCheckinLabel ?? "Last check-in 5 mins ago"
-        const recentInitials = data?.recentInitials ?? ['JD', 'AS', 'RK']
+    const memberCount = data?.count ?? (isDemo ? 15 : 0)
+    const lastCheckinLabel = data?.lastCheckinLabel ?? (isDemo ? "Last check-in 5 mins ago" : "No recent activity")
+    const recentInitials = data?.recentInitials ?? (isDemo ? ['JD', 'AS', 'RK', 'ML', 'TY'] : [])
 
-        return (
-            <AttendanceCard
-                initials={recentInitials}
-                extraCount={Math.max(0, memberCount - recentInitials.length)}
-                memberCount={memberCount}
-                lastCheckinLabel={lastCheckinLabel}
-                slug={slug}
-            />
-        )
-    }
-
-    // Real user: use pre-fetched data from props
     return (
         <AttendanceCard
-            initials={data.recentInitials}
-            extraCount={Math.max(0, data.count - data.recentInitials.length)}
-            memberCount={data.count}
-            lastCheckinLabel={data.lastCheckinLabel}
+            initials={recentInitials}
+            extraCount={Math.max(0, memberCount - recentInitials.length)}
+            memberCount={memberCount}
+            lastCheckinLabel={lastCheckinLabel}
             slug={slug}
         />
     )
 }
 
 function AttendanceCard({
-    avatarCount,
     initials,
     extraCount,
     memberCount,
     lastCheckinLabel,
     slug,
 }: {
-    avatarCount?: number
-    initials?: string[]
+    initials: string[]
     extraCount: number
     memberCount: number
     lastCheckinLabel: string
     slug?: string
 }) {
-    const slots = initials ?? Array.from({ length: avatarCount ?? 0 }, (_, i) => `U${i}`)
-
     return (
-        <Card className="border-drift-200 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="border-l-4 border-l-ion-500 pl-4 py-3 bg-drift-50/5">
+        <Card className="border-0 shadow-2xl rounded-3xl overflow-hidden bg-white group/card hover:shadow-primary/10 transition-all duration-500">
+            <CardHeader className="bg-gradient-to-r from-emerald-50/30 to-transparent px-6 py-5 border-b border-drift-100/30">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
-                        <UserCheck className="h-5 w-5 text-ion-500" />
-                        Today&apos;s Attendance
+                    <CardTitle className="flex items-center gap-2.5 text-base font-black text-slate-900 uppercase tracking-tight">
+                        <div className="relative flex items-center justify-center">
+                            <div className="absolute h-3 w-3 rounded-full bg-emerald-400/40 animate-ping" />
+                            <div className="relative h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        </div>
+                        Live Attendance
                     </CardTitle>
-                    <Link href={slug ? `/${slug}/attendance` : "/attendance"}>
-                        <Button variant="ghost" size="sm" className="hidden sm:flex h-8 text-[10px] font-bold uppercase tracking-wider text-drift-500 hover:text-ion-500 hover:bg-ion-50 transition-all group">
-                            View All <ArrowRight className="ml-1.5 h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </Button>
+                    <Link href={slug ? `/${slug}/attendance` : "/attendance"} className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary-600 transition-colors flex items-center gap-1.5 group/link">
+                        Records <ArrowRight className="h-3 w-3 group-hover/link:translate-x-0.5 transition-transform" />
                     </Link>
                 </div>
-
-                <div className="flex items-center gap-1.5 mt-1 bg-emerald-50 w-fit px-2 py-0.5 rounded-full">
-                    <div className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none">REAL-TIME</span>
-                </div>
             </CardHeader>
-            <CardContent className="pt-5 pb-5 px-4 sm:px-6">
+            <CardContent className="pt-6 pb-6 px-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                    <div className="flex items-center">
-                        <div className="flex -space-x-3">
-                            {slots.slice(0, 5).map((label, i) => (
-                                <Avatar key={i} className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-drift-100">
-                                    <AvatarFallback className="bg-drift-50 text-[10px] font-bold text-drift-400">{label}</AvatarFallback>
+                    <div className="flex items-center gap-4">
+                        <div className="flex -space-x-3.5 group/stack">
+                            {initials.slice(0, 4).map((label, i) => (
+                                <Avatar key={i} className="h-10 w-10 border-2 border-white shadow-xl ring-1 ring-drift-100/30 transform transition-transform hover:-translate-y-1 hover:z-10 group-hover/stack:odd:rotate-2 group-hover/stack:even:-rotate-2">
+                                    <AvatarFallback className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase">{label}</AvatarFallback>
                                 </Avatar>
                             ))}
                             {extraCount > 0 && (
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-ion-50 text-ion-600 text-[10px] font-black shadow-sm ring-1 ring-drift-100 italic">
+                                <div className="z-[5] flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-emerald-50 text-emerald-600 text-[10px] font-black shadow-xl ring-1 ring-drift-100/30 italic">
                                     +{extraCount}
                                 </div>
                             )}
                         </div>
-                        <div className="ml-4 space-y-0.5">
-                            <p className="text-lg font-black text-slate-900 leading-none">{memberCount} Present</p>
-                            <p className="text-[10px] text-drift-400 font-bold uppercase tracking-tight">{lastCheckinLabel}</p>
+                        <div className="space-y-0.5">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-2xl font-black text-slate-900 leading-none">{memberCount}</span>
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">Present</span>
+                            </div>
+                            <p className="text-[10px] text-drift-400 font-bold uppercase tracking-widest">{lastCheckinLabel}</p>
                         </div>
                     </div>
 
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full sm:w-auto border-drift-200 text-slate-600 hover:bg-drift-50 bg-white rounded-lg transition-all duration-150 h-9 px-4 text-xs font-bold shadow-sm"
-                        type="button"
-                        onClick={() => alert("Kiosk mode is available when logged into a specific gym workspace.")}
-                    >
-                        <Clock className="mr-2 h-3.5 w-3.5" /> Kiosk Mode
-                    </Button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 sm:flex-none border-primary/20 text-primary hover:bg-primary-50 bg-white rounded-xl transition-all duration-300 h-10 px-4 text-[11px] font-black uppercase tracking-widest shadow-sm active:scale-95"
+                            asChild
+                        >
+                            <Link href={slug ? `/${slug}/attendance/kiosk` : "#"}>
+                                <Clock className="mr-2 h-3.5 w-3.5" /> Kiosk Mode
+                            </Link>
+                        </Button>
+                        <Button
+                            size="sm"
+                            className="bg-primary hover:bg-primary-600 text-white rounded-xl h-10 w-10 p-0 flex items-center justify-center transition-all duration-300 shadow-lg shadow-primary/20 active:scale-95"
+                            title="Quick Entry"
+                        >
+                            <UserCheck className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>

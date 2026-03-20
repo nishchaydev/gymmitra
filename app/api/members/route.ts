@@ -102,10 +102,23 @@ export async function GET(req: Request) {
       prisma.member.count({ where }),
     ]);
 
-    const formattedMembers = members.map((member) => ({
-      ...member,
-      subscriptionEndDate: member.subscriptions[0]?.endDate || null,
-    }));
+    const now = new Date()
+
+    const formattedMembers = members.map((member) => {
+      const latestEndDate = member.subscriptions[0]?.endDate || null
+
+      // If DB says ACTIVE but the latest sub has expired, treat as EXPIRED
+      let effectiveStatus: string = member.status
+      if (member.status === 'ACTIVE' && latestEndDate && latestEndDate < now) {
+        effectiveStatus = 'EXPIRED'
+      }
+
+      return {
+        ...member,
+        status: effectiveStatus,
+        subscriptionEndDate: latestEndDate,
+      }
+    })
 
     return NextResponse.json({
       members: formattedMembers,
@@ -113,7 +126,7 @@ export async function GET(req: Request) {
       hasMore: totalCount > skip + take,
       page,
       take,
-    });
+    })
   } catch (error: any) {
     console.error("[MEMBERS_GET]", error);
     return new NextResponse(`Internal error: ${error?.message || error}`, { status: 500 });
