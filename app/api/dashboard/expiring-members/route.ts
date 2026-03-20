@@ -19,46 +19,48 @@ export async function GET(req: NextRequest) {
         const start = startOfDay(today)
         const end = addDays(endOfDay(today), 30) // Next 30 days
 
-        const expiringMembers = await prisma.memberSubscription.findMany({
+        const expiringSubscriptions = await prisma.memberSubscription.findMany({
             where: {
                 gymId: gym.id,
                 status: 'ACTIVE',
                 endDate: {
                     gte: start,
-                    lte: end
-                }
+                    lte: end,
+                },
             },
             include: {
                 member: {
                     select: {
                         id: true,
                         name: true,
-                        phone: true
-                    }
-                }
+                        email: true,
+                        status: true,
+                    },
+                },
+                plan: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
             },
             orderBy: {
-                endDate: 'asc'
-            }
+                endDate: 'asc',
+            },
         })
 
-        const formatted = expiringMembers.map(sub => {
-            const diffTime = sub.endDate.getTime() - today.getTime();
-            const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
-
-            return {
-                id: sub.member.id,
-                name: sub.member.name,
-                phone: sub.member.phone,
-                endDate: sub.endDate,
-                daysLeft,
-                planName: sub.planName || 'Active Plan'
-            }
-        })
+        const formattedSubscriptions = expiringSubscriptions.map((sub: any) => ({
+            id: sub.id,
+            memberName: sub.member.name,
+            memberEmail: sub.member.email,
+            endDate: sub.endDate.toISOString(),
+            planName: sub.plan.name,
+            daysLeft: Math.ceil((sub.endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+        }))
 
         return NextResponse.json({
-            count: formatted.length,
-            members: formatted
+            count: formattedSubscriptions.length,
+            members: formattedSubscriptions
         })
     } catch (error) {
         console.error('Expiring Members API Error:', error)

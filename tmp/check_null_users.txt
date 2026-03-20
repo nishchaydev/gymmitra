@@ -1,6 +1,0 @@
-Current User ID: 0415b00a-73a8-4adf-a3a1-dae4f106055d
-
-GymProfiles with NULL userId: 0
-
-StaffMembers with NULL userId: 1
- - [STAFF] Nishchay Gupta (TRAINER) at gym: nikhil (id: cmmxoiau30005ivvtgporlxlj)

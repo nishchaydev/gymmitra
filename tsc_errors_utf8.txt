@@ -1,0 +1,1 @@
+﻿app/api/dashboard/expiring-members/route.ts(55,31): error TS2339: Property 'planName' does not exist on type '{ member: { name: string; id: string; phone: string; }; } & { id: string; deletedAt: Date | null; createdAt: Date; updatedAt: Date; gymId: string; memberId: string; paymentStatus: PaymentStatus; ... 6 more ...; autoRenew: boolean; }'.
