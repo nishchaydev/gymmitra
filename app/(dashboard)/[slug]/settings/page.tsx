@@ -32,7 +32,7 @@ import { WhatsAppTemplates } from "@/components/settings/WhatsAppTemplates"
 import { NotificationSettings } from "@/components/settings/NotificationSettings"
 
 import { SettingsSidebar } from "@/components/settings/SettingsSidebar"
-import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings"
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 
@@ -428,8 +428,17 @@ export default function SettingsPage() {
                             <BillingSettings />
                         ) : activeTab === 'notifications' ? (
                             <NotificationSettings />
-                        ) : activeTab === 'integrations' ? (
-                            <IntegrationsSettings />
+                        ) : activeTab === 'import-members' ? (
+                            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+                                <Upload className="h-12 w-12 text-primary/40" />
+                                <h3 className="text-lg font-bold text-slate-700">Import Members</h3>
+                                <p className="text-sm text-slate-500 text-center max-w-md">Bulk import your members from a CSV file. Download the template, fill in your data, and upload.</p>
+                                <Link href={`/${slug}/settings/import`}>
+                                    <Button className="mt-2 h-11 rounded-xl px-6 font-bold shadow-lg shadow-primary/20">
+                                        <Upload className="mr-2 h-4 w-4" /> Go to Import Page
+                                    </Button>
+                                </Link>
+                            </div>
                         ) : activeTab === 'whatsapp' ? (
                             <WhatsAppTemplates form={form} onSubmit={onSubmit} saving={saving} />
                         ) : activeTab === 'plans' ? (

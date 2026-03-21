@@ -9,7 +9,6 @@ import {
     ClipboardList, 
     CreditCard, 
     Bell, 
-    Share2, 
     Upload,
     ChevronRight
 } from "lucide-react"
@@ -47,10 +46,10 @@ export function SettingsSidebar({ activeTab, setActiveTab, slug }: SettingsSideb
             description: 'Alerts & updates'
         },
         {
-            id: 'integrations',
-            label: 'Integrations',
-            icon: Share2,
-            description: 'Connected services'
+            id: 'import-members',
+            label: 'Import Members',
+            icon: Upload,
+            description: 'Bulk import via CSV'
         },
         {
             id: 'qr-poster',
