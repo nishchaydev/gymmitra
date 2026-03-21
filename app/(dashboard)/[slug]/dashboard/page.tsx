@@ -22,6 +22,18 @@ import { cookies } from "next/headers"
 import { exitDemo } from "./actions"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 
+interface DashboardSummary {
+    gym_id: string
+    active_members: bigint
+    total_members: bigint
+    monthly_revenue: number
+    pending_revenue: number
+    last_month_revenue: number
+    today_checkins: bigint
+    urgent_renewals: bigint
+    product_sales: bigint
+}
+
 
 export const revalidate = 60
 
@@ -178,19 +190,33 @@ export default async function DashboardPage({
         const lastWeekStart = startOfDay(subDays(today, 6))
 
         // Materialized view for pre-computed aggregates
-        const summaryRows = await prisma.$queryRaw<any[]>`
-            SELECT * FROM mv_dashboard_summary
-            WHERE gym_id = ${gym!.id}
-        `
-        const summary = summaryRows[0] || {
-            active_members: 0,
-            total_members: 0,
+        const defaultSummary: DashboardSummary = {
+            gym_id: gym!.id,
+            active_members: BigInt(0),
+            total_members: BigInt(0),
             monthly_revenue: 0,
             pending_revenue: 0,
             last_month_revenue: 0,
-            today_checkins: 0,
-            urgent_renewals: 0,
-            product_sales: 0,
+            today_checkins: BigInt(0),
+            urgent_renewals: BigInt(0),
+            product_sales: BigInt(0),
+        }
+        let summary: DashboardSummary = defaultSummary
+        try {
+            const summaryRows = await prisma.$queryRaw<DashboardSummary[]>`
+                SELECT * FROM mv_dashboard_summary
+                WHERE gym_id = ${gym!.id}
+            `
+            if (summaryRows[0]) summary = summaryRows[0]
+        } catch (error: any) {
+            if (
+                error?.message?.includes('mv_dashboard_summary') ||
+                error?.code === '42P01'
+            ) {
+                console.error('[Dashboard] MV not found, using defaults:', error.message)
+            } else {
+                throw error
+            }
         }
 
         const [

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 import { Button } from "./ui/button"
@@ -26,6 +26,7 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
     const [loading, setLoading] = useState(true)
     const [isDemo, setIsDemo] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const hoverTimers = useRef<Record<string, NodeJS.Timeout>>({})
     const supabase = createClient()
 
     useEffect(() => {
@@ -67,6 +68,16 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
         }
     }, [isMobileMenuOpen])
 
+    const handleNavHover = (href: string) => {
+        hoverTimers.current[href] = setTimeout(() => {
+            router.prefetch(href)
+        }, 150) // 150ms hover = intentional
+    }
+
+    const handleNavLeave = (href: string) => {
+        clearTimeout(hoverTimers.current[href])
+    }
+
     const handleLogout = async () => {
         await supabase.auth.signOut()
         setIsMobileMenuOpen(false)
@@ -82,7 +93,6 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
 
     const routes = [
         { href: `/${slug}/dashboard`, label: "Dashboard", active: pathname === `/${slug}/dashboard` },
-        { href: `/${slug}/renewals`, label: "Renewals", active: pathname === `/${slug}/renewals` || pathname.startsWith(`/${slug}/renewals/`) },
         { href: `/${slug}/leads`, label: "Leads", active: pathname === `/${slug}/leads` || pathname.startsWith(`/${slug}/leads/`) },
         { href: `/${slug}/members`, label: "Members", active: pathname === `/${slug}/members` || pathname.startsWith(`/${slug}/members/`) },
         { href: `/${slug}/products`, label: "Products", active: pathname === `/${slug}/products` || pathname.startsWith(`/${slug}/products/`) },
@@ -131,6 +141,8 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
                         <Link
                             key={route.href}
                             href={route.href}
+                            onMouseEnter={() => handleNavHover(route.href)}
+                            onMouseLeave={() => handleNavLeave(route.href)}
                             className={cn(
                                 "text-sm font-medium transition-all duration-150 h-full flex items-center relative py-1 whitespace-nowrap",
                                 route.active

@@ -70,7 +70,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
     useEffect(() => {
       if (!initialData) return
-      
+
       // Seed Members default view (no filters, page 1)
       queryClient.setQueryData(
         ['members', { 
@@ -87,10 +87,40 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
           total: initialData.totalMembers,
         }
       )
-      
+
       // Note: Renewals and invoices are NOT seeded here because initialData
       // doesn't contain the full data shape those hooks expect (e.g. urgent/upcoming/missed
       // arrays + summary object). They will fetch fresh on navigation.
+
+      // Background prefetch other pages
+      // Fires 3 seconds after dashboard loads
+      // Low priority - browser idle time only
+      const prefetchTimer = setTimeout(() => {
+
+        // Prefetch members data
+        queryClient.prefetchQuery({
+          queryKey: ['members', {
+            q: '', status: '', dobMonth: '',
+            birthday: '', page: 1, take: 10,
+            duration: ''
+          }],
+          queryFn: () => fetch(`/api/members?page=1&take=10`)
+            .then(r => r.json()),
+          staleTime: 5 * 60 * 1000,
+        })
+
+        // Prefetch renewals
+        queryClient.prefetchQuery({
+          queryKey: ['renewals-dashboard'],
+          queryFn: () => fetch(`/api/renewals`)
+            .then(r => r.json()),
+          staleTime: 5 * 60 * 1000,
+        })
+
+      }, 3000)
+
+      // CRITICAL: cleanup timer on unmount
+      return () => clearTimeout(prefetchTimer)
     }, [initialData, queryClient])
 
     // Computations
