@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { useQueryClient, useMutation } from '@tanstack/react-query'
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -118,6 +119,43 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
         }
     }, [member, searchParams])
 
+    // Set up mutation for optimistic updates
+    const queryClient = useQueryClient()
+    const mutation = useMutation({
+      mutationFn: onSubmitAction,
+      onMutate: async (newMemberData: any) => {
+        await queryClient.cancelQueries({ 
+          queryKey: ['members'] 
+        })
+        const previousMembers = queryClient.getQueryData(
+          ['members']
+        ) as { members: any[]; total: number } | undefined
+        
+        // Optimistically update the cache
+        queryClient.setQueryData(['members'], (old: any) => {
+          if (!old) return old
+          return {
+            ...old,
+            members: [{ id: 'optimistic', ...newMemberData }, ...old.members],
+            total: old.total + 1
+          }
+        })
+        
+        return { previousMembers }
+      },
+      onError: (err: any, variables: any, context: any) => {
+        queryClient.setQueryData(
+          ['members'], 
+          context?.previousMembers
+        )
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['members'] 
+        })
+      }
+    })
+
     const form = useForm<MemberFormValues>({
         resolver: zodResolver(memberFormSchema) as any,
         defaultValues: initialValues as any,
@@ -229,7 +267,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
     async function onSubmit(data: MemberFormValues) {
         setIsSubmitting(true)
         try {
-            const result = await onSubmitAction(data as any)
+            const result = await mutation.mutateAsync(data as any)
 
             if (result?.error) {
                 toast.error(result.error)
@@ -249,8 +287,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                     description: `${data.name} has been added.`,
                 })
             }
-        } catch {
-            toast.error("Something went wrong", {
+        } catch (error: any) {
+            toast.error(error?.message || "Something went wrong", {
                 description: "Please try again."
             })
             setIsSubmitting(false)

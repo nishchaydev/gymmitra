@@ -115,6 +115,14 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
           staleTime: 5 * 60 * 1000,
         })
 
+        // Prefetch invoices
+        queryClient.prefetchQuery({
+          queryKey: ['invoices', { query: '', status: '', date: '', page: 1, limit: 10 }],
+          queryFn: () => fetch(`/api/invoices?page=1&limit=10`)
+            .then(r => r.json()),
+          staleTime: 5 * 60 * 1000,
+        })
+
       }, 3000)
 
       const routePrefetchTimer = setTimeout(() => {

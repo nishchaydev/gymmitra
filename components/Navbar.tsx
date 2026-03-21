@@ -9,6 +9,7 @@ import { User } from "@supabase/supabase-js"
 import { Button } from "./ui/button"
 import Image from "next/image"
 import { LogOut, User as UserIcon, Menu, X } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface NavbarProps {
     plan?: string;
@@ -21,6 +22,7 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
     const pathname = usePathname()
     const router = useRouter()
     const params = useParams()
+    const queryClient = useQueryClient()
     const slug = params?.slug as string
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
@@ -71,6 +73,30 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
     const handleNavHover = (href: string) => {
         hoverTimers.current[href] = setTimeout(() => {
             router.prefetch(href)
+
+            if (href.includes('/members')) {
+              queryClient.prefetchQuery({
+                queryKey: ['members', { 
+                  q: '', status: '', dobMonth: '',
+                  birthday: '', page: 1, take: 10, 
+                  duration: '' 
+                }],
+                queryFn: () => fetch(`/api/members?page=1&take=10`)
+                  .then(res => res.json()),
+                staleTime: 5 * 60 * 1000,
+              })
+            }
+
+            if (href.includes('/invoices')) {
+              queryClient.prefetchQuery({
+                queryKey: ['invoices', { 
+                  q: '', status: '', page: 1, take: 50 
+                }],
+                queryFn: () => fetch(`/api/invoices?page=1&take=50`)
+                  .then(res => res.json()),
+                staleTime: 5 * 60 * 1000,
+              })
+            }
         }, 150) // 150ms hover = intentional
     }
 
