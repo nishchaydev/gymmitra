@@ -177,18 +177,27 @@ export default async function DashboardPage({
         const thirtyDaysAgo = startOfDay(subDays(today, 30))
         const lastWeekStart = startOfDay(subDays(today, 6))
 
+        // Materialized view for pre-computed aggregates
+        const summaryRows = await prisma.$queryRaw<any[]>`
+            SELECT * FROM mv_dashboard_summary
+            WHERE gym_id = ${gym!.id}
+        `
+        const summary = summaryRows[0] || {
+            active_members: 0,
+            total_members: 0,
+            monthly_revenue: 0,
+            pending_revenue: 0,
+            last_month_revenue: 0,
+            today_checkins: 0,
+            urgent_renewals: 0,
+            product_sales: 0,
+        }
+
         const [
-            totalMembers,
-            activeMembers,
-            totalRevenue,
-            productSalesCount,
-            dailyCheckins,
             invoices,
             attendance,
             birthdays,
             monthlyRevenue,
-            thisMonthInvoicesPending,
-            lastMonthInvoicesPaid,
             churnResult,
             retentionResult,
             frequencyResult,
@@ -198,41 +207,12 @@ export default async function DashboardPage({
             lowStockProducts,
             remindersResult,
             outstandingInvoicesResult,
-            urgentCountResult,
             memberGrowthRaw,
             attendanceRaw,
             birthdayDataRaw,
             totalExpensesResult,
             membersBeforeWindow,
         ] = await Promise.all([
-            prisma.member.count({
-                where: {
-                    gymId: gym!.id,
-                    NOT: {
-                        name: { contains: 'Seed', mode: 'insensitive' as any }
-                    }
-                } as any
-            }).catch(() => 0),
-            prisma.member.count({
-                where: {
-                    gymId: gym!.id,
-                    status: 'ACTIVE',
-                    NOT: {
-                        name: { contains: 'Seed', mode: 'insensitive' as any }
-                    }
-                } as any
-            }).catch(() => 0),
-            prisma.invoice.aggregate({
-                where: { paymentStatus: 'PAID', gymId: gym!.id, issueDate: { gte: startOfThisMonth }, deletedAt: null } as any,
-                _sum: { total: true }
-            }).catch(() => ({ _sum: { total: null } })),
-            prisma.sale.count({ where: { product: { gymId: gym!.id }, saleDate: { gte: startOfThisMonth } } as any }).catch(() => 0),
-            prisma.attendance.count({
-                where: {
-                    gymId: gym!.id,
-                    date: { gte: today, lte: endOfToday() }
-                } as any
-            }).catch(() => 0),
             prisma.invoice.findMany({
                 where: { gymId: gym!.id } as any,
                 include: { member: { select: { name: true } } } as any,
@@ -262,24 +242,7 @@ export default async function DashboardPage({
                 GROUP BY month
                 ORDER BY month
             ` as Promise<{ month: number; total: any }[]>).catch(() => []),
-            prisma.invoice.aggregate({
-                where: {
-                    gymId: gym!.id,
-                    paymentStatus: 'PENDING',
-                    issueDate: { gte: startOfThisMonth },
-                    deletedAt: null
-                } as any,
-                _sum: { total: true }
-            }).catch(() => ({ _sum: { total: null } })),
-            prisma.invoice.aggregate({
-                where: {
-                    gymId: gym!.id,
-                    paymentStatus: 'PAID',
-                    issueDate: { gte: startOfLastMonth, lte: endOfLastMonth },
-                    deletedAt: null
-                } as any,
-                _sum: { total: true }
-            }).catch(() => ({ _sum: { total: null } })),
+
             // Churn Raw Query
             (prisma.$queryRaw`
                 WITH MonthlyActive AS (
@@ -402,13 +365,7 @@ export default async function DashboardPage({
                 orderBy: { issueDate: 'asc' },
                 take: 5
             }).catch(() => []),
-            prisma.memberSubscription.count({
-                where: {
-                    gymId: gym!.id,
-                    endDate: { gte: today, lte: addDays(today, 3) },
-                    status: 'ACTIVE'
-                }
-            }).catch(() => 0),
+
             // REAL Member Growth query
             (prisma.$queryRaw`
                 SELECT 
@@ -512,9 +469,9 @@ export default async function DashboardPage({
             })
         }
 
-        const thisMonthRev = Number(totalRevenue?._sum?.total || 0);
-        const lastMonthRev = Number(lastMonthInvoicesPaid?._sum?.total || 0);
-        const pendingRev = Number(thisMonthInvoicesPending?._sum?.total || 0);
+        const thisMonthRev = Number(summary.monthly_revenue);
+        const lastMonthRev = Number(summary.last_month_revenue);
+        const pendingRev = Number(summary.pending_revenue);
 
         let revChange = 0;
         if (lastMonthRev > 0) {
@@ -524,15 +481,15 @@ export default async function DashboardPage({
         }
 
         dashboardData = {
-            totalMembers: Number(totalMembers || 0),
-            activeMembers: Number(activeMembers || 0),
+            totalMembers: Number(summary.total_members),
+            activeMembers: Number(summary.active_members),
             revenue: thisMonthRev.toLocaleString('en-IN'),
             revenueRaw: thisMonthRev,
             lastMonthRevenue: lastMonthRev,
             revenueChange: Number(revChange.toFixed(2)),
             pendingRevenue: pendingRev,
-            productSalesCount: Number(productSalesCount || 0),
-            dailyCheckins: Number(dailyCheckins || 0),
+            productSalesCount: Number(summary.product_sales),
+            dailyCheckins: Number(summary.today_checkins),
             // Pass the rest of the results
             churnData: churnResult,
             retentionData: retentionResult,
@@ -542,7 +499,7 @@ export default async function DashboardPage({
             weeklyAttendance: weeklyAttendanceData,
             growthData: growthData,
             outstandingInvoices: JSON.parse(JSON.stringify(outstandingInvoicesResult || [])),
-            urgentCount: Number(urgentCountResult || 0),
+            urgentCount: Number(summary.urgent_renewals),
             birthdayCount: birthdayCount,
             followUps: JSON.parse(JSON.stringify(followUpsToday || [])),
             partialPayments: JSON.parse(JSON.stringify(partialInvoices || [])),
@@ -558,7 +515,7 @@ export default async function DashboardPage({
             const now = new Date().getTime()
             const minutesAgo = Math.max(0, Math.round((now - checkIn.getTime()) / 60000))
             todayAttendance = {
-                count: dailyCheckins,
+                count: Number(summary.today_checkins),
                 lastCheckinLabel: minutesAgo < 60
                     ? `Last check-in ${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`
                     : `Last check-in ${Math.round(minutesAgo / 60)}h ago`,
