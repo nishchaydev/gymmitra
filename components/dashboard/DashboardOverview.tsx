@@ -1,6 +1,5 @@
 'use client'
 
-import { useDashboardQuery } from '@/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { RevenueSnapshot } from '@/components/dashboard/RevenueSnapshot'
 import { AtRiskMembers } from '@/components/dashboard/AtRiskMembers'
@@ -28,8 +27,9 @@ import { OutstandingBalances } from '@/components/dashboard/OutstandingBalances'
 import { DailyBriefing } from '@/components/dashboard/DailyBriefing'
 
 import { Button } from '@/components/ui/button'
-import { IndianRupee, Users, ShoppingBag, CalendarCheck, UserPlus, ReceiptText, Loader2, TrendingUp } from 'lucide-react'
+import { IndianRupee, Users, ShoppingBag, CalendarCheck, UserPlus, ReceiptText, Loader2, TrendingUp, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface DashboardOverviewProps {
     slug: string
@@ -61,12 +61,10 @@ interface DashboardOverviewProps {
 }
 
 export function DashboardOverview({ slug, gymName, isDemo, initialData }: DashboardOverviewProps) {
-    const { data, isFetching, isLoading } = useDashboardQuery(
-        isDemo ? undefined : initialData
-    )
+    const router = useRouter()
     const queryClient = useQueryClient()
 
-    const d = (!isDemo && data) ? data : initialData
+    const d = initialData
 
     useEffect(() => {
       if (!initialData) return
@@ -119,8 +117,18 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
       }, 3000)
 
+      const routePrefetchTimer = setTimeout(() => {
+        router.prefetch(`/${slug}/members`)
+        router.prefetch(`/${slug}/invoices`)
+        router.prefetch(`/${slug}/attendance`)
+        router.prefetch(`/${slug}/leads`)
+      }, 1500)
+
       // CRITICAL: cleanup timer on unmount
-      return () => clearTimeout(prefetchTimer)
+      return () => {
+        clearTimeout(prefetchTimer)
+        clearTimeout(routePrefetchTimer)
+      }
     }, [initialData, queryClient])
 
     // Computations
@@ -147,14 +155,15 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-primary" />
                         Dashboard Overiew • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        <button
+                          onClick={() => router.refresh()}
+                          className="text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-primary/10 ml-1"
+                          title="Refresh dashboard"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
                     </p>
                 </div>
-                {isFetching && !isLoading && (
-                    <div className="bg-white/80 backdrop-blur-md rounded-2xl px-3 py-1.5 shadow-xl border border-drift-100 flex items-center gap-2 animate-in fade-in zoom-in duration-300">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Syncing Data</span>
-                    </div>
-                )}
             </header>
 
             {/* ━━━ ROW 1: Four Stat Cards ━━━ */}
