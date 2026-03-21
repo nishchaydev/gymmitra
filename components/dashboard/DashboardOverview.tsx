@@ -4,6 +4,8 @@ import { useDashboardQuery } from '@/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { RevenueSnapshot } from '@/components/dashboard/RevenueSnapshot'
 import { AtRiskMembers } from '@/components/dashboard/AtRiskMembers'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -62,8 +64,34 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
     const { data, isFetching, isLoading } = useDashboardQuery(
         isDemo ? undefined : initialData
     )
+    const queryClient = useQueryClient()
 
     const d = (!isDemo && data) ? data : initialData
+
+    useEffect(() => {
+      if (!initialData) return
+      
+      // Seed Members default view (no filters, page 1)
+      queryClient.setQueryData(
+        ['members', { 
+          q: '', 
+          status: '', 
+          dobMonth: '', 
+          birthday: '', 
+          page: 1, 
+          take: 10,
+          duration: ''
+        }],
+        {
+          members: [],
+          total: initialData.totalMembers,
+        }
+      )
+      
+      // Note: Renewals and invoices are NOT seeded here because initialData
+      // doesn't contain the full data shape those hooks expect (e.g. urgent/upcoming/missed
+      // arrays + summary object). They will fetch fresh on navigation.
+    }, [initialData, queryClient])
 
     // Computations
     const totalRev = Number(d.revenueRaw || 0)

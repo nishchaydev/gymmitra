@@ -67,7 +67,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from "@/components/Navbar"
 import { PwaSyncProvider } from "@/components/PwaSyncProvider"
 
-import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider"
+import { Providers } from "./providers"
 
 export default async function RootLayout({
   children,
@@ -82,7 +82,7 @@ export default async function RootLayout({
       <body
         className={`${fontDisplay.variable} ${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-primary-500/10 selection:text-primary-900`}
       >
-        <ReactQueryProvider>
+        <Providers>
           <main className="flex-1 bg-gray-50/50">
             {children}
           </main>
@@ -90,7 +90,7 @@ export default async function RootLayout({
           <Toaster />
           {gaId && <GoogleAnalytics gaId={gaId} nonce={nonce} />}
           <Analytics />
-        </ReactQueryProvider>
+        </Providers>
       </body>
     </html>
   );

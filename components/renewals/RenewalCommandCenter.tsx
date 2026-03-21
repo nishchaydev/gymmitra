@@ -402,7 +402,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false, waRenewalMsg }: 
                                 >
                                     <div className="flex items-center gap-2">
                                         <span className="font-semibold text-rose-600">Urgent</span>
-                                        <Badge variant="secondary" className="bg-rose-100 text-rose-700">{data.summary.urgentCount}</Badge>
+                                        <Badge variant="secondary" className="bg-rose-100 text-rose-700">{data.summary?.urgentCount ?? 0}</Badge>
                                     </div>
                                 </TabsTrigger>
                                 <TabsTrigger
@@ -411,7 +411,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false, waRenewalMsg }: 
                                 >
                                     <div className="flex items-center gap-2">
                                         <span className="font-semibold text-blue-600">Upcoming</span>
-                                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">{data.summary.upcomingCount}</Badge>
+                                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">{data.summary?.upcomingCount ?? 0}</Badge>
                                     </div>
                                 </TabsTrigger>
                                 <TabsTrigger
@@ -420,7 +420,7 @@ export function RenewalCommandCenter({ gymName, isDemo = false, waRenewalMsg }: 
                                 >
                                     <div className="flex items-center gap-2">
                                         <span className="font-semibold text-slate-800">Missed</span>
-                                        <Badge variant="secondary" className="bg-slate-200 text-slate-800">{data.summary.missedCount}</Badge>
+                                        <Badge variant="secondary" className="bg-slate-200 text-slate-800">{data.summary?.missedCount ?? 0}</Badge>
                                     </div>
                                 </TabsTrigger>
                             </TabsList>
