@@ -71,22 +71,25 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 .join(' ')
 
              // 1. Create the Member
+             const memberData: any = {
+                 name: formattedName,
+                 phone: validatedData.phone,
+                 gymId,
+                 status: 'ACTIVE',
+                 memberState: 'ACTIVE',
+             };
+
+             if (validatedData.email) memberData.email = validatedData.email;
+             if (validatedData.dateOfBirth) memberData.dateOfBirth = validatedData.dateOfBirth;
+             if (validatedData.pincode) memberData.pincode = validatedData.pincode;
+             if (validatedData.state) memberData.state = validatedData.state;
+             if (validatedData.city) memberData.city = validatedData.city;
+             if (validatedData.emergencyName) memberData.emergencyName = validatedData.emergencyName;
+             if (validatedData.emergencyPhone) memberData.emergencyPhone = validatedData.emergencyPhone;
+             if (validatedData.emergencyRelation) memberData.emergencyRelation = validatedData.emergencyRelation;
+
              const member = await tx.member.create({
-                 data: {
-                     name: formattedName,
-                     phone: validatedData.phone,
-                     email: validatedData.email || null,
-                     dateOfBirth: validatedData.dateOfBirth ?? undefined,
-                     gymId,
-                     status: 'ACTIVE',
-                     memberState: 'ACTIVE',
-                     pincode: validatedData.pincode,
-                     state: validatedData.state,
-                     city: validatedData.city,
-                     emergencyName: validatedData.emergencyName || '',
-                     emergencyPhone: validatedData.emergencyPhone || '',
-                     emergencyRelation: validatedData.emergencyRelation || '',
-                } as any
+                 data: memberData
              })
             finalMemberId = member.id
 
