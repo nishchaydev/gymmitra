@@ -86,7 +86,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                      emergencyName: validatedData.emergencyName || '',
                      emergencyPhone: validatedData.emergencyPhone || '',
                      emergencyRelation: validatedData.emergencyRelation || '',
-                 }
+                } as any
              })
             finalMemberId = member.id
 

@@ -207,7 +207,7 @@ export default async function DashboardPage({
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
             prisma.attendance.count({ where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } }).catch(() => 0),
-            (prisma.subscription as any).count({ where: { gymId: gym!.id, status: 'ACTIVE', endDate: { gte: today, lte: new Date(today.getTime() + 7 * 86400000) } } }).catch(() => 0),
+            (prisma.memberSubscription as any).count({ where: { gymId: gym!.id, status: 'ACTIVE', endDate: { gte: today, lte: new Date(today.getTime() + 7 * 86400000) } } }).catch(() => 0),
             prisma.invoice.count({ where: { gymId: gym!.id, type: 'PRODUCT' as any, createdAt: { gte: startOfThisMonth }, deletedAt: null } }).catch(() => 0),
         ])
 
