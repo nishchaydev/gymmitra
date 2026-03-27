@@ -48,6 +48,9 @@ const memberFormSchema = z.object({
     customPrice: z.coerce.number().nonnegative().optional(),
     discount: z.coerce.number().nonnegative().optional().default(0),
     amountPaid: z.coerce.number().nonnegative().optional(),
+    customEndDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+        message: "Invalid date",
+    }),
 })
 
 type MemberFormValues = z.infer<typeof memberFormSchema>
@@ -98,6 +101,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             planId: "none",
             paymentMethod: "CASH" as const,
             discount: 0,
+            customEndDate: "",
         }
 
         // Prefill from query params for 'Convert Lead'
@@ -116,6 +120,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             paymentMethod: "CASH" as const,
             discount: 0,
             amountPaid: undefined,
+            customEndDate: "",
         }
     }, [member, searchParams])
 
@@ -650,6 +655,20 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                {field.value && field.value !== 'none' && (() => {
+                                                    const selectedPlan = activePlans.find(p => p.id === field.value)
+                                                    if (!selectedPlan) return null
+                                                    const expiry = new Date()
+                                                    expiry.setMonth(expiry.getMonth() + selectedPlan.duration)
+                                                    return (
+                                                        <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                                            <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                                            <span className="text-sm text-emerald-700 font-medium">
+                                                                Expires on: {expiry.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                })()}
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -748,6 +767,46 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
+                                                    />
+                                                </motion.div>
+
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -10 }}
+                                                    transition={{ delay: 0.25 }}
+                                                    className="md:col-span-2"
+                                                >
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="customEndDate"
+                                                        render={({ field }) => {
+                                                            const selectedPlan = activePlans.find(p => p.id === form.watch('planId'))
+                                                            const autoEndDate = selectedPlan
+                                                                ? new Date(new Date().setMonth(new Date().getMonth() + selectedPlan.duration)).toISOString().split('T')[0]
+                                                                : ''
+                                                            return (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-sm font-semibold text-slate-700">
+                                                                        Custom Expiry Date
+                                                                        <span className="text-xs font-normal text-slate-400 ml-1">(Optional — overrides plan duration)</span>
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="date"
+                                                                            placeholder={autoEndDate}
+                                                                            className="h-12 bg-white/50 border-slate-200 rounded-xl focus:bg-white transition-all"
+                                                                            {...field}
+                                                                            value={field.value ?? ''}
+                                                                        />
+                                                                    </FormControl>
+                                                                    {!field.value && autoEndDate && (
+                                                                        <p className="text-xs text-slate-400 mt-1">Auto: expires {autoEndDate}</p>
+                                                                    )}
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )
+                                                        }}
                                                     />
                                                 </motion.div>
 

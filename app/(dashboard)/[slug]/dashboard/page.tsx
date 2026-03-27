@@ -14,13 +14,14 @@ import { Button } from "@/components/ui/button"
 import { UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { startOfToday, endOfToday, startOfMonth, subMonths, endOfMonth, startOfDay, subDays, format, eachMonthOfInterval, addDays } from "date-fns"
+import { startOfToday, endOfToday, startOfMonth, subMonths, endOfMonth, startOfDay, subDays, format, eachMonthOfInterval, addDays, isEqual } from "date-fns"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { SHOWCASE_STATS, MOCKUP_DATA } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
 import { exitDemo } from "./actions"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
+import { isBirthdayToday } from "@/lib/utils"
 
 interface DashboardSummary {
     gym_id: string
@@ -189,34 +190,37 @@ export default async function DashboardPage({
         const thirtyDaysAgo = startOfDay(subDays(today, 30))
         const lastWeekStart = startOfDay(subDays(today, 6))
 
-        // Materialized view for pre-computed aggregates
-        const defaultSummary: DashboardSummary = {
+                // Direct Prisma queries - replaces broken mv_dashboard_summary
+        const [
+            _activeMembers,
+            _totalMembers,
+            _monthlyRevenueAgg,
+            _pendingRevenueAgg,
+            _lastMonthRevenueAgg,
+            _todayCheckinsCount,
+            _urgentRenewalsCount,
+            _productSalesCount,
+        ] = await Promise.all([
+            prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } }).catch(() => 0),
+            prisma.member.count({ where: { gymId: gym!.id } }).catch(() => 0),
+            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfThisMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
+            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
+            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
+            prisma.attendance.count({ where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } }).catch(() => 0),
+            (prisma.subscription as any).count({ where: { gymId: gym!.id, status: 'ACTIVE', endDate: { gte: today, lte: new Date(today.getTime() + 7 * 86400000) } } }).catch(() => 0),
+            prisma.invoice.count({ where: { gymId: gym!.id, type: 'PRODUCT' as any, createdAt: { gte: startOfThisMonth }, deletedAt: null } }).catch(() => 0),
+        ])
+
+        const summary: DashboardSummary = {
             gym_id: gym!.id,
-            active_members: BigInt(0),
-            total_members: BigInt(0),
-            monthly_revenue: 0,
-            pending_revenue: 0,
-            last_month_revenue: 0,
-            today_checkins: BigInt(0),
-            urgent_renewals: BigInt(0),
-            product_sales: BigInt(0),
-        }
-        let summary: DashboardSummary = defaultSummary
-        try {
-            const summaryRows = await prisma.$queryRaw<DashboardSummary[]>`
-                SELECT * FROM mv_dashboard_summary
-                WHERE gym_id = ${gym!.id}
-            `
-            if (summaryRows[0]) summary = summaryRows[0]
-        } catch (error: any) {
-            if (
-                error?.message?.includes('mv_dashboard_summary') ||
-                error?.code === '42P01'
-            ) {
-                console.error('[Dashboard] MV not found, using defaults:', error.message)
-            } else {
-                throw error
-            }
+            active_members: BigInt(_activeMembers),
+            total_members: BigInt(_totalMembers),
+            monthly_revenue: Number(_monthlyRevenueAgg._sum?.total || 0),
+            pending_revenue: Number(_pendingRevenueAgg._sum?.total || 0),
+            last_month_revenue: Number(_lastMonthRevenueAgg._sum?.total || 0),
+            today_checkins: BigInt(_todayCheckinsCount),
+            urgent_renewals: BigInt(_urgentRenewalsCount),
+            product_sales: BigInt(_productSalesCount),
         }
 
         const [
@@ -449,11 +453,7 @@ export default async function DashboardPage({
             }).catch(() => 0)
         ])
 
-        const birthdayCount = (birthdayDataRaw as any[]).filter((m: any) => {
-            if (!m.dateOfBirth) return false
-            const dob = new Date(m.dateOfBirth)
-            return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
-        }).length
+         const birthdayCount = (birthdayDataRaw as any[]).filter((m: any) => isBirthdayToday(m.dateOfBirth)).length
 
         // Process REAL Member Growth data
         const growthMap = new Map<string, number>()
@@ -551,25 +551,32 @@ export default async function DashboardPage({
             }
         }
 
-        // Process Birthdays
-        upcomingBirthdays = birthdays
-            .map((m: any) => {
-                const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString();
-                const [year, month, day] = dobString.split('T')[0].split('-').map(Number);
-                const dob = new Date(year, month - 1, day);
-                const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
-                if (next < today) next.setFullYear(today.getFullYear() + 1)
-                const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
-                return { ...m, date: label, diffDays }
-            })
-            .sort((a: any, b: any) => a.diffDays - b.diffDays)
-            .slice(0, 5)
+         // Process Birthdays
+         upcomingBirthdays = birthdays
+             .filter((m: any) => {
+                 // Validate DOB before processing
+                 if (!m.dateOfBirth) return false;
+                 const dob = new Date(m.dateOfBirth);
+                 // Check if date is valid (not Invalid Date)
+                 return !isNaN(dob.getTime());
+             })
+             .map((m: any) => {
+                 const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString();
+                 const [year, month, day] = dobString.split('T')[0].split('-').map(Number);
+                 const dob = new Date(year, month - 1, day);
+                 const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
+                 if (next < today) next.setFullYear(today.getFullYear() + 1)
+                 const diffDays = Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                 const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${dob.getDate()} ${monthNames[dob.getMonth()]}`
+                 return { ...m, date: label, diffDays }
+             })
+             .sort((a: any, b: any) => a.diffDays - b.diffDays)
+             .slice(0, 5)
 
         // Process monthly revenue for chart
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        if (monthlyRevenue && Array.isArray(monthlyRevenue)) {
+        if (monthlyRevenue && Array.isArray(monthlyRevenue) && monthlyRevenue.length > 0) {
             const revenueMap = new Map<number, number>()
             for (const row of monthlyRevenue) {
                 // Ensure row.month and row.total are handled as numbers
@@ -579,10 +586,33 @@ export default async function DashboardPage({
                     revenueMap.set(m, t)
                 }
             }
-            monthlyRevenueData = monthNames.map((name, i) => ({
-                name,
-                total: revenueMap.get(i + 1) || 0,
-            }))
+            // Get current month (1-12)
+            const currentMonth = new Date().getMonth() + 1
+            // Find the first month with data
+            let firstMonthWithData = null
+            for (let m = 1; m <= 12; m++) {
+                if (revenueMap.has(m)) {
+                    firstMonthWithData = m
+                    break
+                }
+            }
+            if (firstMonthWithData !== null) {
+                // Generate data from firstMonthWithData to currentMonth (inclusive)
+                // Fill in zeros for months without data
+                monthlyRevenueData = []
+                for (let m = firstMonthWithData; m <= currentMonth; m++) {
+                    monthlyRevenueData.push({
+                        name: monthNames[m - 1],
+                        total: revenueMap.get(m) || 0
+                    })
+                }
+            } else {
+                // No data in any month, set empty array so hasRevenueData will be false
+                monthlyRevenueData = []
+            }
+        } else {
+            // No revenue data at all
+            monthlyRevenueData = []
         }
     }
 
@@ -744,11 +774,7 @@ export default async function DashboardPage({
 
                                         const today = new Date()
 
-                                        const birthdays = dashboardData.remindersRaw[0]?.filter((m: any) => {
-                                            if (!m.dateOfBirth) return false
-                                            const dob = new Date(m.dateOfBirth)
-                                            return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
-                                        }) || []
+                                        const birthdays = dashboardData.remindersRaw[0]?.filter((m: any) => isBirthdayToday(m.dateOfBirth)) || []
 
                                         const overdueInvoices = dashboardData.remindersRaw[1] || []
 

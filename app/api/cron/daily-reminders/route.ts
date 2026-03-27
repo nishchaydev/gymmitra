@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
 import React from 'react'
+import { getMemberStatus, syncMemberStatuses } from '@/lib/utils'
 
 const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
 const BATCH_SIZE = 100
@@ -113,11 +114,17 @@ export async function GET(request: NextRequest) {
         })
         results.gymsRemaining = Math.max(0, totalUnprocessed - gyms.length)
 
-        for (const gym of gyms) {
-            try {
-                // ── Collect all emails for this gym ───────────────────
-                const emailBatch: CreateEmailOptions[] = []
-                const notificationBatch: Prisma.NotificationCreateManyInput[] = []
+          for (const gym of gyms) {
+              try {
+                  // Step 0: Sync member statuses before sending any reminders
+                  await syncMemberStatuses(gym.id);
+                  
+                  // Step 1: Refresh materialized view for dashboard summary
+                  await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_summary`;
+                  
+                  // ── Collect all emails for this gym ───────────────────
+                 const emailBatch: CreateEmailOptions[] = []
+                 const notificationBatch: Prisma.NotificationCreateManyInput[] = []
 
                 // ── Expiring Subscriptions — exact-day countdown ───────
                 // Query each target day separately so a member expiring in

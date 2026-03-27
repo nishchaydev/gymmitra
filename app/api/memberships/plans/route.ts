@@ -8,7 +8,7 @@ import { guardRateLimit } from '@/lib/rate-limit'
 const planSchema = z.object({
     name: z.string().min(2),
     description: z.string().optional(),
-    duration: z.number().min(1), // days
+    duration: z.number().min(1), // months
     price: z.number().min(0),
     features: z.array(z.string()).optional(),
 })

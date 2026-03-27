@@ -69,6 +69,7 @@ model GymProfile {
   invoiceSequence    InvoiceSequence?
   auditLogs          AuditLog[]
   leads              Lead[]
+  nudgeLogs          NudgeLog[]
 }
 
 model InvoiceSequence {
@@ -86,7 +87,7 @@ model Member {
   name              String
   email             String?
   phone             String
-  dateOfBirth       DateTime
+  dateOfBirth       DateTime?
   photo             String?
   address           String?
   city              String?
@@ -97,6 +98,8 @@ model Member {
   emergencyRelation String
   joiningDate       DateTime             @default(now())
   status            MemberStatus         @default(ACTIVE)
+  memberState       MemberState          @default(ACTIVE) // ACTIVE, PAUSED, CHURNED
+  pauseReturnDate   DateTime?
   notes             String?
   gymId             String
   deletedAt         DateTime?
@@ -108,6 +111,7 @@ model Member {
   subscriptions     MemberSubscription[]
   sales             Sale[]
   ptSessions        PTSession[]
+  nudgeLogs         NudgeLog[]
 
   @@index([gymId])
   @@index([gymId, phone])
@@ -155,6 +159,23 @@ model MemberSubscription {
   @@index([gymId, endDate])
 }
 
+model NudgeLog {
+  id        String   @id @default(cuid())
+  memberId  String
+  gymId     String
+  type      String   // 'INACTIVITY' | 'EXPIRY' | 'OFFER'
+  sentAt    DateTime @default(now())
+  channel   String   // 'WHATSAPP' | 'EMAIL'
+  outcome   String?  // 'RETURNED' | 'NO_RESPONSE' — owner updates this
+
+  member    Member   @relation(fields: [memberId], references: [id])
+  gym       GymProfile @relation(fields: [gymId], references: [id])
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([sentAt])
+}
+
 model Product {
   id            String          @id @default(cuid())
   name          String
@@ -171,8 +192,6 @@ model Product {
   updatedAt     DateTime        @updatedAt
   gym           GymProfile      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   sales         Sale[]
-
-  @@index([gymId])
 }
 
 model Sale {
@@ -305,11 +324,18 @@ model RegistrationCode {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+ 
+enum MemberState {
+  ACTIVE
+  PAUSED
+  CHURNED
+}
 
 enum MemberStatus {
   ACTIVE
   INACTIVE
   EXPIRED
+  EXPIRING_SOON
   PENDING
 }
 

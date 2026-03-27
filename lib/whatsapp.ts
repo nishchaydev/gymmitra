@@ -40,8 +40,8 @@ export const templates = {
         }
         return (
             `Hi ${name}!\n\n` +
-            `Reminder from *${gymName}*: Aapki membership ${daysLeft === 0 ? 'aaj' : daysLeft === 1 ? 'kal' : `agli ${daysLeft} dino mein`} khatam ho rahi hai.\n\n` +
-            `Please front desk pe aake renew karwa lein taaki aapka workout continue rahe. 💪\n\n` +
+            `Reminder from *${gymName}*: Your membership expires ${daysLeft === 0 ? 'today' : daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`}.\n\n` +
+            `Please visit the front desk to renew so your workout continues uninterrupted. 💪\n\n` +
             `See you soon!\n${gymName}`
         )
     },
@@ -58,35 +58,11 @@ export const templates = {
                 .replace(/\\n/g, '\n')
         }
 
-        const invoiceLine = url ? `\n\nAapka joining invoice yahan hai: ${url}` : ''
+        const invoiceLine = url ? `\n\nYour joining invoice is here: ${url}` : ''
         return (
             `Welcome to *${gymName}*, ${name}! 🎉\n\n` +
-            `Hume khushi hai ki aap hamari community ka hissa bane. Aapka digital pass active ho gaya hai.${invoiceLine}\n\n` +
-            `Koi bhi help chahiye ho toh front desk pe batayein. Let's start the fitness journey! 💪🏋️‍♂️\n\n` +
-            `Regards,\n${gymName}`
-        )
-    },
-
-    /**
-     * Sent with invoice link after a payment is recorded.
-     */
-    invoiceShare: (name: string, gymName: string, amount: number, url?: string, customTemplate?: string) => {
-        const formattedAmount = formatCurrency(amount)
-
-        if (customTemplate) {
-            return customTemplate
-                .replace(/{name}/g, name)
-                .replace(/{gymName}/g, gymName)
-                .replace(/{amount}/g, formattedAmount)
-                .replace(/{url}/g, url || '')
-                .replace(/\\n/g, '\n')
-        }
-
-        const linkPart = url ? `\nAapka invoice link yahan hai:\n${url}\n` : ''
-        return (
-            `Hi ${name}, thank you for the payment of *${formattedAmount}* to *${gymName}*.\n\n` +
-            `Payment record update ho gaya hai.${linkPart}\n` +
-            `Keep crushing it! 🔥\n\n` +
+            `We're happy to have you as part of our community. Your digital pass is now active.${invoiceLine}\n\n` +
+            `If you need any help, please contact the front desk. Let's start your fitness journey! 💪🏋️‍♂️\n\n` +
             `Regards,\n${gymName}`
         )
     },
@@ -104,9 +80,9 @@ export const templates = {
     },
 
     /**
-     * Sent when a payment is overdue.
+     * Sent with invoice link after a payment is recorded.
      */
-    paymentOverdue: (name: string, amount: number, gymName: string, customTemplate?: string) => {
+    invoiceShare: (name: string, gymName: string, amount: number, url?: string, customTemplate?: string) => {
         const formattedAmount = formatCurrency(amount)
 
         if (customTemplate) {
@@ -117,10 +93,11 @@ export const templates = {
                 .replace(/\\n/g, '\n')
         }
 
+        const linkPart = url ? `\nYour invoice link is here:\n${url}\n` : ''
         return (
-            `Hi ${name}, *${gymName}* se reminder:\n\n` +
-            `Aapka *${formattedAmount}* pending balance hai. Please use clear kar dein taaki koi interruption na ho.\n\n` +
-            `Agar aapne pehle hi pay kar diya hai toh please ignore this message. Thanks! 🙏\n\n` +
+            `Hi ${name}, thank you for your payment of *${formattedAmount}* to *${gymName}*.\n\n` +
+            `Your payment record has been updated.${linkPart}\n` +
+            `Keep crushing it! 🔥\n\n` +
             `Regards,\n${gymName}`
         )
     },
@@ -154,40 +131,45 @@ export const templates = {
             `Warm regards,\n${gymName}`
         )
     },
+
+    /**
+     * Sent when a member has an overdue payment / outstanding balance.
+     * Supports custom template override via gym settings (waOverdueMsg).
+     */
+    paymentOverdue: (name: string, amount: number, gymName: string, customTemplate?: string) => {
+        const formattedAmount = formatCurrency(amount)
+
+        if (customTemplate) {
+            return customTemplate
+                .replace(/{name}/g, name)
+                .replace(/{gymName}/g, gymName)
+                .replace(/{amount}/g, formattedAmount)
+                .replace(/\\n/g, '\n')
+        }
+        return (
+            `Dear ${name},\n\n` +
+            `This is a gentle reminder from *${gymName}* regarding an outstanding balance of *${formattedAmount}*.` +
+            `\n\nKindly settle the amount at your earliest convenience at the front desk or via UPI.\n\n` +
+            `If you have already made the payment, please disregard this message.\n\n` +
+            `Thank you,\n${gymName}`
+        )
+    },
+
+    /**
+     * Sent to collect member feedback after a milestone (e.g., 1 month).
+     * Enterprise feature for member satisfaction tracking.
+     */
+    feedbackRequest: (name: string, gymName: string, milestoneDays: number) => {
+        return (
+            `Dear ${name},\n\n` +
+            `Congratulations on completing *${milestoneDays} days* at *${gymName}*! 🎉\n\n` +
+            `We would love to hear about your experience so far. Your feedback helps us serve you better.\n\n` +
+            `Please reply with a rating from 1-5 (5 being excellent) and any suggestions you may have.\n\n` +
+            `Thank you for being part of our community!\n\n` +
+            `Warm regards,\n${gymName}`
+        )
+    },
 }
-
-
-
-export const getInvoiceWhatsAppLink = (
-    phone: string,
-    memberName: string,
-    gymName: string,
-    amount: number,
-    shareToken: string,
-    gymSlug: string,
-    customTemplate?: string
-): string | null => {
-    const baseUrl = getBaseUrl()
-
-    let url: string | undefined = undefined
-    if (shareToken && typeof shareToken === 'string' && shareToken.trim()) {
-        const safeToken = encodeURIComponent(shareToken.trim())
-        url = `${baseUrl}/${gymSlug}/invoice/${safeToken}`
-    } else {
-        console.warn('WhatsApp Link: Missing shareToken, omitting URL from message')
-    }
-
-    const safeAmount = (!Number.isFinite(amount) || amount < 0) ? 0 : amount
-    const formattedAmount = Number(safeAmount.toFixed(2))
-
-    // Explicitly handle undefined gymName/memberName defaults so it doesn't template literally
-    const safeGym = gymName || 'your gym'
-    const safeMember = memberName || 'Customer'
-
-    const message = templates.invoiceShare(safeMember, safeGym, formattedAmount, url, customTemplate)
-    return getWhatsAppLink(phone, message)
-}
-
 
 /**
  * Send a WhatsApp template message via Meta Cloud API.
@@ -248,4 +230,34 @@ export async function sendWhatsAppTemplate(params: {
         console.error('[WhatsApp] Network error:', error)
         return { success: false, error: error.message }
     }
+}
+
+export const getInvoiceWhatsAppLink = (
+    phone: string,
+    memberName: string,
+    gymName: string,
+    amount: number,
+    shareToken: string,
+    gymSlug: string,
+    customTemplate?: string
+): string | null => {
+    const baseUrl = getBaseUrl()
+
+    let url: string | undefined = undefined
+    if (shareToken && typeof shareToken === 'string' && shareToken.trim()) {
+        const safeToken = encodeURIComponent(shareToken.trim())
+        url = `${baseUrl}/${gymSlug}/invoice/${safeToken}`
+    } else {
+        console.warn('WhatsApp Link: Missing shareToken, omitting URL from message')
+    }
+
+    const safeAmount = (!Number.isFinite(amount) || amount < 0) ? 0 : amount
+    const formattedAmount = Number(safeAmount.toFixed(2))
+
+    // Explicitly handle undefined gymName/memberName defaults so it doesn't template literally
+    const safeGym = gymName || 'your gym'
+    const safeMember = memberName || 'Customer'
+
+    const message = templates.invoiceShare(safeMember, safeGym, formattedAmount, url, customTemplate)
+    return getWhatsAppLink(phone, message)
 }

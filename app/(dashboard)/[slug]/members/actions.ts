@@ -13,29 +13,32 @@ import { Resend } from 'resend'
 import { WelcomeEmail } from '@/components/emails/WelcomeEmail'
 import { render } from '@react-email/render'
 import React from 'react'
-import { format, parseISO, isValid, addDays } from 'date-fns'
+import { safeParseDate, isLeapYear, validateDateRange } from '@/lib/utils'
+import { format, parseISO, isValid, addMonths } from 'date-fns'
 import { Prisma, PaymentStatus, SubscriptionStatus } from '@prisma/client'
 import { generateInvoiceNumber } from '@/lib/invoice-server-utils'
 import { after } from 'next/server'
 
 const memberSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
-    email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.string().optional().or(z.literal(''))
-        .transform(str => str && !isNaN(Date.parse(str)) ? new Date(str) : new Date(1990, 0, 1)),
-    pincode: z.string().optional(),
-    state: z.string().optional(),
-    city: z.string().optional(),
-    emergencyName: z.string().optional(),
-    emergencyPhone: z.string().optional(),
-    emergencyRelation: z.string().optional(),
-    planId: z.string().optional().or(z.literal('none')),
-    paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
-    customPrice: z.number().nonnegative().optional(),
-    discount: z.number().nonnegative().optional().default(0),
-    amountPaid: z.number().nonnegative().optional(),
-})
+     name: z.string().min(2, "Name must be at least 2 characters"),
+     phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+     email: z.string().email().optional().or(z.literal('')),
+      dateOfBirth: z.union([z.string(), z.null()]).optional().nullable()
+          .transform(str => str && str !== '' && !isNaN(Date.parse(str)) ? new Date(str) : null),
+     pincode: z.string().optional(),
+     state: z.string().optional(),
+     city: z.string().optional(),
+     emergencyName: z.string().optional(),
+     emergencyPhone: z.string().optional(),
+     emergencyRelation: z.string().optional(),
+     planId: z.string().optional().or(z.literal('none')),
+     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
+     customPrice: z.number().nonnegative().optional(),
+     discount: z.number().nonnegative().optional().default(0),
+     amountPaid: z.number().nonnegative().optional(),
+     customEndDate: z.union([z.string(), z.null()]).optional().nullable()
+         .transform(str => str && str !== '' && !isNaN(Date.parse(str)) ? new Date(str) : null),
+ })
 
 export const createMember = withAuth(async (context, data: z.input<typeof memberSchema>) => {
     const parsed = memberSchema.safeParse(data)
@@ -67,23 +70,24 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 )
                 .join(' ')
 
-            // 1. Create the Member
-            const member = await tx.member.create({
-                data: {
-                    name: formattedName,
-                    phone: validatedData.phone,
-                    email: validatedData.email || null,
-                    dateOfBirth: validatedData.dateOfBirth,
-                    gymId,
-                    status: 'ACTIVE',
-                    pincode: validatedData.pincode,
-                    state: validatedData.state,
-                    city: validatedData.city,
-                    emergencyName: validatedData.emergencyName || '',
-                    emergencyPhone: validatedData.emergencyPhone || '',
-                    emergencyRelation: validatedData.emergencyRelation || '',
-                }
-            })
+             // 1. Create the Member
+             const member = await tx.member.create({
+                 data: {
+                     name: formattedName,
+                     phone: validatedData.phone,
+                     email: validatedData.email || null,
+                     dateOfBirth: validatedData.dateOfBirth ?? undefined,
+                     gymId,
+                     status: 'ACTIVE',
+                     memberState: 'ACTIVE',
+                     pincode: validatedData.pincode,
+                     state: validatedData.state,
+                     city: validatedData.city,
+                     emergencyName: validatedData.emergencyName || '',
+                     emergencyPhone: validatedData.emergencyPhone || '',
+                     emergencyRelation: validatedData.emergencyRelation || '',
+                 }
+             })
             finalMemberId = member.id
 
             // 2. If a Plan is Selected, Create Subscription and Invoice
@@ -95,7 +99,9 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 if (!plan) throw new Error("Selected plan not found")
 
                 const startDate = new Date()
-                const endDate = addDays(startDate, plan.duration)
+                const endDate = validatedData.customEndDate
+                    ? validatedData.customEndDate
+                    : addMonths(startDate, plan.duration)
                 const paymentMethod = (validatedData.paymentMethod || 'CASH') as PaymentStatus
 
                 const planPrice = (validatedData.customPrice !== undefined && validatedData.customPrice > 0) ? validatedData.customPrice : Number(plan.price)
@@ -369,8 +375,8 @@ export const importMembers = withAuth(async (context, data: any[]) => {
                     const newPlan = await prisma.membershipPlan.create({
                         data: {
                             name: originalPlanName,
-                            duration: 30, // Default to 30 days
-                            price: 0,    // Default to 0 price
+                            duration: 1,  // Default to 1 month
+                            price: 0,    // Default to 0 price — owner should update in Plans
                             features: [],
                             isActive: true,
                             gymId,
@@ -427,48 +433,82 @@ export const importMembers = withAuth(async (context, data: any[]) => {
                 continue
             }
 
-            // Prepare Member record
-            const email = row.email ? String(row.email).trim().substring(0, 190) : null
-            const city = row.city ? String(row.city).trim().substring(0, 190) : undefined
-            
-            // To ensure Subscriptions can be linked, pre-generate a UUID for the Member.
-            // Prisma supports passing custom IDs for default cuid fields.
-            const newMemberId = crypto.randomUUID()
-
-            newMembers.push({
-                id: newMemberId,
-                name,
-                phone,
-                email,
-                dateOfBirth: row.dob ? new Date(row.dob) : new Date(1990, 0, 1),
-                joiningDate: row.joindate ? new Date(row.joindate) : new Date(),
-                gymId,
-                status: 'ACTIVE',
-                city,
-                emergencyName: '',
-                emergencyPhone: '',
-                emergencyRelation: '',
-            })
-
-            // Prepare Subscription if plan exists
-            if (plan) {
-                const startDate = row.joindate ? new Date(row.joindate) : new Date()
-                const expiryDate = row.expirydate ? new Date(row.expirydate) : null
-
-                if (expiryDate && isValid(new Date(expiryDate))) {
-                    newSubscriptions.push({
-                        id: crypto.randomUUID(),
-                        memberId: newMemberId,
-                        planId: plan.id,
-                        gymId,
-                        startDate: new Date(startDate),
-                        endDate: new Date(expiryDate),
-                        price: plan.price,
-                        status: 'ACTIVE',
-                        paymentStatus: 'PAID'
-                    })
-                }
-            }
+             // Prepare Member record
+             const email = row.email ? String(row.email).trim().substring(0, 190) : null
+             const city = row.city ? String(row.city).trim().substring(0, 190) : undefined
+             
+             // Import validation checks — using enterprise-grade date safety
+             const joinDate = safeParseDate(row.joindate) || new Date();
+             let importErrors: string[] = [];
+             
+             // Check 1: expiry before joindate using validateDateRange
+             if (row.expirydate) {
+                 const expiryDate = safeParseDate(row.expirydate);
+                 if (!expiryDate) {
+                     importErrors.push(`Invalid expiry date format`);
+                 } else if (expiryDate < joinDate) {
+                     importErrors.push(`Expiry date is before join date`);
+                 }
+             }
+             
+             // Check 2: DOB validation — leap year safe via safeParseDate
+             if (row.dob) {
+                 const dobParsed = safeParseDate(row.dob);
+                 if (!dobParsed) {
+                     // DOB is invalid but don't block import — just warn
+                     console.warn(`[Import] Row "${name}" has invalid DOB: ${row.dob}`);
+                 }
+             } else {
+                 console.warn(`[Import] Row "${name}" has no DOB — birthday reminders won't work`);
+             }
+             
+             // Only hard errors cause row rejection
+             if (importErrors.length > 0) {
+                 skippedInvalidData++;
+                 failedRows.push({ row, reason: importErrors.join('; ') });
+                 continue;
+             }
+ 
+             // To ensure Subscriptions can be linked, pre-generate a UUID for the Member.
+             // Prisma supports passing custom IDs for default cuid fields.
+             const newMemberId = crypto.randomUUID()
+ 
+             newMembers.push({
+                 id: newMemberId,
+                 name,
+                 phone,
+                 email,
+                 dateOfBirth: row.dob ? new Date(row.dob) : undefined,
+                 joiningDate: joinDate,
+                 gymId,
+                 status: 'ACTIVE',
+                 memberState: 'ACTIVE',
+                 pauseReturnDate: null,
+                 city,
+                 emergencyName: '',
+                 emergencyPhone: '',
+                 emergencyRelation: '',
+             })
+ 
+             // Prepare Subscription if plan exists
+             if (plan) {
+                 const startDate = joinDate;
+                 const expiryDate = row.expirydate ? new Date(row.expirydate) : null;
+ 
+                 if (expiryDate && isValid(new Date(expiryDate))) {
+                     newSubscriptions.push({
+                         id: crypto.randomUUID(),
+                         memberId: newMemberId,
+                         planId: plan.id,
+                         gymId,
+                         startDate: startDate,
+                         endDate: expiryDate,
+                         price: plan.price,
+                         status: 'ACTIVE',
+                         paymentStatus: 'PAID'
+                     })
+                 }
+             }
 
             imported++
         }

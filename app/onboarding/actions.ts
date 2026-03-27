@@ -327,7 +327,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                             name: m.name,
                             phone: m.phone,
                             joiningDate: joinDate,
-                            dateOfBirth: new Date(1990, 0, 1),
+                             dateOfBirth: null,
                             emergencyName: "Contact",
                             emergencyPhone: m.phone,
                             emergencyRelation: "Self",

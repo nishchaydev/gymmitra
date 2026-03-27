@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, withRetry } from '@/lib/prisma'
 import { z } from 'zod'
-import { addDays } from 'date-fns'
+import { addMonths } from 'date-fns'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { Prisma, PaymentStatus as PrismaPaymentStatus, SubscriptionStatus, MemberStatus } from '@prisma/client'
 import { guardRateLimit } from '@/lib/rate-limit'
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         }
 
         const startDate = validatedData.startDate
-        const endDate = addDays(startDate, plan.duration)
+        const endDate = addMonths(startDate, plan.duration)
         const price = validatedData.price ?? Number(plan.price)
 
         // Block duplicate active subscription (allow upgrades via force: true)

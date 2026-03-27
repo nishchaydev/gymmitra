@@ -154,25 +154,25 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
             <div className="absolute top-[10%] right-[-10%] w-[30%] h-[30%] bg-ocean-100/10 rounded-full blur-[100px] pointer-events-none animate-pulse duration-[8s] delay-700" />
             <div className="absolute bottom-[-10%] left-[20%] w-[35%] h-[35%] bg-midnight/5 rounded-full blur-[110px] pointer-events-none animate-pulse duration-[12s] delay-1000" />
 
-            {/* Dashboard Header */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight sm:text-4xl">
-                        Welcome back, <span className="text-primary">{gymName || 'Admin'}</span>
-                    </h1>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        Dashboard Overiew • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        <button
-                          onClick={() => router.refresh()}
-                          className="text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-primary/10 ml-1"
-                          title="Refresh dashboard"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </button>
-                    </p>
-                </div>
-            </header>
+             {/* Dashboard Header */}
+             <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
+                 <div className="space-y-1">
+                     <h1 className="text-3xl font-black text-slate-900 tracking-tight sm:text-4xl">
+                         Welcome back, <span className="text-primary">{gymName || 'Admin'}</span>
+                     </h1>
+                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                         <TrendingUp className="h-4 w-4 text-primary" />
+                         Dashboard Overiew • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                         <button
+                           onClick={() => router.refresh()}
+                           className="text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-primary/10 ml-1"
+                           title="Refresh dashboard"
+                         >
+                           <RefreshCw className="h-4 w-4" />
+                         </button>
+                     </p>
+                 </div>
+             </header>
 
             {/* ━━━ ROW 1: Four Stat Cards ━━━ */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 relative z-[1]">

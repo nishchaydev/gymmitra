@@ -4,6 +4,7 @@ import { startOfDay, endOfDay, subDays, addDays } from 'date-fns'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { getMemberStatus, daysSince, isBirthdayToday } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,19 +31,16 @@ export async function GET(request: NextRequest) {
         const todayStart = startOfDay(today)
         const todayEnd = endOfDay(today)
 
-        const [birthdays, overdueInvoices, inactiveMembers, expiringSubs] = await Promise.all([
-            // 1. Birthdays Today (Only members with DOB)
-            prisma.member.findMany({
-                where: {
-                    gymId: gym.id,
-                    status: 'ACTIVE',
-                    dateOfBirth: { not: null as any }
-                },
-                select: { id: true, name: true, phone: true, dateOfBirth: true }
-            }).then(members => members.filter(m => {
-                const dob = new Date(m.dateOfBirth!)
-                return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
-            })),
+         const [birthdays, overdueInvoices, inactiveMembers, expiringSubs] = await Promise.all([
+             // 1. Birthdays Today (Only members with valid DOB)
+             prisma.member.findMany({
+                 where: {
+                     gymId: gym.id,
+                     status: 'ACTIVE',
+                     dateOfBirth: { not: null as any }
+                 },
+                 select: { id: true, name: true, phone: true, dateOfBirth: true }
+             }).then(members => members.filter(m => isBirthdayToday(m.dateOfBirth))),
 
             // 2. Overdue Payments
             prisma.invoice.findMany({
@@ -93,12 +91,13 @@ export async function GET(request: NextRequest) {
             })
         ])
 
-        // Filter inactive members
-        const fourteenDaysAgo = subDays(todayStart, 14)
-        const filteredInactive = inactiveMembers.filter(m => {
-            const lastAttendance = m.attendance[0]?.date
-            return !lastAttendance || new Date(lastAttendance) < fourteenDaysAgo
-        })
+         // Filter inactive members using our validated daysSince function
+         const filteredInactive = inactiveMembers.filter(m => {
+             const lastAttendance = m.attendance[0]?.date
+             const daysInactive = daysSince(lastAttendance ? new Date(lastAttendance) : null)
+             // Consider inactive if daysSince is null (unknown) or > 14 days
+             return daysInactive === null || daysInactive > 14
+         })
 
         // Format into action items with wa.me links
         const reminders = {
@@ -120,18 +119,20 @@ export async function GET(request: NextRequest) {
                     link: inv.member?.phone ? getWhatsAppLink(inv.member?.phone, msg) : null
                 }
             }),
-            inactive: filteredInactive.map(m => {
-                const lastAttendance = m.attendance[0]?.date
-                const daysSince = lastAttendance ? Math.floor((today.getTime() - new Date(lastAttendance).getTime()) / (1000 * 3600 * 24)) : 30 // assume 30 if null
-                return {
-                    type: 'INACTIVE',
-                    memberId: m.id,
-                    name: m.name,
-                    daysInactive: daysSince,
-                    message: templates.inactivityNudge(m.name, daysSince, gym.name),
-                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.name, daysSince, gym.name)) : null
-                }
-            }),
+             inactive: filteredInactive.map(m => {
+                 const lastAttendance = m.attendance[0]?.date
+                 const daysInactive = daysSince(lastAttendance ? new Date(lastAttendance) : null)
+                 // For display purposes, show null as "unknown" or use a reasonable fallback
+                 const displayDays = daysInactive === null ? 'unknown' : daysInactive
+                 return {
+                     type: 'INACTIVE',
+                     memberId: m.id,
+                     name: m.name,
+                     daysInactive: daysInactive,
+                     message: templates.inactivityNudge(m.name, displayDays === 'unknown' ? 30 : displayDays, gym.name),
+                     link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.name, displayDays === 'unknown' ? 30 : displayDays, gym.name)) : null
+                 }
+             }),
             expiring: expiringSubs.map(sub => {
                 const diffTime = new Date(sub.endDate).getTime() - today.getTime();
                 const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));

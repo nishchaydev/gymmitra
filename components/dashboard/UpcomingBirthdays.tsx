@@ -47,15 +47,19 @@ function getDaysUntil(dateStr: string, diffDaysFallback?: number): string | null
     const dayInt = parseInt(day)
     if (isNaN(dayInt)) return null
 
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const birthday = new Date(today.getFullYear(), months[monthName], dayInt)
-    birthday.setHours(0, 0, 0, 0)
-    if (birthday < today) birthday.setFullYear(today.getFullYear() + 1)
+     const today = new Date(); today.setHours(0, 0, 0, 0)
+     const birthday = new Date(today.getFullYear(), months[monthName], dayInt)
+     birthday.setHours(0, 0, 0, 0)
+     // Check if the birthday date is valid
+     if (isNaN(birthday.getTime())) {
+         return null;
+     }
+     if (birthday < today) birthday.setFullYear(today.getFullYear() + 1)
 
-    const diffDaysVal = Math.round((birthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDaysVal === 0) return 'Today!'
-    if (diffDaysVal === 1) return 'Tomorrow'
-    return `In ${diffDaysVal} days`
+     const diffDaysVal = Math.round((birthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+     if (diffDaysVal === 0) return 'Today!'
+     if (diffDaysVal === 1) return 'Tomorrow'
+     return `In ${diffDaysVal} days`
 }
 
 export function UpcomingBirthdays({ isDemo, gymName = "your gym", data }: Props) {
