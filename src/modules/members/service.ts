@@ -117,7 +117,7 @@ export class MemberService {
                     paymentStatus: paymentStatus
                 }, tx)
 
-                // Generate Invoice
+                // Generate Invoice — via BillingRepository (no direct tx.invoice calls)
                 const invoiceNumber = await BillingRepository.generateInvoiceNumber(gymId, tx)
                 const shareToken = crypto.randomBytes(32).toString('hex')
                 const expiryDays = gymSettings.invoiceLinkExpiryDays ?? 30
@@ -125,43 +125,33 @@ export class MemberService {
                     ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
                     : null
 
-                // For the invoice, the transaction is required but we can use prisma directly through the tx passed to the billing repository if we made one,
-                // but for now we'll use tx parameter for invoice creation directly since BillingRepository doesn't expose a createInvoice that accepts the full schema easily yet.
-                // Wait, I am restricted from using direct Prisma outside repository.
-                // It is better to encapsulate invoice creation inside BillingRepository or MemberRepository.
-                // Since this is in MemberService, I can call `MemberRepository.executeTransaction` and pass `tx` to a method in `BillingRepository.createInvoice(data, tx)`.
-                // For now, to keep the translation pure as requested:
-                const invoice = await tx.invoice.create({
-                    data: {
-                        invoiceNumber,
-                        gymId,
-                        memberId: member.id,
-                        subscriptionId: subscription.id,
-                        subtotal: planPrice,
-                        taxAmount: 0,
-                        taxPercentage: 0,
-                        discount: discount,
-                        total: total,
-                        amountPaid: amountPaid,
-                        balanceDue: balanceDue,
-                        paymentStatus: paymentStatus,
-                        paymentMethod: paymentMethod as any,
-                        issueDate: new Date(),
-                        dueDate: new Date(),
-                        type: 'MEMBERSHIP',
-                        shareToken: shareToken,
-                        shareTokenExpiresAt: shareTokenExpiresAt,
-                        items: {
-                            create: [{
-                                description: `${plan.name} Membership (${plan.duration} Months)`,
-                                amount: planPrice,
-                                quantity: 1,
-                                unitPrice: planPrice,
-                                gymId: gymId,
-                            }]
-                        }
-                    }
-                })
+                const invoice = await BillingRepository.createInvoiceInTransaction({
+                    invoiceNumber,
+                    type: 'MEMBERSHIP',
+                    gymId,
+                    memberId: member.id,
+                    subscriptionId: subscription.id,
+                    subtotal: planPrice,
+                    taxAmount: 0,
+                    taxPercentage: 0,
+                    discount: discount,
+                    total: total,
+                    amountPaid: amountPaid,
+                    balanceDue: balanceDue,
+                    paymentStatus: paymentStatus,
+                    paymentMethod: paymentMethod as any,
+                    shareToken,
+                    shareTokenExpiresAt,
+                    issueDate: new Date(),
+                    dueDate: new Date(),
+                    items: [{
+                        description: `${plan.name} Membership (${plan.duration} Months)`,
+                        amount: planPrice,
+                        quantity: 1,
+                        unitPrice: planPrice,
+                        gymId: gymId,
+                    }]
+                }, tx)
 
                 finalInvoiceId = invoice.id
             }
@@ -181,16 +171,8 @@ export class MemberService {
         let publicInvoiceUrl: string | undefined = undefined
 
         if (finalInvoiceId) {
-            const inv = await BillingRepository.findInvoiceById(finalInvoiceId, gymId)
-            const gymSlug = (inv as any)?.gym?.slug // To fix strictly, assuming it can fetch gym
-            
-            // Re-fetch properly with token:
-            const invWithToken = await MemberRepository.executeTransaction(async (tx) => {
-                 return tx.invoice.findUnique({
-                     where: { id: finalInvoiceId },
-                     select: { shareToken: true, gym: { select: { slug: true } } }
-                 })
-            })
+            // Use BillingRepository instead of direct tx.invoice call
+            const invWithToken = await BillingRepository.findInvoiceWithToken(finalInvoiceId)
 
             if (invWithToken?.shareToken) {
                 publicInvoiceUrl = `${getBaseUrl()}/${invWithToken.gym.slug}/invoice/${invWithToken.shareToken}`
@@ -205,7 +187,7 @@ export class MemberService {
     }
 
     /**
-     * Non-blocking backgound task to actually send the email.
+     * Non-blocking background task to actually send the email.
      */
     static async sendWelcomeEmailAsync(
         gymSettings: any,
@@ -230,12 +212,8 @@ export class MemberService {
 
             let publicInvoiceUrl: string | undefined = undefined
             if (invoiceId) {
-                const invWithToken = await MemberRepository.executeTransaction(async (tx) => {
-                     return tx.invoice.findUnique({
-                         where: { id: invoiceId },
-                         select: { shareToken: true, gym: { select: { slug: true } } }
-                     })
-                })
+                // Use BillingRepository instead of direct tx.invoice call
+                const invWithToken = await BillingRepository.findInvoiceWithToken(invoiceId)
                 if (invWithToken?.shareToken) {
                     publicInvoiceUrl = `${getBaseUrl()}/${invWithToken.gym.slug}/invoice/${invWithToken.shareToken}`
                 }

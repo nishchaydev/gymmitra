@@ -1,12 +1,14 @@
 import { z } from "zod"
 
+// ─── Invoice Item Schema ────────────────────────────────────────────
 export const invoiceItemSchema = z.object({
     description: z.string().min(1),
-    quantity: z.number().min(1),
-    unitPrice: z.number().min(0),
+    quantity: z.coerce.number().min(1),
+    unitPrice: z.coerce.number().min(0),
     type: z.enum(["MEMBERSHIP", "PRODUCT", "OTHER"]),
 })
 
+// ─── Create Invoice Schema ──────────────────────────────────────────
 export const createInvoiceSchema = z.object({
     memberId: z.string().optional(),
     // Walk-in fields: only relevant when no memberId is provided
@@ -16,12 +18,12 @@ export const createInvoiceSchema = z.object({
     walkInAddress: z.string().optional(),
     paymentMethod: z.enum(["CASH", "UPI"]),
     paymentStatus: z.enum(["PAID", "PARTIAL", "PENDING"]).default("PAID"),
-    amountPaid: z.number().min(0).optional(),
+    amountPaid: z.coerce.number().min(0).optional(),
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),
-    discount: z.number().min(0).default(0),
-    taxPercentage: z.number().min(0).max(100).optional(),
-    taxAmount: z.number().min(0).optional(),
+    discount: z.coerce.number().min(0).default(0),
+    taxPercentage: z.coerce.number().min(0).max(100).optional(),
+    taxAmount: z.coerce.number().min(0).optional(),
     idempotencyKey: z.string().optional(),
 }).refine(data => data.memberId || data.walkInName, {
     message: "Customer identification is required (Member or Walk-in Name)",
@@ -39,7 +41,13 @@ export const createInvoiceSchema = z.object({
     }
 })
 
+// ─── Record Payment Schema ──────────────────────────────────────────
 export const recordPaymentSchema = z.object({
     invoiceId: z.string(),
-    additionalAmount: z.number().min(0.01),
+    additionalAmount: z.coerce.number().min(0.01),
 })
+
+// ─── Exported Types ─────────────────────────────────────────────────
+export type InvoiceItemInput = z.infer<typeof invoiceItemSchema>
+export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>
+export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>

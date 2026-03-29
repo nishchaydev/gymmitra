@@ -1,6 +1,6 @@
-import { z } from "zod"
-import { invoiceItemSchema, createInvoiceSchema, recordPaymentSchema } from "./validator"
-
-export type InvoiceItemInput = z.infer<typeof invoiceItemSchema>
-export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>
-export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>
+/**
+ * Billing Types — Re-exported from validator for backward compatibility.
+ * 
+ * RULE: All types derive from Zod schemas. No manual type definitions.
+ */
+export type { InvoiceItemInput, CreateInvoiceInput, RecordPaymentInput } from "./validator"

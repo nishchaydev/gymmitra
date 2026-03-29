@@ -2,15 +2,12 @@
  * Member Status Engine — Single Source of Truth
  * 
  * Centralized member status calculation and sync logic.
- * Replaces scattered logic in:
- *   - lib/utils.ts (getMemberStatus, syncMemberStatuses)
- *   - api/cron/daily-reminders (inline status checks)
- *   - api/reminders (inline status checks)
  * 
  * RULES:
  *   1. getMemberStatus() is a PURE function — no side effects, no DB calls
  *   2. syncMemberStatuses() is the ONLY place that writes status to DB
  *   3. churnedAt is ONLY set during actual status transitions
+ *   4. All DB access goes through MemberRepository (no direct Prisma)
  */
 
 import { differenceInDays, addDays, isBefore } from 'date-fns'
@@ -52,29 +49,14 @@ export function getMemberStatus(member: MemberStatusInput): MemberStatusType {
  * Groups updates by status type to avoid N+1 queries.
  * Sets `churnedAt` only on actual transitions to churned status.
  * 
+ * All DB access goes through MemberRepository — NO direct Prisma usage.
+ * 
  * @param gymId - The gym to sync statuses for
  */
 export async function syncMemberStatuses(gymId: string) {
-  const { prisma } = await import('@/lib/prisma')
+  const { MemberRepository } = await import('@/src/modules/members/repository')
    
-  const membersWithData = await prisma.member.findMany({
-    where: { gymId },
-    select: {
-      id: true,
-      status: true,
-      subscriptions: {
-        where: { status: 'ACTIVE' },
-        orderBy: { endDate: 'desc' },
-        take: 1,
-        select: { endDate: true }
-      },
-      attendance: {
-        orderBy: { date: 'desc' },
-        take: 1,
-        select: { date: true }
-      }
-    }
-  })
+  const membersWithData = await MemberRepository.findMembersForStatusSync(gymId)
 
   // Group status changes into batch updates (max 4 queries instead of N)
   const groupedByStatus = new Map<string, string[]>()
@@ -92,18 +74,15 @@ export async function syncMemberStatuses(gymId: string) {
     }
   }
 
-  // Execute batch updates — one per status type
-  for (const [status, ids] of groupedByStatus) {
-    await prisma.member.updateMany({
-      where: { id: { in: ids } },
-      data: {
-        status: status as any,
-        // Set churnedAt when transitioning to churned status, clear it otherwise
-        ...(CHURNED_STATUSES.includes(status as MemberStatusType)
-          ? { churnedAt: new Date() }
-          : { churnedAt: null })
-      }
-    })
+  // Execute batch updates via repository — one per status type
+  const updates = Array.from(groupedByStatus.entries()).map(([status, ids]) => ({
+    ids,
+    status,
+    churnedAt: CHURNED_STATUSES.includes(status as MemberStatusType) ? new Date() : null
+  }))
+
+  if (updates.length > 0) {
+    await MemberRepository.batchUpdateStatuses(updates)
   }
 }
 

@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma"
 
 export class BillingRepository {
     /**
+     * Run a callback inside a Prisma transaction.
+     */
+    static async executeTransaction<T>(
+        callback: (tx: Prisma.TransactionClient) => Promise<T>,
+        options?: { isolationLevel?: Prisma.TransactionIsolationLevel }
+    ): Promise<T> {
+        return prisma.$transaction(callback, options)
+    }
+
+    /**
      * Generates a unique, sequential invoice number for a given gym.
      * Uses an atomic upsert to prevent race conditions.
      */
@@ -43,6 +53,101 @@ export class BillingRepository {
         const counter = String(sequence.currentValue).padStart(5, '0')
 
         return `${prefix}-INV-${counter}`
+    }
+
+    /**
+     * Create an invoice inside a transaction.
+     * Encapsulates the full invoice + items creation.
+     */
+    static async createInvoiceInTransaction(
+        data: {
+            invoiceNumber: string
+            type: string
+            gymId: string
+            memberId?: string | null
+            subscriptionId?: string | null
+            subtotal: number
+            taxAmount: number
+            taxPercentage: number
+            discount: number
+            total: number
+            amountPaid: number
+            balanceDue: number
+            paymentStatus: string
+            paymentMethod?: string | null
+            idempotencyKey?: string | null
+            walkInName?: string | null
+            walkInPhone?: string | null
+            walkInEmail?: string | null
+            walkInAddress?: string | null
+            notes?: string | null
+            shareToken: string
+            shareTokenExpiresAt: Date | null
+            issueDate?: Date
+            dueDate?: Date | null
+            items: Array<{
+                description: string
+                quantity: number
+                unitPrice: number
+                taxPercentage?: number
+                taxAmount?: number
+                amount: number
+                gymId: string
+            }>
+        },
+        tx: Prisma.TransactionClient
+    ) {
+        return tx.invoice.create({
+            data: {
+                invoiceNumber: data.invoiceNumber,
+                type: data.type as any,
+                gymId: data.gymId,
+                memberId: data.memberId || null,
+                subscriptionId: data.subscriptionId || null,
+                subtotal: data.subtotal,
+                taxAmount: data.taxAmount,
+                taxPercentage: data.taxPercentage,
+                discount: data.discount,
+                total: data.total,
+                amountPaid: data.amountPaid as any,
+                balanceDue: data.balanceDue as any,
+                paymentStatus: data.paymentStatus as any,
+                paymentMethod: data.paymentMethod as any,
+                idempotencyKey: data.idempotencyKey ?? null,
+                walkInName: data.walkInName ?? null,
+                walkInPhone: data.walkInPhone ?? null,
+                walkInEmail: data.walkInEmail ?? null,
+                walkInAddress: data.walkInAddress ?? null,
+                notes: data.notes ?? null,
+                shareToken: data.shareToken,
+                shareTokenExpiresAt: data.shareTokenExpiresAt,
+                issueDate: data.issueDate ?? new Date(),
+                dueDate: data.dueDate ?? null,
+                items: {
+                    create: data.items.map(item => ({
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        taxPercentage: item.taxPercentage ?? 0,
+                        taxAmount: item.taxAmount ?? 0,
+                        amount: item.amount,
+                        gymId: item.gymId,
+                    }))
+                }
+            }
+        })
+    }
+
+    /**
+     * Find an invoice with its share token and gym slug.
+     * Used for generating public invoice URLs.
+     */
+    static async findInvoiceWithToken(invoiceId: string, tx?: Prisma.TransactionClient) {
+        const client = tx || prisma
+        return client.invoice.findUnique({
+            where: { id: invoiceId },
+            select: { shareToken: true, gym: { select: { slug: true } } }
+        })
     }
 
     /**

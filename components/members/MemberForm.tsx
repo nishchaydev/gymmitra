@@ -6,7 +6,6 @@ import { toast } from "sonner"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useQueryClient, useMutation } from '@tanstack/react-query'
-import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
     Form,
@@ -24,36 +23,10 @@ import { ArrowRight, FileText, CheckCircle2, User, Phone, Mail, MapPin, Calendar
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
-// Import removed: Server Action is now passed as a prop or called from the parent page due to dynamic routing
+// Schema imported from centralized validator — single source of truth
+import { memberFormSchema, type MemberFormInput } from "@/src/modules/members/validator"
 
-const memberFormSchema = z.object({
-    name: z.string().min(2, {
-        message: "Name must be at least 2 characters.",
-    }),
-    phone: z.string().min(10, {
-        message: "Phone number must be at least 10 digits.",
-    }),
-    email: z.string().email("Valid email is required to send the welcome message"),
-    dateOfBirth: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
-        message: "Invalid date",
-    }),
-    pincode: z.string().optional(),
-    state: z.string().optional(),
-    city: z.string().optional(),
-    emergencyName: z.string().optional(),
-    emergencyPhone: z.string().optional(),
-    emergencyRelation: z.string().optional(),
-    planId: z.string().optional().or(z.literal('none')),
-    paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
-    customPrice: z.coerce.number().nonnegative().optional(),
-    discount: z.coerce.number().nonnegative().optional().default(0),
-    amountPaid: z.coerce.number().nonnegative().optional(),
-    customEndDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
-        message: "Invalid date",
-    }),
-})
-
-type MemberFormValues = z.infer<typeof memberFormSchema>
+type MemberFormValues = MemberFormInput
 
 // Define MemberFormProps type
 interface MemberFormProps {

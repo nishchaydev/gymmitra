@@ -169,7 +169,7 @@ export class MemberRepository {
     }
 
     /**
-     * Get member subscriptions joined with plan
+     * Get member with subscriptions, invoices, and attendance for detail page.
      */
     static async getMemberWithSubscriptions(id: string, gymId: string, tx?: Prisma.TransactionClient) {
         const client = tx || prisma
@@ -182,9 +182,57 @@ export class MemberRepository {
                 },
                 invoices: {
                     orderBy: { issueDate: 'desc' },
+                    take: 10
+                },
+                attendance: {
+                    orderBy: { checkInTime: 'desc' },
                     take: 5
                 }
             }
         })
+    }
+
+    /**
+     * Fetch members with subscription and attendance data for status sync.
+     * Used by status-engine.ts — replaces direct Prisma call.
+     */
+    static async findMembersForStatusSync(gymId: string) {
+        return prisma.member.findMany({
+            where: { gymId },
+            select: {
+                id: true,
+                status: true,
+                subscriptions: {
+                    where: { status: 'ACTIVE' },
+                    orderBy: { endDate: 'desc' },
+                    take: 1,
+                    select: { endDate: true }
+                },
+                attendance: {
+                    orderBy: { date: 'desc' },
+                    take: 1,
+                    select: { date: true }
+                }
+            }
+        })
+    }
+
+    /**
+     * Batch update member statuses by status type.
+     * Used by status-engine.ts — replaces direct Prisma call.
+     */
+    static async batchUpdateStatuses(
+        updates: Array<{ ids: string[]; status: string; churnedAt: Date | null }>
+    ) {
+        const promises = updates.map(({ ids, status, churnedAt }) =>
+            prisma.member.updateMany({
+                where: { id: { in: ids } },
+                data: {
+                    status: status as any,
+                    ...(churnedAt !== undefined ? { churnedAt } : {})
+                }
+            })
+        )
+        await Promise.all(promises)
     }
 }

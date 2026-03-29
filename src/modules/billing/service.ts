@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma"
 import { BillingRepository } from "./repository"
 import { CreateInvoiceInput, RecordPaymentInput } from "./types"
 import { calculateBillingTotal, resolveEffectiveTaxRate, distributeTaxAcrossItems } from "../shared/billing-calc"
@@ -16,7 +15,7 @@ export class BillingService {
         ip: string
     ): Promise<{ success: boolean; id?: string; error?: string }> {
         try {
-            const invoiceResult = await prisma.$transaction(async (tx) => {
+            const invoiceResult = await BillingRepository.executeTransaction(async (tx) => {
                 const invoiceNumber = await BillingRepository.generateInvoiceNumber(gym.id, tx)
                 
                 // 1. Resolve tax percentage based on gym settings and item override
@@ -55,56 +54,57 @@ export class BillingService {
                     ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
                     : null
 
-                // 6. DB Creation
-                const invoice = await tx.invoice.create({
-                    data: {
-                        invoiceNumber,
-                        type: "SALE",
-                        gymId: gym.id,
-                        memberId: data.memberId || null,
-                        subtotal: calcResult.subtotal,
-                        taxAmount: finalTaxAmountCents / 100,
-                        taxPercentage: finalEffectiveTaxPercentage,
-                        discount: data.discount,
-                        total: finalTotalCents / 100,
-                        idempotencyKey: data.idempotencyKey,
-                        walkInName: data.walkInName ?? null,
-                        walkInPhone: data.walkInPhone ?? null,
-                        walkInEmail: data.walkInEmail ?? null,
-                        walkInAddress: data.walkInAddress ?? null,
-                        paymentMethod: data.paymentMethod,
-                        paymentStatus: data.paymentStatus,
-                        amountPaid: (data.paymentStatus === 'PARTIAL'
-                            ? Math.min((data.amountPaid ?? 0), finalTotalCents / 100)
-                            : data.paymentStatus === 'PENDING'
-                                ? 0
-                                : finalTotalCents / 100) as any,
-                        balanceDue: (data.paymentStatus === 'PARTIAL'
-                            ? Math.max(0, (finalTotalCents / 100) - Math.min((data.amountPaid ?? 0), finalTotalCents / 100))
-                            : data.paymentStatus === 'PENDING'
-                                ? finalTotalCents / 100
-                                : 0) as any,
-                        notes: data.notes ?? null,
-                        shareToken,
-                        shareTokenExpiresAt,
-                        items: {
-                            create: data.items.map((item, index) => {
-                                const amount = Math.round(item.quantity * item.unitPrice * 100) / 100
-                                const taxAmount = distributedTaxList[index] / 100
+                // 6. Compute payment amounts
+                const finalTotal = finalTotalCents / 100
+                const amountPaid = data.paymentStatus === 'PARTIAL'
+                    ? Math.min((data.amountPaid ?? 0), finalTotal)
+                    : data.paymentStatus === 'PENDING'
+                        ? 0
+                        : finalTotal
+                const balanceDue = data.paymentStatus === 'PARTIAL'
+                    ? Math.max(0, finalTotal - Math.min((data.amountPaid ?? 0), finalTotal))
+                    : data.paymentStatus === 'PENDING'
+                        ? finalTotal
+                        : 0
 
-                                return {
-                                    description: item.description,
-                                    quantity: item.quantity,
-                                    unitPrice: item.unitPrice,
-                                    taxPercentage: finalEffectiveTaxPercentage,
-                                    taxAmount,
-                                    amount,
-                                    gymId: gym.id
-                                }
-                            })
+                // 7. DB Creation — via BillingRepository (no direct tx.invoice calls)
+                const invoice = await BillingRepository.createInvoiceInTransaction({
+                    invoiceNumber,
+                    type: "SALE",
+                    gymId: gym.id,
+                    memberId: data.memberId || null,
+                    subtotal: calcResult.subtotal,
+                    taxAmount: finalTaxAmountCents / 100,
+                    taxPercentage: finalEffectiveTaxPercentage,
+                    discount: data.discount,
+                    total: finalTotal,
+                    amountPaid,
+                    balanceDue,
+                    paymentStatus: data.paymentStatus,
+                    paymentMethod: data.paymentMethod,
+                    idempotencyKey: data.idempotencyKey ?? null,
+                    walkInName: data.walkInName ?? null,
+                    walkInPhone: data.walkInPhone ?? null,
+                    walkInEmail: data.walkInEmail ?? null,
+                    walkInAddress: data.walkInAddress ?? null,
+                    notes: data.notes ?? null,
+                    shareToken,
+                    shareTokenExpiresAt,
+                    items: data.items.map((item, index) => {
+                        const amount = Math.round(item.quantity * item.unitPrice * 100) / 100
+                        const taxAmount = distributedTaxList[index] / 100
+
+                        return {
+                            description: item.description,
+                            quantity: item.quantity,
+                            unitPrice: item.unitPrice,
+                            taxPercentage: finalEffectiveTaxPercentage,
+                            taxAmount,
+                            amount,
+                            gymId: gym.id
                         }
-                    }
-                })
+                    })
+                }, tx)
 
                 return invoice
             })

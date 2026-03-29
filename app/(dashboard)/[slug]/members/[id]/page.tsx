@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { getShowcaseMember } from '@/lib/showcase-data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,8 +11,10 @@ import { MemberQR } from '@/components/members/MemberQR'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { MemberRepository } from '@/src/modules/members/repository'
+import { computeMemberFlags } from '@/src/modules/members/member-flags'
+import { serializeDecimals, toNumber } from '@/src/modules/shared/serializers'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,8 @@ export default async function MemberDetailPage({
     const now = new Date()
     const yesterday = new Date(now.getTime() - MS_PER_DAY)
 
-    const member = isDemo ? {
+    // Use MemberRepository instead of direct Prisma access
+    const rawMember = isDemo ? {
         ...getShowcaseMember(id),
         subscriptions: [{
             plan: { name: "Gold Annual" },
@@ -63,47 +65,17 @@ export default async function MemberDetailPage({
         emergencyName: "Rajesh Kumar",
         emergencyRelation: "Father",
         emergencyPhone: "9876500000"
-    } as any : await prisma.member.findFirst({
-        where: {
-            id,
-            gymId: gymId // Enforce ownership
-        },
-        include: {
-            subscriptions: {
-                include: { plan: true },
-                orderBy: { endDate: 'desc' },
-                take: 1
-            },
-            invoices: {
-                orderBy: { issueDate: 'desc' },
-                take: 10
-            },
-            attendance: {
-                orderBy: { checkInTime: 'desc' },
-                take: 5
-            }
-        }
-    })
+    } as any : await MemberRepository.getMemberWithSubscriptions(id, gymId)
 
-    if (!member) {
+    if (!rawMember) {
         notFound()
     }
 
-    const activeSubscription = member.subscriptions[0]
-    const hasSimplifiedMembership = member.membershipDuration && member.subscriptionEndDate
+    // Serialize Decimal fields to plain numbers at the boundary
+    const member = serializeDecimals(rawMember)
 
-    // Compute effective status — override ACTIVE→EXPIRED if latest sub has expired
-    const subEndDate = activeSubscription?.endDate || member.subscriptionEndDate
-    const effectiveStatus =
-        member.status === 'ACTIVE' && subEndDate && new Date(subEndDate) < now
-            ? 'EXPIRED'
-            : member.status
-
-    // Calculate total outstanding balance
-    const outstandingInvoices = member.invoices.filter((inv: any) =>
-        inv.paymentStatus === 'PARTIAL' || inv.paymentStatus === 'PENDING'
-    )
-    const totalOutstanding = outstandingInvoices.reduce((sum: number, inv: any) => sum + (Number(inv.balanceDue) || 0), 0)
+    // Compute business logic flags — UI only renders, never decides
+    const flags = computeMemberFlags(member as any)
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-6">
@@ -116,12 +88,12 @@ export default async function MemberDetailPage({
                     </Button>
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
                         <h1 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">{member.name}</h1>
-                        <Badge variant={effectiveStatus === 'ACTIVE' ? 'default' : 'secondary'} className={cn(
+                        <Badge variant={flags.effectiveStatus === 'ACTIVE' ? 'default' : 'secondary'} className={cn(
                             "rounded-full font-black text-[10px] uppercase px-2 w-fit h-5",
-                            effectiveStatus === 'ACTIVE' ? "bg-emerald-500 hover:bg-emerald-600 text-white" :
-                            effectiveStatus === 'EXPIRED' ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
+                            flags.effectiveStatus === 'ACTIVE' ? "bg-emerald-500 hover:bg-emerald-600 text-white" :
+                            flags.effectiveStatus === 'EXPIRED' ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
                         )}>
-                            {effectiveStatus}
+                            {flags.effectiveStatus}
                         </Badge>
                     </div>
                 </div>
@@ -191,7 +163,7 @@ export default async function MemberDetailPage({
                         <MemberQR memberId={member.id} memberName={member.name} />
                     </div>
 
-                    {totalOutstanding > 0 && (
+                    {flags.hasOutstandingBalance && (
                         <Card className="border-t-4 border-t-rose-500 bg-rose-50/30 rounded-2xl overflow-hidden shadow-sm">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
@@ -201,14 +173,14 @@ export default async function MemberDetailPage({
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    <div className="text-3xl font-black text-slate-900">₹{totalOutstanding.toLocaleString()}</div>
+                                    <div className="text-3xl font-black text-slate-900">₹{flags.totalOutstanding.toLocaleString()}</div>
                                     <Button
                                         asChild
                                         size="sm"
                                         className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase tracking-wider gap-2 h-10 rounded-xl shadow-sm"
                                     >
                                         <Link
-                                            href={getWhatsAppLink(member.phone, templates.paymentOverdue(member.name, totalOutstanding, gymName))}
+                                            href={getWhatsAppLink(member.phone, templates.paymentOverdue(member.name, flags.totalOutstanding, gymName))}
                                             target="_blank"
                                         >
                                             <MessageCircle className="w-4 h-4" />
@@ -239,28 +211,27 @@ export default async function MemberDetailPage({
                                     <Activity className="h-4 w-4 text-primary" />
                                 </CardHeader>
                                 <CardContent className="pt-6">
-                                    {activeSubscription || hasSimplifiedMembership ? (
+                                    {flags.hasActivePlan ? (
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-start">
                                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                                                    {activeSubscription ? activeSubscription.plan.name : `${member.membershipDuration} Month Plan`}
+                                                    {flags.currentPlanName}
                                                 </h3>
                                                 <Badge className={cn(
                                                     "rounded-full font-black text-[10px] uppercase px-3 h-6",
-                                                    effectiveStatus === 'ACTIVE' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+                                                    flags.effectiveStatus === 'ACTIVE' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
                                                 )}>
-                                                    {effectiveStatus}
+                                                    {flags.effectiveStatus}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-3 text-xs text-slate-600 font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                <Calendar className="h-4 w-4 text-primary" />
-                                                <span>
-                                                    {activeSubscription 
-                                                        ? `${new Date(activeSubscription.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — ${new Date(activeSubscription.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                                                        : `Expires on ${new Date(member.subscriptionEndDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                                                    }
-                                                </span>
-                                            </div>
+                                            {member.subscriptions[0] && (
+                                                <div className="flex items-center gap-3 text-xs text-slate-600 font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                    <Calendar className="h-4 w-4 text-primary" />
+                                                    <span>
+                                                        {`${new Date(member.subscriptions[0].startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — ${new Date(member.subscriptions[0].endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="text-center py-10">
@@ -328,11 +299,11 @@ export default async function MemberDetailPage({
                                                         <p className="text-[10px] font-black text-drift-400 uppercase tracking-widest">{new Date(invoice.issueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
                                                     </div>
                                                     <div className="text-right space-y-2">
-                                                        <p className="font-black text-slate-900 text-sm">₹{Number(invoice.total).toLocaleString('en-IN')}</p>
+                                                        <p className="font-black text-slate-900 text-sm">₹{toNumber(invoice.total).toLocaleString('en-IN')}</p>
                                                         <div className="flex items-center justify-end gap-2">
-                                                            {invoice.balanceDue > 0 && (
+                                                            {toNumber(invoice.balanceDue) > 0 && (
                                                                 <span className="text-[10px] font-black text-rose-600 uppercase tracking-tight">
-                                                                    Due: ₹{Number(invoice.balanceDue).toLocaleString('en-IN')}
+                                                                    Due: ₹{toNumber(invoice.balanceDue).toLocaleString('en-IN')}
                                                                 </span>
                                                             )}
                                                             <Badge className={cn(
