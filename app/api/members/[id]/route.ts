@@ -112,15 +112,21 @@ export async function DELETE(
 
         const { id } = await params
 
-        const result = await prisma.member.deleteMany({
+        // Soft delete — preserves data integrity for invoices, attendance, audit logs
+        const result = await prisma.member.updateMany({
             where: {
                 id,
-                gymId: auth.gym.id
+                gymId: auth.gym.id,
+                deletedAt: null
+            },
+            data: {
+                deletedAt: new Date(),
+                status: 'INACTIVE'
             }
         })
 
         if (result.count === 0) {
-            return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 404 })
+            return NextResponse.json({ error: 'Member not found or already deleted' }, { status: 404 })
         }
 
         // Audit Log
@@ -139,12 +145,6 @@ export async function DELETE(
         return NextResponse.json({ success: true })
     } catch (error: any) {
         console.error('Delete member error:', error)
-        if (error.code === 'P2003' || error.code === 'P2014') {
-            return NextResponse.json(
-                { error: 'Cannot delete member because they have existing invoices, attendance, or active subscriptions. Try changing their status to Inactive instead.' },
-                { status: 400 }
-            )
-        }
         return NextResponse.json(
             { error: 'Failed to delete member' },
             { status: 500 }

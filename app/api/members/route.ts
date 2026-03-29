@@ -69,9 +69,12 @@ export async function GET(req: Request) {
 
     // Today's Birthday Filter
     if (birthday === "today") {
-      const today = new Date();
-      const month = today.getMonth() + 1;
-      const day = today.getDate();
+      // Use IST offset (+5:30) to get correct date for Indian users
+      const nowUtc = new Date();
+      const istOffset = 330; // IST is UTC+5:30 = 330 minutes
+      const istDate = new Date(nowUtc.getTime() + istOffset * 60 * 1000);
+      const month = istDate.getUTCMonth() + 1;
+      const day = istDate.getUTCDate();
       const birthdaysToday = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Member" 
         WHERE EXTRACT(MONTH FROM "dateOfBirth") = ${month}

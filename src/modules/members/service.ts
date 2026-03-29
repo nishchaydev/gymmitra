@@ -302,6 +302,8 @@ export class MemberService {
                 }
             }
 
+            const autoCreatedPlans: string[] = []
+
             for (const originalPlanName of uniquePlanNames) {
                 const lowerPlanName = originalPlanName.toLowerCase()
                 if (!planMap.has(lowerPlanName)) {
@@ -315,6 +317,7 @@ export class MemberService {
                             gymId,
                         })
                         planMap.set(lowerPlanName, newPlan)
+                        autoCreatedPlans.push(originalPlanName)
                     } catch (createErr) {
                         console.error(`Failed to auto-create plan: ${originalPlanName}`, createErr)
                     }
@@ -472,7 +475,17 @@ export class MemberService {
                 payload: { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData, totalRows: data.length }
             }).catch(err => console.error('recordAuditLog IMPORT_MEMBERS', err))
 
-            return { imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData, failedRows }
+            return {
+                imported,
+                skippedDuplicate,
+                skippedPlanNotFound,
+                skippedInvalidData,
+                failedRows,
+                autoCreatedPlans,
+                warning: autoCreatedPlans.length > 0
+                    ? `Plans auto-created with ₹0 price: ${autoCreatedPlans.join(', ')} — please update prices in Plans settings.`
+                    : undefined
+            }
         } catch (error: any) {
             console.error('Import error:', error)
             return { error: 'Failed to import members: ' + (error?.message || 'Unknown error'), imported, skippedDuplicate, skippedPlanNotFound, skippedInvalidData, failedRows }

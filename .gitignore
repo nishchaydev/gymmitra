@@ -51,3 +51,7 @@ __pycache__/
 
 # logs
 *.log
+
+# debug artifacts
+tsc_errors*.txt
+email-result.txt

@@ -8,7 +8,7 @@ import crypto from 'crypto';
 import { verifyWebhookSignature } from '@/lib/webhook-utils';
 import { getBaseUrl } from '@/lib/utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_for_build');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function isTrustedProxy(ip: string): boolean {
     if (ip === '127.0.0.1' || ip === '::1') return true

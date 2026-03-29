@@ -202,7 +202,7 @@ export default async function DashboardPage({
             _productSalesCount,
         ] = await Promise.all([
             prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } }).catch(() => 0),
-            prisma.member.count({ where: { gymId: gym!.id } }).catch(() => 0),
+            prisma.member.count({ where: { gymId: gym!.id, deletedAt: null } }).catch(() => 0),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfThisMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { balanceDue: true } }).catch(() => ({ _sum: { balanceDue: null } })),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
@@ -283,7 +283,6 @@ export default async function DashboardPage({
                     WHERE "gymId" = ${gym!.id} AND status NOT IN ('INACTIVE', 'EXPIRED')
                     GROUP BY 1
                 )
-                SELECT 
                 SELECT 
                     to_char(date_trunc('month', m."churnedAt"), 'YYYY-MM-DD') as month,
                     COUNT(m.id)::bigint as churned,

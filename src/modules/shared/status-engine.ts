@@ -36,11 +36,12 @@ export interface MemberStatusInput {
 export function getMemberStatus(member: MemberStatusInput): MemberStatusType {
   const today = new Date()
   const sevenDaysFromNow = addDays(today, 7)
-  
+
   if (!member.expiryDate) return 'INACTIVE'
   if (isBefore(member.expiryDate, today)) return 'EXPIRED'
   if (isBefore(member.expiryDate, sevenDaysFromNow) || isDateEqual(member.expiryDate, sevenDaysFromNow)) return 'EXPIRING_SOON'
-  if (member.lastCheckIn && differenceInDays(today, member.lastCheckIn) > 30) return 'INACTIVE'
+  // Note: 30-day inactivity is tracked in analytics/insights only.
+  // A paid member with a valid subscription must never be blocked at kiosk.
   return 'ACTIVE'
 }
 
@@ -55,7 +56,7 @@ export function getMemberStatus(member: MemberStatusInput): MemberStatusType {
  */
 export async function syncMemberStatuses(gymId: string) {
   const { MemberRepository } = await import('@/src/modules/members/repository')
-   
+
   const membersWithData = await MemberRepository.findMembersForStatusSync(gymId)
 
   // Group status changes into batch updates (max 4 queries instead of N)

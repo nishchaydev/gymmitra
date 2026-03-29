@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { syncMemberStatuses } from '@/src/modules/shared/status-engine'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
                 endDate: { lt: now },
                 member: { status: 'ACTIVE' },
             },
-            select: { memberId: true },
+            select: { memberId: true, gymId: true },
             distinct: ['memberId'],
         })
 
@@ -97,10 +98,22 @@ export async function GET(request: NextRequest) {
 
         console.log(`[Cron:ExpireSubs] Updated ${membersExpired} member statuses to EXPIRED`)
 
+        // 4. Sync EXPIRING_SOON for all affected gyms
+        // This ensures members expiring within 7 days get the right status
+        const affectedGymIds = [...new Set(expiredMemberSubs.map(s => s.gymId))]
+        for (const gymId of affectedGymIds) {
+            try {
+                await syncMemberStatuses(gymId)
+            } catch (syncErr) {
+                console.error(`[Cron:ExpireSubs] Failed to sync statuses for gym ${gymId}:`, syncErr)
+            }
+        }
+
         return NextResponse.json({
             success: true,
             subscriptionsExpired: expiredSubs.count,
             membersExpired,
+            gymsStatusSynced: affectedGymIds.length,
             timestamp: now.toISOString(),
         })
     } catch (error) {

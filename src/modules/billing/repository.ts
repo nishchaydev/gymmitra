@@ -14,7 +14,7 @@ export class BillingRepository {
 
     /**
      * Generates a unique, sequential invoice number for a given gym.
-     * Uses an atomic upsert to prevent race conditions.
+     * Uses atomic SQL to increment and return in one operation — no race conditions.
      */
     static async generateInvoiceNumber(gymId: string, tx?: Prisma.TransactionClient): Promise<string> {
         const client = tx || prisma
@@ -27,30 +27,25 @@ export class BillingRepository {
 
         if (!gym) throw new Error("Gym not found for invoice number generation")
 
-        // 2. Safely read current before incrementing
-        const existing = await client.invoiceSequence.findUnique({ where: { gymId } })
-        const nextValue = (existing?.currentValue ?? 0) + 1
+        // 2. Atomic increment — single SQL statement prevents race conditions
+        const result = await client.$queryRaw<[{ next_val: number }]>`
+            INSERT INTO "InvoiceSequence" ("id", "gymId", "currentValue", "version", "updatedAt")
+            VALUES (gen_random_uuid(), ${gymId}, 1, 1, now())
+            ON CONFLICT ("gymId") DO UPDATE
+                SET "currentValue" = "InvoiceSequence"."currentValue" + 1,
+                    "version" = "InvoiceSequence"."version" + 1,
+                    "updatedAt" = now()
+            RETURNING "currentValue" AS next_val
+        `
+
+        const nextValue = Number(result[0].next_val)
 
         if (nextValue > 99999) {
             throw new Error(`Invoice counter for gym ${gymId} has exceeded 99999. Contact support.`)
         }
 
-        // 3. Atomic upsert
-        const sequence = await client.invoiceSequence.upsert({
-            where: { gymId },
-            update: {
-                currentValue: nextValue,
-                version: { increment: 1 }
-            },
-            create: {
-                gymId,
-                currentValue: 1,
-                version: 1
-            }
-        })
-
         const prefix = gym.invoicePrefix || 'GM'
-        const counter = String(sequence.currentValue).padStart(5, '0')
+        const counter = String(nextValue).padStart(5, '0')
 
         return `${prefix}-INV-${counter}`
     }
