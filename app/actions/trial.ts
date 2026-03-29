@@ -120,8 +120,16 @@ export async function createTrialGym(raw: {
         })
     } catch (dbError) {
         console.error('[Trial Signup] Failed to create GymProfile in database:', dbError)
-        // Cleanup orphaned Supabase user
-        try { await supabase.auth.admin.deleteUser(userId) } catch { /* best-effort */ }
+        // Cleanup orphaned Supabase user using Service Role Key
+        try { 
+            const adminAuthClient = require('@supabase/supabase-js').createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+            )
+            await adminAuthClient.auth.admin.deleteUser(userId) 
+        } catch (cleanupError) { 
+            console.error('[Trial Signup] Failed to delete orphaned Auth user:', cleanupError)
+        }
         return { success: false, error: 'Failed to create gym profile. Please try again.' }
     }
 
@@ -334,8 +342,17 @@ export async function adminCreateTrialGym(raw: {
                 tempPassword: encryptPassword(tempPassword),
             },
         })
-    } catch {
-        try { await supabase.auth.admin.deleteUser(userId) } catch { /* best-effort */ }
+    } catch (dbError) {
+        console.error('[Admin Trial Signup] Failed to create GymProfile in database:', dbError)
+        try { 
+            const adminAuthClient = require('@supabase/supabase-js').createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+            )
+            await adminAuthClient.auth.admin.deleteUser(userId) 
+        } catch (cleanupError) { 
+            console.error('[Admin Trial Signup] Failed to delete orphaned Auth user:', cleanupError)
+        }
         return { success: false, error: 'Failed to create gym profile.' }
     }
 
