@@ -5,6 +5,8 @@ import { withAuth } from '@/lib/with-auth'
 
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { memberSchema } from '@/src/modules/members/validator'
+import { MemberRepository } from '@/src/modules/members/repository'
 import { revalidatePath } from 'next/cache'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { headers } from 'next/headers'
@@ -19,26 +21,7 @@ import { Prisma, PaymentStatus, SubscriptionStatus } from '@prisma/client'
 import { BillingRepository } from '@/src/modules/billing/repository'
 import { after } from 'next/server'
 
-const memberSchema = z.object({
-     name: z.string().min(2, "Name must be at least 2 characters"),
-     phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
-     email: z.string().email().optional().or(z.literal('')),
-      dateOfBirth: z.union([z.string(), z.null()]).optional().nullable()
-          .transform(str => str && str !== '' && !isNaN(Date.parse(str)) ? new Date(str) : null),
-     pincode: z.string().optional(),
-     state: z.string().optional(),
-     city: z.string().optional(),
-     emergencyName: z.string().optional(),
-     emergencyPhone: z.string().optional(),
-     emergencyRelation: z.string().optional(),
-     planId: z.string().optional().or(z.literal('none')),
-     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]).optional(),
-     customPrice: z.number().nonnegative().optional(),
-     discount: z.number().nonnegative().optional().default(0),
-     amountPaid: z.number().nonnegative().optional(),
-     customEndDate: z.union([z.string(), z.null()]).optional().nullable()
-         .transform(str => str && str !== '' && !isNaN(Date.parse(str)) ? new Date(str) : null),
- })
+// Schema moved to src/modules/members/validator.ts
 
 export const createMember = withAuth(async (context, data: z.input<typeof memberSchema>) => {
     const parsed = memberSchema.safeParse(data)
@@ -51,9 +34,7 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
     const slug = context.gym.slug
 
     try {
-        const existingMember = await prisma.member.findFirst({
-            where: { phone: validatedData.phone, gymId }
-        })
+        const existingMember = await MemberRepository.findByPhone(validatedData.phone, gymId)
         if (existingMember) return { error: 'Member with this phone number already exists in your gym.' }
 
         let finalMemberId: string = ""
