@@ -11,7 +11,8 @@ import {
 } from "recharts"
 
 export function Overview({ data = [] }: { data?: any[] }) {
-    const hasRevenue = data && data.length > 0 && data.some((d: any) => d.total > 0)
+    const safeData = Array.isArray(data) ? data : [];
+    const hasRevenue = safeData.length > 0 && safeData.some((d: any) => d.total > 0)
 
     if (!hasRevenue) {
         return (

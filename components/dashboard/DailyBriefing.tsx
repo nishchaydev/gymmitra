@@ -20,13 +20,13 @@ interface DailyBriefingProps {
 }
 
 export function DailyBriefing({
+    urgentRenewals = [],
+    followUps = [],
+    partialPayments = [],
+    overdueInvoices = [],
+    lowStockItems = [],
     slug,
-    ownerName,
-    urgentRenewals,
-    followUps,
-    partialPayments,
-    overdueInvoices,
-    lowStockItems
+    ownerName
 }: DailyBriefingProps) {
     const [expandedSection, setExpandedSection] = useState<string | null>(null)
 

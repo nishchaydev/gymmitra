@@ -767,8 +767,7 @@ export default async function DashboardPage({
                                     const diff = new Date(sub.endDate).getTime() - new Date().getTime();
                                     return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
                                 }) || [],
-                                reminders: {
-                                    reminders: (() => {
+                                reminders: (() => {
                                         if (!dashboardData.remindersRaw) {
                                             return { birthdays: [], overdue: [], inactive: [], expiring: [] }
                                         }
@@ -831,7 +830,6 @@ export default async function DashboardPage({
                                             expiring: expiring
                                         }
                                     })()
-                                }
                             }}
                         />
                         </div>

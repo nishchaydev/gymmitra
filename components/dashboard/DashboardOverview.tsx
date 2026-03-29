@@ -271,24 +271,24 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                     <DailyBriefing
                         slug={slug}
                         ownerName={gymName?.split(' ')[0] || 'Owner'}
-                        urgentRenewals={d.expiringSubscriptions?.filter((sub: any) => sub.daysLeft <= 1).map((sub: any) => ({
+                        urgentRenewals={(d.expiringSubscriptions || []).filter((sub: any) => sub.daysLeft <= 1).map((sub: any) => ({
                             id: sub.id,
                             name: sub.member?.name || 'Unknown',
                             planName: sub.plan?.name || 'Plan',
                             daysLeft: sub.daysLeft
-                        })) || []}
+                        }))}
                         followUps={d.followUps || []}
-                        partialPayments={d.partialPayments?.map((p: any) => ({
+                        partialPayments={(d.partialPayments || []).map((p: any) => ({
                             id: p.id,
                             memberName: p.member?.name || 'Unknown',
                             amountDue: Number(p.balanceDue),
                             invoiceNumber: p.invoiceNumber
-                        })) || []}
-                        overdueInvoices={d.outstandingInvoices?.map((i: any) => ({
+                        }))}
+                        overdueInvoices={(d.outstandingInvoices || []).map((i: any) => ({
                             id: i.id,
                             name: i.member?.name || 'Unknown',
                             amount: Number(i.total)
-                        })) || []}
+                        }))}
                         lowStockItems={d.lowStockItems || []}
                     />
                 </div>
