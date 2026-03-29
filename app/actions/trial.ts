@@ -119,6 +119,7 @@ export async function createTrialGym(raw: {
             },
         })
     } catch (dbError) {
+        console.error('[Trial Signup] Failed to create GymProfile in database:', dbError)
         // Cleanup orphaned Supabase user
         try { await supabase.auth.admin.deleteUser(userId) } catch { /* best-effort */ }
         return { success: false, error: 'Failed to create gym profile. Please try again.' }

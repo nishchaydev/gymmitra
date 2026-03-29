@@ -7,39 +7,57 @@ async function main() {
 
     // Delete transactional data in order (child tables first)
 
-    // 1. Notifications
-    await prisma.notification.deleteMany({})
-    console.log('✅ Cleared Notifications')
+    await prisma.auditLog.deleteMany({});
+    console.log('✅ Cleared Audit Logs');
 
-    // 2. Invoice Items & Invoices
-    await prisma.invoiceItem.deleteMany({})
-    await prisma.invoice.deleteMany({})
-    console.log('✅ Cleared Invoices')
+    await prisma.notification.deleteMany({});
+    console.log('✅ Cleared Notifications');
 
-    // 3. Sales
-    await prisma.sale.deleteMany({})
-    console.log('✅ Cleared Sales')
+    await prisma.nudgeLog.deleteMany({});
+    console.log('✅ Cleared Nudge Logs');
 
-    // 4. Attendance
-    await prisma.attendance.deleteMany({})
-    console.log('✅ Cleared Attendance Logs')
+    await prisma.expense.deleteMany({});
+    console.log('✅ Cleared Expenses');
 
-    // 5. Member Subscriptions
-    await prisma.memberSubscription.deleteMany({})
-    console.log('✅ Cleared Subscriptions')
+    await prisma.invoiceItem.deleteMany({});
+    await prisma.invoice.deleteMany({});
+    console.log('✅ Cleared Invoices');
 
-    // 6. Members
-    await prisma.member.deleteMany({})
-    console.log('✅ Cleared Members')
+    await prisma.sale.deleteMany({});
+    console.log('✅ Cleared Sales');
 
-    // 7. Products (Optional - user might want to keep inventory)
-    // For a true reset, we clear products too.
-    await prisma.product.deleteMany({})
-    console.log('✅ Cleared Products')
+    await prisma.attendance.deleteMany({});
+    console.log('✅ Cleared Attendance Logs');
 
-    // NOTE: We KEEP GymProfile and MembershipPlan
-    // GymProfile has the user's settings.
-    // MembershipPlans are likely reusable.
+    await prisma.pTSession.deleteMany({});
+    console.log('✅ Cleared PT Sessions');
+
+    await prisma.memberSubscription.deleteMany({});
+    console.log('✅ Cleared Subscriptions');
+
+    await prisma.member.deleteMany({});
+    console.log('✅ Cleared Members');
+
+    await prisma.lead.deleteMany({});
+    console.log('✅ Cleared Leads');
+
+    await prisma.staffMember.deleteMany({});
+    console.log('✅ Cleared Staff Members');
+
+    await prisma.product.deleteMany({});
+    console.log('✅ Cleared Products');
+
+    await prisma.invoiceSequence.deleteMany({});
+    console.log('✅ Cleared Invoice Sequences');
+
+    await prisma.membershipPlan.deleteMany({});
+    console.log('✅ Cleared Membership Plans');
+
+    await prisma.gymProfile.deleteMany({});
+    console.log('✅ Cleared ALL Gym Profiles & Users');
+
+    await prisma.registrationCode.deleteMany({});
+    console.log('✅ Cleared Registration Codes');
 
     console.log('✨ Gym Reset Complete! Ready for Production.')
 }
