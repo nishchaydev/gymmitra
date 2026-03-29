@@ -184,13 +184,14 @@ export async function GET(request: NextRequest) {
             // Improved Churn: Members whose status changed to INACTIVE/EXPIRED in that month
             const churnResult = await (prisma.$queryRaw<ChurnRow[]>`
                 SELECT 
-                    to_char(date_trunc('month', "updatedAt"), 'YYYY-MM-DD') as month,
+                    to_char(date_trunc('month', "churnedAt"), 'YYYY-MM-DD') as month,
                     COUNT(*) as churned,
-                    (SELECT COUNT(*) FROM "Member" m2 WHERE m2."gymId" = ${gym.id} AND m2."createdAt" <= date_trunc('month', "updatedAt") + interval '1 month') as total_active
+                    (SELECT COUNT(*) FROM "Member" m2 WHERE m2."gymId" = ${gym.id} AND m2."createdAt" <= date_trunc('month', "churnedAt") + interval '1 month') as total_active
                 FROM "Member"
                 WHERE "gymId" = ${gym.id}
                     AND status IN ('INACTIVE', 'EXPIRED')
-                    AND "updatedAt" >= ${startDate}
+                    AND "churnedAt" IS NOT NULL
+                    AND "churnedAt" >= ${startDate}
                 GROUP BY 1
                 ORDER BY 1 ASC
             `.catch((err) => {

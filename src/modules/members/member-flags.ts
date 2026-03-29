@@ -98,7 +98,8 @@ export function computeMemberFlags(member: MemberWithSubsForFlags): MemberFlags 
   // Business flags
   const isExpired = effectiveStatus === 'EXPIRED'
   const isExpiringSoon = effectiveStatus === 'EXPIRING_SOON'
-  const hasActivePlan = !!activeSub || (!!member.membershipDuration && !!member.subscriptionEndDate)
+  const legacyActive = !!member.membershipDuration && !!member.subscriptionEndDate && new Date(member.subscriptionEndDate) > now
+  const hasActivePlan = !!activeSub || legacyActive
 
   return {
     isExpired,
@@ -109,6 +110,6 @@ export function computeMemberFlags(member: MemberWithSubsForFlags): MemberFlags 
     hasOutstandingBalance: totalOutstanding > 0,
     totalOutstanding,
     hasActivePlan,
-    currentPlanName: activeSub?.plan?.name || (hasActivePlan ? `${member.membershipDuration} Month Plan` : null),
+    currentPlanName: activeSub?.plan?.name || (legacyActive ? `${member.membershipDuration} Month Plan` : null),
   }
 }

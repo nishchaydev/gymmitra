@@ -21,7 +21,12 @@ export async function DELETE(
         const id = params.id
 
         // Prevent self-deletion
-        if (id === auth.userId) {
+        const staffMember = await prisma.staffMember.findFirst({
+            where: { id, gymId: auth.gym.id },
+            select: { userId: true }
+        })
+        if (!staffMember) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+        if (staffMember.userId === auth.userId) {
             return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
         }
 

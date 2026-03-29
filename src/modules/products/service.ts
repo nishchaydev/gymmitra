@@ -99,7 +99,7 @@ export class ProductService {
                 const stock = row.stock ? parseInt(row.stock) : 0
                 const lowStockAlert = row.lowstockalert ? parseInt(row.lowstockalert) : 10
 
-                await productRepository.create(gymId, {
+                const parsed = productSchema.safeParse({
                     name,
                     category: decodedCategory,
                     description: row.description || undefined,
@@ -107,7 +107,14 @@ export class ProductService {
                     purchasePrice: purchasePrice !== null && !isNaN(purchasePrice) ? purchasePrice : null,
                     stock: isNaN(stock) ? 0 : stock,
                     lowStockAlert: isNaN(lowStockAlert) ? 10 : lowStockAlert
-                }, tx)
+                })
+
+                if (!parsed.success) {
+                    skippedInvalidData++
+                    continue
+                }
+
+                await productRepository.create(gymId, parsed.data, tx)
 
                 imported++
                 existingNames.add(name.toLowerCase())

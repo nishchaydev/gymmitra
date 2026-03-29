@@ -45,8 +45,11 @@ export async function POST(request: NextRequest) {
         })
 
         if (!gym || !gym.email) {
-
             return NextResponse.json({ error: 'Gym or email not found' }, { status: 404 })
+        }
+
+        if (gym.onboardingEmailsSentAt) {
+            return NextResponse.json({ success: true, skipped: 'already sent' })
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gym.emitra.dev'
@@ -155,11 +158,10 @@ export async function POST(request: NextRequest) {
         }
 
 
-        // Temporarily commented out as onboardingEmailsSentAt doesn't exist in Prisma schema
-        // await prisma.gymProfile.update({
-        //     where: { id: gym.id },
-        //     data: { onboardingEmailsSentAt: new Date() }
-        // })
+        await prisma.gymProfile.update({
+            where: { id: gym.id },
+            data: { onboardingEmailsSentAt: new Date() }
+        })
 
         return NextResponse.json({ success: true })
     } catch (e: any) {

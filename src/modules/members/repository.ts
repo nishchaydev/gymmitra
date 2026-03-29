@@ -229,7 +229,7 @@ export class MemberRepository {
                 where: { id: { in: ids } },
                 data: {
                     status: status as any,
-                    ...(churnedAt !== undefined ? { churnedAt } : {})
+                    churnedAt
                 }
             })
         )

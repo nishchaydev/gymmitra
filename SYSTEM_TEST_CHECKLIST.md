@@ -57,7 +57,7 @@
 1. Complete all checks manually in the running app
 2. Mark each item `[x]` as you verify
 3. If ANY item fails: **STOP**, fix the issue, and re-run from the failed section
-4. Only proceed to Phase 4 when ALL items are `[x]`
+4. Only proceed to deployment when ALL items are `[x]`
 
 ## Severity Classification
 

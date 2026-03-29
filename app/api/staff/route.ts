@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
         if (resendKey) {
             try {
                 const resend = new Resend(resendKey)
-                const signupUrl = 'https://gymmitra.com/login?tab=signup' // adjust if needed
+                const { getBaseUrl } = await import('@/lib/utils')
+                const signupUrl = `${getBaseUrl()}/login?tab=signup`
 
                 await resend.emails.send({
                     from: `${auth.gym.name} <hello@mail.emitra.dev>`,

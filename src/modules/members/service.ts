@@ -28,7 +28,7 @@ import { Resend } from 'resend'
 import { WelcomeEmail } from '@/components/emails/WelcomeEmail'
 import React from 'react'
 import { format, addMonths } from 'date-fns'
-import { PaymentStatus, SubscriptionStatus } from '@prisma/client'
+import { PaymentStatus, SubscriptionStatus, PaymentMethod } from '@prisma/client'
 import { templates, getWhatsAppLink } from '@/lib/whatsapp'
 import { getBaseUrl } from '@/lib/utils'
 import { z } from 'zod'
@@ -139,7 +139,7 @@ export class MemberService {
                     amountPaid: amountPaid,
                     balanceDue: balanceDue,
                     paymentStatus: paymentStatus,
-                    paymentMethod: paymentMethod as any,
+                    paymentMethod: paymentMethod as PaymentMethod,
                     shareToken,
                     shareTokenExpiresAt,
                     issueDate: new Date(),
