@@ -263,6 +263,13 @@ export async function adminCreateTrialGym(raw: {
     | { success: true; slug: string; tempPassword: string }
     | { success: false; error: string }
 > {
+    // Admin auth gate — verify caller is an admin
+    const supabaseClient = await createClient()
+    const { data: { user: adminUser } } = await supabaseClient.auth.getUser()
+    if (!adminUser || !ADMIN_EMAILS.includes(adminUser.email ?? '')) {
+        return { success: false, error: 'Unauthorized: Admin access only' }
+    }
+
     const tempPassword = randomBytes(4).toString('hex') // 8-char hex
 
     // Temporarily patch createTrialGym to use our password

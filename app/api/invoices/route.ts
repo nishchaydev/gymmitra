@@ -158,8 +158,8 @@ export async function POST(request: NextRequest) {
                 : 0
 
         // Generate Invoice Number
-        const { generateInvoiceNumber } = await import("@/lib/invoice-server-utils")
-        const invoiceNumber = await generateInvoiceNumber(gym.id)
+        const { BillingRepository } = await import("@/src/modules/billing/repository")
+        const invoiceNumber = await BillingRepository.generateInvoiceNumber(gym.id)
 
         const crypto = await import('crypto')
         const shareToken = crypto.randomBytes(32).toString('hex')

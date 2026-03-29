@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
 import React from 'react'
-import { getMemberStatus, syncMemberStatuses } from '@/lib/utils'
+import { syncMemberStatuses } from '@/src/modules/shared/status-engine'
 
 const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
 const BATCH_SIZE = 100
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
             },
             select: {
                 id: true, name: true, email: true, ownerName: true, slug: true,
-                createdAt: true, isVerified: true
+                createdAt: true, isVerified: true, userId: true
             },
             take: GYMS_PER_RUN,
             orderBy: { createdAt: 'asc' } // Process oldest gyms first
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
                             type: 'EXPIRY_REMINDER',
                             title: 'Membership Expiry Reminder',
                             message: `Sent day-${daysAhead} countdown reminder to memberId=${sub.member.id}`,
-                            userId: gym.id,
+                            userId: gym.userId,
                             gymId: gym.id
                         })
                     }
@@ -200,7 +200,7 @@ export async function GET(request: NextRequest) {
 
                 for (const inv of overdueInvoices) {
                     if (!inv.member?.email) continue
-                    const formattedTotal = formatINR(Number(inv.total))
+                    const formattedTotal = formatINR(Number(inv.balanceDue || inv.total))
 
                     emailBatch.push({
                         from: FROM_EMAIL,
@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
                         type: 'PAYMENT_OVERDUE',
                         title: 'Overdue Payment Reminder Sent',
                         message: `Sent overdue reminder to memberId=${inv.member.id} for ${formattedTotal}`,
-                        userId: gym.id,
+                        userId: gym.userId,
                         gymId: gym.id
                     })
                 }
@@ -271,7 +271,7 @@ export async function GET(request: NextRequest) {
                         type: 'BIRTHDAY',
                         title: 'Birthday Wish Sent',
                         message: `Sent birthday wish to memberId=${member.id}`,
-                        userId: gym.id,
+                        userId: gym.userId,
                         gymId: gym.id
                     })
                 }
@@ -345,7 +345,7 @@ export async function GET(request: NextRequest) {
                         type: 'MONTHLY_SUMMARY',
                         title: 'Daily Briefing Sent',
                         message: `Sent daily briefing email with ${urgentRenewals.length} urgent renewals and ${followUpsToday.length} follow-ups`,
-                        userId: gym.id,
+                        userId: gym.userId,
                         gymId: gym.id
                     })
                 } catch (e) {

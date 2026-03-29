@@ -15,11 +15,15 @@ import { useRouter, useParams } from 'next/navigation'
 export default function NewInvoiceForm({
     members,
     membershipPlans = [],
-    products = []
+    products = [],
+    taxEnabled = true,
+    defaultTaxPercentage = 18
 }: {
     members: any[],
     membershipPlans?: any[],
-    products?: any[]
+    products?: any[],
+    taxEnabled?: boolean,
+    defaultTaxPercentage?: number
 }) {
     const router = useRouter()
     const params = useParams()
@@ -46,6 +50,7 @@ export default function NewInvoiceForm({
     const [amountPaid, setAmountPaid] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
+    const [invoiceTaxPercentage, setInvoiceTaxPercentage] = useState(taxEnabled ? defaultTaxPercentage : 0)
 
     const addItem = () => setItems([...items, { id: crypto.randomUUID(), description: '', quantity: 1, unitPrice: 0, type: 'OTHER' }])
     const removeItem = (id: string) => setItems(items.filter((item) => item.id !== id))
@@ -73,7 +78,9 @@ export default function NewInvoiceForm({
     }
 
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-    const total = Math.max(0, subtotal - discount)
+    const afterDiscount = Math.max(0, subtotal - discount)
+    const taxAmount = taxEnabled ? Math.round((afterDiscount * invoiceTaxPercentage) / 100) : 0
+    const total = afterDiscount + taxAmount
 
     React.useEffect(() => {
         if (paymentStatus === 'PAID') {
@@ -327,6 +334,30 @@ export default function NewInvoiceForm({
                                             className="bg-drift-50 border-drift-200 focus:ring-ion-500 h-10 font-bold text-ion-600"
                                         />
                                     </div>
+                                    {/* Tax section — only visible when gym has tax enabled */}
+                                    {taxEnabled && (
+                                        <div className="space-y-3 pt-3 border-t border-drift-100">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-[10px] font-bold text-drift-500 uppercase tracking-wider">GST Rate (%)</Label>
+                                                <div className="relative w-20">
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        max={100}
+                                                        step={0.5}
+                                                        value={invoiceTaxPercentage}
+                                                        onChange={(e) => setInvoiceTaxPercentage(Math.min(100, Math.max(0, Number(e.target.value))))}
+                                                        className="bg-drift-50 border-drift-200 h-8 text-xs font-bold text-right pr-6"
+                                                    />
+                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-drift-400 text-xs font-bold">%</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-drift-500 font-medium">Tax ({invoiceTaxPercentage}%)</span>
+                                                <span className="text-drift-700 font-bold">₹{taxAmount.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between items-center pt-4 border-t border-drift-200">
                                         <span className="text-drift-900 font-black uppercase tracking-tight">Total Amount</span>
                                         <span className="text-2xl font-black text-ion-600">₹{total.toLocaleString()}</span>
@@ -426,7 +457,7 @@ export default function NewInvoiceForm({
                                                     type: item.type
                                                 })),
                                                 discount,
-                                                taxPercentage: 0,
+                                                taxPercentage: taxEnabled ? invoiceTaxPercentage : 0,
                                             }) as { success: boolean, id?: string, error?: string }
 
                                             if (result?.error) {

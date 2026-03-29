@@ -11,8 +11,6 @@ import { Progress } from "@/components/ui/progress"
 import { activateLicense } from "@/app/actions/saas-actions"
 import { formatDistanceToNow, isAfter } from "date-fns"
 
-interface BillingSettingsProps {}
-
 interface GymData {
     saasPlan?: string
     trialExpiresAt?: string
@@ -21,7 +19,7 @@ interface GymData {
     id?: string
 }
 
-export function BillingSettings({}: BillingSettingsProps) {
+export function BillingSettings() {
     const [loading, setLoading] = useState(true)
     const [gymData, setGymData] = useState<GymData | null>(null)
     const [licenseKey, setLicenseKey] = useState('')
@@ -30,7 +28,7 @@ export function BillingSettings({}: BillingSettingsProps) {
 
     const fetchBillingData = async () => {
         try {
-            const res = await fetch('/api/settings') // Reuse existing settings API
+            const res = await fetch('/api/settings')
             if (res.ok) {
                 const data = await res.json()
                 setGymData(data)
@@ -77,7 +75,6 @@ export function BillingSettings({}: BillingSettingsProps) {
     const expiryDate = gymData?.trialExpiresAt ? new Date(gymData.trialExpiresAt) : null
     const isExpired = expiryDate ? !isAfter(expiryDate, new Date()) : false
     
-    // Calculate progress (Trial starts at 30 days)
     const totalTrialDays = 30
     const remainingDays = expiryDate 
         ? Math.min(totalTrialDays, Math.max(0, Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))))
@@ -147,7 +144,7 @@ export function BillingSettings({}: BillingSettingsProps) {
                                 </div>
                             )}
 
-                            <Separator />
+                            <div className="h-px bg-slate-100 my-4" />
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -275,8 +272,4 @@ export function BillingSettings({}: BillingSettingsProps) {
             </Card>
         </div>
     )
-}
-
-function Separator() {
-    return <div className="h-px bg-slate-100 my-4" />
 }

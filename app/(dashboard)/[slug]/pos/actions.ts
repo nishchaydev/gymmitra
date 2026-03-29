@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
-import { generateInvoiceNumber } from '@/lib/invoice-server-utils'
+import { BillingRepository } from '@/src/modules/billing/repository'
 
 export async function processPosSale(slug: string, data: {
     items: { productId: string; quantity: number; unitPrice: number }[]
@@ -16,16 +16,16 @@ export async function processPosSale(slug: string, data: {
         const auth = await getAuthGym()
         if (!auth) throw new Error("Unauthorized")
 
-        const subtotal = data.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0)
+        // Subtotal calculated below using DB prices, not client prices
         const result = await prisma.$transaction(async (tx) => {
             // Generate inside transaction to prevent invoice race conditions
-            const invoiceNumber = await generateInvoiceNumber(auth.gym.id, tx)
+            const invoiceNumber = await BillingRepository.generateInvoiceNumber(auth.gym.id, tx)
 
             // 1. Fetch and validate all products upfront (ownership + stock) before any writes
             const productIds = data.items.map(i => i.productId)
             const products = await tx.product.findMany({
                 where: { id: { in: productIds }, gymId: auth.gym.id },
-                select: { id: true, name: true, stock: true, gymId: true }
+                select: { id: true, name: true, stock: true, price: true, gymId: true }
             })
 
             // Build a lookup map and validate every requested item
@@ -40,6 +40,12 @@ export async function processPosSale(slug: string, data: {
                 }
             }
 
+            // Calculate subtotal using DB prices (never trust client unitPrice)
+            const trustedSubtotal = data.items.reduce((acc, item) => {
+                const product = productMap.get(item.productId)!
+                return acc + (Number(product.price) * item.quantity)
+            }, 0)
+
             // 2. Create Invoice with real product names as descriptions
             const invoice = await tx.invoice.create({
                 data: {
@@ -48,19 +54,23 @@ export async function processPosSale(slug: string, data: {
                     memberId: data.memberId || null,
                     walkInName: data.walkInName || null,
                     walkInPhone: data.walkInPhone || null,
-                    subtotal,
-                    total: subtotal,
+                    subtotal: trustedSubtotal,
+                    total: trustedSubtotal,
                     paymentStatus: 'PAID',
                     paymentMethod: data.paymentMethod,
                     type: 'PRODUCT',
                     items: {
-                        create: data.items.map(item => ({
-                            description: productMap.get(item.productId)!.name,
-                            amount: item.unitPrice * item.quantity,
-                            quantity: item.quantity,
-                            unitPrice: item.unitPrice,
-                            gymId: auth.gym.id,
-                        }))
+                        create: data.items.map(item => {
+                            const product = productMap.get(item.productId)!
+                            const dbPrice = Number(product.price)
+                            return {
+                                description: product.name,
+                                amount: dbPrice * item.quantity,
+                                quantity: item.quantity,
+                                unitPrice: dbPrice,
+                                gymId: auth.gym.id,
+                            }
+                        })
                     }
                 }
             })

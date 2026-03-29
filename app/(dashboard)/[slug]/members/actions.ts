@@ -16,7 +16,7 @@ import React from 'react'
 import { safeParseDate, isLeapYear, validateDateRange } from '@/lib/utils'
 import { format, parseISO, isValid, addMonths } from 'date-fns'
 import { Prisma, PaymentStatus, SubscriptionStatus } from '@prisma/client'
-import { generateInvoiceNumber } from '@/lib/invoice-server-utils'
+import { BillingRepository } from '@/src/modules/billing/repository'
 import { after } from 'next/server'
 
 const memberSchema = z.object({
@@ -101,7 +101,15 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
 
                 if (!plan) throw new Error("Selected plan not found")
 
-                const startDate = new Date()
+                // Check for existing active subscription to enable stacking
+                const currentSub = await tx.memberSubscription.findFirst({
+                    where: { memberId: member.id, status: 'ACTIVE', endDate: { gte: new Date() } },
+                    orderBy: { endDate: 'desc' }
+                })
+                // Stack: start from current end date if active sub exists, else today
+                const startDate = currentSub?.endDate && currentSub.endDate > new Date()
+                    ? currentSub.endDate
+                    : new Date()
                 const endDate = validatedData.customEndDate
                     ? validatedData.customEndDate
                     : addMonths(startDate, plan.duration)
@@ -128,14 +136,14 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                         gymId,
                         startDate,
                         endDate,
-                        price: plan.price,
+                        price: planPrice,
                         status: 'ACTIVE' as SubscriptionStatus,
                         paymentStatus: paymentStatus
                     }
                 })
 
                 // Generate Invoice
-                const invoiceNumber = await generateInvoiceNumber(gymId, tx)
+                const invoiceNumber = await BillingRepository.generateInvoiceNumber(gymId, tx)
                 const shareToken = crypto.randomBytes(32).toString('hex')
                 const expiryDays = context.gym.invoiceLinkExpiryDays ?? 30
                 const shareTokenExpiresAt = expiryDays > 0

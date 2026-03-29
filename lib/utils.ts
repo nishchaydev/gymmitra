@@ -46,76 +46,7 @@ export function getBaseUrl(): string {
   return "https://gym.emitra.dev";
 }
 
-/**
- * Calculate member status dynamically based on expiry date and last check-in.
- * This is the single source of truth for member status.
- */
-export function getMemberStatus(member: {
-  expiryDate: Date | null;
-  lastCheckIn: Date | null;
-}): 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'INACTIVE' {
-  const today = new Date();
-  const sevenDaysFromNow = addDays(today, 7);
-  
-  if (!member.expiryDate) return 'INACTIVE';
-  if (isBefore(member.expiryDate, today)) return 'EXPIRED';
-  if (isBefore(member.expiryDate, sevenDaysFromNow) || isEqual(member.expiryDate, sevenDaysFromNow)) return 'EXPIRING_SOON';
-  if (member.lastCheckIn && differenceInDays(today, member.lastCheckIn) > 30) return 'INACTIVE';
-  return 'ACTIVE';
-}
 
-/**
- * Sync member statuses in the database with calculated status.
- * This should be run periodically to keep the status field accurate.
- */
-export async function syncMemberStatuses(gymId: string) {
-  // Import prisma here to avoid circular dependency issues
-  const { prisma } = await import('./prisma');
-   
-  // Fetch members with their subscriptions and attendance
-  const membersWithData = await prisma.member.findMany({
-    where: { gymId },
-    select: {
-      id: true,
-      status: true,
-      subscriptions: {
-        where: {
-          status: 'ACTIVE'
-        },
-        orderBy: { endDate: 'desc' },
-        take: 1,
-        select: { endDate: true }
-      },
-      attendance: {
-        orderBy: { date: 'desc' },
-        take: 1,
-        select: { date: true }
-      }
-    }
-  });
-
-  // Update each member's status based on calculated status
-  for (const member of membersWithData) {
-    // Get the active subscription's end date (expiry date)
-    const expiryDate = member.subscriptions[0]?.endDate ?? null;
-    // Get the last check-in date
-    const lastCheckIn = member.attendance[0]?.date ?? null;
-    
-    // Calculate the status based on our business rules
-    const calculatedStatus = getMemberStatus({
-      expiryDate: expiryDate ? new Date(expiryDate) : null,
-      lastCheckIn: lastCheckIn ? new Date(lastCheckIn) : null
-    });
-
-    // Only update if the stored status has changed
-    if (member.status !== calculatedStatus) {
-      await prisma.member.update({
-        where: { id: member.id },
-        data: { status: calculatedStatus as any } // safe: values match MemberStatus enum; run `prisma generate` to fix types
-      });
-    }
-  }
-}
 
 /**
  * Calculate days since a given date.
@@ -160,10 +91,6 @@ export function isBirthdayUpcoming(dob: Date | string | null | undefined, within
   return diff >= 0 && diff <= withinDays;
 }
 
-// Helper function for date equality checks
-function isEqual(date1: Date, date2: Date): boolean {
-  return date1.getTime() === date2.getTime();
-}
 
 /** App version — increment on each release for changelog tracking */
 export const APP_VERSION = '1.0.0';

@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { Loader2, Save, Building2, Users, Upload, QrCode, CreditCard, ClipboardList, Bell } from "lucide-react"
+import { Loader2, Save, Building2, Users, Upload, QrCode, CreditCard, ClipboardList, Bell, Receipt, CheckCircle2, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -51,6 +51,8 @@ const settingsSchema = z.object({
     waRenewalMsg: z.string().max(2000).optional().nullable(),
     waOverdueMsg: z.string().max(2000).optional().nullable(),
     dobMandatory: z.boolean().optional(),
+    taxEnabled: z.boolean().optional(),
+    taxPercentage: z.number().min(0).max(100).optional(),
     slug: z.string()
         .min(2, "Slug must be at least 2 characters")
         .max(100, "Slug must be less than 100 characters")
@@ -90,6 +92,8 @@ export default function SettingsPage() {
             waRenewalMsg: "",
             waOverdueMsg: "",
             dobMandatory: false,
+            taxEnabled: true,
+            taxPercentage: 18,
             slug: "",
         },
     })
@@ -113,6 +117,8 @@ export default function SettingsPage() {
                         waRenewalMsg: data.waRenewalMsg || "",
                         waOverdueMsg: data.waOverdueMsg || "",
                         dobMandatory: data.dobMandatory || false,
+                        taxEnabled: data.taxEnabled ?? true,
+                        taxPercentage: Number(data.taxPercentage ?? 18),
                         slug: data.slug || "",
                     })
                     setGymName(data.name || '')
@@ -359,6 +365,87 @@ export default function SettingsPage() {
                                                     </FormItem>
                                                 )}
                                             />
+
+                                            {/* Tax Configuration Section */}
+                                            <div className="space-y-4 pt-2">
+                                                <Separator />
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Receipt className="w-4 h-4 text-emerald-600" />
+                                                    <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider">Tax Configuration</h3>
+                                                </div>
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="taxEnabled"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
+                                                            <div className="space-y-0.5">
+                                                                <FormLabel className="text-base font-bold text-slate-700">Collect GST on Invoices?</FormLabel>
+                                                                <FormDescription className="text-xs text-slate-500">
+                                                                    {field.value
+                                                                        ? `GST will be auto-applied at ${form.watch('taxPercentage') || 18}% on all new invoices.`
+                                                                        : 'No tax will be added to invoices. Enable this if your gym collects GST.'}
+                                                                </FormDescription>
+                                                            </div>
+                                                            <FormControl>
+                                                                <Switch
+                                                                    checked={field.value}
+                                                                    onCheckedChange={field.onChange}
+                                                                />
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                {form.watch('taxEnabled') && (
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="taxPercentage"
+                                                        render={({ field }) => (
+                                                            <FormItem className="max-w-xs">
+                                                                <FormLabel className="font-bold text-slate-700">Default Tax Rate</FormLabel>
+                                                                <FormControl>
+                                                                    <div className="relative">
+                                                                        <Input
+                                                                            type="number"
+                                                                            min={0}
+                                                                            max={100}
+                                                                            step={0.5}
+                                                                            value={field.value}
+                                                                            onChange={(e) => field.onChange(Math.min(100, Math.max(0, Number(e.target.value))))}
+                                                                            className="pr-8 rounded-xl h-11 bg-slate-50/50 border-slate-200 focus:bg-white transition-all font-bold"
+                                                                        />
+                                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">%</span>
+                                                                    </div>
+                                                                </FormControl>
+                                                                <FormDescription className="text-[10px] font-medium text-slate-400">
+                                                                    Standard GST for fitness services in India is 18%. Override per-invoice is allowed.
+                                                                </FormDescription>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                )}
+
+                                                {/* Status indicator */}
+                                                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
+                                                    form.watch('taxEnabled')
+                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                                                }`}>
+                                                    {form.watch('taxEnabled') ? (
+                                                        <>
+                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                            Tax: Enabled at {form.watch('taxPercentage') || 18}% GST
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <AlertTriangle className="w-3.5 h-3.5" />
+                                                            Tax: Disabled — Invoices without GST
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
 
                                             <FormField
                                                 control={form.control}

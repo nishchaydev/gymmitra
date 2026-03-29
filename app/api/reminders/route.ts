@@ -4,7 +4,7 @@ import { startOfDay, endOfDay, subDays, addDays } from 'date-fns'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
-import { getMemberStatus, daysSince, isBirthdayToday } from '@/lib/utils'
+import { daysSince, isBirthdayToday } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 

@@ -96,7 +96,7 @@ ALTER TABLE "Invoice" ADD COLUMN     "amountPaid" DECIMAL(10,2) NOT NULL DEFAULT
 ADD COLUMN     "balanceDue" DECIMAL(10,2) NOT NULL DEFAULT 0.0;
 
 -- Backfill balanceDue for existing invoices
-UPDATE "Invoice" SET "balanceDue" = "amount";
+UPDATE "Invoice" SET "balanceDue" = "total";
 
 -- AlterTable
 ALTER TABLE "Member" ADD COLUMN     "city" TEXT,

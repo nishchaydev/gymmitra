@@ -30,6 +30,8 @@ export default async function NewInvoicePage() {
                 members={members}
                 membershipPlans={membershipPlans}
                 products={products}
+                taxEnabled={(auth.gym as any).taxEnabled ?? true}
+                defaultTaxPercentage={Number((auth.gym as any).taxPercentage ?? 18)}
             />
         </div>
     )

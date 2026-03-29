@@ -4,7 +4,7 @@ import React from 'react'
 import { Card, CardContent } from "@/components/ui/card"
 import { Zap, Phone, Mail, MapPin } from 'lucide-react'
 import { UpiQrCode } from './UpiQrCode'
-import { generateUpiQrData } from '@/lib/invoice-utils'
+import { generateUpiQrData } from '@/src/modules/billing/utils'
 
 interface InvoiceItem {
     description: string

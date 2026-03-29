@@ -23,6 +23,8 @@ const settingsSchema = z.object({
     waRenewalMsg: z.string().max(2000).optional().nullable(),
     waOverdueMsg: z.string().max(2000).optional().nullable(),
     dobMandatory: z.boolean().optional(),
+    taxEnabled: z.boolean().optional(),
+    taxPercentage: z.number().min(0).max(100).optional(),
     slug: z.string()
         .min(2, "Slug must be at least 2 characters")
         .max(100, "Slug must be less than 100 characters")
@@ -49,7 +51,19 @@ export async function GET() {
         }
         if (rl) return rl
 
-        return NextResponse.json(auth.gym)
+        // Strip sensitive fields from response
+        const {
+            tempPassword: _tp,
+            licenseKey: _lk,
+            userId: _uid,
+            lastBriefingSentAt: _lbs,
+            lastTrialReminderMilestone: _ltr,
+            registrationCodeId: _rci,
+            deletedAt: _da,
+            onboardingEmailsSentAt: _oes,
+            ...safeGymData
+        } = auth.gym
+        return NextResponse.json(safeGymData)
     } catch (error) {
         console.error('Failed to fetch settings:', error)
         return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })

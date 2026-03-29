@@ -204,7 +204,7 @@ export default async function DashboardPage({
             prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } }).catch(() => 0),
             prisma.member.count({ where: { gymId: gym!.id } }).catch(() => 0),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfThisMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
-            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
+            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { balanceDue: true } }).catch(() => ({ _sum: { balanceDue: null } })),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
             prisma.attendance.count({ where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } }).catch(() => 0),
             prisma.memberSubscription.count({ where: { gymId: gym!.id, status: 'ACTIVE', endDate: { gte: today, lte: addDays(today, 7) } } }).catch(() => 0),
@@ -216,7 +216,7 @@ export default async function DashboardPage({
             active_members: BigInt(_activeMembers),
             total_members: BigInt(_totalMembers),
             monthly_revenue: Number(_monthlyRevenueAgg._sum?.total || 0),
-            pending_revenue: Number(_pendingRevenueAgg._sum?.total || 0),
+            pending_revenue: Number(_pendingRevenueAgg._sum?.balanceDue || 0),
             last_month_revenue: Number(_lastMonthRevenueAgg._sum?.total || 0),
             today_checkins: BigInt(_todayCheckinsCount),
             urgent_renewals: BigInt(_urgentRenewalsCount),
@@ -284,14 +284,16 @@ export default async function DashboardPage({
                     GROUP BY 1
                 )
                 SELECT 
-                    to_char(date_trunc('month', m."updatedAt"), 'YYYY-MM-DD') as month,
+                SELECT 
+                    to_char(date_trunc('month', m."churnedAt"), 'YYYY-MM-DD') as month,
                     COUNT(m.id)::bigint as churned,
-                    (SELECT COALESCE(SUM(count), 0)::bigint FROM MonthlyActive WHERE create_month <= date_trunc('month', m."updatedAt") + interval '1 month') as total_active
+                    (SELECT COALESCE(SUM(count), 0)::bigint FROM MonthlyActive WHERE create_month <= date_trunc('month', m."churnedAt") + interval '1 month') as total_active
                 FROM "Member" m
                 WHERE m."gymId" = ${gym!.id}
                     AND m.status IN ('INACTIVE', 'EXPIRED')
-                    AND m."updatedAt" >= ${startDate5Months}
-                GROUP BY date_trunc('month', m."updatedAt")
+                    AND m."churnedAt" IS NOT NULL
+                    AND m."churnedAt" >= ${startDate5Months}
+                GROUP BY date_trunc('month', m."churnedAt")
                 ORDER BY month ASC
             ` as Promise<{ month: string; churned: bigint; total_active: bigint }[]>).catch(() => []),
             // Retention Raw Query
