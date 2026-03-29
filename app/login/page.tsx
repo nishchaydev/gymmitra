@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import Image from "next/image"
-import { AlertCircle, Building2, CheckCircle, Shield, Zap, BarChart3 } from "lucide-react"
+import { AlertCircle, Building2, Quote, Star, Sparkles } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { GymMitraLogo } from '@/components/brand/GymMitraLogo'
 
@@ -27,141 +27,170 @@ export default async function LoginPage(props: {
     const errorMessage = getErrorMessage(searchParams.message)
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-background premium-bg">
-            {/* Background Blobs */}
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob opacity-40" />
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-ocean/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000 opacity-40" />
-            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-midnight/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000 opacity-40" />
+        <div className="min-h-screen relative overflow-hidden bg-[#fafafa] font-display selection:bg-primary/10">
+            {/* Mesh Gradient Background */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-ocean/5 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[100px] animate-pulse delay-700" />
+            </div>
 
-            <div className="relative z-10 flex min-h-screen">
-                {/* Left Side: Marketing Panel (Desktop Only) */}
-                <div className="hidden lg:flex flex-1 flex-col justify-center px-8 xl:px-16 bg-midnight/5 border-r border-border/50 overflow-y-auto py-6">
-                    <div className="max-w-md">
-                        <Link href="/" className="mb-5 block">
-                            <GymMitraLogo iconClassName="w-9 h-9" />
+            <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
+                {/* Left Side: Brand & Social Proof (Asymmetric Layout) */}
+                <div className="hidden lg:flex w-[60%] xl:w-[65%] flex-col justify-between p-8 xl:p-12 relative overflow-hidden">
+                    <div className="relative z-10">
+                        <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                            <GymMitraLogo iconClassName="w-8 h-8" textClassName="text-xl" />
                         </Link>
-                        <h1 className="text-2xl xl:text-3xl font-bold text-midnight leading-snug mb-3">
-                            Welcome Back to <span className="text-primary italic">GymMitra</span>
-                        </h1>
-                        <p className="text-sm text-muted-foreground mb-6">
-                            Your gym management dashboard is waiting. Pick up right where you left off.
-                        </p>
+                    </div>
 
-                        <div className="space-y-3">
-                            {[
-                                { icon: BarChart3, text: "Real-time analytics dashboard" },
-                                { icon: Shield, text: "Secure & encrypted data" },
-                                { icon: Zap, text: "Instant member check-in" },
-                                { icon: CheckCircle, text: "Automated payment reminders" },
-                            ].map((prop, i) => (
-                                <div key={i} className="flex items-center gap-3 group">
-                                    <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center border border-border group-hover:border-primary transition-colors shrink-0">
-                                        <prop.icon className="w-4 h-4 text-ocean" />
-                                    </div>
-                                    <span className="text-sm font-medium text-slate-700">{prop.text}</span>
-                                </div>
-                            ))}
+                    <div className="relative z-10 space-y-6">
+                        <div className="space-y-3 max-w-2xl">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold shadow-sm border border-slate-100 text-slate-600">
+                                <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                <span>The Operating System for Elite Gyms</span>
+                            </div>
+                            <h1 className="text-5xl xl:text-6xl font-bold text-slate-900 leading-[1] tracking-tight">
+                                Management <br /> 
+                                <span className="text-slate-400 font-light italic">on Autopilot.</span>
+                            </h1>
                         </div>
+
+                        {/* Real Customer Spotlight: Tristar Fitness */}
+                        <div className="relative pt-4">
+                             <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-white max-w-xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.06)] relative group">
+                                <div className="absolute -top-6 -right-6 h-20 w-20 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700" />
+                                
+                                <div className="flex gap-1 mb-4">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                    ))}
+                                </div>
+
+                                <Quote className="w-10 h-10 text-slate-100 absolute top-8 right-8 -z-10" />
+                                
+                                <p className="text-xl text-slate-800 font-medium leading-relaxed mb-4">
+                                    &ldquo;Tristar Fitness switched to GymMitra to handle 500+ members without a single manual entry. It saved us 20 hours each month.&rdquo;
+                                </p>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="h-12 w-12 rounded-xl bg-slate-950 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-slate-950/20">
+                                        TF
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-slate-900 leading-none mb-1">Tristar Fitness</div>
+                                        <div className="text-sm text-slate-500 font-medium tracking-tight">Indore, MP</div>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    {/* Footer Branding */}
+                    <div className="relative z-10 flex items-center gap-6 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                        <span>EST. 2026</span>
+                        <div className="h-3 w-px bg-slate-200" />
+                        <span>Built for Performance</span>
                     </div>
                 </div>
 
-                {/* Right Side: Login Form */}
-                <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-12 relative circuit-bg">
-                    <div className="lg:hidden mb-8">
+                {/* Right Side: High-End Login Form Container */}
+                <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-8 xl:p-12 relative bg-white lg:rounded-l-[64px] shadow-[-64px_0_120px_-40px_rgba(0,0,0,0.04)] border-l border-white/50">
+                    <div className="lg:hidden absolute top-8 left-8">
                         <Link href="/">
-                            <GymMitraLogo />
+                            <GymMitraLogo iconClassName="w-8 h-8" />
                         </Link>
                     </div>
 
                     <div className="w-full max-w-md">
-                        <Card className="shadow-2xl border-border/50 glass-card rounded-3xl overflow-hidden">
-                            <CardHeader className="text-center pt-8 pb-4">
-                                <div className="flex justify-center mb-4">
-                                    <div className="bg-primary/10 p-2.5 rounded-full">
-                                        <Image
-                                            src="/icon.png"
-                                            alt="GymMitra Logo"
-                                            width={32}
-                                            height={32}
-                                            className="rounded-lg object-contain"
-                                        />
-                                    </div>
-                                </div>
-                                <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-                                <CardDescription>
-                                    Login to your GymMitra account
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
+                        <div className="mb-6 text-center lg:text-left">
+                            <h2 className="text-3xl font-bold text-slate-900 mb-1">Welcome Back</h2>
+                            <p className="text-slate-500 font-medium">Continue to your dashboard</p>
+                        </div>
+
+                        <Card className="border-none shadow-none bg-transparent">
+                            <CardContent className="p-0">
                                 {errorMessage && (
-                                    <Alert variant="destructive" className="mb-6">
-                                        <AlertCircle className="h-4 w-4" />
-                                        <AlertTitle>Error</AlertTitle>
-                                        <AlertDescription>
+                                    <Alert variant="destructive" className="mb-8 rounded-2xl border-rose-50 bg-rose-50/50 text-rose-900">
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle className="h-4 w-4 text-rose-600" />
+                                            <AlertTitle className="font-bold">Login Failed</AlertTitle>
+                                        </div>
+                                        <AlertDescription className="font-medium text-rose-600/80">
                                             {errorMessage}
                                         </AlertDescription>
                                     </Alert>
                                 )}
-                                <form className="space-y-4 pt-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email</Label>
+
+                                <form className="space-y-6">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="email" className="text-[10px] font-bold text-slate-700 ml-1 uppercase tracking-wider">Email Address</Label>
                                         <Input
                                             id="email"
                                             name="email"
                                             type="email"
                                             required
-                                            placeholder="m@example.com"
-                                            className="h-12 bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
+                                            placeholder="gym@emitra.dev"
+                                            className="h-12 bg-slate-50/50 border-slate-100 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all font-medium"
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="password">Password</Label>
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between ml-1">
+                                            <Label htmlFor="password" className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Password</Label>
+                                            <Link href="/forgot-password" title="sm" className="text-[10px] font-bold text-slate-400 hover:text-primary transition-colors">
+                                                Forgot?
+                                            </Link>
+                                        </div>
                                         <Input
                                             id="password"
                                             name="password"
                                             type="password"
                                             required
-                                            className="h-12 bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
+                                            placeholder="••••••••"
+                                            className="h-12 bg-slate-50/50 border-slate-100 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all font-medium"
                                         />
                                     </div>
-                                    <div className="flex justify-end">
-                                        <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                                            Forgot Password?
-                                        </a>
+
+                                    <div className="pt-1">
+                                        <SubmitButton
+                                            formAction={login}
+                                            className="w-full h-12 rounded-2xl font-bold text-lg bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.98] transition-all shadow-xl shadow-slate-950/20"
+                                            text="Sign In"
+                                            loadingText="Verifying..."
+                                        />
                                     </div>
-                                    <SubmitButton
-                                        formAction={login}
-                                        className="w-full h-12 rounded-xl font-bold text-base premium-gradient text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
-                                        text="Log in"
-                                        loadingText="Logging in..."
-                                    />
                                 </form>
 
-                                <div className="mt-6 text-center text-sm">
-                                    <p className="text-center text-sm text-drift-500 font-medium">
-                                        Don&apos;t have an account?{" "}
-                                        <Link href="/start-trial" className="font-medium text-primary hover:underline transition-colors">
-                                            Start 30-day free trial
-                                        </Link>
+                                <div className="mt-4 border-t border-slate-100 pt-4">
+                                    <p className="text-center text-slate-500 font-semibold mb-3 uppercase tracking-widest text-[9px]">
+                                        New Here?
                                     </p>
+                                    <Link href="/start-trial" className="block w-full">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full h-12 rounded-2xl border-slate-200 hover:bg-slate-50 hover:border-slate-300 font-bold transition-all text-sm"
+                                        >
+                                            Start 30-Day Free Trial
+                                        </Button>
+                                    </Link>
                                 </div>
                             </CardContent>
-                            <CardFooter className="flex flex-col space-y-4 border-t border-white/30 p-4 bg-white/30 backdrop-blur">
+
+                            <CardFooter className="mt-4 p-0 flex flex-col gap-4">
                                 <form className="w-full">
-                                    <Button
-                                        variant="outline"
-                                        className="w-full h-12 rounded-xl border-dashed border-primary/50 hover:bg-primary/5 font-semibold"
+                                    <button
                                         formAction={demoLogin}
+                                        className="w-full text-slate-400 hover:text-primary font-bold text-xs transition-colors py-1"
                                     >
-                                        Try Demo Access (One Click)
-                                    </Button>
+                                        Or Quick Access via Demo &rarr;
+                                    </button>
                                 </form>
-                                <div className="flex items-center justify-center gap-4 text-center text-xs text-muted-foreground">
+
+                                <div className="flex items-center justify-center gap-4 text-slate-300 font-bold text-[10px] uppercase tracking-widest">
                                     <span>&copy; {new Date().getFullYear()} GymMitra</span>
-                                    <span className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
-                                    <div className="flex items-center gap-1.5 font-bold text-slate-400 dark:text-slate-300">
+                                    <div className="h-1 w-1 rounded-full bg-slate-200" />
+                                    <div className="flex items-center gap-1">
                                         <Building2 className="h-3 w-3" />
-                                        <span>Powered by eMitra Technologies</span>
+                                        <span>eMitra Technologies</span>
                                     </div>
                                 </div>
                             </CardFooter>

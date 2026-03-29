@@ -32,5 +32,5 @@ export function AnimatedNumber({ value, className }: AnimatedNumberProps) {
         })
     }, [springValue])
 
-    return <span ref={ref} className={className}>0</span>
+    return <span ref={ref} suppressHydrationWarning className={className}>{value}</span>
 }

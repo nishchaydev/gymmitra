@@ -8,7 +8,7 @@ import { ArrowRight, Calculator } from "lucide-react"
 import Link from "next/link"
 
 export function ROICalculator() {
-    const [adminHours, setAdminHours] = useState([3])
+    const [adminHours, setAdminHours] = useState([1])
 
     // Calculation Logic
     const DAYS_IN_MONTH = 30

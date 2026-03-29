@@ -115,7 +115,6 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
 
     const isPublicPage = pathname === "/" || pathname === "/error"
     if (isPublicPage && !isDemo) return null
-    if (pathname === "/") return null
 
     const routes = [
         { href: `/${slug}/dashboard`, label: "Dashboard", active: pathname === `/${slug}/dashboard` },

@@ -2,9 +2,23 @@
 
 import { CheckCheck, MoreVertical, Phone, Video, ChevronLeft } from "lucide-react"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
+import { motion, useTransform, MotionValue } from "framer-motion"
 
-export function WhatsAppMockup() {
+export function WhatsAppMockup({ progress }: { progress?: MotionValue<number> }) {
     const data = MOCKUP_DATA.whatsapp
+
+    // Fallback for non-scrolly use (mobile/entrance)
+    const defaultProgress = useTransform(new MotionValue(0), [0], [1])
+    const p = progress || defaultProgress
+
+    const msg1Opacity = useTransform(p, [0, 0.2], [0, 1])
+    const msg1Y = useTransform(p, [0, 0.2], [20, 0])
+
+    const msg2Opacity = useTransform(p, [0.3, 0.5], [0, 1])
+    const msg2Y = useTransform(p, [0.3, 0.5], [20, 0])
+
+    const msg3Opacity = useTransform(p, [0.7, 0.9], [0, 1])
+    const msg3Y = useTransform(p, [0.7, 0.9], [20, 0])
 
     return (
         <div className="w-full max-w-sm mx-auto bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border-[6px] border-slate-900 relative">
@@ -57,16 +71,22 @@ export function WhatsAppMockup() {
                 </div>
 
                 {/* Message 1 (Automated) */}
-                <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] self-start z-10 relative group">
+                <motion.div 
+                    style={{ opacity: msg1Opacity, y: msg1Y }}
+                    className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] self-start z-10 relative group"
+                >
                     <p className="text-[13px] text-slate-800 leading-snug">
                         Hi {data.memberName}! 👋 <br /><br />
                         Your membership expires in <span className="font-bold text-red-500">{data.daysRemaining} days</span>. Renew now to keep your streak!
                     </p>
                     <div className="text-[10px] text-slate-400 text-right mt-1">{data.time}</div>
-                </div>
+                </motion.div>
 
                 {/* Message 2 (Rich Media Link) */}
-                <div className="bg-white p-2 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] self-start z-10 relative">
+                <motion.div 
+                    style={{ opacity: msg2Opacity, y: msg2Y }}
+                    className="bg-white p-2 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] self-start z-10 relative"
+                >
                     <div className="bg-slate-50 rounded-xl overflow-hidden mb-2 border border-slate-100">
                         <div className="bg-[#25D366]/10 p-3 flex items-center gap-3">
                             <div className="h-8 w-8 bg-[#25D366] rounded-lg flex items-center justify-center text-white font-bold text-xs">₹</div>
@@ -80,10 +100,13 @@ export function WhatsAppMockup() {
                         Tap to Pay Securely
                     </div>
                     <div className="text-[10px] text-slate-400 text-right mt-1">{data.time}</div>
-                </div>
+                </motion.div>
 
                 {/* Message 3 (User Reply) */}
-                <div className="bg-[#DCF8C6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] self-end z-10">
+                <motion.div 
+                    style={{ opacity: msg3Opacity, y: msg3Y }}
+                    className="bg-[#DCF8C6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] self-end z-10"
+                >
                     <p className="text-[13px] text-slate-800">
                         Done! ✅ Thanks.
                     </p>
@@ -91,7 +114,7 @@ export function WhatsAppMockup() {
                         <span className="text-[10px] text-[#5e8e7b]">10:32 AM</span>
                         <CheckCheck className="h-3.5 w-3.5 text-[#34B7F1]" />
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Input Area */}

@@ -18,15 +18,9 @@ export default function DashboardLoading() {
             </div>
 
             <div className="space-y-4">
-                <div className="flex space-x-2">
-                    <Skeleton className="h-10 w-[100px]" />
-                    <Skeleton className="h-10 w-[100px]" />
-                    <Skeleton className="h-10 w-[100px]" />
-                </div>
-
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {[1, 2, 3, 4].map((i) => (
-                        <Card key={i}>
+                        <Card key={i} className="rounded-3xl">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <Skeleton className="h-4 w-[100px]" />
                                 <Skeleton className="h-5 w-5 rounded-lg" />
@@ -41,23 +35,23 @@ export default function DashboardLoading() {
                     ))}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                    <Card className="col-span-4">
+                <div className="grid gap-4 md:grid-cols-5">
+                    <Card className="md:col-span-2 rounded-3xl">
                         <CardHeader>
                             <Skeleton className="h-6 w-[200px]" />
                             <Skeleton className="h-4 w-[300px]" />
                         </CardHeader>
                         <CardContent className="h-[300px]">
-                            <Skeleton className="h-full w-full rounded-lg" />
+                            <Skeleton className="h-full w-full rounded-2xl" />
                         </CardContent>
                     </Card>
-                    <div className="col-span-3 space-y-4">
-                        <Card>
+                    <div className="md:col-span-3 space-y-4">
+                        <Card className="rounded-3xl">
                             <CardHeader>
                                 <Skeleton className="h-6 w-[150px]" />
                             </CardHeader>
                             <CardContent className="h-[200px]">
-                                <Skeleton className="h-full w-full rounded-lg" />
+                                <Skeleton className="h-full w-full rounded-2xl" />
                             </CardContent>
                         </Card>
                     </div>

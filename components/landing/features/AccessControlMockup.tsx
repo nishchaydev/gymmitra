@@ -2,9 +2,14 @@
 
 import { CheckCircle2, XCircle, Scan, User, Clock, ShieldCheck, AlertCircle } from "lucide-react"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
+import { motion, useTransform, MotionValue } from "framer-motion"
 
-export function AccessControlMockup() {
+export function AccessControlMockup({ progress }: { progress?: MotionValue<number> }) {
     const logs = MOCKUP_DATA.attendance.logs
+
+    // Fallback for non-scrolly use
+    const defaultProgress = useTransform(new MotionValue(0), [0], [1])
+    const p = progress || defaultProgress
 
     return (
         <div className="w-full max-w-sm mx-auto bg-slate-950 rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,195,247,0.15)] border border-slate-800 relative group">
@@ -62,16 +67,28 @@ export function AccessControlMockup() {
 
                     {/* Entry Items */}
                     <div className="space-y-2">
-                        {logs.map((log: any, idx: number) => (
-                            <LogItem
-                                key={idx}
-                                name={log.name}
-                                time={log.time}
-                                status={log.status as any}
-                                reason={log.reason}
-                                img={log.img}
-                            />
-                        ))}
+                        {logs.map((log: any, idx: number) => {
+                            // Stagger logic: each item takes a 30% window with 10% overlap
+                            const start = idx * 0.2
+                            const end = start + 0.3
+                            
+                            // eslint-disable-next-line react-hooks/rules-of-hooks
+                            const opacity = useTransform(p, [start, end], [0, 1])
+                            // eslint-disable-next-line react-hooks/rules-of-hooks
+                            const y = useTransform(p, [start, end], [10, 0])
+
+                            return (
+                                <motion.div key={idx} style={{ opacity, y }}>
+                                    <LogItem
+                                        name={log.name}
+                                        time={log.time}
+                                        status={log.status as any}
+                                        reason={log.reason}
+                                        img={log.img}
+                                    />
+                                </motion.div>
+                            )
+                        })}
                     </div>
                 </div>
             </div>

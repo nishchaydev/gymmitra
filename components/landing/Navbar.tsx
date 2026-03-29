@@ -141,8 +141,9 @@ export function Navbar() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
                     <nav className="flex flex-col gap-4 text-sm font-bold text-drift-700">
-                        <Link href="#products" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-drift-100">Products</Link>
+                        <Link href="#features" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-drift-100">Features</Link>
                         <Link href="#pricing" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-drift-100">Pricing</Link>
+                        <a href="https://emitra.vercel.app" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-drift-100">Company</a>
                     </nav>
                     <div className="mt-auto flex flex-col gap-4 pt-6 border-t border-drift-100">
                         {user ? (

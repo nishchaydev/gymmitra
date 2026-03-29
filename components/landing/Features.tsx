@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
+import { ScrollyFeatureSection } from "@/components/landing/ScrollyFeatureSection"
 import { WhatsAppMockup } from "@/components/landing/features/WhatsAppMockup"
 import { AccessControlMockup } from "@/components/landing/features/AccessControlMockup"
 import { MemberAppMockup } from "@/components/landing/features/MemberAppMockup"
@@ -29,23 +30,29 @@ export function Features() {
     ]
 
     return (
-        <section id="features" className="py-24 bg-slate-50 overflow-hidden">
-            <div className="container px-4 md:px-6 mx-auto space-y-32">
-                <div className="text-center max-w-3xl mx-auto mb-16">
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4 font-display">
-                        The Complete Operating System
-                    </h2>
-                    <p className="text-lg text-slate-500 font-medium">
-                        More than just software. It&apos;s an automated manager for your gym.
-                    </p>
-                </div>
+        <section id="features" className="bg-slate-50 relative">
+            <div className="text-center max-w-3xl mx-auto py-24 pb-0 px-4">
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-6xl mb-6 font-display">
+                    The Complete <br /> <span className="text-primary italic">Operating System.</span>
+                </h2>
+                <p className="text-xl text-slate-500 font-medium leading-relaxed">
+                    More than just software. It&apos;s an automated manager <br className="hidden md:block" /> for your entire gym.
+                </p>
+            </div>
 
+            {/* Desktop: Scrollytelling Section */}
+            <div className="hidden lg:block">
+                <ScrollyFeatureSection />
+            </div>
+
+            {/* Mobile/Tablet: Standard List Section */}
+            <div className="container px-4 md:px-6 mx-auto space-y-32 py-24 pt-12 lg:hidden">
                 {solutions.map((item, i) => (
                     <div key={i} className={`flex flex-col lg:flex-row items-center gap-16 ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
 
                         {/* Content */}
-                        <MotionWrapper direction={i % 2 === 0 ? "left" : "right"} className="flex-1 space-y-8">
-                            <div className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide bg-ocean/10 text-ocean border-ocean/20">
+                        <MotionWrapper direction={i % 2 === 0 ? "left" : "right"} className="flex-1 space-y-8 text-center md:text-left">
+                            <div className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide bg-ocean/10 text-ocean border-ocean/20 mx-auto md:mx-0">
                                 Solution 0{i + 1}
                             </div>
 
@@ -56,7 +63,7 @@ export function Features() {
                                 {item.desc}
                             </p>
 
-                            <ul className="space-y-4">
+                            <ul className="space-y-4 inline-block text-left">
                                 {item.points.map((pt, idx) => (
                                     <li key={idx} className="flex items-center gap-3 text-slate-700 font-semibold">
                                         <div className="h-6 w-6 rounded-full flex items-center justify-center shrink-0 bg-ocean/10 text-ocean">
@@ -70,12 +77,11 @@ export function Features() {
 
                         {/* Visual */}
                         <MotionWrapper direction={i % 2 === 0 ? "right" : "left"} className="flex-1 w-full relative">
-                            {/* Background Elements */}
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] -z-10">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-ocean/20 to-transparent rounded-full blur-[80px] opacity-60" />
                             </div>
 
-                            <div className="relative transform hover:scale-[1.02] transition-transform duration-500 ease-out">
+                            <div className="relative">
                                 {item.component}
                             </div>
                         </MotionWrapper>

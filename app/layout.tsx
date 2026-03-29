@@ -64,7 +64,7 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from "@/components/ui/sonner"
-import { Navbar } from "@/components/Navbar"
+
 import { PwaSyncProvider } from "@/components/PwaSyncProvider"
 
 import { Providers } from "./providers"

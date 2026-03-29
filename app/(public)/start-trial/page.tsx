@@ -1,7 +1,7 @@
 import TrialRequestForm from '@/components/trial/TrialRequestForm'
 import Link from 'next/link'
 import { GymMitraLogo } from '@/components/brand/GymMitraLogo'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle2, Sparkles, Star, Quote, Building2 } from 'lucide-react'
 
 export const metadata = {
     title: 'Start Free Trial | GymMitra',
@@ -10,62 +10,126 @@ export const metadata = {
 
 export default function StartTrialPage() {
     return (
-        <div className="min-h-screen relative overflow-hidden bg-background premium-bg">
-            {/* Background Blobs */}
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob opacity-40"></div>
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-ocean/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000 opacity-40"></div>
-            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-midnight/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000 opacity-40"></div>
+        <div className="min-h-screen relative overflow-hidden bg-[#fafafa] font-display selection:bg-primary/10">
+            {/* Mesh Gradient Background */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-ocean/5 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[100px] animate-pulse delay-700" />
+            </div>
 
-            <div className="relative z-10 flex min-h-screen">
-                {/* Left Side: Value Props (Desktop Only) */}
-                <div className="hidden lg:flex flex-1 flex-col justify-center px-8 xl:px-16 bg-midnight/5 border-r border-border/50 overflow-y-auto py-6">
-                    <div className="max-w-md">
-                        <Link href="/" className="mb-5 block">
-                            <GymMitraLogo iconClassName="w-9 h-9" />
+            <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
+                {/* Left Side: Success Story & Benefits (Asymmetric Layout) */}
+                <div className="hidden lg:flex w-[60%] xl:w-[65%] flex-col justify-between p-8 xl:p-12 relative overflow-hidden">
+                    <div className="relative z-10">
+                        <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                            <GymMitraLogo iconClassName="w-8 h-8" textClassName="text-xl" />
                         </Link>
-                        <h1 className="text-2xl xl:text-3xl font-bold text-midnight leading-snug mb-3">
-                            Transform Your <span className="text-primary italic">Gym</span> into a Digital Powerhouse
-                        </h1>
-                        <p className="text-sm text-muted-foreground mb-6">
-                            Join 500+ gym owners who are scaling their businesses with GymMitra. No credit card, no risk, just results.
-                        </p>
+                    </div>
 
-                        <div className="space-y-3">
+                    <div className="relative z-10 space-y-6">
+                        <div className="space-y-3 max-w-2xl">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold shadow-sm border border-slate-100 text-slate-600">
+                                <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                <span>Free 30-Day Premium Access</span>
+                            </div>
+                            <h1 className="text-5xl xl:text-6xl font-bold text-slate-900 leading-[1] tracking-tight">
+                                Zero Manual Work. <br /> 
+                                <span className="text-slate-400 font-light italic">Starts Today.</span>
+                            </h1>
+                        </div>
+
+                        {/* Real Success Case: Tristar Fitness */}
+                        <div className="relative pt-4">
+                             <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 border border-white max-w-xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.06)] relative group">
+                                <div className="absolute -top-6 -right-6 h-24 w-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700" />
+                                
+                                <div className="flex gap-1 mb-4">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                    ))}
+                                </div>
+
+                                <Quote className="w-10 h-10 text-slate-100 absolute top-8 right-8 -z-10" />
+                                
+                                <div className="space-y-2 mb-4">
+                                    <h3 className="text-lg font-bold text-slate-900 leading-tight italic">
+                                        &ldquo;Pure automation.&rdquo;
+                                    </h3>
+                                    <p className="text-lg text-slate-700 font-medium leading-relaxed">
+                                        Tristar Fitness INDORE saved over 20+ hours in their first month by automating member billing and check-ins.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-8 border-t border-slate-100 pt-8">
+                                    <div>
+                                        <div className="text-2xl font-bold text-primary">20+ Hours</div>
+                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wider">Manual Work Saved</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-primary">0 Errors</div>
+                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wider">In Billing History</div>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+
+                        <div className="space-y-4 max-w-md">
                             {[
                                 "Complete member management",
-                                "Automated payment tracking",
-                                "Diet & workout plan builder",
-                                "Real-time analytics dashboard"
+                                "Automated WhatsApp payment reminders",
+                                "Self-service Member Portal",
+                                "Zero manual entry accounting"
                             ].map((prop, i) => (
-                                <div key={i} className="flex items-center gap-3 group">
-                                    <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center border border-border group-hover:border-primary transition-colors shrink-0">
-                                        <CheckCircle className="w-4 h-4 text-ocean" />
+                                <div key={i} className="flex items-center gap-4 group">
+                                    <div className="h-6 w-6 rounded-full bg-ocean/10 flex items-center justify-center shrink-0 text-ocean group-hover:bg-ocean group-hover:text-white transition-all">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
                                     </div>
-                                    <span className="text-sm font-medium text-slate-700">{prop}</span>
+                                    <span className="text-lg font-bold text-slate-600 transition-colors group-hover:text-slate-900">{prop}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
+
+                    {/* Footer Branding */}
+                    <div className="relative z-10 flex items-center gap-12 text-slate-400 font-bold text-sm uppercase tracking-widest">
+                        <span>30-Day Free Trial</span>
+                        <div className="h-4 w-px bg-slate-200" />
+                        <span>No Credit Card Required</span>
+                    </div>
                 </div>
 
-                {/* Right Side: Form */}
-                <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-12 relative">
-                    <div className="lg:hidden absolute top-8">
+                {/* Right Side: High-End Form Container */}
+                <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-8 relative bg-white lg:rounded-l-[64px] shadow-[-64px_0_120px_-40px_rgba(0,0,0,0.04)] border-l border-white/50">
+                    <div className="lg:hidden absolute top-8 left-8">
                         <Link href="/">
-                            <GymMitraLogo />
+                            <GymMitraLogo iconClassName="w-8 h-8" />
                         </Link>
                     </div>
 
                     <div className="w-full max-w-lg mt-12 lg:mt-0">
+                        <div className="mb-6 text-center lg:text-left">
+                            <h2 className="text-3xl font-bold text-slate-900 mb-1">Start Your Trial</h2>
+                            <p className="text-slate-500 font-medium">Join Tristar and 500+ others scaling today.</p>
+                        </div>
+
                         <TrialRequestForm />
                         
-                        <div className="mt-8 text-center">
-                            <p className="text-sm text-muted-foreground">
+                        <div className="mt-10 border-t border-slate-100 pt-10 text-center">
+                            <p className="text-slate-500 font-medium">
                                 Already have an account?{' '}
-                                <Link href="/login" className="text-primary font-semibold hover:underline">
+                                <Link href="/login" className="text-primary font-bold hover:underline underline-offset-4 decoration-primary/30 transition-all">
                                     Login here
                                 </Link>
                             </p>
+                        </div>
+
+                        <div className="mt-12 flex items-center justify-center gap-4 text-slate-300 font-bold text-[10px] uppercase tracking-widest">
+                            <span>&copy; {new Date().getFullYear()} GymMitra</span>
+                            <div className="h-1 w-1 rounded-full bg-slate-200" />
+                            <div className="flex items-center gap-1 text-slate-300">
+                                <Building2 className="h-3 w-3" />
+                                <span>eMitra Technologies</span>
+                            </div>
                         </div>
                     </div>
                 </div>

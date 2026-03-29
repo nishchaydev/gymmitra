@@ -21,7 +21,7 @@ export function Hero() {
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
+                    transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
                     className="absolute left-0 top-20 z-20 hidden lg:block"
                 >
                     <div className="glass-card p-3 rounded-2xl shadow-xl flex items-center gap-3 pr-6 rotate-[-5deg] hover:rotate-0 transition-transform duration-300">
@@ -39,7 +39,7 @@ export function Hero() {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1, duration: 0.5 }}
+                    transition={{ delay: 1, duration: 0.8, ease: "easeOut" }}
                     className="absolute right-0 top-32 z-20 hidden lg:block"
                 >
                     <div className="bg-midnight text-white p-3 rounded-2xl shadow-xl shadow-midnight/20 flex items-center gap-3 pr-6 border border-white/10 rotate-[5deg] hover:rotate-0 transition-transform duration-300">
@@ -56,7 +56,7 @@ export function Hero() {
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.2, duration: 0.5 }}
+                    transition={{ delay: 1.2, duration: 0.8, ease: "easeOut" }}
                     className="absolute left-8 bottom-32 z-20 hidden lg:block"
                 >
                     <div className="glass-card p-3 rounded-2xl shadow-xl flex items-center gap-3 pr-6 rotate-[3deg] hover:rotate-0 transition-transform duration-300">
@@ -91,7 +91,7 @@ export function Hero() {
                                 </svg>
                             </span>
                             <br />
-                            <span className="text-slate-400">Pure Automation.</span>
+                            <span className="text-slate-400">Zero Manual Work.</span>
                         </h1>
                     </MotionWrapper>
 
@@ -111,11 +111,11 @@ export function Hero() {
                         </Link>
 
                         <button
-                            onClick={() => document.getElementById('demo-video')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="w-full sm:w-auto group flex items-center gap-3 px-8 py-4 rounded-full text-slate-600 font-bold hover:text-primary transition-all justify-center border border-drift-silver bg-white/50 backdrop-blur-sm"
+                            onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="w-full sm:w-auto group flex items-center gap-3 px-8 py-4 rounded-full text-slate-600 font-bold hover:text-primary transition-all justify-center border border-drift-silver bg-white/50 backdrop-blur-sm active:scale-95 transition-all"
                         >
                             <PlayCircle className="w-6 h-6 text-primary" />
-                            <span>Watch Demo</span>
+                            <span>See Live Preview ↓</span>
                         </button>
                     </MotionWrapper>
 

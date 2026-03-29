@@ -2,9 +2,19 @@
 
 import { QrCode, Calendar, User, ChevronRight, Zap, Trophy, Flame } from "lucide-react"
 import { MOCKUP_DATA } from "@/lib/showcase-data"
+import { motion, useTransform, MotionValue } from "framer-motion"
 
-export function MemberAppMockup() {
+export function MemberAppMockup({ progress }: { progress?: MotionValue<number> }) {
     const data = (MOCKUP_DATA as any).memberApp
+
+    // Fallback for non-scrolly use
+    const defaultProgress = useTransform(new MotionValue(0), [0], [1])
+    const p = progress || defaultProgress
+
+    // Animate stats
+    const daysRemaining = useTransform(p, [0, 1], [data.daysRemaining + 5, data.daysRemaining])
+    const streak = useTransform(p, [0.2, 0.8], [data.streak - 2, data.streak])
+    const goalProgress = useTransform(p, [0.3, 0.9], [0, data.goalProgress])
 
     return (
         <div className="w-full max-w-sm mx-auto bg-black rounded-[3rem] overflow-hidden shadow-2xl border-[8px] border-slate-900 relative aspect-[9/18]">
@@ -56,11 +66,13 @@ export function MemberAppMockup() {
                                 </div>
                             </div>
 
-                            <div className="flex items-end justify-between">
-                                <div>
-                                    <div className="text-3xl font-bold tracking-tight">{data.daysRemaining}</div>
-                                    <div className="text-sm text-slate-400">Days Remaining</div>
-                                </div>
+                             <div className="flex items-end justify-between">
+                                 <div>
+                                     <motion.div className="text-3xl font-bold tracking-tight">
+                                         {useTransform(daysRemaining, v => Math.round(v))}
+                                     </motion.div>
+                                     <div className="text-sm text-slate-400">Days Remaining</div>
+                                 </div>
                                 <button className="bg-[#4FC3F7] hover:bg-[#3caae0] text-slate-900 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-lg shadow-[#4FC3F7]/20">
                                     Renew Now
                                 </button>
@@ -95,7 +107,9 @@ export function MemberAppMockup() {
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Streak</span>
                             </div>
-                            <div className="text-xl font-bold text-slate-900">{data.streak} Days</div>
+                             <div className="text-xl font-bold text-slate-900">
+                                 <motion.span>{useTransform(streak, v => Math.round(v))}</motion.span> Days
+                             </div>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100">
                             <div className="flex items-center gap-2 mb-3">
@@ -104,7 +118,17 @@ export function MemberAppMockup() {
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Goal</span>
                             </div>
-                            <div className="text-xl font-bold text-slate-900">{data.goalProgress}%</div>
+                             <div className="flex items-center justify-between mb-2">
+                                 <div className="text-xl font-bold text-slate-900">
+                                     <motion.span>{useTransform(goalProgress, v => Math.round(v))}</motion.span>%
+                                 </div>
+                             </div>
+                             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                 <motion.div 
+                                     style={{ width: useTransform(goalProgress, v => `${v}%`) }}
+                                     className="h-full bg-purple-500" 
+                                 />
+                             </div>
                         </div>
                     </div>
                 </div>

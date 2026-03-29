@@ -11,7 +11,7 @@ export function Pricing() {
         {
             name: "Pay Per Member",
             price: "₹8",
-            description: "Best for gyms under 150 members",
+            description: "Best for gyms under 150 members. (e.g. 50 members = ₹400/mo)",
             isPopular: false,
             features: [
                 "Member management",
@@ -28,7 +28,7 @@ export function Pricing() {
         {
             name: "Annual Flat",
             price: "₹12,000",
-            description: "All features. One payment. No surprises.",
+            description: "All features. One payment. (Best for 125+ members)",
             isPopular: true,
             features: [
                 "Member management",
