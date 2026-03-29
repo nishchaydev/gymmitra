@@ -122,11 +122,16 @@ export async function createTrialGym(raw: {
         console.error('[Trial Signup] Failed to create GymProfile in database:', dbError)
         // Cleanup orphaned Supabase user using Service Role Key
         try { 
-            const adminAuthClient = require('@supabase/supabase-js').createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!
-            )
-            await adminAuthClient.auth.admin.deleteUser(userId) 
+            const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (serviceKey) {
+                const adminAuthClient = require('@supabase/supabase-js').createClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    serviceKey
+                )
+                await adminAuthClient.auth.admin.deleteUser(userId)
+            } else {
+                console.error('[Trial Signup] Missing SUPABASE_SERVICE_ROLE_KEY, unable to delete user.');
+            }
         } catch (cleanupError) { 
             console.error('[Trial Signup] Failed to delete orphaned Auth user:', cleanupError)
         }
@@ -345,11 +350,16 @@ export async function adminCreateTrialGym(raw: {
     } catch (dbError) {
         console.error('[Admin Trial Signup] Failed to create GymProfile in database:', dbError)
         try { 
-            const adminAuthClient = require('@supabase/supabase-js').createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!
-            )
-            await adminAuthClient.auth.admin.deleteUser(userId) 
+            const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (serviceKey) {
+                const adminAuthClient = require('@supabase/supabase-js').createClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    serviceKey
+                )
+                await adminAuthClient.auth.admin.deleteUser(userId)
+            } else {
+                console.error('[Admin Trial Signup] Missing SUPABASE_SERVICE_ROLE_KEY, unable to delete user.');
+            }
         } catch (cleanupError) { 
             console.error('[Admin Trial Signup] Failed to delete orphaned Auth user:', cleanupError)
         }
