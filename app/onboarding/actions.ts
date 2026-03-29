@@ -239,9 +239,9 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             try {
                 const planSchema = z.array(z.object({
                     name: z.string().min(1),
-                    durationMonths: z.number().int().positive(),
-                    price: z.number().nonnegative(),
-                    enabled: z.boolean()
+                    durationMonths: z.coerce.number().int().positive(),
+                    price: z.coerce.number().nonnegative(),
+                    enabled: z.coerce.boolean()
                 }))
 
                 const parsedPlans = JSON.parse(validatedData.plans)
@@ -272,7 +272,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             try {
                 const staffSchema = z.array(z.object({
                     name: z.string().min(1),
-                    phone: z.string().min(10),
+                    phone: z.coerce.string().min(10),
                     email: z.string().email(),
                     role: z.enum(['OWNER', 'MANAGER', 'TRAINER', 'FRONT_DESK']),
                 }))
@@ -304,7 +304,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             try {
                 const memberSchema = z.array(z.object({
                     name: z.string().min(1),
-                    phone: z.string().min(10),
+                    phone: z.coerce.string().min(10),
                     planName: z.string().optional(),
                     joinDate: z.string().optional(),
                 }))
@@ -369,8 +369,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             try {
                 const productSchema = z.array(z.object({
                     name: z.string().min(1),
-                    price: z.number().nonnegative(),
-                    stock: z.number().int().nonnegative(),
+                    price: z.coerce.number().nonnegative(),
+                    stock: z.coerce.number().int().nonnegative(),
                 }))
 
                 const parsedProducts = JSON.parse(validatedData.products)
@@ -437,7 +437,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         // Trigger Gym Activation Webhook (sends Welcome Email + QR Poster PDF)
         try {
             const baseUrl = getBaseUrl()
-            fetch(`${baseUrl}/api/webhooks/gym-activated`, {
+            await fetch(`${baseUrl}/api/webhooks/gym-activated`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -78,7 +78,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             gymId: gym.id,
             deletedAt: null,
         },
-        select: { id: true, name: true, status: true },
+        select: { 
+            id: true, 
+            name: true, 
+            status: true,
+            subscriptions: {
+                where: { status: 'ACTIVE' },
+                orderBy: { endDate: 'desc' },
+                take: 1
+            }
+        },
     })
 
     if (!member) {
@@ -97,6 +106,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         return NextResponse.json(
             { error: statusMessages[member.status] || `Check-in denied. Status: ${member.status}.` },
             { status: 400 }
+        )
+    }
+
+    // Strict expiration check: even if status is ACTIVE, verify subscription end date
+    const activeSub = member.subscriptions[0];
+    if (!activeSub || activeSub.endDate < new Date()) {
+        return NextResponse.json(
+             { error: "Your membership has expired. Please renew at the reception." },
+             { status: 400 }
         )
     }
 

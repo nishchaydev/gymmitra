@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
     // Ensure Next picks this repo as workspace root even if parent has lockfiles.
     root: __dirname,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
   async headers() {
     return [
       {
