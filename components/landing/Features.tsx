@@ -30,7 +30,7 @@ export function Features() {
     ]
 
     return (
-        <section id="features" className="bg-slate-50 relative">
+        <section className="bg-slate-50 relative">
             <div className="text-center max-w-3xl mx-auto py-24 pb-0 px-4">
                 <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-6xl mb-6 font-display">
                     The Complete <br /> <span className="text-primary italic">Operating System.</span>
