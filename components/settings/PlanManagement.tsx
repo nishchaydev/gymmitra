@@ -99,8 +99,8 @@ export function PlanManagement() {
         setFormData({
             name: plan.name,
             description: plan.description || '',
-            duration: plan.duration,
-            price: plan.price
+            duration: Number(plan.duration),
+            price: Number(plan.price)
         })
         setEditingId(plan.id)
         setIsFormOpen(true)

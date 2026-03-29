@@ -20,6 +20,17 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-unused-vars": "warn",
       "react-hooks/exhaustive-deps": "warn"
     }
+  },
+  {
+    files: ["app/api/**/*.ts", "app/(dashboard)/**/actions.ts", "app/(dashboard)/**/route.ts"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        "paths": [{
+          "name": "@/lib/prisma",
+          "message": "Direct Prisma usage is banned here. Please use the appropriate service/repository pattern from @/src/modules instead."
+        }]
+      }]
+    }
   }
 ]);
 

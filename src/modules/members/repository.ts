@@ -84,12 +84,12 @@ export class MemberRepository {
     }
 
     /**
-     * Update an existing member
+     * Update an existing member (scoped to gymId for tenant isolation)
      */
-    static async updateMember(id: string, data: any, tx?: Prisma.TransactionClient) {
+    static async updateMember(id: string, gymId: string, data: any, tx?: Prisma.TransactionClient) {
         const client = tx || prisma
-        return client.member.update({
-            where: { id },
+        return client.member.updateMany({
+            where: { id, gymId },
             data
         })
     }

@@ -116,9 +116,9 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
         <div className="relative space-y-6">
             <div className="group relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white/70 backdrop-blur-[40px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)] transition-all">
                 {isFetching && !isLoading && (
-                    <div className="absolute top-6 right-8 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-ion-500/10 border border-ion-500/20 backdrop-blur-md animate-in fade-in slide-in-from-top-2">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-ion-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-ion-600">Updating...</span>
+                    <div className="absolute top-6 right-8 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 backdrop-blur-md animate-in fade-in slide-in-from-top-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-600" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary-600">Updating...</span>
                     </div>
                 )}
 
@@ -128,12 +128,12 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                             <h2 className="text-4xl font-black tracking-tight text-slate-900">Members Directory</h2>
                             <p className="text-slate-500 text-sm font-semibold flex items-center gap-2">
                                 <span className={cn(
-                                    "inline-flex items-center justify-center w-6 h-6 rounded-lg bg-ion-500/10 text-ion-600 ring-1 ring-ion-500/20 shadow-sm shadow-ion-500/5",
+                                    "inline-flex items-center justify-center w-6 h-6 rounded-lg bg-primary-500/10 text-primary-600 ring-1 ring-primary-500/20 shadow-sm shadow-primary-500/5",
                                     isFetching && "animate-pulse"
                                 )}>
                                     <Users className="w-3.5 h-3.5" />
                                 </span>
-                                Empowering <span className="text-ion-600 font-bold">{totalCount}</span> active members to reach their full potential.
+                                Empowering <span className="text-primary-600 font-bold">{totalCount}</span> active members to reach their full potential.
                             </p>
                         </div>
                         <Button
@@ -142,7 +142,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                             className="h-12 px-6 rounded-2xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 hover:border-slate-300 font-black text-slate-700 transition-all shrink-0 ring-1 ring-slate-100/50 active:scale-95"
                             onClick={() => window.open('/api/reports/download?type=members', '_blank')}
                         >
-                            <Download className="mr-2.5 h-4 w-4 text-ion-500" />
+                            <Download className="mr-2.5 h-4 w-4 text-primary-500" />
                             EXPORT DIRECTORY
                         </Button>
                     </div>
@@ -200,7 +200,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                                                 <p className="text-slate-500 font-medium max-w-xs mx-auto">{emptyDescription}</p>
                                                             </div>
                                                             {showAction && (
-                                                                <Button asChild className="h-12 px-8 rounded-2xl bg-ion-600 hover:bg-ion-700 shadow-xl shadow-ion-600/20 font-black">
+                                                                <Button asChild className="h-12 px-8 rounded-2xl bg-primary-600 hover:bg-primary-700 shadow-xl shadow-primary-600/20 font-black">
                                                                     <Link href={`/${slug}/members/new`}>Register First Member</Link>
                                                                 </Button>
                                                             )}
@@ -223,12 +223,12 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                                     <div className="flex items-center gap-5">
                                                         <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-900 to-black flex items-center justify-center text-white shadow-xl shadow-slate-900/10 group-hover/row:scale-110 transition-transform duration-500 overflow-hidden ring-4 ring-white">
                                                             <UserCircle className="w-8 h-8 text-slate-400 group-hover/row:text-slate-200 transition-colors" />
-                                                            <div className="absolute inset-0 bg-gradient-to-tr from-ion-500/20 to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-500" />
+                                                            <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/20 to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-500" />
                                                         </div>
                                                         <Link href={`/${slug}/members/${member.id}`} className="block space-y-1">
-                                                            <p className="font-black text-slate-900 group-hover/row:text-ion-600 transition-colors leading-tight text-lg">{member.name}</p>
+                                                            <p className="font-black text-slate-900 group-hover/row:text-primary-600 transition-colors leading-tight text-lg">{member.name}</p>
                                                             <div className="flex items-center gap-1.5 opacity-60">
-                                                                <ShieldCheck className="w-3 h-3 text-ion-500" />
+                                                                <ShieldCheck className="w-3 h-3 text-primary-500" />
                                                                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">ID: {member.id.substring(0, 8)}</p>
                                                             </div>
                                                         </Link>
@@ -237,10 +237,10 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                                 <TableCell className="py-6 px-8">
                                                     <div className="flex flex-col gap-1">
                                                         <div className="flex items-center gap-2 group/phone cursor-pointer">
-                                                            <div className="p-1.5 rounded-lg bg-slate-100 text-slate-400 group-hover/phone:bg-ion-500 group-hover/phone:text-white transition-all duration-300">
+                                                            <div className="p-1.5 rounded-lg bg-slate-100 text-slate-400 group-hover/phone:bg-primary-500 group-hover/phone:text-white transition-all duration-300">
                                                                 <Phone className="w-3.5 h-3.5" />
                                                             </div>
-                                                            <span className="text-sm font-bold text-slate-700 group-hover/phone:text-ion-600 transition-colors">{member.phone}</span>
+                                                            <span className="text-sm font-bold text-slate-700 group-hover/phone:text-primary-600 transition-colors">{member.phone}</span>
                                                         </div>
                                                         <p className="text-[10px] font-black text-slate-300 ml-8 uppercase tracking-tighter">Verified Connect</p>
                                                     </div>
@@ -329,19 +329,19 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                                 </TableCell>
                                                 <TableCell className="py-6 px-8 text-right">
                                                     <div className="flex items-center justify-end gap-3 opacity-0 group-hover/row:opacity-100 translate-x-4 group-hover/row:translate-x-0 transition-all duration-500 ease-out">
-                                                        {member.status === 'ACTIVE' && (
+                                                        {['ACTIVE', 'EXPIRED'].includes(member.status) && (
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
-                                                                className="h-10 px-5 rounded-2xl border-ion-200 text-ion-600 bg-white hover:bg-ion-600 hover:text-white hover:border-ion-600 font-black text-[10px] uppercase tracking-widest transition-all shadow-sm ring-1 ring-ion-100/50 active:scale-95"
+                                                                className="h-10 px-5 rounded-2xl border-primary-200 text-primary-600 bg-white hover:bg-primary-600 hover:text-white hover:border-primary-600 font-black text-[10px] uppercase tracking-widest shadow-sm ring-1 ring-primary-100/50 active:scale-[0.97] transition-all duration-200 ease-out"
                                                                 asChild
                                                             >
                                                                 <Link href={`/${slug}/invoices/new?memberId=${member.id}`}>RENEW PLAN</Link>
                                                             </Button>
                                                         )}
-                                                        <Button variant="ghost" size="sm" asChild className="h-11 w-11 p-0 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:bg-slate-50 transition-all active:scale-95 group/btn">
+                                                        <Button variant="ghost" size="sm" asChild className="h-11 w-11 p-0 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:bg-slate-50 active:scale-[0.97] transition-all duration-200 ease-out group/btn">
                                                             <Link href={`/${slug}/members/${member.id}`} title="View Member Details">
-                                                                <ArrowRight className="w-5 h-5 text-slate-400 group-hover/btn:text-ion-600 transition-colors" />
+                                                                <ArrowRight className="w-5 h-5 text-slate-400 group-hover/btn:text-primary-600 transition-colors duration-200" />
                                                             </Link>
                                                         </Button>
                                                     </div>
@@ -384,9 +384,9 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                                 <UserCircle className="w-10 h-10 text-slate-400" />
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="font-black text-slate-900 text-xl leading-tight group-active:text-ion-600 transition-colors">{member.name}</p>
+                                                <p className="font-black text-slate-900 text-xl leading-tight group-active:text-primary-600 transition-colors">{member.name}</p>
                                                 <div className="flex items-center gap-2 text-slate-400">
-                                                    <ShieldCheck className="w-3 h-3 text-ion-500/60" />
+                                                    <ShieldCheck className="w-3 h-3 text-primary-500/60" />
                                                     <span className="text-[10px] font-black uppercase tracking-widest">{member.id.substring(0, 8)}</span>
                                                 </div>
                                             </div>
@@ -410,7 +410,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                         <div className="space-y-1">
                                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Join Date</p>
                                             <div className="flex items-center gap-2">
-                                                <Calendar className="w-3.5 h-3.5 text-ion-500" />
+                                                <Calendar className="w-3.5 h-3.5 text-primary-500" />
                                                 <p className="text-sm font-black text-slate-900">
                                                     {(() => {
                                                         const date = new Date(member.joiningDate || member.createdAt);
@@ -460,14 +460,14 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                         <Button
                                             variant="outline"
                                             asChild
-                                            className="grow h-14 rounded-[1.75rem] border-slate-200 font-black text-slate-700 shadow-sm active:bg-slate-50 text-xs uppercase tracking-[0.1em] hover:bg-slate-50 ring-1 ring-slate-100/50 transition-all"
+                                            className="grow h-14 rounded-[1.75rem] border-slate-200 font-black text-slate-700 shadow-sm text-xs uppercase tracking-[0.1em] hover:bg-slate-50 ring-1 ring-slate-100/50 active:scale-[0.97] transition-all duration-200 ease-out"
                                         >
                                             <Link href={`/${slug}/members/${member.id}`}>Details</Link>
                                         </Button>
-                                        {member.status === 'ACTIVE' && (
+                                        {['ACTIVE', 'EXPIRED'].includes(member.status) && (
                                             <Button
                                                 asChild
-                                                className="grow h-14 rounded-[1.75rem] bg-ion-600 hover:bg-ion-700 font-black text-white shadow-xl shadow-ion-600/30 text-xs uppercase tracking-[0.1em] active:scale-95 transition-all"
+                                                className="grow h-14 rounded-[1.75rem] bg-primary-600 hover:bg-primary-700 font-black text-white shadow-xl shadow-primary-600/30 text-xs uppercase tracking-[0.1em] active:scale-[0.97] transition-all duration-200 ease-out"
                                             >
                                                 <Link href={`/${slug}/invoices/new?memberId=${member.id}`}>Renew</Link>
                                             </Button>
@@ -483,11 +483,11 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                 {(totalCount > take || page > 1) && (
                     <div className="px-10 pb-12 flex flex-col sm:flex-row items-center justify-between gap-8 border-t border-slate-100/80 pt-12 mt-4">
                         <p className="text-[11px] uppercase font-black tracking-[0.2em] text-slate-400">
-                            Showing <span className="text-slate-900 border-b-2 border-ion-500 pb-0.5">{Math.min(totalCount, (page - 1) * take + 1)}</span>
+                            Showing <span className="text-slate-900 border-b-2 border-primary-500 pb-0.5">{Math.min(totalCount, (page - 1) * take + 1)}</span>
                             <span className="mx-3 text-slate-300">to</span>
                             <span className="text-slate-900 border-b-2 border-slate-900 pb-0.5">{Math.min(page * take, totalCount)}</span>
                             <span className="mx-3 text-slate-300">of</span>
-                            <span className="text-ion-600 font-black px-2 py-0.5 rounded-md bg-ion-50 border border-ion-100">{totalCount} Members</span>
+                            <span className="text-primary-600 font-black px-2 py-0.5 rounded-md bg-primary-50 border border-primary-100">{totalCount} Members</span>
                         </p>
                         <Pagination className="justify-center sm:justify-end bg-slate-100/60 rounded-3xl p-1.5 border border-slate-200/50 backdrop-blur-xl shadow-inner-white ring-1 ring-white/50">
                             <PaginationContent className="gap-2">
@@ -496,7 +496,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                         href={page === 1 ? "#" : createPageUrl(page - 1)}
                                         className={cn(
                                             "rounded-2xl border-transparent h-11 px-6 transition-all font-black text-[10px] uppercase tracking-widest",
-                                            page === 1 ? "opacity-30 pointer-events-none" : "hover:bg-white text-slate-600 hover:text-ion-600 shadow-sm"
+                                            page === 1 ? "opacity-30 pointer-events-none" : "hover:bg-white text-slate-600 hover:text-primary-600 shadow-sm"
                                         )}
                                     />
                                 </PaginationItem>
@@ -513,7 +513,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                                     className={cn(
                                                         "rounded-2xl border-transparent h-11 w-11 p-0 font-black text-xs transition-all duration-300 shadow-sm",
                                                         p === page ?
-                                                            "bg-ion-600 text-white shadow-xl shadow-ion-600/30 hover:bg-ion-700 hover:text-white" :
+                                                            "bg-primary-600 text-white shadow-xl shadow-primary-600/30 hover:bg-primary-700 hover:text-white" :
                                                             "hover:bg-white text-slate-500 hover:text-slate-900 hover:shadow-md border border-slate-200/0 hover:border-slate-200"
                                                     )}
                                                 >
@@ -529,7 +529,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
                                         href={totalCount <= page * take ? "#" : createPageUrl(page + 1)}
                                         className={cn(
                                             "rounded-2xl border-transparent h-11 px-6 transition-all font-black text-[10px] uppercase tracking-widest",
-                                            totalCount <= page * take ? "opacity-30 pointer-events-none" : "hover:bg-white text-slate-600 hover:text-ion-600 shadow-sm"
+                                            totalCount <= page * take ? "opacity-30 pointer-events-none" : "hover:bg-white text-slate-600 hover:text-primary-600 shadow-sm"
                                         )}
                                     />
                                 </PaginationItem>

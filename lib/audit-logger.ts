@@ -12,8 +12,10 @@ export type AuditAction =
     | 'ONBOARDING_COMPLETE'
     | 'PLAN_UPGRADE'
     | 'CHECKIN_MEMBER'
+    | 'CREATE_PRODUCT'
     | 'UPDATE_PRODUCT'
     | 'DELETE_PRODUCT'
+    | 'IMPORT_PRODUCTS'
     | 'IMPORT_MEMBERS'
     | 'CREATE_LEAD'
     | 'CONVERT_LEAD';

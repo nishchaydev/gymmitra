@@ -4,22 +4,8 @@ import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
-
-const memberUpdateSchema = z.object({
-    name: z.string().min(2).optional(),
-    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits").optional(),
-    email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.string().transform(str => new Date(str)).optional(),
-    status: z.enum(['ACTIVE', 'INACTIVE', 'EXPIRED', 'PENDING']).optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    pincode: z.string().optional(),
-    emergencyName: z.string().optional(),
-    emergencyPhone: z.string().optional(),
-    emergencyRelation: z.string().optional(),
-    notes: z.string().optional(),
-})
+import { MemberService } from '@/src/modules/members/service'
+import { memberUpdateSchema } from '@/src/modules/members/validator'
 
 export async function GET(
     request: NextRequest,
@@ -86,37 +72,15 @@ export async function PUT(
         const body = await request.json()
         const validatedData = memberUpdateSchema.parse(body)
 
-        if (validatedData.name) {
-            validatedData.name = validatedData.name
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                .join(' ')
-        }
-
-        // Ensure member belongs to gym before updating
-        const count = await prisma.member.count({ where: { id, gymId: auth.gym.id } })
-        if (count === 0) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
-
-        const member = await prisma.member.update({
-            where: { id },
-            data: validatedData
-        })
-
-        // Audit Log
         const ipHeader = request.headers.get('x-forwarded-for')
         const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
-        await recordAuditLog({
-            gymId: auth.gym.id,
-            actorId: auth.userId,
-            action: 'UPDATE_MEMBER',
-            entityType: 'MEMBER',
-            entityId: id,
-            ipAddress: ip,
-            payload: { changedFields: Object.keys(validatedData) }
-        }).catch(err => console.error('recordAuditLog UPDATE_MEMBER', err))
+        const result = await MemberService.updateMember(id, auth.gym.id, auth.userId, ip, validatedData)
+        if (result.error) {
+            return NextResponse.json({ error: result.error }, { status: result.status })
+        }
 
-        return NextResponse.json(member)
+        return NextResponse.json({ success: true })
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(

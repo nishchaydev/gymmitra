@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
-
-const productSchema = z.object({
-    name: z.string().min(2),
-    category: z.enum(['PROTEIN', 'SUPPLEMENT', 'MERCHANDISE', 'OTHER']),
-    description: z.string().optional(),
-    price: z.number().min(0),
-    purchasePrice: z.number().min(0).optional().nullable(),
-    stock: z.number().int().min(0),
-    lowStockAlert: z.number().int().min(0).default(10),
-    image: z.string().optional(),
-    gymId: z.string().min(1).optional(), // Optional since we get it from auth
-})
+import { productService } from '@/src/modules/products/service'
+import { productRepository } from '@/src/modules/products/repository'
+import { productSchema } from '@/src/modules/products/validator'
 
 export async function GET(request: NextRequest) {
     try {
@@ -41,33 +31,11 @@ export async function GET(request: NextRequest) {
         const gym = auth.gym
 
         const { searchParams } = new URL(request.url)
-        const q = searchParams.get('q')
-        const category = searchParams.get('category')
+        const q = searchParams.get('q') || undefined
+        const category = searchParams.get('category') || undefined
         const lowStock = searchParams.get('lowStock') === 'true'
 
-        const whereClause: any = {
-            isActive: true,
-            gymId: gym.id
-        }
-
-        if (q) {
-            whereClause.name = { contains: q, mode: 'insensitive' }
-        }
-
-        if (category && category !== 'ALL') {
-            whereClause.category = category
-        }
-
-        const products = await prisma.product.findMany({
-            where: whereClause,
-            orderBy: { name: 'asc' }
-        })
-
-        // In-memory filter for low stock since Prisma doesn't support field comparison in where clause easily
-        if (lowStock) {
-            const lowStockProducts = products.filter(p => p.stock <= p.lowStockAlert)
-            return NextResponse.json(lowStockProducts)
-        }
+        const products = await productRepository.findAll(gym.id, { q, category, lowStock })
 
         return NextResponse.json(products)
     } catch (error) {
@@ -113,14 +81,11 @@ export async function POST(request: NextRequest) {
         } catch (e) {
             return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 })
         }
-        const validatedData = productSchema.parse(body)
 
-        const product = await prisma.product.create({
-            data: {
-                ...validatedData,
-                gymId: gym.id // Securely use the gymId from auth
-            } as any
-        })
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
+
+        const product = await productService.createProduct(gym.id, body, auth.userId, ip)
 
         return NextResponse.json(product, { status: 201 })
     } catch (error) {

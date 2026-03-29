@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
-import { recordAuditLog } from '@/lib/audit-logger'
-
-const productUpdateSchema = z.object({
-    name: z.string().min(2).optional(),
-    category: z.enum(['PROTEIN', 'SUPPLEMENT', 'MERCHANDISE', 'OTHER']).optional(),
-    description: z.string().optional(),
-    price: z.number().min(0).optional(),
-    purchasePrice: z.number().min(0).optional().nullable(),
-    stock: z.number().int().min(0).optional(),
-    lowStockAlert: z.number().int().min(0).optional(),
-    image: z.string().optional(),
-})
+import { productService } from '@/src/modules/products/service'
+import { productRepository } from '@/src/modules/products/repository'
+import { productUpdateSchema } from '@/src/modules/products/validator'
 
 export async function GET(
     request: NextRequest,
@@ -29,15 +19,9 @@ export async function GET(
         const rl = await guardRateLimit(100, `${auth.userId}:products:get`)
         if (rl) return rl
 
-        const product = await prisma.product.findFirst({
-            where: {
-                id,
-                gymId: auth.gym.id,
-                isActive: true
-            }
-        })
+        const product = await productRepository.findById(id, auth.gym.id)
 
-        if (!product) {
+        if (!product || !product.isActive) {
             return NextResponse.json(
                 { error: 'Product not found' },
                 { status: 404 }
@@ -74,43 +58,21 @@ export async function PUT(
         const body = await request.json()
         const validatedData = productUpdateSchema.parse(body)
 
-        const updateResult = await prisma.product.updateMany({
-            where: {
-                id,
-                gymId: auth.gym.id,
-                isActive: true
-            },
-            data: validatedData
-        })
-
-        if (updateResult.count === 0) {
-            return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 })
-        }
-
-        // Audit Log
         const ipHeader = request.headers.get('x-forwarded-for')
         const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
-        await recordAuditLog({
-            gymId: auth.gym.id,
-            actorId: auth.userId,
-            action: 'UPDATE_PRODUCT',
-            entityType: 'PRODUCT',
-            entityId: id,
-            ipAddress: ip,
-            payload: { changedFields: Object.keys(validatedData) }
-        }).catch(err => console.error('recordAuditLog UPDATE_PRODUCT', err))
 
-        const product = await prisma.product.findUnique({
-            where: { id }
-        })
+        const product = await productService.updateProduct(id, auth.gym.id, validatedData, auth.userId, ip)
 
         return NextResponse.json(product)
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(
                 { error: 'Validation failed', details: error.issues },
                 { status: 400 }
             )
+        }
+        if (error.message === 'Product not found or unauthorized') {
+            return NextResponse.json({ error: error.message }, { status: 404 })
         }
         console.error(`Failed to update product ${id}:`, error)
         return NextResponse.json(
@@ -137,33 +99,16 @@ export async function DELETE(
         const roleCheck = checkRole(auth, ['OWNER'])
         if (roleCheck) return roleCheck
 
-        const result = await prisma.product.updateMany({
-            where: {
-                id,
-                gymId: auth.gym.id,
-                isActive: true
-            },
-            data: { isActive: false }
-        })
-
-        if (result.count === 0) {
-            return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 })
-        }
-
-        // Audit Log
         const ipHeader = request.headers.get('x-forwarded-for')
         const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
-        await recordAuditLog({
-            gymId: auth.gym.id,
-            actorId: auth.userId,
-            action: 'DELETE_PRODUCT',
-            entityType: 'PRODUCT',
-            entityId: id,
-            ipAddress: ip
-        }).catch(err => console.error('recordAuditLog DELETE_PRODUCT', err))
+
+        await productService.deleteProduct(id, auth.gym.id, auth.userId, ip)
 
         return NextResponse.json({ message: 'Product deleted successfully' })
-    } catch (error) {
+    } catch (error: any) {
+        if (error.message === 'Product not found or unauthorized') {
+            return NextResponse.json({ error: error.message }, { status: 404 })
+        }
         console.error(`Failed to delete product ${id}:`, error)
         return NextResponse.json(
             { error: 'Failed to delete product' },

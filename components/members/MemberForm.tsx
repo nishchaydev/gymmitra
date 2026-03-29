@@ -101,6 +101,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             planId: "none",
             paymentMethod: "CASH" as const,
             discount: 0,
+            customPrice: "",
+            amountPaid: "",
             customEndDate: "",
         }
 
@@ -119,7 +121,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             planId: "none",
             paymentMethod: "CASH" as const,
             discount: 0,
-            amountPaid: undefined,
+            customPrice: "",
+            amountPaid: "",
             customEndDate: "",
         }
     }, [member, searchParams])
@@ -454,7 +457,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                             <FormItem>
                                                 <FormLabel>Pincode</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="110001" maxLength={6} {...field} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
+                                                    <Input placeholder="110001" maxLength={6} {...field} value={field.value || ""} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -518,7 +521,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                             <FormItem>
                                                 <FormLabel>City</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Delhi" {...field} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
+                                                    <Input placeholder="Delhi" {...field} value={field.value || ""} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -542,7 +545,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                             <FormItem>
                                                 <FormLabel>Name</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Contact Name" {...field} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
+                                                    <Input placeholder="Contact Name" {...field} value={field.value || ""} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -555,7 +558,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                             <FormItem>
                                                 <FormLabel>Phone</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="9876543210" {...field} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
+                                                    <Input placeholder="9876543210" {...field} value={field.value || ""} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -568,7 +571,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel>Relation</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Spouse, Parent..." {...field} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
+                                                    <Input placeholder="Spouse, Parent..." {...field} value={field.value || ""} className="h-11 bg-white/50 border-slate-200 rounded-xl" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

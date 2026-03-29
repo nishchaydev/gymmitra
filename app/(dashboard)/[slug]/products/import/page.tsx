@@ -124,9 +124,9 @@ export default function ProductImportPage() {
         setIsImporting(true)
         try {
             const res = await importProducts(preview)
-            if (res.error) {
+            if ('error' in res && res.error) {
                 toast.error(res.error)
-            } else {
+            } else if ('imported' in res) {
                 setResult({
                     imported: res.imported || 0,
                     skippedDuplicate: res.skippedDuplicate || 0,

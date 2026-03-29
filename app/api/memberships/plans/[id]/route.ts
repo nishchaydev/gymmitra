@@ -6,8 +6,8 @@ import { getAuthGym, checkRole } from '@/lib/auth'
 const planSchema = z.object({
     name: z.string().min(2),
     description: z.string().optional(),
-    duration: z.number().min(1),
-    price: z.number().min(0),
+    duration: z.coerce.number().min(1),
+    price: z.coerce.number().min(0),
     features: z.array(z.string()).optional(),
 })
 
@@ -23,7 +23,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (roleCheck) return roleCheck
 
         const body = await request.json()
+        console.log("PUT Plan body:", body)
         const validatedData = planSchema.parse(body)
+        console.log("PUT Plan validatedData:", validatedData)
 
         // Verify ownership
         const existingPlan = await prisma.membershipPlan.findUnique({
@@ -40,8 +42,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         })
 
         return NextResponse.json(plan)
-    } catch (error) {
+    } catch (error: any) {
+        console.error("Plan PUT Error:", error)
+        require('fs').writeFileSync('n:\\PROGRAMS\\GIT and GITHUB\\github Desktop\\EMITRA\\GYM MITRA\\gym-mitra-erp\\plan_error.log', JSON.stringify({ body: await request.text().catch(()=>''), error: error.issues || error.message }, null, 2))
         if (error instanceof z.ZodError) {
+            console.error("Zod Validation Failed:", JSON.stringify(error.issues, null, 2))
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
         }
         return NextResponse.json({ error: 'Failed to update plan' }, { status: 500 })

@@ -118,7 +118,7 @@ export default function NewInvoiceForm({
             <div className="max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-ion-100 flex items-center justify-center text-ion-600">
+                        <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600">
                             <ReceiptText className="w-6 h-6" />
                         </div>
                         <div>
@@ -134,14 +134,14 @@ export default function NewInvoiceForm({
                         <Card className="bg-white border-drift-200 shadow-sm border-t-4 border-t-ion-500">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-drift-900">
-                                    <User className="w-5 h-5 text-ion-500" />
+                                    <User className="w-5 h-5 text-primary-500" />
                                     Member (Optional)
                                 </CardTitle>
                                 <CardDescription className="text-drift-500">Select a member to associate this invoice with</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Select value={selectedMember} onValueChange={setSelectedMember}>
-                                    <SelectTrigger className="bg-drift-50 border-drift-200 text-drift-900 h-12 focus:ring-ion-500">
+                                    <SelectTrigger className="bg-drift-50 border-drift-200 text-drift-900 h-12 focus:ring-primary-500">
                                         <SelectValue placeholder="Walk-in Customer" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white border-drift-200 text-drift-900">
@@ -161,7 +161,7 @@ export default function NewInvoiceForm({
                                                     value={walkInName}
                                                     onChange={(e) => setWalkInName(e.target.value)}
                                                     placeholder="Nishchay Gupta"
-                                                    className="bg-white border-drift-200 focus:ring-ion-500"
+                                                    className="bg-white border-drift-200 focus:ring-primary-500"
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
@@ -171,7 +171,7 @@ export default function NewInvoiceForm({
                                                         value={walkInPhone}
                                                         onChange={(e) => setWalkInPhone(e.target.value)}
                                                         placeholder="9876543210"
-                                                        className="bg-white border-drift-200 focus:ring-ion-500"
+                                                        className="bg-white border-drift-200 focus:ring-primary-500"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -180,7 +180,7 @@ export default function NewInvoiceForm({
                                                         value={walkInEmail}
                                                         onChange={(e) => setWalkInEmail(e.target.value)}
                                                         placeholder="john@example.com"
-                                                        className="bg-white border-drift-200 focus:ring-ion-500"
+                                                        className="bg-white border-drift-200 focus:ring-primary-500"
                                                     />
                                                 </div>
                                             </div>
@@ -190,7 +190,7 @@ export default function NewInvoiceForm({
                                                     value={walkInAddress}
                                                     onChange={(e) => setWalkInAddress(e.target.value)}
                                                     placeholder="123 Main St, City"
-                                                    className="bg-white border-drift-200 focus:ring-ion-500"
+                                                    className="bg-white border-drift-200 focus:ring-primary-500"
                                                 />
                                             </div>
                                         </div>                </div>
@@ -203,7 +203,7 @@ export default function NewInvoiceForm({
                             <CardHeader className="flex flex-row items-center justify-between pb-4">
                                 <div>
                                     <CardTitle className="flex items-center gap-2 text-drift-900">
-                                        <ShoppingBag className="w-5 h-5 text-ion-500" />
+                                        <ShoppingBag className="w-5 h-5 text-primary-500" />
                                         Invoice Items
                                     </CardTitle>
                                     <CardDescription className="text-drift-500">Add memberships, products or other items</CardDescription>
@@ -212,7 +212,7 @@ export default function NewInvoiceForm({
                                     variant="outline"
                                     size="sm"
                                     onClick={addItem}
-                                    className="border-ion-500 text-ion-600 hover:bg-ion-50 font-bold"
+                                    className="border-primary-500 text-primary-600 hover:bg-primary-50 font-bold"
                                 >
                                     <Plus className="w-4 h-4 mr-1" /> Add Item
                                 </Button>
@@ -291,7 +291,7 @@ export default function NewInvoiceForm({
                                                         type="number"
                                                         value={item.unitPrice}
                                                         onChange={(e) => updateItem(item.id, 'unitPrice', Math.max(0, parseFloat(e.target.value) || 0))}
-                                                        className="bg-white border-drift-200 pl-8 h-10 font-black text-ion-600"
+                                                        className="bg-white border-drift-200 pl-8 h-10 font-black text-primary-600"
                                                     />
                                                 </div>
                                             </div>
@@ -331,7 +331,7 @@ export default function NewInvoiceForm({
                                             type="number"
                                             value={discount}
                                             onChange={(e) => setDiscount(Number(e.target.value))}
-                                            className="bg-drift-50 border-drift-200 focus:ring-ion-500 h-10 font-bold text-ion-600"
+                                            className="bg-drift-50 border-drift-200 focus:ring-primary-500 h-10 font-bold text-primary-600"
                                         />
                                     </div>
                                     {/* Tax section — only visible when gym has tax enabled */}
@@ -360,7 +360,7 @@ export default function NewInvoiceForm({
                                     )}
                                     <div className="flex justify-between items-center pt-4 border-t border-drift-200">
                                         <span className="text-drift-900 font-black uppercase tracking-tight">Total Amount</span>
-                                        <span className="text-2xl font-black text-ion-600">₹{total.toLocaleString()}</span>
+                                        <span className="text-2xl font-black text-primary-600">₹{total.toLocaleString()}</span>
                                     </div>
 
                                     {/* Payment Status */}
@@ -419,7 +419,7 @@ export default function NewInvoiceForm({
                                         <Button
                                             type="button"
                                             variant={paymentMethod === 'CASH' ? 'default' : 'outline'}
-                                            className={paymentMethod === 'CASH' ? 'bg-ion-500 text-white hover:bg-ion-600' : 'border-drift-200 hover:bg-drift-50 text-drift-700'}
+                                            className={paymentMethod === 'CASH' ? 'bg-primary-500 text-white hover:bg-primary-600' : 'border-drift-200 hover:bg-drift-50 text-drift-700'}
                                             onClick={() => setPaymentMethod('CASH')}
                                         >
                                             Cash
@@ -427,7 +427,7 @@ export default function NewInvoiceForm({
                                         <Button
                                             type="button"
                                             variant={paymentMethod === 'UPI' ? 'default' : 'outline'}
-                                            className={paymentMethod === 'UPI' ? 'bg-ion-500 text-white hover:bg-ion-600' : 'border-drift-200 hover:bg-drift-50 text-drift-700'}
+                                            className={paymentMethod === 'UPI' ? 'bg-primary-500 text-white hover:bg-primary-600' : 'border-drift-200 hover:bg-drift-50 text-drift-700'}
                                             onClick={() => setPaymentMethod('UPI')}
                                         >
                                             UPI
@@ -436,7 +436,7 @@ export default function NewInvoiceForm({
                                 </div>
 
                                 <Button
-                                    className="w-full bg-ion-500 hover:bg-ion-600 text-white font-black h-12 text-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                                    className="w-full bg-primary-600 hover:bg-primary-700 text-white font-black h-14 rounded-2xl text-sm sm:text-base shadow-xl shadow-primary-600/30 active:scale-[0.97] transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
                                     disabled={isSubmitting || !isValid}
                                     onClick={async () => {
                                         setIsSubmitting(true)

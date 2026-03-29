@@ -629,7 +629,7 @@ export default function OnboardingForm() {
                                             <Label htmlFor="gymLogo" className="text-sm font-bold text-drift-700">Gym Logo (Optional)</Label>
                                             <div className="flex items-center gap-6">
                                                 <div className="relative group">
-                                                    <div className={`w-28 h-28 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${logoPreview ? 'border-ion-500 bg-white' : 'border-drift-200 bg-drift-50 hover:bg-drift-100 hover:border-ion-300'}`}>
+                                                    <div className={`w-28 h-28 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${logoPreview ? 'border-primary-500 bg-white' : 'border-drift-200 bg-drift-50 hover:bg-drift-100 hover:border-primary-300'}`}>
                                                         {logoPreview ? (
                                                             <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-contain" />
                                                         ) : (

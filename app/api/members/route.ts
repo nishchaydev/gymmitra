@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getAuthGym } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { MemberStatus } from "@prisma/client";
-import { addMonths } from "date-fns";
+import { MemberService } from "@/src/modules/members/service";
+import { memberSchema } from "@/src/modules/members/validator";
 
 export async function GET(req: Request) {
   try {
@@ -136,75 +137,39 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const auth = await getAuthGym();
-    if (!auth) {
+    if (!auth || !auth.gym || typeof auth.userId !== 'string') {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const body = await req.json();
-    const {
-      name,
-      phone,
-      email,
-      dateOfBirth,
-      joiningDate,
-      pincode,
-      state,
-      city,
-      emergencyName,
-      emergencyPhone,
-      emergencyRelation,
-      planId,
-      amountPaid,
-    } = body;
+    const validatedData = memberSchema.parse(body);
 
-    if (!name || !phone || !dateOfBirth) {
-      return new NextResponse("Missing required fields", { status: 400 });
+    const headerList = req.headers;
+    const ipHeader = headerList.get('x-forwarded-for')
+    const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
+
+    const result = await MemberService.createMember(
+        auth.gym.id,
+        { 
+            name: auth.gym.name, 
+            phone: auth.gym.phone,
+            address: '', // Since the GET endpoint is not passing full gym settings, provide fallbacks
+            invoiceLinkExpiryDays: 30
+        },
+        auth.userId,
+        ip,
+        validatedData
+    );
+
+    if (result.error) {
+        return new NextResponse(result.error, { status: 400 });
     }
 
-    const member = await prisma.member.create({
-      data: {
-        name,
-        phone,
-        email,
-        dateOfBirth: new Date(dateOfBirth),
-        joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
-        pincode,
-        state,
-        city,
-        emergencyName: emergencyName || "N/A",
-        emergencyPhone: emergencyPhone || "N/A",
-        emergencyRelation: emergencyRelation || "N/A",
-        gymId: auth.gym.id,
-      },
-    });
-
-    if (planId) {
-      const plan = await prisma.membershipPlan.findUnique({
-        where: { id: planId },
-      });
-
-      if (plan) {
-        const startDate = joiningDate ? new Date(joiningDate) : new Date();
-        const endDate = addMonths(startDate, plan.duration);
-
-        await prisma.memberSubscription.create({
-          data: {
-            memberId: member.id,
-            planId: plan.id,
-            gymId: auth.gym.id,
-            startDate,
-            endDate,
-            price: plan.price,
-            status: "ACTIVE",
-            paymentStatus:
-              amountPaid >= Number(plan.price) ? "PAID" : "PARTIAL",
-          },
-        });
-      }
+    return NextResponse.json({ id: result.id, success: true });
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+        return new NextResponse("Validation error: " + error.message, { status: 400 });
     }
-
-    return NextResponse.json(member);
-  } catch (error) {
     console.error("[MEMBERS_POST]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
