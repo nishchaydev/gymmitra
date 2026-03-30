@@ -10,7 +10,7 @@
  *   4. All DB access goes through MemberRepository (no direct Prisma)
  */
 
-import { differenceInDays, addDays, isBefore } from 'date-fns'
+import { addDays } from 'date-fns'
 
 export type MemberStatusType = 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'INACTIVE'
 
@@ -28,21 +28,31 @@ export interface MemberStatusInput {
  * 
  * Logic:
  *   - No expiry date → INACTIVE
- *   - Past expiry → EXPIRED
+ *   - Past expiry (IST date comparison) → EXPIRED
  *   - Expiring within 7 days → EXPIRING_SOON
- *   - No check-in for 30+ days → INACTIVE
  *   - Otherwise → ACTIVE
+ * 
+ * Uses IST date-string comparison to prevent midnight-boundary bugs
+ * (e.g., member marked EXPIRED at 9 AM on their last day).
  */
 export function getMemberStatus(member: MemberStatusInput): MemberStatusType {
-  const today = new Date()
-  const sevenDaysFromNow = addDays(today, 7)
-
   if (!member.expiryDate) return 'INACTIVE'
-  if (isBefore(member.expiryDate, today)) return 'EXPIRED'
-  if (isBefore(member.expiryDate, sevenDaysFromNow) || isDateEqual(member.expiryDate, sevenDaysFromNow)) return 'EXPIRING_SOON'
-  // Note: 30-day inactivity is tracked in analytics/insights only.
-  // A paid member with a valid subscription must never be blocked at kiosk.
+
+  const todayStr = toISTDateString(new Date())
+  const expiryStr = toISTDateString(member.expiryDate)
+  const sevenDaysStr = toISTDateString(addDays(new Date(), 7))
+
+  if (expiryStr < todayStr) return 'EXPIRED'
+  if (expiryStr <= sevenDaysStr) return 'EXPIRING_SOON'
   return 'ACTIVE'
+}
+
+/**
+ * Convert a Date to YYYY-MM-DD string in IST timezone.
+ * Used for date-only comparisons that avoid midnight-boundary bugs.
+ */
+function toISTDateString(d: Date): string {
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
 }
 
 /**
@@ -85,9 +95,4 @@ export async function syncMemberStatuses(gymId: string) {
   if (updates.length > 0) {
     await MemberRepository.batchUpdateStatuses(updates)
   }
-}
-
-// Internal helper
-function isDateEqual(date1: Date, date2: Date): boolean {
-  return date1.getTime() === date2.getTime()
 }

@@ -19,7 +19,7 @@ export class AttendanceService {
             throw new Error('Member or Staff not found in this gym. Please check the ID.')
         }
 
-        if (member && member.status !== 'ACTIVE') {
+        if (member && !['ACTIVE', 'EXPIRING_SOON'].includes(member.status)) {
             throw new Error(`Check-in denied. Member status is ${member.status}.`)
         }
 

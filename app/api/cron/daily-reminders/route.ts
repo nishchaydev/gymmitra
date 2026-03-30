@@ -13,7 +13,7 @@ const BATCH_SIZE = 100
 const GYMS_PER_RUN = 5 // Process only 5 gyms per cron invocation
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // Vercel Hobby plan max
+export const maxDuration = 10 // Vercel Hobby plan limit
 
 // ── Currency formatter ──────────────────────────────────────────────
 function formatINR(amount: number): string {
@@ -118,9 +118,6 @@ export async function GET(request: NextRequest) {
               try {
                   // Step 0: Sync member statuses before sending any reminders
                   await syncMemberStatuses(gym.id);
-                  
-                  // Step 1: Refresh materialized view for dashboard summary
-                  await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_summary`;
                   
                   // ── Collect all emails for this gym ───────────────────
                  const emailBatch: CreateEmailOptions[] = []

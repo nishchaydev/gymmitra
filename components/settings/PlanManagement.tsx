@@ -180,7 +180,7 @@ export function PlanManagement() {
                         <div key={plan.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50">
                             <div>
                                 <h4 className="font-bold text-slate-900">{plan.name}</h4>
-                                <p className="text-sm text-slate-500">{plan.duration} Month{plan.duration !== 1 ? 's' : ''} · Suggested ₹{plan.price}</p>
+                                <p className="text-sm text-slate-500">{plan.duration} Month{plan.duration !== 1 ? 's' : ''} · Suggested ₹{Number(plan.price).toLocaleString('en-IN')}</p>
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="ghost" size="icon" onClick={() => openEdit(plan)}>

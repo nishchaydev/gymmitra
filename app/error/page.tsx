@@ -8,9 +8,38 @@ import { useSearchParams } from "next/navigation"
 
 import { Suspense } from "react"
 
+// Allowlist of safe error messages to prevent XSS via ?message= param
+const SAFE_MESSAGES: Record<string, string> = {
+    'auth_failed': 'Authentication failed. Please try again.',
+    'session_expired': 'Your session has expired. Please log in again.',
+    'access_denied': 'Access denied. You do not have permission.',
+    'email_not_verified': 'Please verify your email before continuing.',
+    'account_disabled': 'Your account has been disabled. Contact support.',
+    'invalid_credentials': 'Invalid email or password.',
+    'rate_limited': 'Too many attempts. Please wait before trying again.',
+}
+
+const DEFAULT_MESSAGE = "Something went wrong during the authentication process."
+
+function sanitizeMessage(raw: string | null): string {
+    if (!raw) return DEFAULT_MESSAGE
+
+    // Check allowlist first
+    if (SAFE_MESSAGES[raw]) return SAFE_MESSAGES[raw]
+
+    // Strip HTML tags and limit length for safety
+    const cleaned = raw
+        .replace(/<[^>]*>/g, '')     // Strip HTML
+        .replace(/[^\w\s.,!?-]/g, '') // Only safe chars
+        .trim()
+        .slice(0, 200)
+
+    return cleaned || DEFAULT_MESSAGE
+}
+
 function ErrorContent() {
     const searchParams = useSearchParams()
-    const message = searchParams.get('message') || "Something went wrong during the authentication process."
+    const message = sanitizeMessage(searchParams.get('message'))
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

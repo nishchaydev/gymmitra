@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
@@ -124,7 +125,7 @@ export async function createTrialGym(raw: {
         try { 
             const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
             if (serviceKey) {
-                const adminAuthClient = require('@supabase/supabase-js').createClient(
+                const adminAuthClient = createServiceClient(
                     process.env.NEXT_PUBLIC_SUPABASE_URL!,
                     serviceKey
                 )
@@ -147,7 +148,6 @@ export async function createTrialGym(raw: {
         email,
         phone: data.phone,
         city: data.city,
-        password: autoPassword,
         slug,
     }).catch(() => { /* swallow — non-critical */ })
 
@@ -221,7 +221,6 @@ async function sendAdminNotification(params: {
     email: string
     phone: string
     city: string
-    password: string
     slug: string
 }) {
     if (ADMIN_EMAILS.length === 0) return
@@ -247,7 +246,7 @@ async function sendAdminNotification(params: {
                     <tr><td style="padding: 6px 12px; color: #64748b;">Phone</td><td style="padding: 6px 12px; font-weight: 600;">${params.phone}</td></tr>
                     <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Email</td><td style="padding: 6px 12px; font-weight: 600;">${params.email}</td></tr>
                     <tr><td style="padding: 6px 12px; color: #64748b;">City</td><td style="padding: 6px 12px; font-weight: 600;">${params.city}</td></tr>
-                    <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Password</td><td style="padding: 6px 12px; font-weight: 600; font-family: monospace;">${params.password}</td></tr>
+                    <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Password</td><td style="padding: 6px 12px; font-weight: 600; font-family: monospace;">[ENCRYPTED — check DB tempPassword]</td></tr>
                     <tr><td style="padding: 6px 12px; color: #64748b;">Slug</td><td style="padding: 6px 12px;"><a href="${baseUrl}/${params.slug}/dashboard">${params.slug}</a></td></tr>
                     <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Signed Up</td><td style="padding: 6px 12px;">${now}</td></tr>
                 </table>
@@ -352,7 +351,7 @@ export async function adminCreateTrialGym(raw: {
         try { 
             const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
             if (serviceKey) {
-                const adminAuthClient = require('@supabase/supabase-js').createClient(
+                const adminAuthClient = createServiceClient(
                     process.env.NEXT_PUBLIC_SUPABASE_URL!,
                     serviceKey
                 )

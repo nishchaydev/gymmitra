@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER'])
         if (roleCheck) return roleCheck
 
         const rl = await guardRateLimit(50, `${auth.userId}:staff:get`)
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         const auth = await getAuthGym()
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER'])
         if (roleCheck) return roleCheck
 
         const rl = await guardRateLimit(50, `${auth.userId}:staff:post`)

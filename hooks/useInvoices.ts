@@ -25,5 +25,6 @@ export function useInvoices(options: UseInvoicesOptions = {}) {
             }
             return response.json()
         },
+        staleTime: 30_000, // 30 seconds — prevents refetch on tab-switch/focus
     })
 }

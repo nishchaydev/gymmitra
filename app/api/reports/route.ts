@@ -11,7 +11,7 @@ async function getAuthenticatedGym() {
     if (!auth || !auth.gym || typeof auth.userId !== 'string') return null
 
     // Check role using standard helper
-    const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+    const roleCheck = checkRole(auth, ['OWNER', 'MANAGER'])
     if (roleCheck) return null
 
     return auth

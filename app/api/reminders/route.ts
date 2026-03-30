@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         const auth = await getAuth()
         if (!auth || !auth.gym || typeof auth.userId !== 'string') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const roleCheck = checkRole(auth, ['OWNER', 'ADMIN'])
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER'])
         if (roleCheck) return roleCheck
 
         // Fix 13 request: rate limit 10

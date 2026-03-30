@@ -123,7 +123,7 @@ export default async function ExpensesPage({
             <div className="grid gap-4 md:grid-cols-3">
                 <Card className="border border-drift-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] rounded-[14px]">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">Total Expenses</CardTitle>
+                        <CardTitle className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">All-Time Expenses</CardTitle>
                         <div className="bg-[#E6F0FF] rounded-lg p-2.5">
                             <TrendingDown className="h-4 w-4 text-[#0066FF]" />
                         </div>

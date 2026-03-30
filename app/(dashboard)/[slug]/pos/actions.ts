@@ -75,15 +75,17 @@ export async function processPosSale(slug: string, data: {
                 }
             })
 
-            // 3. Decrement stock for each product atomically
-            await Promise.all(
-                data.items.map(item =>
-                    tx.product.update({
-                        where: { id: item.productId },
-                        data: { stock: { decrement: item.quantity } }
-                    })
-                )
-            )
+            // 3. Decrement stock for each product atomically — guard against going negative
+            for (const item of data.items) {
+                const result = await tx.product.updateMany({
+                    where: { id: item.productId, stock: { gte: item.quantity } },
+                    data: { stock: { decrement: item.quantity } }
+                })
+                if (result.count === 0) {
+                    const product = productMap.get(item.productId)!
+                    throw new Error(`Insufficient stock for ${product.name}. Another sale may have just completed.`)
+                }
+            }
 
             return invoice
         })

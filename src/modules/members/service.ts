@@ -278,6 +278,11 @@ export class MemberService {
     }
 
     static async importMembers(data: any[], gymId: string, userId: string, ip: string) {
+        const MAX_IMPORT_ROWS = 500
+        if (data.length > MAX_IMPORT_ROWS) {
+            return { error: `Import limit exceeded: maximum ${MAX_IMPORT_ROWS} rows allowed per import. You sent ${data.length}.` }
+        }
+
         let imported = 0
         let skippedDuplicate = 0
         let skippedPlanNotFound = 0

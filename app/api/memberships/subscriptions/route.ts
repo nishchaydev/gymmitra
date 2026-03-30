@@ -102,7 +102,13 @@ export async function POST(request: NextRequest) {
             return [sub]
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
 
-        return NextResponse.json(subscription, { status: 201 })
+        return NextResponse.json({
+            ...subscription,
+            _hint: {
+                invoiceRequired: true,
+                message: 'Subscription created without an invoice. Create one via POST /api/invoices or redirect staff to /invoices/new?memberId=...',
+            }
+        }, { status: 201 })
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })

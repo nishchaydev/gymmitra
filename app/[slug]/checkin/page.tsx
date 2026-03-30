@@ -279,12 +279,25 @@ export default function CheckInPage() {
                                 </button>
 
                                 {isReturningMember && savedPhone && phone !== savedPhone && (
-                                    <button
-                                        onClick={() => { setPhone(savedPhone); handleCheckIn(savedPhone); }}
-                                        className="w-full text-center text-slate-500 hover:text-white font-bold text-sm uppercase tracking-widest pt-2 transition-colors"
-                                    >
-                                        Use previous: {savedPhone.slice(0, 3)}...{savedPhone.slice(-4)}
-                                    </button>
+                                    <div className="flex flex-col items-center gap-2 pt-2">
+                                        <button
+                                            onClick={() => { setPhone(savedPhone); handleCheckIn(savedPhone); }}
+                                            className="w-full text-center text-slate-500 hover:text-white font-bold text-sm uppercase tracking-widest transition-colors"
+                                        >
+                                            Use previous: {savedPhone.slice(0, 3)}...{savedPhone.slice(-4)}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                try { localStorage.removeItem(storageKey) } catch {}
+                                                setSavedPhone(null)
+                                                setIsReturningMember(false)
+                                                setPhone("")
+                                            }}
+                                            className="text-slate-700 hover:text-rose-400 font-bold text-[10px] uppercase tracking-widest transition-colors"
+                                        >
+                                            Not you? Forget me
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </motion.div>

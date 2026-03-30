@@ -97,7 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         )
     }
 
-    if (member.status !== "ACTIVE") {
+    if (member.status !== "ACTIVE" && member.status !== "EXPIRING_SOON") {
         const statusMessages: Record<string, string> = {
             EXPIRED: "Your membership has expired. Please renew at the reception.",
             INACTIVE: "Your account is inactive. Please contact the gym.",

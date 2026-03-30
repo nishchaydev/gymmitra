@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { addDays } from 'date-fns'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { syncMemberStatuses } from '@/src/modules/shared/status-engine'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 10 // Vercel Hobby plan limit
 
 export async function GET(request: NextRequest) {
     // Basic rate limit for cron to prevent DDOS attempts against the URL
@@ -51,6 +52,16 @@ export async function GET(request: NextRequest) {
         })
 
         console.log(`[Cron:ExpireSubs] Expired ${expiredSubs.count} subscriptions`)
+
+        // 2b. Mark overdue invoices — PENDING invoices past their due date become OVERDUE
+        const overdueResult = await prisma.invoice.updateMany({
+            where: {
+                paymentStatus: 'PENDING',
+                dueDate: { lt: now },
+            },
+            data: { paymentStatus: 'OVERDUE' }
+        })
+        console.log(`[Cron:ExpireSubs] Marked ${overdueResult.count} invoices as OVERDUE`)
 
         // 3. Find members who have NO remaining active subscriptions and update their status
         // Get all distinct memberIds that just got expired
@@ -98,10 +109,23 @@ export async function GET(request: NextRequest) {
 
         console.log(`[Cron:ExpireSubs] Updated ${membersExpired} member statuses to EXPIRED`)
 
-        // 4. Sync EXPIRING_SOON for all affected gyms
-        // This ensures members expiring within 7 days get the right status
+        // 4. Sync EXPIRING_SOON for all affected gyms + gyms with members expiring within 7 days
+        // This ensures members transitioning from ACTIVE → EXPIRING_SOON get their status updated
         const affectedGymIds = [...new Set(expiredMemberSubs.map(s => s.gymId))]
-        for (const gymId of affectedGymIds) {
+
+        // Also find gyms with members expiring within 7 days (EXPIRING_SOON transition)
+        const gymsNeedingSync = await prisma.memberSubscription.findMany({
+            where: { status: 'ACTIVE', endDate: { lte: addDays(now, 7) } },
+            select: { gymId: true },
+            distinct: ['gymId']
+        })
+
+        const allGymIds = [...new Set([
+            ...affectedGymIds,
+            ...gymsNeedingSync.map(s => s.gymId)
+        ])]
+
+        for (const gymId of allGymIds) {
             try {
                 await syncMemberStatuses(gymId)
             } catch (syncErr) {

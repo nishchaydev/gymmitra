@@ -33,31 +33,6 @@ export async function login(formData: FormData) {
         include: { gym: true }
     }) : null;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/9fabe3c7-5a18-4ee1-8658-5542d056de00', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': '69a8f3'
-        },
-        body: JSON.stringify({
-            sessionId: '69a8f3',
-            runId: 'pre-fix',
-            hypothesisId: 'H3-login-flow',
-            location: 'app/login/actions.ts:login:post-auth',
-            message: 'Login succeeded; resolving gym/staff profile',
-            data: {
-                userId: data.user?.id || null,
-                hasGym: !!gym,
-                hasStaffProfile: !!(!!(data.user && !gym) ? await prisma.staffMember.findFirst({
-                    where: { userId: data.user.id },
-                    select: { id: true }
-                }) : null)
-            },
-            timestamp: Date.now()
-        })
-    }).catch(() => { })
-    // #endregion agent log
 
     const cookieStore = await cookies()
     cookieStore.delete('mitra_demo_mode')

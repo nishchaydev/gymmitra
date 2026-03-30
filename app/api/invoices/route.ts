@@ -143,7 +143,9 @@ export async function POST(request: NextRequest) {
             return acc + (item.quantity * item.unitPrice)
         }, 0)
 
-        const total = Math.max(0, subtotal + validatedData.taxAmount - validatedData.discount)
+        // Tax applied AFTER discount — matches BillingService convention
+        const afterDiscount = Math.max(0, subtotal - validatedData.discount)
+        const total = Math.round((afterDiscount + validatedData.taxAmount) * 100) / 100
 
         const amountPaid = validatedData.paymentStatus === 'PARTIAL'
             ? Math.min(validatedData.amountPaid ?? 0, total)

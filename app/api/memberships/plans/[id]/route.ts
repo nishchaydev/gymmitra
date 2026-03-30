@@ -23,9 +23,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (roleCheck) return roleCheck
 
         const body = await request.json()
-        console.log("PUT Plan body:", body)
         const validatedData = planSchema.parse(body)
-        console.log("PUT Plan validatedData:", validatedData)
 
         // Verify ownership
         const existingPlan = await prisma.membershipPlan.findUnique({
@@ -43,8 +41,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         return NextResponse.json(plan)
     } catch (error: any) {
-        console.error("Plan PUT Error:", error)
-        require('fs').writeFileSync('n:\\PROGRAMS\\GIT and GITHUB\\github Desktop\\EMITRA\\GYM MITRA\\gym-mitra-erp\\plan_error.log', JSON.stringify({ body: await request.text().catch(()=>''), error: error.issues || error.message }, null, 2))
+        console.error("Plan PUT Error:", error instanceof z.ZodError ? error.issues : error)
         if (error instanceof z.ZodError) {
             console.error("Zod Validation Failed:", JSON.stringify(error.issues, null, 2))
             return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
