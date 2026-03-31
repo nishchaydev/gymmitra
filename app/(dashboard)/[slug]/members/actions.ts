@@ -48,7 +48,8 @@ export const createMember = withAuth(async (context, data: z.input<typeof member
                 invoiceLinkExpiryDays: context.gym.invoiceLinkExpiryDays,
                 termsAndConditions: context.gym.termsAndConditions,
                 gymRules: context.gym.gymRules,
-                waWelcomeMsg: context.gym.waWelcomeMsg
+                waWelcomeMsg: context.gym.waWelcomeMsg,
+                saasPlan: context.gym.saasPlan,
             },
             context.userId,
             ip,

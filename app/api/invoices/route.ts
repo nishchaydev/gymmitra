@@ -69,7 +69,6 @@ export async function GET(request: NextRequest) {
 
         const whereClause: any = {
             gymId: gym.id,
-            ...(memberId ? { memberId } : {}),
             ...(validatedStatus ? { paymentStatus: validatedStatus } : {}),
             ...(q
                 ? {
@@ -82,6 +81,19 @@ export async function GET(request: NextRequest) {
                 }
                 : {}),
         }
+
+        // IDOR guard: validate memberId belongs to this gym before filtering
+        if (memberId) {
+            const memberBelongsToGym = await prisma.member.findFirst({
+                where: { id: memberId, gymId: gym.id },
+                select: { id: true }
+            })
+            if (!memberBelongsToGym) {
+                return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+            }
+            whereClause.memberId = memberId
+        }
+
 
         const [invoices, totalCount] = await Promise.all([
             prisma.invoice.findMany({
@@ -127,7 +139,7 @@ export async function POST(request: NextRequest) {
         const gym = auth.gym
 
         // STAFF and above can create invoices
-        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
         if (roleCheck) return roleCheck
 
         let body;

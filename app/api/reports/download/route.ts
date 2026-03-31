@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 
+/**
+ * Sanitizes a CSV cell value to prevent CSV injection.
+ * Excel/LibreOffice execute cells starting with =, +, -, @, \t, \r as formulas.
+ * Prefixing with a single quote neutralizes them.
+ */
+function csvEscape(value: string | null | undefined): string {
+    const str = String(value ?? '')
+    const dangerous = ['=', '+', '-', '@', '\t', '\r']
+    if (dangerous.some(ch => str.startsWith(ch))) {
+        return `'${str.replace(/"/g, '""')}`
+    }
+    return str.replace(/"/g, '""')
+}
+
 export async function GET(request: NextRequest) {
     try {
         const auth = await getAuthGym()
@@ -29,12 +43,12 @@ export async function GET(request: NextRequest) {
                 csvContent = [
                     headers.join(','),
                     ...members.map(m => [
-                        `"${m.name}"`,
-                        `"${m.phone}"`,
-                        `"${m.email || ''}"`,
+                        `"${csvEscape(m.name)}"`,
+                        `"${csvEscape(m.phone)}"`,
+                        `"${csvEscape(m.email)}"`,
                         m.status,
                         m.joiningDate.toISOString().split('T')[0],
-                        `"${m.subscriptions[0]?.plan.name || 'None'}"`
+                        `"${csvEscape(m.subscriptions[0]?.plan.name ?? 'None')}"`
                     ].join(','))
                 ].join('\n')
                 break
@@ -49,8 +63,8 @@ export async function GET(request: NextRequest) {
                 csvContent = [
                     headers.join(','),
                     ...invoices.map(i => [
-                        i.invoiceNumber,
-                        `"${i.member?.name || 'Walk-in'}"`,
+                        csvEscape(i.invoiceNumber),
+                        `"${csvEscape(i.member?.name ?? 'Walk-in')}"`,
                         i.paymentStatus,
                         i.issueDate.toISOString().split('T')[0],
                         i.total
@@ -71,9 +85,9 @@ export async function GET(request: NextRequest) {
                     ...attendance.map(a => [
                         a.localDateString,
                         a.checkInTime.toISOString(),
-                        `"${a.member?.name || a.staff?.name || 'Unknown'}"`,
+                        `"${csvEscape(a.member?.name ?? a.staff?.name ?? 'Unknown')}"`,
                         a.memberId ? 'Member' : 'Staff',
-                        `"${a.member?.phone || a.staff?.phone || ''}"`
+                        `"${csvEscape(a.member?.phone ?? a.staff?.phone ?? '')}"`
                     ].join(','))
                 ].join('\n')
                 break
@@ -87,7 +101,7 @@ export async function GET(request: NextRequest) {
                 csvContent = [
                     headers.join(','),
                     ...products.map(p => [
-                        `"${p.name}"`,
+                        `"${csvEscape(p.name)}"`,
                         p.category,
                         p.price,
                         p.purchasePrice || 0,
@@ -106,10 +120,10 @@ export async function GET(request: NextRequest) {
                 csvContent = [
                     headers.join(','),
                     ...plans.map(p => [
-                        `"${p.name}"`,
+                        `"${csvEscape(p.name)}"`,
                         p.duration,
                         p.price,
-                        `"${(p.description || '').replace(/"/g, '""')}"`
+                        `"${csvEscape(p.description ?? '')}"`
                     ].join(','))
                 ].join('\n')
                 break
@@ -144,9 +158,9 @@ export async function GET(request: NextRequest) {
                         const diffTime = endDate.getTime() - today.getTime()
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
                         return [
-                            `"${sub.member?.name || 'Unknown'}"`,
-                            sub.member?.phone || '',
-                            `"${sub.plan?.name || 'Unknown'}"`,
+                            `"${csvEscape(sub.member?.name ?? 'Unknown')}"`,
+                            csvEscape(sub.member?.phone ?? ''),
+                            `"${csvEscape(sub.plan?.name ?? 'Unknown')}"`,
                             sub.endDate.toISOString().split('T')[0],
                             diffDays
                         ].join(',')

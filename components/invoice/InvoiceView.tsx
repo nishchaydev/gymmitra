@@ -39,6 +39,29 @@ interface InvoiceViewProps {
  *   hex/rgb values, override CSS custom properties at :root, then auto-trigger
  *   window.print(). The user's browser prints to PDF via the system dialog.
  */
+/**
+ * Strips script elements and all on* event attributes from a raw HTML string
+ * to prevent XSS execution when the content is written to a new window via
+ * document.write. DOMParser parses without executing scripts.
+ */
+function sanitizeForPrint(rawHtml: string): string {
+    // Only runs in browser context — called from onClick handlers
+    if (typeof window === 'undefined') return rawHtml
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(`<body>${rawHtml}</body>`, 'text/html')
+    // Remove all script elements
+    doc.querySelectorAll('script').forEach(el => el.remove())
+    // Strip on* event handler attributes
+    doc.querySelectorAll('*').forEach(el => {
+        Array.from(el.attributes).forEach(attr => {
+            if (attr.name.toLowerCase().startsWith('on')) {
+                el.removeAttribute(attr.name)
+            }
+        })
+    })
+    return doc.body.innerHTML
+}
+
 function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload: boolean): string {
     const banner = forDownload
         ? `<div id="pdf-banner">📄 <strong>To save as PDF:</strong> In the print dialog, set Destination → <strong>Save as PDF</strong>, then click Save.</div>`
@@ -48,6 +71,7 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob: https:;" />
   <title>Invoice-${invoiceNumber}</title>
   <style>
     @page { size: A4 portrait; margin: 10mm; }
@@ -276,7 +300,8 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
 
     const openInvoicePrintWindow = (forDownload: boolean) => {
         if (!componentRef.current) return
-        const bodyHtml = componentRef.current.innerHTML
+        const rawHtml = componentRef.current.innerHTML
+        const bodyHtml = sanitizeForPrint(rawHtml)
         const win = window.open('', '_blank', 'width=900,height=800')
         if (!win) {
             import('sonner').then(({ toast }) =>

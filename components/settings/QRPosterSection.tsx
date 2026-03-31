@@ -5,13 +5,12 @@ import { QrCode, Download, Copy, Check, ExternalLink } from "lucide-react"
 import { QRCodeSVG } from 'qrcode.react'
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { getBaseUrl } from "@/lib/utils"
 
 interface QRPosterSectionProps {
     slug: string
     gymName: string
 }
-
-const BASE_URL = "https://gym.emitra.dev"
 
 function QRCodeContainer({ value, size = 200, bgColor = "#000000", fgColor = "#FFFFFF" }: { value: string; size?: number; bgColor?: string; fgColor?: string }) {
     return (
@@ -35,7 +34,8 @@ export function QRPosterSection({ slug, gymName }: QRPosterSectionProps) {
     const [copied, setCopied] = useState(false)
     const printRef = useRef<HTMLDivElement>(null)
 
-    const checkInUrl = `${BASE_URL}/${slug}/checkin`
+    const checkInUrl = `${getBaseUrl()}/${slug}/checkin`
+
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(checkInUrl)
@@ -282,8 +282,9 @@ function PosterContent({
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                }}>
-                    {`gym.emitra.dev/${slug}/checkin`}
+                }}
+                >
+                    {checkInUrl}
                 </p>
             </div>
         </div>

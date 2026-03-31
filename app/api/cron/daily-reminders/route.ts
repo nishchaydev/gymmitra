@@ -9,6 +9,16 @@ import React from 'react'
 import { syncMemberStatuses } from '@/src/modules/shared/status-engine'
 
 const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
+
+// ── XSS Prevention ─────────────────────────────────────────────────
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
 const BATCH_SIZE = 100
 const GYMS_PER_RUN = 5 // Process only 5 gyms per cron invocation
 
@@ -134,7 +144,8 @@ export async function GET(request: NextRequest) {
                         where: {
                             gymId: gym.id,
                             status: 'ACTIVE',
-                            endDate: { gte: windowStart, lte: windowEnd }
+                            endDate: { gte: windowStart, lte: windowEnd },
+                            member: { deletedAt: null }  // exclude soft-deleted members
                         },
                         include: {
                             member: { select: { id: true, name: true, email: true, phone: true } },
@@ -151,9 +162,12 @@ export async function GET(request: NextRequest) {
                         })
 
                         const subjectPrefix = isUrgent ? '⚠️ URGENT — ' : ''
+                        const safeGymName = escapeHtml(gym.name)
+                        const safeMemberName = escapeHtml(sub.member.name)
+                        const safePlanName = escapeHtml(sub.plan.name)
                         const urgencyHtml = isUrgent
                             ? `<p style="color:#dc2626;font-weight:bold;">⚠️ Your membership expires on <strong>${expiryDateStr}</strong> — just ${daysAhead} day${daysAhead === 1 ? '' : 's'} away. Please renew immediately to avoid interruption!</p>`
-                            : `<p>Your <strong>${sub.plan.name}</strong> membership at <strong>${gym.name}</strong> expires in <strong>${daysAhead} days</strong>.</p>`
+                            : `<p>Your <strong>${safePlanName}</strong> membership at <strong>${safeGymName}</strong> expires in <strong>${daysAhead} days</strong>.</p>`
 
                         const actSoonHtml = (daysAhead === 5 || daysAhead === 3)
                             ? `<p><em>Act soon — spots fill up fast!</em> 🏃</p>`
@@ -164,12 +178,12 @@ export async function GET(request: NextRequest) {
                             to: [sub.member.email],
                             subject: `${subjectPrefix}${gym.name} - Membership Expiring in ${daysAhead} Day${daysAhead === 1 ? '' : 's'}`,
                             html: `
-                                <h2>Hi ${sub.member.name},</h2>
+                                <h2>Hi ${safeMemberName},</h2>
                                 ${urgencyHtml}
                                 ${actSoonHtml}
                                 <p>Please visit the gym or contact us to renew and continue your fitness journey! 💪</p>
                                 <br/>
-                                <p>Best regards,<br/>Team ${gym.name}</p>
+                                <p>Best regards,<br/>Team ${safeGymName}</p>
                             `
                         })
 
@@ -204,11 +218,11 @@ export async function GET(request: NextRequest) {
                         to: [inv.member.email],
                         subject: `${gym.name} - Payment Reminder`,
                         html: `
-                            <h2>Hi ${inv.member.name},</h2>
-                            <p>This is a gentle reminder that invoice <strong>#${inv.invoiceNumber}</strong> of <strong>${formattedTotal}</strong> is overdue.</p>
+                            <h2>Hi ${escapeHtml(inv.member.name)},</h2>
+                            <p>This is a gentle reminder that invoice <strong>#${escapeHtml(inv.invoiceNumber)}</strong> of <strong>${formattedTotal}</strong> is overdue.</p>
                             <p>Please clear the payment at your earliest convenience to avoid any interruption in your membership.</p>
                             <br/>
-                            <p>Thank you,<br/>Team ${gym.name}</p>
+                            <p>Thank you,<br/>Team ${escapeHtml(gym.name)}</p>
                         `
                     })
 
@@ -256,11 +270,11 @@ export async function GET(request: NextRequest) {
                         to: [member.email],
                         subject: `🎂 Happy Birthday from ${gym.name}!`,
                         html: `
-                            <h2>🎉 Happy Birthday, ${member.name}!</h2>
-                            <p>The entire team at <strong>${gym.name}</strong> wishes you a wonderful year ahead filled with health and happiness!</p>
+                            <h2>🎉 Happy Birthday, ${escapeHtml(member.name)}!</h2>
+                            <p>The entire team at <strong>${escapeHtml(gym.name)}</strong> wishes you a wonderful year ahead filled with health and happiness!</p>
                             <p>Keep crushing your fitness goals! 💪🎂</p>
                             <br/>
-                            <p>With love,<br/>Team ${gym.name}</p>
+                            <p>With love,<br/>Team ${escapeHtml(gym.name)}</p>
                         `
                     })
 

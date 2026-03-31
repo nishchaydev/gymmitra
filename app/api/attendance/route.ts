@@ -40,9 +40,10 @@ export async function POST(request: NextRequest) {
 
         const gym = auth.gym
 
-        // STAFF and above can check in members
-        const roleCheck = checkRole(auth, ['OWNER', 'STAFF', 'TRAINER'])
+        // STAFF, FRONT_DESK, and TRAINER can check in members
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'TRAINER', 'FRONT_DESK'])
         if (roleCheck) return roleCheck
+
 
         const body = await request.json()
 

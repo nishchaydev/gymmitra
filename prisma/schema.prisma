@@ -403,8 +403,9 @@ enum SessionStatus {
 enum SaaSPlan {
   // NOTE: BASIC, GROWTH, ENTERPRISE were removed in favor of MAIN_PLAN. 
   // Migrations handle the data mapping.
-  TRIAL // Default for new gyms
-  MAIN_PLAN // Licensed gyms
+  TRIAL      // Default for new gyms — no member cap, full feature access
+  MAIN_PLAN  // Licensed gyms — flat ₹12,000/year, capped at 200 members
+  PER_MEMBER // Usage-based — ₹8/active member/month, unlimited members
 }
 
 enum PlanTier {
@@ -458,6 +459,9 @@ model StaffMember {
   // Trainer related
   ptSessions PTSession[]
   attendance Attendance[]
+
+  isFirstLogin Boolean  @default(true)  // True until staff completes first-login password decision
+  tempPassword String?                  // AES-encrypted temp password — cleared after first login
 
   @@unique([userId, gymId]) // A user can only have one staff profile per gym
   @@unique([email, gymId]) // Prevent duplicate emails within the same gym

@@ -135,22 +135,50 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         const slugMatch = pathname.match(/^\/([^/]+)/)
         const currentSlug = slugMatch ? slugMatch[1] : null
 
-        // Fetch gym profile with trial info
-        const { data: gym } = await supabase
+        // Fetch gym profile — first try as owner, then as staff member
+        let gym: { saasPlan: string; trialExpiresAt: string | null; onboardingStep: number; isVerified: boolean } | null = null
+
+        const { data: ownerGym } = await supabase
             .from('GymProfile')
             .select('saasPlan, trialExpiresAt, onboardingStep, isVerified')
             .eq('userId', user.id)
             .single()
 
+        if (ownerGym) {
+            gym = ownerGym
+        } else {
+            // User might be a staff member — find their gym via StaffMember
+            const { data: staffMember } = await supabase
+                .from('StaffMember')
+                .select('gymId')
+                .eq('userId', user.id)
+                .single()
+
+            if (staffMember?.gymId) {
+                const { data: staffGym } = await supabase
+                    .from('GymProfile')
+                    .select('saasPlan, trialExpiresAt, onboardingStep, isVerified')
+                    .eq('id', staffMember.gymId)
+                    .single()
+
+                if (staffGym) {
+                    gym = staffGym
+                }
+            }
+        }
+
         if (gym) {
-            // A. ONBOARDING ENFORCEMENT
+            // A. ONBOARDING ENFORCEMENT (owners only — staff can't onboard)
             if (!gym.isVerified && gym.onboardingStep < 2 && !pathname.includes('/onboarding')) {
-                const url = request.nextUrl.clone()
-                url.pathname = '/onboarding'
-                return NextResponse.redirect(url)
+                // Only redirect to onboarding if this is the owner's account
+                if (ownerGym) {
+                    const url = request.nextUrl.clone()
+                    url.pathname = '/onboarding'
+                    return NextResponse.redirect(url)
+                }
             }
 
-            // B. TRIAL ENFORCEMENT
+            // B. TRIAL ENFORCEMENT — enforced for both owners AND staff
             const now = new Date()
             const isTrial = gym.saasPlan === 'TRIAL'
             const isExpired = gym.trialExpiresAt && new Date(gym.trialExpiresAt) < now
@@ -169,6 +197,7 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
             }
         }
     }
+
 
     if (isDemoMode) {
         // Pass the demo mode flag down to the layouts/pages that cannot use cookies() statically

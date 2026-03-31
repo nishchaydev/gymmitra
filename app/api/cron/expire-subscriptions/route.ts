@@ -53,15 +53,26 @@ export async function GET(request: NextRequest) {
 
         console.log(`[Cron:ExpireSubs] Expired ${expiredSubs.count} subscriptions`)
 
-        // 2b. Mark overdue invoices — PENDING invoices past their due date become OVERDUE
+        // 2b. Mark overdue invoices — PENDING invoices become OVERDUE when:
+        //    a) They have an explicit dueDate that has passed, OR
+        //    b) They have NO dueDate but were issued more than 7 days ago
+        //    (Most gym membership invoices do NOT have a dueDate — rule (b) handles them)
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
         const overdueResult = await prisma.invoice.updateMany({
             where: {
                 paymentStatus: 'PENDING',
-                dueDate: { lt: now },
+                OR: [
+                    { dueDate: { lt: now } },   // explicit due date has passed
+                    {                            // no due date — use 7-day issue rule
+                        dueDate: null,
+                        issueDate: { lt: sevenDaysAgo }
+                    }
+                ]
             },
             data: { paymentStatus: 'OVERDUE' }
         })
         console.log(`[Cron:ExpireSubs] Marked ${overdueResult.count} invoices as OVERDUE`)
+
 
         // 3. Find members who have NO remaining active subscriptions and update their status
         // Get all distinct memberIds that just got expired

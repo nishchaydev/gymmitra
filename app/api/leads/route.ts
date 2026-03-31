@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
         if (roleCheck) return roleCheck
 
         const rateLimited = await guardRateLimit(30, `${auth.userId}:leads:post`)

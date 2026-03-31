@@ -18,8 +18,9 @@ export async function POST(request: NextRequest) {
         const rl = await guardRateLimit(20, `${auth.userId}:subscriptions:post`)
         if (rl) return rl
 
-        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
         if (roleCheck) return roleCheck
+
 
         const body = await request.json()
         const validatedData = subscriptionSchema.parse(body)

@@ -98,13 +98,13 @@ export async function GET(request: Request) {
         where: { userId: user.id }
     })
 
-    const isTrainerProfile = !gym ? await prisma.staffMember.findFirst({
-        where: { userId: user.id },
+    const staffProfile = !gym ? await prisma.staffMember.findFirst({
+        where: { userId: user.id, isActive: true },
         include: { gym: true }
     }) : null;
 
     // Set session cookie for onboarded users
-    if (gym?.isVerified || isTrainerProfile) {
+    if (gym?.isVerified || staffProfile) {
         const { cookies } = await import('next/headers')
         const cookieStore = await cookies()
         const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1')
@@ -112,9 +112,19 @@ export async function GET(request: Request) {
         cookieStore.set('gym_onboarded', 'true', {
             maxAge: 30 * 24 * 60 * 60, // 30 days
             path: '/',
-            secure: !isLocal, // Fix: Use non-secure for localhost
+            secure: !isLocal,
             sameSite: 'lax'
         })
+    }
+
+    // Staff first-login: show password change prompt
+    if (staffProfile?.isFirstLogin) {
+        return NextResponse.redirect(`${baseUrl}/${staffProfile.gym.slug}/first-login`)
+    }
+
+    // Staff normal login: go to dashboard
+    if (staffProfile) {
+        return NextResponse.redirect(`${baseUrl}/${staffProfile.gym.slug}/dashboard`)
     }
 
     // First time verification logic

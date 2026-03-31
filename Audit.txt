@@ -1,0 +1,286 @@
+Nahi yaar. Not even close. Let me list exactly what I still haven't read, then go through all of it.---
+
+## Final Honest Answer — Is This The End?
+
+**Nahi.** There's no hard end to a codebase audit. But here's where we actually stand after going through ~90% of the files:
+
+---
+
+## New Findings From This Pass
+
+**🔴 Invoice print uses raw `innerHTML` in a new window**
+`InvoiceView.tsx` does `componentRef.current.innerHTML` → `win.document.write(bodyHtml)`. If any invoice field (member name, gym name, notes) has HTML characters, it can execute in the print window. Same XSS vector as the email issue.
+
+**🔴 OG image `/og-image.png` doesn't exist**
+`app/layout.tsx` references `/og-image.png` for Open Graph. That file isn't in `/public/`. Every WhatsApp/Twitter link share shows a broken image. Bad for marketing.
+
+**🟡 Two separate `QueryClient` instances**
+`app/providers.tsx` creates one QueryClient, `components/providers/ReactQueryProvider.tsx` creates another. Both exist in the codebase. If both are mounted (providers wrapping each other), React Query cache won't be shared — components using different providers will double-fetch everything.
+
+**🟡 `NotificationSettings` is completely fake** — already found, confirming it's still there. `setTimeout(1000)` then `toast.success`. Nothing saved. Ever.
+
+**🟡 Pricing page shows `₹6/member` for monthly toggle** — but your actual pricing is `₹8/member`. The "annual" toggle shows a discounted ₹6. If a customer signs up based on this and you charge ₹8, that's a legal/trust issue.
+
+**🟡 `SocialProof` shows "500+ members"** when TRI-STAR has 376. Hero shows "Trusted by TRI-STAR FITNESS" with 500+ Active Members stat. The stat is inflated. Minor but dishonest.
+
+**🟡 `NEXT_PUBLIC_METADATA_BASE` is an undocumented env var** — `app/layout.tsx` uses it but it's in none of your documented env vars. If not set, falls back to `gym.emitra.dev` which is fine, but it's a hidden dependency.
+
+**🟡 `app/providers.tsx` and `components/providers/ReactQueryProvider.tsx` are duplicates** — two separate `QueryClient` factory functions with different default `staleTime` (60s vs 30s). One of these is dead code. Pick one, delete the other.
+
+**🟢 `leads/actions.ts` convertToMember is clean** — gymId scoped, atomic `updateMany`, redirect via URL params. Safe.
+
+**🟢 Schedule route has proper SERIALIZABLE transaction + conflict check** — one of the best-written routes in the whole codebase.
+
+**🟢 JSON-LD on landing page is safe** — `JSON.stringify(jsonLd)` into `dangerouslySetInnerHTML` is the correct pattern. No user data in it.
+
+---
+
+## The Real Master List Now
+
+Everything found across all sessions, consolidated:
+
+| Severity | Issue | Status |
+|---|---|---|
+| 🔴 | Debug beacon in `login/actions.ts` | Fixed per you |
+| 🔴 | Windows path `fs.writeFileSync` in plans route | Fixed per you |
+| 🔴 | EXPIRING_SOON kiosk block | Fixed per you |
+| 🔴 | Cron `mv_dashboard_summary` crash | Fixed per you |
+| 🔴 | Staff trial bypass in middleware | **OPEN** |
+| 🔴 | Cross-gym invoice IDOR (`memberId` unchecked) | **OPEN** |
+| 🔴 | XSS in email HTML (gym/member name unescaped) | **OPEN** |
+| 🔴 | CSV injection in reports download | **OPEN** |
+| 🔴 | POS stock race condition (negative stock possible) | **OPEN** |
+| 🔴 | Invoice `innerHTML` print window XSS | **OPEN** |
+| 🟡 | `OVERDUE` status never written — reminders dead | **OPEN** |
+| 🟡 | Renewal creates no invoice | **OPEN** |
+| 🟡 | Import creates no invoice | **OPEN** |
+| 🟡 | `plan.price` renders as `[object Object]` | **OPEN** |
+| 🟡 | No `@@unique([gymId, phone])` DB constraint | **OPEN** |
+| 🟡 | `NotificationSettings` saves nothing (fake UI) | **OPEN** |
+| 🟡 | `IntegrationsSettings` WhatsApp hardcoded "connected" | **OPEN** |
+| 🟡 | `FRONT_DESK` role completely broken | **OPEN** |
+| 🟡 | Staff invite flow broken (no license key for signup) | **OPEN** |
+| 🟡 | OG image missing from `/public/` | **OPEN** |
+| 🟡 | Pricing page shows ₹6 but you charge ₹8 | **OPEN** |
+| 🟡 | `500+ members` stat inflated on landing | **OPEN** |
+| 🟡 | `QRPosterSection` hardcodes `gym.emitra.dev` | **OPEN** |
+| 🟡 | Two `QueryClient` instances, conflicting staleTime | **OPEN** |
+| 🟡 | Zombie subscriptions in cron (deleted members get emails) | **OPEN** |
+| 🟡 | `useInvoices` no staleTime | **OPEN** |
+| 🟡 | Cron GYMS_PER_RUN=5 won't scale | **OPEN** |
+| 🟡 | No Redis — rate limiting fake in production | **OPEN** |
+| 🟡 | `keepalive` cron uses non-timing-safe comparison | **OPEN** |
+| 🟡 | `require()` in trial.ts | **OPEN** |
+| 🟡 | Admin email sends plaintext password | **OPEN** |
+| 🟢 | Missing CSP header | **OPEN** |
+| 🟢 | Zero test coverage on core logic | **OPEN** |
+| 🟢 | Vercel Pro needed for 60s timeout | **OPEN** |
+| 🟢 | PgBouncer not configured | **OPEN** |
+| 🟢 | Sitemap wrong fallback URL | **OPEN** |
+| 🟢 | `ADMIN` role doesn't exist, used in 4 routes | **OPEN** |
+| 🟢 | Dashboard `revalidate=60` + ISR stale data | **OPEN** |
+| 🟢 | `bulkCreateMembers` skipDuplicates hides errors | **OPEN** |
+| 🟢 | Kiosk stores phone in localStorage (shared device risk) | **OPEN** |
+
+**This is the complete picture.** The foundation is solid — auth, multi-tenancy, billing math, transactions are all correct. These are all surface/feature/hardening issues. None of them mean "rewrite the app". They mean "fix before you pitch gym #2."
+Good. Now let me go through every file I still haven't read. The audit report mentions some things but is surface-level on most. Let me verify every claim and find what it missed.---
+
+## New Findings From This Deep Pass
+
+**🔴 XSS in Outgoing Emails**
+`app/api/cron/daily-reminders/route.ts` injects `gym.name`, `member.name`, and `plan.name` directly into raw HTML strings:
+```ts
+html: `<h2>Hi ${sub.member.name},</h2>
+       <p>Your <strong>${sub.plan.name}</strong> at <strong>${gym.name}</strong>...`
+```
+If a gym owner names their gym `<script>alert(1)</script>` or a member has `<img src=x onerror=steal()>` as their name, it goes straight into email HTML. Email clients like Gmail render this. Fix: escape all user data with a simple `escapeHtml()` helper before injecting into template strings.
+
+**🔴 CSV Injection**
+The reports download wraps names in quotes but never strips leading `=`, `+`, `-`, `@` characters. A member named `=CMD|'/C calc'!A1` becomes a formula injection payload in Excel when the gym owner downloads their members CSV. Fix: prefix any cell starting with those chars with a single quote.
+
+**🔴 `keepalive` Cron Has No Timing-Safe Secret Check**
+`app/api/cron/keepalive/route.ts` uses plain string comparison `authHeader !== expectedAuth` — not `timingSafeEqual`. Every other cron uses HMAC timing-safe comparison. This one is vulnerable to timing attacks.
+
+**🔴 `NotificationSettings` saves nothing**
+The entire notification preferences UI is fake — `saveSettings` does `await new Promise(resolve => setTimeout(resolve, 1000))` and toasts success. No API call. No DB write. Every toggle the owner sets is lost on refresh. If you ever pitch "configurable notification preferences" to a gym, this silently lies to them.
+
+**🟡 `IntegrationsSettings` shows WhatsApp as "connected" for every gym, hardcoded**
+`status: 'connected'` is hardcoded in the array regardless of whether `WHATSAPP_PHONE_NUMBER_ID` is actually configured. All gyms see a green "connected" badge on WhatsApp even if it's not set up.
+
+**🟡 `FRONT_DESK` role in onboarding form but never handled in `checkRole`**
+Onboarding lets you assign `FRONT_DESK` to staff. But no API route has `checkRole(auth, ['FRONT_DESK', ...])`. A FRONT_DESK user logs in → `getAuthGym()` returns their profile → every `checkRole(['OWNER', 'STAFF'])` check fails → they can't do anything at all. Broken role silently.
+
+**🟡 `QRPosterSection` hardcodes `https://gym.emitra.dev`**
+Line: `const BASE_URL = "https://gym.emitra.dev"`. All QR posters generated for Nikhil Verma's TRI-STAR gym point to `gym.emitra.dev`, not a custom domain. If you ever move to `app.gymmitra.in` the QR codes on every printed poster will break.
+
+**🟡 Staff invite doesn't send a proper registration link**
+The invite email sends `${getBaseUrl()}/login?tab=signup`. But the signup flow requires a `licenseKey` (RegistrationCode). Staff invited this way land on the signup page with no code — they can't register. The flow is broken end to end for new staff. They have to contact the owner manually to get onboarded.
+
+**🟡 `bulkCreateMembers` uses `skipDuplicates: true`**
+This silently swallows constraint violations rather than reporting them. If 50 members import fine and 1 fails silently, `imported` count shows 51 but one is missing with no error. The count is wrong.
+
+**✅ Confirmed from audit report — all 4 still not fixed:**
+1. Staff trial bypass in middleware — confirmed, still there
+2. Cross-gym invoice IDOR — confirmed, still there
+3. Zombie subscriptions in cron — confirmed, still there
+4. POS floating point — confirmed, still there
+
+The highest-leverage single fix remains: **Upstash Redis for real rate limiting** + the XSS in emails + CSV injection. Those are the ones that will embarrass you publicly if found.
+Good. Now let me go through every file I still haven't read. The audit report mentions some things but is surface-level on most. Let me verify every claim and find what it missed.---
+
+## New Findings From This Deep Pass
+
+**🔴 XSS in Outgoing Emails**
+`app/api/cron/daily-reminders/route.ts` injects `gym.name`, `member.name`, and `plan.name` directly into raw HTML strings:
+```ts
+html: `<h2>Hi ${sub.member.name},</h2>
+       <p>Your <strong>${sub.plan.name}</strong> at <strong>${gym.name}</strong>...`
+```
+If a gym owner names their gym `<script>alert(1)</script>` or a member has `<img src=x onerror=steal()>` as their name, it goes straight into email HTML. Email clients like Gmail render this. Fix: escape all user data with a simple `escapeHtml()` helper before injecting into template strings.
+
+**🔴 CSV Injection**
+The reports download wraps names in quotes but never strips leading `=`, `+`, `-`, `@` characters. A member named `=CMD|'/C calc'!A1` becomes a formula injection payload in Excel when the gym owner downloads their members CSV. Fix: prefix any cell starting with those chars with a single quote.
+
+**🔴 `keepalive` Cron Has No Timing-Safe Secret Check**
+`app/api/cron/keepalive/route.ts` uses plain string comparison `authHeader !== expectedAuth` — not `timingSafeEqual`. Every other cron uses HMAC timing-safe comparison. This one is vulnerable to timing attacks.
+
+**🔴 `NotificationSettings` saves nothing**
+The entire notification preferences UI is fake — `saveSettings` does `await new Promise(resolve => setTimeout(resolve, 1000))` and toasts success. No API call. No DB write. Every toggle the owner sets is lost on refresh. If you ever pitch "configurable notification preferences" to a gym, this silently lies to them.
+
+**🟡 `IntegrationsSettings` shows WhatsApp as "connected" for every gym, hardcoded**
+`status: 'connected'` is hardcoded in the array regardless of whether `WHATSAPP_PHONE_NUMBER_ID` is actually configured. All gyms see a green "connected" badge on WhatsApp even if it's not set up.
+
+**🟡 `FRONT_DESK` role in onboarding form but never handled in `checkRole`**
+Onboarding lets you assign `FRONT_DESK` to staff. But no API route has `checkRole(auth, ['FRONT_DESK', ...])`. A FRONT_DESK user logs in → `getAuthGym()` returns their profile → every `checkRole(['OWNER', 'STAFF'])` check fails → they can't do anything at all. Broken role silently.
+
+**🟡 `QRPosterSection` hardcodes `https://gym.emitra.dev`**
+Line: `const BASE_URL = "https://gym.emitra.dev"`. All QR posters generated for Nikhil Verma's TRI-STAR gym point to `gym.emitra.dev`, not a custom domain. If you ever move to `app.gymmitra.in` the QR codes on every printed poster will break.
+
+**🟡 Staff invite doesn't send a proper registration link**
+The invite email sends `${getBaseUrl()}/login?tab=signup`. But the signup flow requires a `licenseKey` (RegistrationCode). Staff invited this way land on the signup page with no code — they can't register. The flow is broken end to end for new staff. They have to contact the owner manually to get onboarded.
+
+**🟡 `bulkCreateMembers` uses `skipDuplicates: true`**
+This silently swallows constraint violations rather than reporting them. If 50 members import fine and 1 fails silently, `imported` count shows 51 but one is missing with no error. The count is wrong.
+
+**✅ Confirmed from audit report — all 4 still not fixed:**
+1. Staff trial bypass in middleware — confirmed, still there
+2. Cross-gym invoice IDOR — confirmed, still there
+3. Zombie subscriptions in cron — confirmed, still there
+4. POS floating point — confirmed, still there
+
+The highest-leverage single fix remains: **Upstash Redis for real rate limiting** + the XSS in emails + CSV injection. Those are the ones that will embarrass you publicly if found.
+
+Let me read every file I haven't touched yet. Systematically. No shortcuts.---
+
+## 🚨 The Ones You Haven't Heard Yet
+
+### CRITICAL — Fix Immediately
+
+**The debug agent beacon in login (ALREADY FLAGGED) — but here's what you missed about it:**
+It fires an extra `prisma.staffMember.findFirst` DB query on EVERY login, on top of the one already done above it. So every login = 3 DB queries instead of 2. But the spooky part — this beacon is calling `http://127.0.0.1:7246/ingest/9fabe3c7...` which is your Gravoty/OpenCode agent's local telemetry port. If your agent is ever running locally with the same session ID when Vercel executes this... it's sending your users' `userId` and gym membership status to a dev machine. Delete lines 36–58 of `app/login/actions.ts` **today**.
+
+**Windows path hardcoded in production error handler:**
+`app/api/memberships/plans/[id]/route.ts` line ~45:
+```ts
+require('fs').writeFileSync(
+  'n:\\PROGRAMS\\GIT and GITHUB\\...\\plan_error.log',
+  ...
+)
+```
+This crashes silently on Vercel (Linux) every time a plan update throws a Zod error. The error gets swallowed, the 400 response never sends, and you get a silent 500. Nikhil Verma can't edit plans if they throw validation errors. This was your AI agent's debug logging left in production.
+
+**POS stock race condition:**
+Two cashiers sell the last protein shake simultaneously. Both transactions read `stock = 1`, both pass the `stock < quantity` check, both decrement. Stock goes to `-1`. No guard against going negative — the `{ decrement: item.quantity }` call has no `where: { stock: { gte: item.quantity } }` constraint. Fix: add `where: { id: item.productId, stock: { gte: item.quantity } }` to the update, check `count === 0` for failure.
+
+---
+
+### New High-Priority Findings
+
+**One test file for 500+ files of business logic.** `lib/__tests__/utils.test.ts` with 72 lines tests `cn()` and `getBaseUrl()`. Zero tests for `getMemberStatus()`, `calculateBillingTotal()`, `computeMemberFlags()`, `recordPayment()`, `syncMemberStatuses()` — your entire revenue and membership logic. No integration tests. No API route tests. For MNC level: minimum 80% coverage on `src/modules/` is expected.
+
+**`revalidate = 60` on dashboard + invoices pages is wrong.**
+Dashboard has `export const revalidate = 60`. This means Next.js caches the entire page for 60 seconds. But dashboard also has `export const dynamic = 'force-dynamic'` — wait, no it doesn't. The dashboard is ISR-cached for 60 seconds on Vercel. If Nikhil Verma adds a member and refreshes the dashboard — the count won't update for up to 60 seconds. For a gym ops tool, this is confusing. Either go full dynamic or accept the stale window and communicate it.
+
+**`useInvoices` hook has zero `staleTime`** — every component mount, tab focus, and navigation refetches all invoices from scratch. Invoice list page hammers the API unnecessarily.
+
+**Sitemap hardcodes `gymmitra.vercel.app`** as fallback instead of `gym.emitra.dev`. Google indexes the wrong domain.
+
+**TrialLockout is client-side only — bypassable.** The `TrialLockout` component renders children blurred with a CSS overlay. A user with devtools can remove the overlay div and interact with the full dashboard despite trial expiry. The real enforcement is in middleware, but the UX lockout is cosmetic only. Not a security issue since API routes are protected, but a UX gap — gym owner can see all their data even after trial by inspecting DOM.
+
+**`require()` in production plan error handler** — beyond the Windows path issue, using CommonJS `require('fs')` inside a Next.js 15 ESM route is a red flag. Should be `import { writeFileSync } from 'fs'` at minimum, but better: delete it entirely.
+
+**All raw SQL uses tagged template literals with `${variable}` syntax** — this IS safe in Prisma (parameterized automatically by the tagged template). All 15 raw queries are injection-safe.
+
+**No `@@unique([gymId, phone])` on Member** — already flagged, but confirming: only an index, not a unique constraint. Two concurrent member creates with same phone in same gym can still succeed at DB level.
+
+---
+
+## The Complete Fix Priority List
+
+| Priority | Issue | Time |
+|---|---|---|
+| 🔴 NOW | Delete agent debug beacon (login/actions.ts L36–58) | 2 min |
+| 🔴 NOW | Delete Windows fs.writeFileSync (plans/[id]/route.ts) | 1 min |
+| 🔴 TODAY | POS stock race: add `where stock >= qty` guard | 15 min |
+| 🔴 TODAY | EXPIRING_SOON kiosk block fix (2 files) | 10 min |
+| 🔴 TODAY | Cron mv_dashboard_summary crash (remove the line) | 2 min |
+| 🟡 PRE-LAUNCH | `@@unique([gymId, phone])` DB migration | 20 min |
+| 🟡 PRE-LAUNCH | `useInvoices` add `staleTime: 30_000` | 2 min |
+| 🟡 PRE-LAUNCH | `plan.price` Decimal render (PlanManagement L183) | 2 min |
+| 🟡 PRE-LAUNCH | Fix sitemap fallback URL | 2 min |
+| 🟡 PRE-LAUNCH | OVERDUE auto-marking in cron | 1 hr |
+| 🟡 PRE-LAUNCH | Renewal + Import missing invoices | 3 hr |
+| 🟡 PRE-LAUNCH | CSP header in next.config.ts | 20 min |
+| 🟡 PRE-LAUNCH | Remove plaintext password from admin signup email | 5 min |
+| 🟡 PRE-SCALE | Tests for core business logic | 2 days |
+| 🟡 PRE-SCALE | Vercel Pro + PgBouncer | 30 min |
+| 🟡 PRE-SCALE | Cron QStash migration for 50+ gyms | 1 day |
+| 🟢 LATER | ADMIN → MANAGER role fix | 10 min |
+| 🟢 LATER | Dashboard revalidate strategy decision | 30 min |
+| 🟢 LATER | `error.message` stripped in prod error boundary | 10 min |
+
+The foundation is solid. These are all fixable. But the two agent artifacts (beacon + Windows path) need to go **before** TRI-STAR delivery tomorrow.
+
+Good. Now let me go through every file I still haven't read. The audit report mentions some things but is surface-level on most. Let me verify every claim and find what it missed.---
+
+## New Findings From This Deep Pass
+
+**🔴 XSS in Outgoing Emails**
+`app/api/cron/daily-reminders/route.ts` injects `gym.name`, `member.name`, and `plan.name` directly into raw HTML strings:
+```ts
+html: `<h2>Hi ${sub.member.name},</h2>
+       <p>Your <strong>${sub.plan.name}</strong> at <strong>${gym.name}</strong>...`
+```
+If a gym owner names their gym `<script>alert(1)</script>` or a member has `<img src=x onerror=steal()>` as their name, it goes straight into email HTML. Email clients like Gmail render this. Fix: escape all user data with a simple `escapeHtml()` helper before injecting into template strings.
+
+**🔴 CSV Injection**
+The reports download wraps names in quotes but never strips leading `=`, `+`, `-`, `@` characters. A member named `=CMD|'/C calc'!A1` becomes a formula injection payload in Excel when the gym owner downloads their members CSV. Fix: prefix any cell starting with those chars with a single quote.
+
+**🔴 `keepalive` Cron Has No Timing-Safe Secret Check**
+`app/api/cron/keepalive/route.ts` uses plain string comparison `authHeader !== expectedAuth` — not `timingSafeEqual`. Every other cron uses HMAC timing-safe comparison. This one is vulnerable to timing attacks.
+
+**🔴 `NotificationSettings` saves nothing**
+The entire notification preferences UI is fake — `saveSettings` does `await new Promise(resolve => setTimeout(resolve, 1000))` and toasts success. No API call. No DB write. Every toggle the owner sets is lost on refresh. If you ever pitch "configurable notification preferences" to a gym, this silently lies to them.
+
+**🟡 `IntegrationsSettings` shows WhatsApp as "connected" for every gym, hardcoded**
+`status: 'connected'` is hardcoded in the array regardless of whether `WHATSAPP_PHONE_NUMBER_ID` is actually configured. All gyms see a green "connected" badge on WhatsApp even if it's not set up.
+
+**🟡 `FRONT_DESK` role in onboarding form but never handled in `checkRole`**
+Onboarding lets you assign `FRONT_DESK` to staff. But no API route has `checkRole(auth, ['FRONT_DESK', ...])`. A FRONT_DESK user logs in → `getAuthGym()` returns their profile → every `checkRole(['OWNER', 'STAFF'])` check fails → they can't do anything at all. Broken role silently.
+
+**🟡 `QRPosterSection` hardcodes `https://gym.emitra.dev`**
+Line: `const BASE_URL = "https://gym.emitra.dev"`. All QR posters generated for Nikhil Verma's TRI-STAR gym point to `gym.emitra.dev`, not a custom domain. If you ever move to `app.gymmitra.in` the QR codes on every printed poster will break.
+
+**🟡 Staff invite doesn't send a proper registration link**
+The invite email sends `${getBaseUrl()}/login?tab=signup`. But the signup flow requires a `licenseKey` (RegistrationCode). Staff invited this way land on the signup page with no code — they can't register. The flow is broken end to end for new staff. They have to contact the owner manually to get onboarded.
+
+**🟡 `bulkCreateMembers` uses `skipDuplicates: true`**
+This silently swallows constraint violations rather than reporting them. If 50 members import fine and 1 fails silently, `imported` count shows 51 but one is missing with no error. The count is wrong.
+
+**✅ Confirmed from audit report — all 4 still not fixed:**
+1. Staff trial bypass in middleware — confirmed, still there
+2. Cross-gym invoice IDOR — confirmed, still there
+3. Zombie subscriptions in cron — confirmed, still there
+4. POS floating point — confirmed, still there
+
+The highest-leverage single fix remains: **Upstash Redis for real rate limiting** + the XSS in emails + CSV injection. Those are the ones that will embarrass you publicly if found.

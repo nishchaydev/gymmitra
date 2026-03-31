@@ -9,12 +9,10 @@ import { getBaseUrl } from "@/lib/utils"
 import Link from "next/link"
 
 export function Pricing() {
-    const [billingCycle, setBillingCycle] = React.useState<"monthly" | "yearly">("monthly")
-
     const plans = [
         {
             name: "Pay Per Member",
-            price: billingCycle === "monthly" ? "₹8" : "₹6",
+            price: "₹8",
             period: "/member/mo",
             description: "Perfect for growing gyms. Only pay for who you serve.",
             isPopular: false,
@@ -32,7 +30,7 @@ export function Pricing() {
             name: "Annual Flat",
             price: "₹12,000",
             period: "/year",
-            description: "Unlimited members. One simple annual payment.",
+            description: "Up to 200 members. One simple annual payment.",
             isPopular: true,
             features: [
                 "Everything in Pay Per Member",
@@ -92,40 +90,6 @@ export function Pricing() {
                         <span className="text-primary italic">with your success.</span>
                     </motion.h2>
 
-                    {/* Billing Toggle */}
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2 }}
-                        className="flex items-center justify-center pt-8"
-                    >
-                        <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center shadow-inner border border-slate-200/50">
-                            <button 
-                                onClick={() => setBillingCycle("monthly")}
-                                className={cn(
-                                    "px-6 py-2 rounded-xl text-xs font-black transition-all duration-300",
-                                    billingCycle === "monthly" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                )}
-                            >
-                                Monthly
-                            </button>
-                            <button 
-                                onClick={() => setBillingCycle("yearly")}
-                                className={cn(
-                                    "px-6 py-2 rounded-xl text-xs font-black transition-all duration-300 relative",
-                                    billingCycle === "yearly" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                )}
-                            >
-                                Yearly
-                                {billingCycle !== "yearly" && (
-                                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[8px] px-2 py-0.5 rounded-full font-black animate-bounce whitespace-nowrap uppercase tracking-widest shadow-lg shadow-emerald-500/20">
-                                        Save 25%
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-                    </motion.div>
                 </div>
 
                 {/* Pricing Grid */}

@@ -156,13 +156,15 @@ export async function POST(req: Request) {
         { 
             name: auth.gym.name, 
             phone: auth.gym.phone,
-            address: '', // Since the GET endpoint is not passing full gym settings, provide fallbacks
-            invoiceLinkExpiryDays: 30
+            address: '',
+            invoiceLinkExpiryDays: 30,
+            saasPlan: auth.gym.saasPlan,
         },
         auth.userId,
         ip,
         validatedData
     );
+
 
     if (result.error) {
         return new NextResponse(result.error, { status: 400 });

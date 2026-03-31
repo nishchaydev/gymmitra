@@ -1,10 +1,23 @@
 import { getAuthGym, AuthContext } from '@/lib/auth'
 
-export type SaaSPlan = 'TRIAL' | 'MAIN_PLAN'
+export type SaaSPlan = 'TRIAL' | 'MAIN_PLAN' | 'PER_MEMBER'
 
 const planHierarchy: Record<SaaSPlan, number> = {
     TRIAL: 0,
     MAIN_PLAN: 1,
+    PER_MEMBER: 1, // Same access tier as MAIN_PLAN, different billing model
+}
+
+/**
+ * Member limits per plan.
+ * null = unlimited (no cap enforced).
+ * Only MAIN_PLAN has a hard cap of 200.
+ * TRIAL is intentionally uncapped — full product access during trial.
+ */
+export const PLAN_MEMBER_LIMITS: Record<SaaSPlan, number | null> = {
+    TRIAL: null,       // No cap — let gyms use the full product during trial
+    MAIN_PLAN: 200,    // Flat ₹12,000/year — 200 member cap
+    PER_MEMBER: null,  // ₹8/member/month — unlimited (billed on usage)
 }
 
 /**
@@ -41,7 +54,7 @@ export function withPlan<TArgs extends any[], TReturn>(
             const hasExpired = new Date() > new Date(context.gym.trialExpiresAt)
             if (hasExpired) {
                 console.warn(`[TRIAL EXPIRED] Gym ${context.gym.id} attempted to perform action after trial expired on ${context.gym.trialExpiresAt}.`)
-                throw new Error('Trial Expired: Your 1-month trial has ended. Please activate your license to continue using GymMitra.')
+                throw new Error('Trial Expired: Your trial has ended. Please activate your license to continue using GymMitra.')
             }
         }
 

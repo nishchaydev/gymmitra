@@ -64,9 +64,10 @@ export async function PUT(
         const rl = await guardRateLimit(30, `${auth.userId}:members:put`)
         if (rl) return rl
 
-        // STAFF and above can update members
-        const roleCheck = checkRole(auth, ['OWNER', 'STAFF'])
+        // STAFF, FRONT_DESK and above can update members
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
         if (roleCheck) return roleCheck
+
 
         const { id } = await params
         const body = await request.json()

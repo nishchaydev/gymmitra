@@ -4,6 +4,7 @@ import { BillingRepository } from '@/src/modules/billing/repository'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { safeParseDate } from '@/lib/utils'
 import { isValid } from 'date-fns'
+import { PLAN_MEMBER_LIMITS, type SaaSPlan } from '@/lib/with-plan'
 
 /**
  * Normalize phone: strip +91, leading 0, spaces, dashes, parens → 10-digit string.
@@ -36,11 +37,27 @@ import { z } from 'zod'
 export class MemberService {
     static async createMember(
         gymId: string,
-        gymSettings: { name: string, logo?: string | null, logoUrl?: string | null, address: string, phone: string, invoiceLinkExpiryDays?: number, termsAndConditions?: string | null, gymRules?: string | null, waWelcomeMsg?: string | null },
+        gymSettings: { name: string, logo?: string | null, logoUrl?: string | null, address: string, phone: string, invoiceLinkExpiryDays?: number, termsAndConditions?: string | null, gymRules?: string | null, waWelcomeMsg?: string | null, saasPlan?: string },
         userId: string,
         ip: string,
         validatedData: z.infer<typeof memberSchema>
     ) {
+        // ── Member Cap Enforcement ─────────────────────────────────────────
+        const plan = (gymSettings.saasPlan ?? 'TRIAL') as SaaSPlan
+        const limit = PLAN_MEMBER_LIMITS[plan]
+        if (limit !== null) {
+            const { prisma } = await import('@/lib/prisma')
+            const currentCount = await prisma.member.count({
+                where: { gymId, deletedAt: null }
+            })
+            if (currentCount >= limit) {
+                return {
+                    error: `Member limit reached. Your ${plan === 'MAIN_PLAN' ? '₹12,000 plan' : 'plan'} allows up to ${limit} members. Contact GymMitra to upgrade.`
+                }
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         const existingMember = await MemberRepository.findByPhone(validatedData.phone, gymId)
         if (existingMember) return { error: 'Member with this phone number already exists in your gym.' }
 

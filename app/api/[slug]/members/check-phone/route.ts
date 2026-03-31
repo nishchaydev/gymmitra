@@ -15,7 +15,8 @@ export async function GET(
     }
 
     // Role check: Only staff, trainers, and owners can check for duplicates
-    const roleError = checkRole(auth, ['OWNER', 'STAFF', 'TRAINER']);
+    const roleError = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'TRAINER', 'FRONT_DESK']);
+
     if (roleError) return roleError;
 
     const searchParams = req.nextUrl.searchParams;
