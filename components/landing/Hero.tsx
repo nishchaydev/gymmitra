@@ -12,10 +12,10 @@ export function Hero() {
         <section className="relative pt-24 pb-20 md:pt-32 md:pb-32 overflow-hidden bg-white">
             {/* Minimal Decorative Accents */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[140px] -z-10" />
-            
+
             <div className="container px-4 md:px-6 mx-auto relative z-10">
                 <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-                    
+
                     <MotionWrapper delay={0.1}>
                         <div className="inline-flex items-center rounded-full border border-slate-100 bg-slate-50/50 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-8">
                             <Sparkles className="h-3 w-3 mr-2 text-primary" />

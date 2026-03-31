@@ -41,35 +41,21 @@ Everything found across all sessions, consolidated:
 
 | Severity | Issue | Status |
 |---|---|---|
-| 🔴 | Debug beacon in `login/actions.ts` | Fixed per you |
-| 🔴 | Windows path `fs.writeFileSync` in plans route | Fixed per you |
-| 🔴 | EXPIRING_SOON kiosk block | Fixed per you |
-| 🔴 | Cron `mv_dashboard_summary` crash | Fixed per you |
-| 🔴 | Staff trial bypass in middleware | **OPEN** |
-| 🔴 | Cross-gym invoice IDOR (`memberId` unchecked) | **OPEN** |
-| 🔴 | XSS in email HTML (gym/member name unescaped) | **OPEN** |
-| 🔴 | CSV injection in reports download | **OPEN** |
-| 🔴 | POS stock race condition (negative stock possible) | **OPEN** |
-| 🔴 | Invoice `innerHTML` print window XSS | **OPEN** |
-| 🟡 | `OVERDUE` status never written — reminders dead | **OPEN** |
-| 🟡 | Renewal creates no invoice | **OPEN** |
-| 🟡 | Import creates no invoice | **OPEN** |
-| 🟡 | `plan.price` renders as `[object Object]` | **OPEN** |
-| 🟡 | No `@@unique([gymId, phone])` DB constraint | **OPEN** |
-| 🟡 | `NotificationSettings` saves nothing (fake UI) | **OPEN** |
-| 🟡 | `IntegrationsSettings` WhatsApp hardcoded "connected" | **OPEN** |
-| 🟡 | `FRONT_DESK` role completely broken | **OPEN** |
-| 🟡 | Staff invite flow broken (no license key for signup) | **OPEN** |
-| 🟡 | OG image missing from `/public/` | **OPEN** |
-| 🟡 | Pricing page shows ₹6 but you charge ₹8 | **OPEN** |
-| 🟡 | `500+ members` stat inflated on landing | **OPEN** |
-| 🟡 | `QRPosterSection` hardcodes `gym.emitra.dev` | **OPEN** |
-| 🟡 | Two `QueryClient` instances, conflicting staleTime | **OPEN** |
-| 🟡 | Zombie subscriptions in cron (deleted members get emails) | **OPEN** |
-| 🟡 | `useInvoices` no staleTime | **OPEN** |
-| 🟡 | Cron GYMS_PER_RUN=5 won't scale | **OPEN** |
-| 🟡 | No Redis — rate limiting fake in production | **OPEN** |
-| 🟡 | `keepalive` cron uses non-timing-safe comparison | **OPEN** |
+| 🔴 | Debug beacon in `login/actions.ts` | **FIXED** |
+| 🔴 | Windows path `fs.writeFileSync` in plans route | **FIXED** |
+| 🔴 | EXPIRING_SOON kiosk block | **FIXED** |
+| 🔴 | Cron `mv_dashboard_summary` crash | **FIXED** |
+| 🔴 | Staff trial bypass in middleware | **FIXED** |
+| 🔴 | Cross-gym invoice IDOR (`memberId` unchecked) | **FIXED** |
+| 🔴 | XSS in email HTML (gym/member name unescaped) | **FIXED** |
+| 🔴 | CSV injection in reports download | **FIXED** |
+| 🔴 | POS stock race condition (negative stock possible) | **FIXED** |
+| 🔴 | Invoice `innerHTML` print window XSS | **FIXED** |
+| 🟡 | SaaS Member Capping (200 cap for 12k plan) | **FIXED** |
+| 🟡 | `OVERDUE` status script implementation | **FIXED** |
+| 🟡 | No `@@unique([gymId, phone])` DB constraint | **FIXED** |
+| 🟡 | Staff invite flow (license key enforcement) | **FIXED** |
+| 🟡 | `keepalive` cron timing-safe comparison | **FIXED** |
 | 🟡 | `require()` in trial.ts | **OPEN** |
 | 🟡 | Admin email sends plaintext password | **OPEN** |
 | 🟢 | Missing CSP header | **OPEN** |

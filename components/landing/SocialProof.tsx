@@ -11,7 +11,7 @@ export function SocialProof() {
 
             <div className="container px-4 md:px-6 mx-auto relative z-10">
                 <div className="flex flex-col items-center gap-16">
-                    
+
                     {/* Header: Proof Narrative */}
                     <div className="text-center max-w-3xl space-y-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
@@ -24,7 +24,7 @@ export function SocialProof() {
                     </div>
 
                     {/* Main Proof Card: Tristar Fitness Focus */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
@@ -32,7 +32,7 @@ export function SocialProof() {
                         className="w-full max-w-5xl rounded-[3rem] p-1 bg-gradient-to-br from-slate-200 via-white to-slate-200 shadow-2xl shadow-slate-900/5 group"
                     >
                         <div className="bg-white rounded-[2.8rem] p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 md:gap-20">
-                            
+
                             {/* Brand Profile */}
                             <div className="flex-1 space-y-8">
                                 <div className="space-y-4">
@@ -68,22 +68,22 @@ export function SocialProof() {
 
                             {/* Impact Stats */}
                             <div className="w-full md:w-80 grid gap-4">
-                                <ImpactStat 
+                                <ImpactStat
                                     icon={<Users className="w-5 h-5 text-blue-500" />}
-                                    value="500+" 
-                                    label="Active Members" 
+                                    value="500+"
+                                    label="Active Members"
                                     trend="+12% MoM"
                                 />
-                                <ImpactStat 
+                                <ImpactStat
                                     icon={<TrendingUp className="w-5 h-5 text-emerald-500" />}
-                                    value="90%+" 
-                                    label="Renewal Rate" 
+                                    value="90%+"
+                                    label="Renewal Rate"
                                     trend="Automated"
                                 />
-                                <ImpactStat 
+                                <ImpactStat
                                     icon={<Zap className="w-5 h-5 text-amber-500" />}
-                                    value="100%" 
-                                    label="Accuracy" 
+                                    value="100%"
+                                    label="Accuracy"
                                     trend="Zero Errors"
                                 />
                             </div>
@@ -93,7 +93,7 @@ export function SocialProof() {
 
                     {/* Ticker: Secondary Proof & Social Indicators */}
                     <div className="w-full max-w-4xl overflow-hidden py-4 opacity-40">
-                        <motion.div 
+                        <motion.div
                             className="flex items-center gap-16 whitespace-nowrap"
                             animate={{ x: [0, -1000] }}
                             transition={{ repeat: Infinity, duration: 40, ease: "linear" }}

@@ -34,7 +34,7 @@ export function Pricing() {
             isPopular: true,
             features: [
                 "Everything in Pay Per Member",
-                "Unlimited Member Capacity",
+                "200 Member Capacity",
                 "Priority WhatsApp Support",
                 "Custom Branding",
                 "Data Export & Analytics"
