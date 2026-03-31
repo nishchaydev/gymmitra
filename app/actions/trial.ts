@@ -3,13 +3,24 @@
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { cookies, headers } from 'next/headers'
+import { headers } from 'next/headers'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 import { addDays } from 'date-fns'
 import { getBaseUrl } from '@/lib/utils'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 import { encryptPassword } from '@/lib/crypto'
+import { guardRateLimit } from '@/lib/rate-limit'
+
+// ── XSS Prevention ──────────────────────────────────────────────────
+function escapeHtml(unsafe: string): string {
+    return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
 
 const trialSchema = z.object({
     gymName: z.string().min(2, 'Gym name is required'),

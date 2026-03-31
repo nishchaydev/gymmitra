@@ -120,10 +120,15 @@ export async function POST(request: NextRequest) {
                 taxPercentage: 0,
                 discount: 0,
                 total: price,
-                amountPaid: price,
-                balanceDue: 0,
+                // Correctly reflect actual payment state — mirrors POST /api/invoices logic
+                amountPaid: validatedData.paymentStatus === 'PAID' ? price
+                    : validatedData.paymentStatus === 'PARTIAL' ? Math.min(price / 2, price)
+                    : 0,
+                balanceDue: validatedData.paymentStatus === 'PAID' ? 0
+                    : validatedData.paymentStatus === 'PARTIAL' ? Math.max(0, price / 2)
+                    : price,
                 paymentStatus: validatedData.paymentStatus,
-                paymentMethod: 'CASH' as PaymentMethod, // Default; UI can be extended to pass this
+                paymentMethod: validatedData.paymentMethod as PaymentMethod,
                 shareToken,
                 shareTokenExpiresAt,
                 issueDate: new Date(),
