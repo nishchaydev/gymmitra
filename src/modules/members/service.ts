@@ -55,9 +55,10 @@ export class MemberService {
 
         await MemberRepository.executeTransaction(async (tx) => {
             // ── TOCTOU-safe member cap: count inside the transaction ──────────
+            // Use `tx` (not the raw prisma client) so the count participates in the
+            // SERIALIZABLE transaction and is correctly isolated from concurrent writes.
             if (limit !== null) {
-                const { prisma } = await import('@/lib/prisma')
-                const currentCount = await prisma.member.count({
+                const currentCount = await tx.member.count({
                     where: { gymId, deletedAt: null }
                 })
                 if (currentCount >= limit) {

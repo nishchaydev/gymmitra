@@ -23,6 +23,10 @@ export class AttendanceService {
             throw new Error(`Check-in denied. Member status is ${member.status}.`)
         }
 
+        if (member && (member as any).memberState === 'PAUSED') {
+            throw new Error('Check-in denied. Membership is currently paused. Please contact the gym.')
+        }
+
         if (staffMember && !staffMember.isActive) {
             throw new Error(`Check-in denied. Staff member is inactive.`)
         }

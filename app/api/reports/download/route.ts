@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
                             where: { status: 'ACTIVE' },
                             include: { plan: true }
                         }
-                    }
+                    },
+                    take: 5000, // Guard against unbounded export on large gyms
+                    orderBy: { createdAt: 'desc' }
                 })
                 const headers = ['Name', 'Phone', 'Email', 'Status', 'Joining Date', 'Active Plan']
                 csvContent = [

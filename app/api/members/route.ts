@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getAuthGym } from "@/lib/auth";
+import { getAuthGym, checkRole } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { MemberStatus } from "@prisma/client";
 import { MemberService } from "@/src/modules/members/service";
@@ -11,6 +11,11 @@ export async function GET(req: Request) {
     if (!auth) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    // TRAINER should not access the full member list with subscription/financial data.
+    // Trainers use the schedule endpoint for their limited member lookups.
+    const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK']);
+    if (roleCheck) return roleCheck;
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q");

@@ -82,6 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             id: true, 
             name: true, 
             status: true,
+            memberState: true,
             subscriptions: {
                 where: { status: 'ACTIVE' },
                 orderBy: { endDate: 'desc' },
@@ -105,6 +106,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         }
         return NextResponse.json(
             { error: statusMessages[member.status] || `Check-in denied. Status: ${member.status}.` },
+            { status: 400 }
+        )
+    }
+
+    if ((member as any).memberState === 'PAUSED') {
+        return NextResponse.json(
+            { error: "Your membership is currently paused. Please contact the gym to resume." },
             { status: 400 }
         )
     }

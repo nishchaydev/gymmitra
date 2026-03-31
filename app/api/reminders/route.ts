@@ -4,7 +4,7 @@ import { startOfDay, endOfDay, subDays, addDays } from 'date-fns'
 import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
-import { daysSince, isBirthdayToday } from '@/lib/utils'
+import { daysSince } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,15 +32,24 @@ export async function GET(request: NextRequest) {
         const todayEnd = endOfDay(today)
 
          const [birthdays, overdueInvoices, inactiveMembers, expiringSubs] = await Promise.all([
-             // 1. Birthdays Today (Only members with valid DOB)
-             prisma.member.findMany({
-                 where: {
-                     gymId: gym.id,
-                     status: 'ACTIVE',
-                     dateOfBirth: { not: null as any }
-                 },
-                 select: { id: true, name: true, phone: true, dateOfBirth: true }
-             }).then(members => members.filter(m => isBirthdayToday(m.dateOfBirth))),
+             // 1. Birthdays Today — filtered in DB via SQL EXTRACT to avoid loading all members
+             (async () => {
+                 // Use IST offset (+5:30) to get correct date for Indian users
+                 const nowUtc = new Date()
+                 const istOffset = 330 // IST is UTC+5:30 = 330 minutes
+                 const istDate = new Date(nowUtc.getTime() + istOffset * 60 * 1000)
+                 const todayMonth = istDate.getUTCMonth() + 1
+                 const todayDay = istDate.getUTCDate()
+                 return prisma.$queryRaw<{ id: string; name: string; phone: string | null }[]>`
+                     SELECT id, name, phone
+                     FROM "Member"
+                     WHERE "gymId" = ${gym.id}
+                       AND status = 'ACTIVE'
+                       AND "dateOfBirth" IS NOT NULL
+                       AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
+                       AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}
+                 `
+             })(),
 
             // 2. Overdue Payments
             prisma.invoice.findMany({

@@ -5,9 +5,15 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { productService } from '@/src/modules/products/service'
 
+const MAX_IMPORT_ROWS = 200
+
 export const importProducts = withAuth(async (context, data: any[]) => {
     const gymId = context.gym.id
     const slug = context.gym.slug
+
+    if (!Array.isArray(data) || data.length > MAX_IMPORT_ROWS) {
+        return { error: `Import limit exceeded: maximum ${MAX_IMPORT_ROWS} rows allowed per import.` }
+    }
 
     try {
         const headerList = await headers()
@@ -24,4 +30,4 @@ export const importProducts = withAuth(async (context, data: any[]) => {
         console.error('Import error:', error)
         return { error: 'Failed to import products. Ensure CSV format is correct.' }
     }
-})
+}, ['OWNER', 'MANAGER'])

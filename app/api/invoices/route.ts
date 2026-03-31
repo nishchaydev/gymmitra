@@ -42,6 +42,10 @@ export async function GET(request: NextRequest) {
 
         const gym = auth.gym
 
+        // Only STAFF-level and above can list invoices; TRAINER has no need for billing data
+        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
+        if (roleCheck) return roleCheck
+
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')
         const status = searchParams.get('status')

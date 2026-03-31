@@ -4,7 +4,7 @@ import crypto from 'crypto'
 import { guardRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 10 // Vercel Hobby plan silently caps at 10s; set explicitly
 
 export async function GET(request: NextRequest) {
     // Basic rate limit for cron to prevent DDOS attempts against the URL

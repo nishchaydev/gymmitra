@@ -8,7 +8,14 @@ export class MemberRepository {
     static async executeTransaction<T>(
         callback: (tx: Prisma.TransactionClient) => Promise<T>
     ): Promise<T> {
-        return prisma.$transaction(callback)
+        // SERIALIZABLE isolation prevents TOCTOU on the member-cap count check:
+        // two concurrent createMember calls will both see the same count under
+        // READ COMMITTED, both pass the cap, and both insert — exceeding the limit.
+        // SERIALIZABLE forces one to retry after the other commits, so the second
+        // call will see the updated count and correctly throw MEMBER_CAP.
+        return prisma.$transaction(callback, {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+        })
     }
 
     /**

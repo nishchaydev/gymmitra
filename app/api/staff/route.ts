@@ -18,6 +18,9 @@ const staffSchema = z.object({
     role: z.enum(['STAFF', 'TRAINER', 'MANAGER', 'FRONT_DESK']),
 })
 
+// Roles a MANAGER is allowed to create — prevents MANAGER privilege escalation
+const MANAGER_ALLOWED_ROLES = new Set(['STAFF', 'TRAINER', 'FRONT_DESK'])
+
 export async function GET(request: NextRequest) {
     try {
         const auth = await getAuthGym()
@@ -70,6 +73,14 @@ export async function POST(request: NextRequest) {
         }
         const validatedData = result.data
 
+        // Privilege escalation guard: a MANAGER cannot create another MANAGER
+        if (auth.role === 'MANAGER' && !MANAGER_ALLOWED_ROLES.has(validatedData.role)) {
+            return NextResponse.json(
+                { error: 'Managers cannot create staff members with the MANAGER role. Only the gym owner can do this.' },
+                { status: 403 }
+            )
+        }
+
         // Duplicate check within this gym
         const existingStaff = await prisma.staffMember.findFirst({
             where: { email: validatedData.email, gymId: auth.gym.id }
@@ -106,16 +117,32 @@ export async function POST(request: NextRequest) {
         const supabaseUserId = authData.user.id
 
         // Create StaffMember record linked to the real Supabase UID
-        const newStaff = await prisma.staffMember.create({
-            data: {
-                ...validatedData,
-                gymId: auth.gym.id,
-                userId: supabaseUserId,
-                isActive: true,
-                isFirstLogin: true,
-                tempPassword: encryptPassword(tempPwd),
+        let newStaff
+        try {
+            newStaff = await prisma.staffMember.create({
+                data: {
+                    ...validatedData,
+                    gymId: auth.gym.id,
+                    userId: supabaseUserId,
+                    isActive: true,
+                    isFirstLogin: true,
+                    tempPassword: encryptPassword(tempPwd),
+                }
+            })
+        } catch (dbError: any) {
+            // DB write failed — clean up the orphaned Supabase auth user so the email
+            // can be re-invited later (otherwise Supabase permanently claims the address).
+            console.error('[Staff POST] DB create failed, cleaning up Supabase user:', dbError)
+            try {
+                await supabaseAdmin.auth.admin.deleteUser(supabaseUserId)
+            } catch (cleanupErr) {
+                console.error('[Staff POST] Failed to clean up orphaned Supabase user:', cleanupErr)
             }
-        })
+            if (dbError.code === 'P2002') {
+                return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
+            }
+            return NextResponse.json({ error: 'Failed to create staff member' }, { status: 500 })
+        }
 
         // Send credential email
         const resendKey = process.env.RESEND_API_KEY
@@ -148,9 +175,6 @@ export async function POST(request: NextRequest) {
             { status: 201 }
         )
     } catch (error) {
-        if ((error as any).code === 'P2002') {
-            return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
-        }
         console.error('[Staff POST] Error:', error)
         return NextResponse.json({ error: 'Failed to create staff member' }, { status: 500 })
     }

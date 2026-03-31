@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function DELETE(
     request: NextRequest,
@@ -36,6 +37,19 @@ export async function DELETE(
 
         if (deleted.count === 0) {
             return NextResponse.json({ error: 'Staff member not found or unauthorized' }, { status: 404 })
+        }
+
+        // Delete the Supabase auth user so the fired staff member cannot log in.
+        // This is fire-and-forget — a DB-only delete already denies API access via
+        // getAuthGym(), but removing the Supabase user also invalidates any live
+        // session cookies immediately.
+        try {
+            const supabaseAdmin = createAdminClient()
+            await supabaseAdmin.auth.admin.deleteUser(staffMember.userId)
+        } catch (authDeleteErr) {
+            console.error('[Staff DELETE] Failed to delete Supabase auth user:', authDeleteErr)
+            // Non-fatal: the DB record is gone, getAuthGym() will return null for
+            // this user. Log and continue.
         }
 
         // Audit Log
