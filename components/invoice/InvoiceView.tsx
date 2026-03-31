@@ -51,11 +51,19 @@ function sanitizeForPrint(rawHtml: string): string {
     const doc = parser.parseFromString(`<body>${rawHtml}</body>`, 'text/html')
     // Remove all script elements
     doc.querySelectorAll('script').forEach(el => el.remove())
-    // Strip on* event handler attributes
+    // Remove dangerous embed elements
+    doc.querySelectorAll('iframe, object, embed').forEach(el => el.remove())
+    // Strip on* event handler attributes and javascript: URI schemes
     doc.querySelectorAll('*').forEach(el => {
         Array.from(el.attributes).forEach(attr => {
             if (attr.name.toLowerCase().startsWith('on')) {
                 el.removeAttribute(attr.name)
+            }
+            // Strip javascript: URI from href, src, action, formaction etc.
+            if (['href', 'src', 'action', 'formaction', 'data'].includes(attr.name.toLowerCase())) {
+                if (/^\s*javascript\s*:/i.test(attr.value)) {
+                    el.removeAttribute(attr.name)
+                }
             }
         })
     })

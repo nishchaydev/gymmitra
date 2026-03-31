@@ -175,6 +175,14 @@ export async function POST(req: Request) {
     if (error?.name === 'ZodError') {
         return new NextResponse("Validation error: " + error.message, { status: 400 });
     }
+    // TOCTOU cap: thrown from inside the transaction when the limit is hit concurrently
+    if (error?.message?.startsWith('MEMBER_CAP:')) {
+        const [, limit, plan] = error.message.split(':')
+        return new NextResponse(
+            `Member limit reached. Your ${plan === 'MAIN_PLAN' ? '₹12,000 plan' : 'plan'} allows up to ${limit} members. Contact GymMitra to upgrade.`,
+            { status: 400 }
+        )
+    }
     console.error("[MEMBERS_POST]", error);
     return new NextResponse("Internal error", { status: 500 });
   }

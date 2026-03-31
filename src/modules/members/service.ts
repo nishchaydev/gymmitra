@@ -42,20 +42,9 @@ export class MemberService {
         ip: string,
         validatedData: z.infer<typeof memberSchema>
     ) {
-        // ── Member Cap Enforcement ─────────────────────────────────────────
+        // ── Member Cap Enforcement (plan/limit resolved outside tx for efficiency) ──
         const plan = (gymSettings.saasPlan ?? 'TRIAL') as SaaSPlan
         const limit = PLAN_MEMBER_LIMITS[plan]
-        if (limit !== null) {
-            const { prisma } = await import('@/lib/prisma')
-            const currentCount = await prisma.member.count({
-                where: { gymId, deletedAt: null }
-            })
-            if (currentCount >= limit) {
-                return {
-                    error: `Member limit reached. Your ${plan === 'MAIN_PLAN' ? '₹12,000 plan' : 'plan'} allows up to ${limit} members. Contact GymMitra to upgrade.`
-                }
-            }
-        }
         // ──────────────────────────────────────────────────────────────────
 
         const existingMember = await MemberRepository.findByPhone(validatedData.phone, gymId)
@@ -65,6 +54,18 @@ export class MemberService {
         let finalInvoiceId: string | undefined = undefined
 
         await MemberRepository.executeTransaction(async (tx) => {
+            // ── TOCTOU-safe member cap: count inside the transaction ──────────
+            if (limit !== null) {
+                const { prisma } = await import('@/lib/prisma')
+                const currentCount = await prisma.member.count({
+                    where: { gymId, deletedAt: null }
+                })
+                if (currentCount >= limit) {
+                    throw new Error(`MEMBER_CAP:${limit}:${plan}`)
+                }
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             // Capitalize first letter of every word
             const formattedName = validatedData.name
                 .split(' ')

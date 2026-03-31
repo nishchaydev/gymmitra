@@ -14,9 +14,9 @@ export default async function FirstLoginPage({ params }: FirstLoginPageProps) {
 
     if (!user) redirect('/login')
 
-    // Find the staff record
+    // Find the staff record scoped to this specific gym (prevents cross-gym IDOR)
     const staff = await prisma.staffMember.findFirst({
-        where: { userId: user.id, isActive: true },
+        where: { userId: user.id, isActive: true, gym: { slug } },
         include: { gym: { select: { name: true, slug: true } } }
     })
 

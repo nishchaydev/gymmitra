@@ -257,6 +257,7 @@ export async function GET(request: NextRequest) {
                         SELECT "id", "name", "email" FROM "Member"
                         WHERE "gymId" = ${gym.id}
                           AND "status" = 'ACTIVE'
+                          AND "deletedAt" IS NULL
                           AND "dateOfBirth" IS NOT NULL
                           AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
                           AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}
