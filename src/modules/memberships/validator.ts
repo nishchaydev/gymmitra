@@ -12,6 +12,7 @@ export const subscriptionSchema = z.object({
         .transform((str) => new Date(str))
         .refine((date) => !isNaN(date.getTime()), { message: "Invalid date" }),
     price: z.coerce.number().min(0, "Price cannot be negative").optional(),
+    amountPaid: z.coerce.number().min(0, "Amount paid cannot be negative").optional(),
     paymentStatus: z.nativeEnum(PrismaPaymentStatus).default(PrismaPaymentStatus.PAID),
     paymentMethod: z.enum(['CASH', 'CARD', 'UPI', 'OTHER']).optional().default('CASH'),
     discountReason: z.string().optional(),

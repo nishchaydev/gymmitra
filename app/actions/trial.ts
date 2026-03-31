@@ -10,7 +10,7 @@ import { addDays } from 'date-fns'
 import { getBaseUrl } from '@/lib/utils'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 import { encryptPassword } from '@/lib/crypto'
-import { guardRateLimit } from '@/lib/rate-limit'
+import { apiLimiter } from '@/lib/rate-limit'
 
 // ── XSS Prevention ──────────────────────────────────────────────────
 function escapeHtml(unsafe: string): string {
@@ -66,6 +66,12 @@ export async function createTrialGym(raw: {
     }
     const data = parsed.data
     const email = data.email.toLowerCase().trim()
+
+    try {
+        await apiLimiter.check(5, `create-trial-gym:${data.phone.replace(/\D/g, '').slice(-10)}`)
+    } catch {
+        return { success: false, error: 'Too many trial requests from this phone number. Please try again later.' }
+    }
 
     // 2. Check duplicate by PHONE (primary anti-abuse gate) and email
     const normalizedPhone = data.phone.replace(/\D/g, '').slice(-10)
@@ -127,7 +133,7 @@ export async function createTrialGym(raw: {
                 saasPlan: 'TRIAL',
                 planTier: 'TRIAL',
                 trialExpiresAt,
-                tempPassword: encryptPassword(autoPassword),
+                tempPassword: null,
             },
         })
     } catch (dbError) {
@@ -173,7 +179,7 @@ export async function sendWelcomeEmail(params: {
     ownerName: string
     gymName: string
     email: string
-    password: string
+    resetUrl: string
     slug: string
     trialExpiresAt: Date
 }) {
@@ -190,25 +196,23 @@ export async function sendWelcomeEmail(params: {
     await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
         to: params.email,
-        subject: `Welcome to GymMitra, ${params.ownerName}! 🏋️`,
+        subject: `Welcome to GymMitra, ${escapeHtml(params.ownerName)}! 🏋️`,
         html: `
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px;">
                 <h1 style="font-size: 24px; margin-bottom: 8px;">Welcome to GymMitra! 🎉</h1>
-                <p>Hi ${params.ownerName},</p>
-                <p><strong>${params.gymName}</strong> is now set up with a <strong>30-day free trial</strong> (valid until ${trialEnd}).</p>
+                <p>Hi ${escapeHtml(params.ownerName)},</p>
+                <p><strong>${escapeHtml(params.gymName)}</strong> is now set up with a <strong>30-day free trial</strong> (valid until ${trialEnd}).</p>
 
                 <div style="background: #f1f5f9; border-radius: 8px; padding: 16px 20px; margin: 16px 0;">
-                    <p style="margin: 0 0 8px; font-weight: 600; font-size: 14px; color: #334155;">🔐 Your Login Credentials</p>
-                    <p style="margin: 4px 0; font-size: 14px;">Email: <strong>${params.email}</strong></p>
-                    <p style="margin: 4px 0; font-size: 14px;">Password: <strong>${params.password}</strong></p>
+                    <p style="margin: 0 0 8px; font-weight: 600; font-size: 14px; color: #334155;">🔐 Set up your Login</p>
+                    <p style="margin: 4px 0; font-size: 14px;">Email: <strong>${escapeHtml(params.email)}</strong></p>
+                    <a href="${params.resetUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">
+                        Set Your Password Here →
+                    </a>
                 </div>
 
-                <p>Now that your email is verified, complete your gym setup in just a few minutes:</p>
-                <a href="${baseUrl}/login" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">
-                    Log In & Complete Setup →
-                </a>
                 <p style="color: #64748b; font-size: 14px; margin-top: 24px;">
-                    Your dashboard: <a href="${baseUrl}/${params.slug}/dashboard">${baseUrl}/${params.slug}/dashboard</a>
+                    Your dashboard: <a href="${baseUrl}/${escapeHtml(params.slug)}/dashboard">${baseUrl}/${escapeHtml(params.slug)}/dashboard</a>
                 </p>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
                 <p style="color: #94a3b8; font-size: 12px;">GymMitra · Smart Gym Management</p>
@@ -257,8 +261,8 @@ async function sendAdminNotification(params: {
                     <tr><td style="padding: 6px 12px; color: #64748b;">Phone</td><td style="padding: 6px 12px; font-weight: 600;">${params.phone}</td></tr>
                     <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Email</td><td style="padding: 6px 12px; font-weight: 600;">${params.email}</td></tr>
                     <tr><td style="padding: 6px 12px; color: #64748b;">City</td><td style="padding: 6px 12px; font-weight: 600;">${params.city}</td></tr>
-                    <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Password</td><td style="padding: 6px 12px; font-weight: 600; font-family: monospace;">[ENCRYPTED — check DB tempPassword]</td></tr>
-                    <tr><td style="padding: 6px 12px; color: #64748b;">Slug</td><td style="padding: 6px 12px;"><a href="${baseUrl}/${params.slug}/dashboard">${params.slug}</a></td></tr>
+                    <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Role</td><td style="padding: 6px 12px; font-weight: 600; font-family: monospace;">Admin / Owner</td></tr>
+                    <tr><td style="padding: 6px 12px; color: #64748b;">Slug</td><td style="padding: 6px 12px;"><a href="${baseUrl}/${escapeHtml(params.slug)}/dashboard">${escapeHtml(params.slug)}</a></td></tr>
                     <tr style="background: #f8fafc;"><td style="padding: 6px 12px; color: #64748b;">Signed Up</td><td style="padding: 6px 12px;">${now}</td></tr>
                 </table>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
@@ -354,7 +358,7 @@ export async function adminCreateTrialGym(raw: {
                 saasPlan: 'TRIAL',
                 planTier: 'TRIAL',
                 trialExpiresAt,
-                tempPassword: encryptPassword(tempPassword),
+                tempPassword: null,
             },
         })
     } catch (dbError) {
@@ -377,12 +381,13 @@ export async function adminCreateTrialGym(raw: {
     }
 
     // Send welcome (non-blocking)
+    // For admin creation, we don't have a reliable resetUrl generated immediately here
     sendWelcomeEmail({
         ownerName: data.ownerName,
         gymName: data.gymName,
         email,
         slug,
-        password: tempPassword,
+        resetUrl: `${getBaseUrl()}/reset-password`,
         trialExpiresAt,
     }).catch(() => { })
 

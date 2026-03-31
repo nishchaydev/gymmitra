@@ -44,8 +44,10 @@ export async function DELETE(
         // getAuthGym(), but removing the Supabase user also invalidates any live
         // session cookies immediately.
         try {
-            const supabaseAdmin = createAdminClient()
-            await supabaseAdmin.auth.admin.deleteUser(staffMember.userId)
+            if (staffMember.userId) {
+                const supabaseAdmin = createAdminClient()
+                await supabaseAdmin.auth.admin.deleteUser(staffMember.userId)
+            }
         } catch (authDeleteErr) {
             console.error('[Staff DELETE] Failed to delete Supabase auth user:', authDeleteErr)
             // Non-fatal: the DB record is gone, getAuthGym() will return null for

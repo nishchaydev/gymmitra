@@ -18,7 +18,11 @@ export type AuditAction =
     | 'IMPORT_PRODUCTS'
     | 'IMPORT_MEMBERS'
     | 'CREATE_LEAD'
-    | 'CONVERT_LEAD';
+    | 'CONVERT_LEAD'
+    | 'CREATE_STAFF'
+    | 'UPDATE_STAFF'
+    | 'DELETE_STAFF'
+    | 'EXPORT_DATA';
 
 export interface AuditLogParams {
     gymId: string;

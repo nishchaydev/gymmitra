@@ -54,6 +54,23 @@ This document outlines the systematic remediation of critical vulnerabilities, a
 
 ---
 
+### 2.3 Access Control & Exemptions
+- **Vulnerability:** Unauthenticated users could theoretically access trial dashboard boundaries without valid payment.
+- **Remediation:** Removed the `/dashboard` exception from the `lib/supabase/middleware.ts` trial-blocker; now strictly enforces billing after expiration.
+- **Result:** No free riders on expired dashboards.
+
+### 2.4 Timezone Robustness (M-7)
+- **Vulnerability:** System relied on a static `330` minute offset for Indian Standard Time (IST) in Reminders and Members API.
+- **Remediation:** Integrated `date-fns-tz` to dynamically parse the configured `gym.timezone` with robust string parsing.
+- **Result:** Fully internationalized support for variable gym locations and daylight saving complexities.
+
+### 2.5 Relational Constraints (M-6)
+- **Vulnerability:** Loose linkage across `gymId` within `MemberSubscription` and `InvoiceItem` tables.
+- **Remediation:** Enforced Database-Level Prisma Relations (`@relation(fields: [gymId], references: [id])`) coupled with Cascade deletions.
+- **Result:** Orphans are impossible. Deleting a gym securely cascades to all underlying transactional records.
+
+---
+
 ## 📈 3. SaaS Business Logic
 
 ### 3.1 Tiered Plan Enforcement & Race Protection
@@ -65,6 +82,11 @@ This document outlines the systematic remediation of critical vulnerabilities, a
 - **Vulnerability:** Subscription renewals were creating memberships without corresponding invoices.
 - **Remediation:** Modified `api/memberships/subscriptions` to create the invoice **atomically** in the same transaction as the subscription creation.
 - **Result:** 1:1 financial integrity between active memberships and revenue records.
+
+### 3.3 Strict Distributed Rate-Limiting (H-3/H-4)
+- **Vulnerability:** Heavy API endpoints (Resend email requests, Trial gym creation) utilized unstable in-memory maps or lacked rate limits.
+- **Remediation:** Implemented Upstash Redis `guardRateLimit` across these vectors.
+- **Result:** Hardened defense against DDoS, trial-abuse, and excessive SMTP expenditures.
 
 ---
 
@@ -78,5 +100,8 @@ This document outlines the systematic remediation of critical vulnerabilities, a
 | Race Condition Protection | Transaction-locked member cap checks | ✅ |
 | Automated Billing | Atomic Invoice-Subscription pairing | ✅ |
 | Marketing Truth | Synchronized Landing Site stats | ✅ |
+| Timezone Reliability | Dynamic `date-fns-tz` routing | ✅ |
+| Rate-Limit Defense | Distributed Redis Guard API | ✅ |
 
-**Certified By:** GymMitra Engineering (Antigravity AI)
+**Certified By:** GymMitra Engineering Team
+

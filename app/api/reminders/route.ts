@@ -5,6 +5,7 @@ import { getWhatsAppLink, templates } from '@/lib/whatsapp'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { daysSince } from '@/lib/utils'
+import { formatInTimeZone } from 'date-fns-tz'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,12 +35,12 @@ export async function GET(request: NextRequest) {
          const [birthdays, overdueInvoices, inactiveMembers, expiringSubs] = await Promise.all([
              // 1. Birthdays Today — filtered in DB via SQL EXTRACT to avoid loading all members
              (async () => {
-                 // Use IST offset (+5:30) to get correct date for Indian users
-                 const nowUtc = new Date()
-                 const istOffset = 330 // IST is UTC+5:30 = 330 minutes
-                 const istDate = new Date(nowUtc.getTime() + istOffset * 60 * 1000)
-                 const todayMonth = istDate.getUTCMonth() + 1
-                 const todayDay = istDate.getUTCDate()
+                 // Robust timezone support instead of hardcoded 330 offset
+                 const timezone = gym.timezone || "Asia/Kolkata";
+                 const localDateStr = formatInTimeZone(new Date(), timezone, "MM-dd");
+                 const [monthStr, dayStr] = localDateStr.split('-');
+                 const todayMonth = parseInt(monthStr, 10);
+                 const todayDay = parseInt(dayStr, 10);
                  return prisma.$queryRaw<{ id: string; name: string; phone: string | null }[]>`
                      SELECT id, name, phone
                      FROM "Member"

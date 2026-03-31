@@ -187,8 +187,7 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
             // BUT exempt billing/settings, dashboard, and trial-expired page itself
             const isExempt = pathname.includes('/settings/billing') || 
                              pathname.includes('/trial-expired') ||
-                             pathname.includes('/onboarding') ||
-                             pathname.endsWith('/dashboard')
+                             pathname.includes('/onboarding')
 
             if (isTrial && isExpired && !isExempt && currentSlug && !['dashboard', 'login', 'auth', 'register', 'onboarding'].includes(currentSlug)) {
                 const url = request.nextUrl.clone()

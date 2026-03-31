@@ -12,10 +12,10 @@ export const dynamic = 'force-dynamic'
 function timingSafeEqual(a: string, b: string) {
     if (!a || !b) return false;
     try {
-        const bufA = Buffer.from(a);
-        const bufB = Buffer.from(b);
-        if (bufA.length !== bufB.length) return false;
-        return crypto.timingSafeEqual(bufA, bufB);
+        // Hash both strings to ensure constant length comparison
+        const hashA = crypto.createHash('sha256').update(a).digest();
+        const hashB = crypto.createHash('sha256').update(b).digest();
+        return crypto.timingSafeEqual(hashA, hashB);
     } catch {
         return false;
     }
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     try {
         // Internal webhook protection logic moved BEFORE body parse
         const secret = request.headers.get('x-webhook-secret')
-        if (!timingSafeEqual(secret || '', process.env.CRON_SECRET || '')) {
+        if (!timingSafeEqual(secret || '', process.env.WEBHOOK_SECRET || '')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 

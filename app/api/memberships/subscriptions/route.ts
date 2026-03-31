@@ -121,14 +121,14 @@ export async function POST(request: NextRequest) {
                 discount: 0,
                 total: price,
                 // Correctly reflect actual payment state — mirrors POST /api/invoices logic
-                amountPaid: validatedData.paymentStatus === 'PAID' ? price
-                    : validatedData.paymentStatus === 'PARTIAL' ? Math.min(price / 2, price)
-                    : 0,
-                balanceDue: validatedData.paymentStatus === 'PAID' ? 0
-                    : validatedData.paymentStatus === 'PARTIAL' ? Math.max(0, price / 2)
-                    : price,
+                amountPaid: validatedData.amountPaid !== undefined 
+                    ? validatedData.amountPaid 
+                    : (validatedData.paymentStatus === 'PAID' ? price : (validatedData.paymentStatus === 'PARTIAL' ? Math.min(price / 2, price) : 0)),
+                balanceDue: price - (validatedData.amountPaid !== undefined 
+                    ? validatedData.amountPaid 
+                    : (validatedData.paymentStatus === 'PAID' ? price : (validatedData.paymentStatus === 'PARTIAL' ? Math.min(price / 2, price) : 0))),
                 paymentStatus: validatedData.paymentStatus,
-                paymentMethod: validatedData.paymentMethod as PaymentMethod,
+                paymentMethod: validatedData.paymentMethod as any,
                 shareToken,
                 shareTokenExpiresAt,
                 issueDate: new Date(),

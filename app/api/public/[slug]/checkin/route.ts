@@ -174,8 +174,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
 
+    const maskedName = member.name ? member.name.split(' ')[0] : 'Member'
+
     return NextResponse.json(
-        { success: true, memberName: member.name },
+        { success: true, memberName: maskedName },
         { status: 201 }
     )
 }

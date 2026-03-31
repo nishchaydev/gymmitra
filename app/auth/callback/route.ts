@@ -129,9 +129,17 @@ export async function GET(request: Request) {
 
     // First time verification logic
     if (gym && !gym.isVerified) {
-        if (gym.tempPassword && !gym.onboardingEmailsSentAt) {
+        if (!gym.onboardingEmailsSentAt) {
             try {
-                const actualPassword = decryptPassword(gym.tempPassword)
+                // Generate secure Supabase reset link instead of using a temp password
+                const { createAdminClient } = await import('@/lib/supabase/admin')
+                const supabaseAdmin = createAdminClient()
+                const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
+                    type: 'recovery',
+                    email: gym.email,
+                    options: { redirectTo: `${baseUrl}/${gym.slug || gym.id}/dashboard` }
+                })
+                const resetUrl = linkData?.properties?.action_link || `${baseUrl}/reset-password`
 
                 // Atomic check and update to prevent race conditions
                 const updateClaim = await prisma.gymProfile.updateMany({
@@ -153,7 +161,7 @@ export async function GET(request: Request) {
                             ownerName: gym.ownerName ?? gym.name,
                             gymName: gym.name,
                             email: gym.email,
-                            password: actualPassword,
+                            resetUrl,
                             slug: gym.slug ?? gym.id,
                             trialExpiresAt: gym.trialExpiresAt ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
                         }),

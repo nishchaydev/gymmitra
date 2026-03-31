@@ -6,24 +6,18 @@ import { headers } from 'next/headers'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gym.emitra.dev'
 
-// Simple in-memory rate limit for resend actions
-const rateLimit = new Map<string, { count: number, timestamp: number }>()
+import { apiLimiter } from '@/lib/rate-limit'
 
 export async function resendVerificationEmail(email?: string) {
     try {
         // Rate limiting
         const headerList = await headers()
         const ip = headerList.get('x-forwarded-for') || 'unknown-ip'
-        const now = Date.now()
-        const limitRecord = rateLimit.get(ip)
         
-        if (limitRecord && now - limitRecord.timestamp < 60000) {
-            if (limitRecord.count >= 3) {
-                return { success: false, error: 'Too many requests. Please wait a minute before trying again.' }
-            }
-            limitRecord.count++
-        } else {
-            rateLimit.set(ip, { count: 1, timestamp: now })
+        try {
+            await apiLimiter.check(3, `resend-verify:${ip}`)
+        } catch {
+            return { success: false, error: 'Too many requests. Please wait a minute before trying again.' }
         }
 
         const supabase = await createClient()

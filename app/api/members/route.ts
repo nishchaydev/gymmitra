@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthGym, checkRole } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { MemberStatus } from "@prisma/client";
+import { formatInTimeZone } from "date-fns-tz";
 import { MemberService } from "@/src/modules/members/service";
 import { memberSchema } from "@/src/modules/members/validator";
 
@@ -74,12 +75,12 @@ export async function GET(req: Request) {
 
     // Today's Birthday Filter
     if (birthday === "today") {
-      // Use IST offset (+5:30) to get correct date for Indian users
-      const nowUtc = new Date();
-      const istOffset = 330; // IST is UTC+5:30 = 330 minutes
-      const istDate = new Date(nowUtc.getTime() + istOffset * 60 * 1000);
-      const month = istDate.getUTCMonth() + 1;
-      const day = istDate.getUTCDate();
+      // Robust timezone support instead of hardcoded 330 offset
+      const timezone = auth.gym.timezone || "Asia/Kolkata";
+      const localDateStr = formatInTimeZone(new Date(), timezone, "MM-dd");
+      const [monthStr, dayStr] = localDateStr.split('-');
+      const month = parseInt(monthStr, 10);
+      const day = parseInt(dayStr, 10);
       const birthdaysToday = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Member" 
         WHERE EXTRACT(MONTH FROM "dateOfBirth") = ${month}
