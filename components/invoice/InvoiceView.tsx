@@ -71,6 +71,8 @@ function sanitizeForPrint(rawHtml: string): string {
 }
 
 function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload: boolean): string {
+    const nonce = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
+    
     const banner = forDownload
         ? `<div id="pdf-banner">📄 <strong>To save as PDF:</strong> In the print dialog, set Destination → <strong>Save as PDF</strong>, then click Save.</div>`
         : ''
@@ -79,9 +81,9 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob: https:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}' 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src data: blob: https:;" />
   <title>Invoice-${invoiceNumber}</title>
-  <style>
+  <style nonce="${nonce}">
     @page { size: A4 portrait; margin: 10mm; }
     html, body {
       margin: 0; padding: 0; background: #fff;
@@ -290,7 +292,7 @@ function buildPrintDocument(invoiceNumber: string, bodyHtml: string, forDownload
 <body>
   ${banner}
   ${bodyHtml}
-  <script>
+  <script nonce="${nonce}">
     window.addEventListener('load', function () {
       setTimeout(function () { window.print(); }, 400);
     });

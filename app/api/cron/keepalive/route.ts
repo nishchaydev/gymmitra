@@ -8,17 +8,19 @@ export const revalidate = 0;
 export async function GET(req: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret) {
-        const authHeader = req.headers.get('authorization') || '';
-        const expected = `Bearer ${cronSecret}`;
+    if (!cronSecret) {
+        return NextResponse.json({ error: 'Configuration Error: CRON_SECRET is missing' }, { status: 500 });
+    }
 
-        // Constant-time comparison — same pattern as daily-reminders cron
-        const hmacHeader = crypto.createHmac('sha256', cronSecret).update(authHeader).digest();
-        const hmacExpected = crypto.createHmac('sha256', cronSecret).update(expected).digest();
+    const authHeader = req.headers.get('authorization') || '';
+    const expected = `Bearer ${cronSecret}`;
 
-        if (!crypto.timingSafeEqual(hmacHeader, hmacExpected)) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+    // Constant-time comparison — same pattern as daily-reminders cron
+    const hmacHeader = crypto.createHmac('sha256', cronSecret).update(authHeader).digest();
+    const hmacExpected = crypto.createHmac('sha256', cronSecret).update(expected).digest();
+
+    if (!crypto.timingSafeEqual(hmacHeader, hmacExpected)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {

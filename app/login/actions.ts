@@ -161,11 +161,28 @@ export async function signup(formData: FormData) {
                 });
                 targetGymIds = existingStaff.map(s => s.gymId);
             } else {
-                const baseSlug = ((formData.get('gym_name') as string)?.toLowerCase().trim().replace(/[^a-z0-9]/g, '-') || email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-') || 'gym').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'gym';
+                const gymName = formData.get('gym_name') as string || '';
+                const baseSlug = (gymName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-') || email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-') || 'gym').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'gym';
+                
+                let currentSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
+                let isUnique = false;
+                for (let i = 0; i < 5; i++) {
+                    const existing = await tx.gymProfile.findUnique({ where: { slug: currentSlug } });
+                    if (!existing) {
+                        isUnique = true;
+                        break;
+                    }
+                    currentSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+                }
+                
+                if (!isUnique) {
+                    throw new Error("Could not generate a unique gym URL. Please try again.");
+                }
+
                 const newGym = await tx.gymProfile.create({
                     data: {
-                        name: "My Gym",
-                        slug: `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`,
+                        name: gymName || "My Gym", // Use actual gym name if provided
+                        slug: currentSlug,
                         email: email,
                         phone: "0000000000",
                         userId: authData.user!.id,

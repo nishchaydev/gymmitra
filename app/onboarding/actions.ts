@@ -302,15 +302,21 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         // Process Members
         if (validatedData.members) {
             try {
-                const memberSchema = z.array(z.object({
+                const singleMemberSchema = z.object({
                     name: z.string().min(1),
                     phone: z.coerce.string().min(10),
                     planName: z.string().optional(),
                     joinDate: z.string().optional(),
-                }))
+                })
 
-                const parsedMembers = JSON.parse(validatedData.members)
-                const validMembers = memberSchema.parse(parsedMembers)
+                const parsedArray = JSON.parse(validatedData.members)
+                const validMembers = Array.isArray(parsedArray) 
+                    ? parsedArray.map(m => singleMemberSchema.safeParse(m)).filter(res => res.success).map(res => res.data)
+                    : []
+                
+                if (validMembers.length < (Array.isArray(parsedArray) ? parsedArray.length : 0)) {
+                    warnings.push("Some members were skipped because their phone numbers or names were invalid.")
+                }
 
                 // Pre-fetch gym plans so we can link members to their plan
                 const gymPlans = await prisma.membershipPlan.findMany({

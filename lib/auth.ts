@@ -46,6 +46,7 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
     // 2. Check if user is Staff/Trainer
     const staffProfile = await prisma.staffMember.findFirst({
         where: { userId: user.id, isActive: true },
+        orderBy: { createdAt: 'asc' },
         include: { gym: true }
     })
 

@@ -17,8 +17,9 @@ const checkInSchema = z.object({
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
+    const ip = _req.headers.get('x-forwarded-for') || '127.0.0.1';
 
-    const rateLimited = await guardRateLimit(60, `public-checkin-info:${slug}`)
+    const rateLimited = await guardRateLimit(60, `public-checkin-info:${slug}:${ip}`)
     if (rateLimited) return rateLimited
 
     const gym = await prisma.gymProfile.findUnique({
@@ -40,9 +41,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
 
-    // Rate limit: 20 check-ins per minute per slug (one device shouldn't spam)
-    const rateLimited = await guardRateLimit(20, `public-checkin-post:${slug}`)
+    // Rate limit: 20 check-ins per minute per slug per IP (one device shouldn't spam)
+    const rateLimited = await guardRateLimit(20, `public-checkin-post:${slug}:${ip}`)
     if (rateLimited) return rateLimited
 
     let body: unknown

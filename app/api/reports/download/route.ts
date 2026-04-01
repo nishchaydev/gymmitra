@@ -176,15 +176,13 @@ export async function GET(request: NextRequest) {
                     orderBy: { date: 'desc' }
                 })
                 const headers = ['Date', 'Category', 'Amount', 'Description']
-                csvContent = [
-                    headers.join(','),
-                    ...expenses.map(e => [
-                        e.date.toISOString().split('T')[0],
-                        e.category,
-                        e.amount,
-                        `"${(e.description || '').replace(/"/g, '""')}"`
-                    ].join(','))
-                ].join('\n')
+                const rows = expenses.map(e => [
+                    e.date.toISOString().split('T')[0],
+                    csvEscape(e.category),
+                    e.amount.toString(),
+                    csvEscape(e.description || '')
+                ].join(','))
+                csvContent = [headers.join(','), ...rows].join('\n')
                 break
             }
             default:

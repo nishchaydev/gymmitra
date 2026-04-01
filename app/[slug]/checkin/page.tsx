@@ -41,14 +41,14 @@ export default function CheckInPage() {
             .catch(() => { })
 
         try {
-            const remembered = localStorage.getItem(storageKey)
+            const remembered = sessionStorage.getItem(storageKey)
             if (remembered) {
                 setSavedPhone(remembered)
                 setPhone(remembered)
                 setIsReturningMember(true)
             }
         } catch (e) {
-            console.error("localStorage access failed:", e)
+            console.error("sessionStorage access failed:", e)
         }
     }, [slug, storageKey])
 
@@ -76,9 +76,9 @@ export default function CheckInPage() {
             }
 
             try {
-                localStorage.setItem(storageKey, phoneNum.trim())
+                sessionStorage.setItem(storageKey, phoneNum.trim())
             } catch (e) {
-                console.error("localStorage access failed:", e)
+                console.error("sessionStorage access failed:", e)
             }
             setSavedPhone(phoneNum.trim())
             setIsReturningMember(true)

@@ -24,8 +24,9 @@ export async function GET(req: Request) {
     const dobMonth = searchParams.get("dobMonth");
     const birthday = searchParams.get("birthday");
     const duration = searchParams.get("duration");
-    const page = parseInt(searchParams.get("page") || "1");
-    const take = parseInt(searchParams.get("take") || "10");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const rawTake = parseInt(searchParams.get("take") || "10");
+    const take = Math.min(Math.max(rawTake, 1), 1000); // Clamp pagination to block abuse
     const skip = (page - 1) * take;
 
     const andFilters: any[] = [
@@ -43,8 +44,63 @@ export async function GET(req: Request) {
       });
     }
 
+    const now = new Date()
+
     if (status && status !== "ALL") {
-      andFilters.push({ status: status as MemberStatus });
+      if (status === "EXPIRED") {
+        // Find members that either have DB status EXPIRED OR are ACTIVE but their latest subscription has ended
+        andFilters.push({
+          OR: [
+            { status: "EXPIRED" },
+            {
+              AND: [
+                { status: "ACTIVE" },
+                {
+                  subscriptions: {
+                    some: {
+                      endDate: { lt: now }
+                    }
+                  }
+                },
+                // And they do NOT have any active subscription ending in the future
+                {
+                  NOT: {
+                    subscriptions: {
+                      some: {
+                        endDate: { gte: now }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        });
+      } else if (status === "ACTIVE") {
+        // ACTIVE in DB AND have a subscription ending in the future or no subscription yet?
+        // Let's just say ACTIVE means DB status ACTIVE and (no sub or latest sub is not expired)
+        andFilters.push({
+          status: "ACTIVE",
+          NOT: {
+            AND: [
+              {
+                subscriptions: {
+                  some: { endDate: { lt: now } }
+                }
+              },
+              {
+                NOT: {
+                  subscriptions: {
+                    some: { endDate: { gte: now } }
+                  }
+                }
+              }
+            ]
+          }
+        });
+      } else {
+        andFilters.push({ status: status as MemberStatus });
+      }
     }
 
     if (duration && duration !== "ALL") {
@@ -112,8 +168,6 @@ export async function GET(req: Request) {
       prisma.member.count({ where }),
     ]);
 
-    const now = new Date()
-
     const formattedMembers = members.map((member) => {
       const latestEndDate = member.subscriptions[0]?.endDate || null
 
@@ -139,7 +193,7 @@ export async function GET(req: Request) {
     })
   } catch (error: any) {
     console.error("[MEMBERS_GET]", error);
-    return new NextResponse(`Internal error: ${error?.message || error}`, { status: 500 });
+    return new NextResponse("Internal server error while fetching members.", { status: 500 });
   }
 }
 
