@@ -45,19 +45,19 @@ export async function GET(request: NextRequest) {
         const validStatuses = ['NEW', 'CONTACTED', 'INTERESTED', 'NOT_INTERESTED', 'CONVERTED']
         const isValidStatus = status && status !== 'ALL' && validStatuses.includes(status)
 
-        const whereClause: any = {
+        const whereClause = {
             gymId: auth.gym.id,
-            ...(isValidStatus ? { status: status as any } : {}),
+            ...(isValidStatus ? { status: status as import('@prisma/client').$Enums.LeadStatus } : {}),
             ...(q
                 ? {
                     OR: [
-                        { name: { contains: q, mode: 'insensitive' } },
+                        { name: { contains: q, mode: 'insensitive' as const } },
                         { phone: { contains: q } },
-                        { email: { contains: q, mode: 'insensitive' } },
+                        { email: { contains: q, mode: 'insensitive' as const } },
                     ],
                 }
                 : {}),
-        }
+        } satisfies import('@prisma/client').Prisma.LeadWhereInput;
 
         const [leads, totalCount] = await Promise.all([
             prisma.lead.findMany({

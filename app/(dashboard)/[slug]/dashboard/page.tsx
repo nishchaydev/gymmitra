@@ -191,6 +191,7 @@ export default async function DashboardPage({
         const lastWeekStart = startOfDay(subDays(today, 6))
 
                 // Direct Prisma queries - replaces broken mv_dashboard_summary
+        const now = new Date()
         const [
             _activeMembers,
             _totalMembers,
@@ -201,7 +202,18 @@ export default async function DashboardPage({
             _urgentRenewalsCount,
             _productSalesCount,
         ] = await Promise.all([
-            prisma.member.count({ where: { gymId: gym!.id, status: 'ACTIVE' } }).catch(() => 0),
+            prisma.member.count({ 
+                where: { 
+                    gymId: gym!.id, 
+                    status: 'ACTIVE',
+                    NOT: {
+                        AND: [
+                            { subscriptions: { some: { endDate: { lt: now } } } },
+                            { NOT: { subscriptions: { some: { endDate: { gte: now } } } } }
+                        ]
+                    }
+                } 
+            }).catch(() => 0),
             prisma.member.count({ where: { gymId: gym!.id, deletedAt: null } }).catch(() => 0),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfThisMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
             prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { balanceDue: true } }).catch(() => ({ _sum: { balanceDue: null } })),
@@ -447,10 +459,10 @@ export default async function DashboardPage({
                     gymId: gym!.id,
                     createdAt: { lt: startDate5Months },
                     NOT: [
-                        { name: { contains: 'Seed', mode: 'insensitive' as any } },
-                        { name: { contains: 'Demo', mode: 'insensitive' as any } }
+                        { name: { contains: 'Seed', mode: 'insensitive' } },
+                        { name: { contains: 'Demo', mode: 'insensitive' } }
                     ]
-                } as any
+                }
             }).catch(() => 0)
         ])
 
