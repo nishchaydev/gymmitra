@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
+import { optionalDateField } from '@/lib/date-validation'
 
 // Validations
 const invoiceItemSchema = z.object({
@@ -18,7 +19,7 @@ const invoiceCreateSchema = z.object({
     paymentMethod: z.enum(['CASH', 'CARD', 'UPI', 'OTHER']).optional(),
     items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
     notes: z.string().optional(),
-    dueDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
+    dueDate: optionalDateField('dueDate'),
     discount: z.number().nonnegative().optional().default(0),
     taxAmount: z.number().nonnegative().optional().default(0),
     idempotencyKey: z.string().optional(),

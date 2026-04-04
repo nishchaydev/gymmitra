@@ -4,11 +4,12 @@ import { z } from 'zod'
 import { getAuthGym } from '@/lib/auth'
 import { SessionStatus, Prisma } from '@prisma/client'
 import { guardRateLimit, ConflictError } from '@/lib/rate-limit'
+import { optionalDateField } from '@/lib/date-validation'
 
 const updateSchema = z.object({
     status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
-    startTime: z.string().transform(str => new Date(str)).optional(),
-    endTime: z.string().transform(str => new Date(str)).optional(),
+    startTime: optionalDateField('startTime'),
+    endTime: optionalDateField('endTime'),
     notes: z.string().optional()
 })
 

@@ -118,10 +118,16 @@ export async function GET(req: Request) {
 
     // Birthday Month Filter
     if (dobMonth && dobMonth !== "ALL") {
-      const monthNum = parseInt(dobMonth);
+      const parsedMonth = Number.parseInt(dobMonth, 10);
+      if (!Number.isInteger(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+        return NextResponse.json(
+          { error: "Invalid dobMonth. Must be between 1 and 12." },
+          { status: 400 }
+        );
+      }
       const membersWithMonth = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Member" 
-        WHERE EXTRACT(MONTH FROM "dateOfBirth") = ${monthNum}
+        WHERE EXTRACT(MONTH FROM "dateOfBirth") = ${parsedMonth}
         AND "gymId" = ${auth.gym.id}
         AND "deletedAt" IS NULL
       `;
@@ -247,4 +253,3 @@ export async function POST(req: Request) {
     return new NextResponse("Internal error", { status: 500 });
   }
 }
-
