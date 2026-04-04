@@ -2,6 +2,24 @@
 
 All notable changes to the GymMitra ERP platform will be documented in this file.
 
+## [1.0.0-rc.2] - 2026-04-04
+### ⚙️ Dashboard Stability & Performance
+- **Connection Pool Optimization:** Resolved `Timed out fetching a new connection` errors by consolidating 8 top-level counts into a single high-performance Raw SQL summary query.
+- **Query Batching:** Refactored 18 concurrent dashboard widget queries into a 3-wave sequential execution pattern to respect strict database connection limits.
+- **Next.js Serialization:** Fixed `Decimal objects are not supported` runtime crashes by converting all financial and count fields to plain numbers before passing to Client Components.
+- **Reporting Integrity:** Restored the "Overdue Payments" reminder tab and synchronized "Inactive Members" data mapping from the centralized frequency analytics.
+
+### 🛡️ Multi-Tenant Integrity
+- **Attendance Hardening:** Synchronized `AttendanceService` and `AttendanceRepository` to mandate explicit `gymId` scoping on all check-in lookups, eliminating unsafe global type casts.
+- **Leads API Security:** Fixed a critical rate-limiting naming typo (`limter` -> `limiter`) and removed potentially unstable `(prisma as any)` hacks.
+
+### 🎨 UI/UX Excellence
+- **Selection Visibility:** Injected a global `::selection` CSS rule to fix the "invisible text" bug during user selection in `globals.css`.
+- **Data Freshness:** Forced a descending sort order (`desc`) on all Outstanding Invoices to prioritize current actionable data over stale records.
+- **Engagement Logic:** Expanded "Urgent Renewals" range to include members expired within the last 30 days for better re-acquisition workflows.
+
+---
+
 ## [1.0.0-rc.1] - 2026-03-31
 ### 🛡️ Security & Hardening
 - **Auth Hardening:** Replaced insecure plaintext temporary passwords with Supabase Magic Recovery Links during trial creation (`app/actions/trial.ts` & `app/auth/callback/route.ts`).
