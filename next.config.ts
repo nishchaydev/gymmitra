@@ -35,14 +35,14 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com ${process.env.NODE_ENV !== 'production' ? "'unsafe-eval' localhost:*" : ''}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io",
+              `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://va.vercel-scripts.com ${process.env.NODE_ENV !== 'production' ? "ws://localhost:* http://localhost:*" : ''}`,
               "frame-ancestors 'none'",
-              "report-uri /api/csp-report",
-            ].join('; ')
+              process.env.NODE_ENV === 'production' ? "report-uri /api/csp-report" : "",
+            ].filter(Boolean).join('; ')
           },
         ],
       },
@@ -60,7 +60,7 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(pwa(nextConfig), {
   // For all available options, see:
-  // https://github.com/getsentry/sentry-javascript/blob/master/packages/nextjs/src/config/types.ts
+  // https://github.com/getsentry/sentr-javascript/blob/master/packages/nextjs/src/config/types.ts
 
   // Can be used to configure automatic source map uploads
   org: "gym-mitra",
