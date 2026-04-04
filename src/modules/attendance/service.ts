@@ -19,8 +19,17 @@ export class AttendanceService {
             throw new Error('Member or Staff not found in this gym. Please check the ID.')
         }
 
-        if (member && !['ACTIVE', 'EXPIRING_SOON'].includes(member.status)) {
-            throw new Error(`Check-in denied. Member status is ${member.status}.`)
+        if (member) {
+            let effectiveStatus = member.status
+            const latestSub = member.subscriptions?.[0]
+
+            if (latestSub && latestSub.endDate < now) {
+                effectiveStatus = 'EXPIRED'
+            }
+
+            if (!['ACTIVE', 'EXPIRING_SOON'].includes(effectiveStatus)) {
+                throw new Error(`Check-in denied. Membership has expired or is inactive.`)
+            }
         }
 
         if (member && (member as any).memberState === 'PAUSED') {
@@ -90,7 +99,7 @@ export class AttendanceService {
             throw new Error('Member not found or access denied')
         }
 
-        return attendanceRepository.getAttendanceByMemberId(memberId, skip, take)
+        return attendanceRepository.getAttendanceByMemberId(memberId, gymId, skip, take)
     }
 
     async syncOffline(gymId: string, timezone: string, records: any[]) {
@@ -151,7 +160,7 @@ export class AttendanceService {
                         if (existing) {
                             const existingTime = new Date(existing.checkInTime)
                             if (checkInTimeDate < existingTime) {
-                                await attendanceRepository.updateAttendanceTime(existing.id, record.checkInTime, checkInTimeDate)
+                                await attendanceRepository.updateAttendanceTime(existing.id, gymId, record.checkInTime, checkInTimeDate)
                             }
                         }
                     } else {

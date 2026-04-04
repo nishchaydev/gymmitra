@@ -152,6 +152,11 @@
   h6 {
     @apply font-display tracking-tight;
   }
+
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: inherit;
+  }
 }
 
 @layer utilities {

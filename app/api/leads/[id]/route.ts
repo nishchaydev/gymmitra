@@ -39,14 +39,8 @@ export async function PUT(
         const rateLimited = await guardRateLimit(30, `${auth.userId}:leads:put`)
         if (rateLimited) return rateLimited
 
-        // Runtime check for Lead model
-        if (!(prisma as any).lead) {
-            console.error('[Leads API] Prisma client is stale. Lead model not found.')
-            return NextResponse.json({ error: 'Database client sync required' }, { status: 500 })
-        }
-
         // Verify ownership
-        const existing = await (prisma as any).lead.findFirst({
+        const existing = await prisma.lead.findFirst({
             where: { id, gymId: auth.gym.id },
         })
         if (!existing) {
@@ -59,8 +53,8 @@ export async function PUT(
         // Track conversion
         const isConverting = validatedData.status === 'CONVERTED' && existing.status !== 'CONVERTED'
 
-        const lead = await (prisma as any).lead.update({
-            where: { id },
+        const lead = await prisma.lead.update({
+            where: { id, gymId: auth.gym.id },
             data: {
                 ...validatedData,
                 ...(isConverting ? { convertedAt: new Date() } : {}),
@@ -69,14 +63,18 @@ export async function PUT(
 
         // Audit log for conversion
         if (isConverting) {
-            recordAuditLog({
+            const ipHeader = request.headers.get('x-forwarded-for')
+            const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
+
+            await recordAuditLog({
                 gymId: auth.gym.id,
                 actorId: auth.userId,
                 action: 'CONVERT_LEAD',
                 entityType: 'LEAD',
                 entityId: lead.id,
+                ipAddress: ip,
                 payload: { name: lead.name, phone: lead.phone },
-            }).catch(err => console.error('[Leads] Audit logging failed:', err))
+            })
         }
 
         return NextResponse.json({ lead })
@@ -110,21 +108,15 @@ export async function DELETE(
         const rateLimited = await guardRateLimit(20, `${auth.userId}:leads:delete`)
         if (rateLimited) return rateLimited
 
-        // Runtime check for Lead model
-        if (!(prisma as any).lead) {
-            console.error('[Leads API] Prisma client is stale. Lead model not found.')
-            return NextResponse.json({ error: 'Database client sync required' }, { status: 500 })
-        }
-
         // Verify ownership
-        const existing = await (prisma as any).lead.findFirst({
+        const existing = await prisma.lead.findFirst({
             where: { id, gymId: auth.gym.id },
         })
         if (!existing) {
             return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
         }
 
-        await (prisma as any).lead.delete({ where: { id } })
+        await prisma.lead.deleteMany({ where: { id, gymId: auth.gym.id } })
 
         return NextResponse.json({ success: true })
     } catch (error: any) {

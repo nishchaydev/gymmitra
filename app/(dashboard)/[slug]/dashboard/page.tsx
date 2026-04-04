@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Skeleton } from "@/components/SkeletonProvider"
 import { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -22,7 +23,7 @@ import { SHOWCASE_STATS, MOCKUP_DATA } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
 import { exitDemo } from "./actions"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
-import { isBirthdayToday } from "@/lib/utils"
+import { isBirthdayToday, isBirthdayUpcoming } from "@/lib/utils"
 
 interface DashboardSummary {
     gym_id: string
@@ -92,7 +93,7 @@ export default async function DashboardPage({
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
     const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemo = (envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true') || (process.env.NODE_ENV === 'development' && slug === 'demo')
 
     if (!auth && !isDemo) {
         redirect("/login")
@@ -194,323 +195,84 @@ export default async function DashboardPage({
         const thirtyDaysAgo = startOfDay(subDays(today, 30))
         const lastWeekStart = startOfDay(subDays(today, 6))
 
-                // Direct Prisma queries - replaces broken mv_dashboard_summary
-        const now = new Date()
-        const [
-            _activeMembers,
-            _totalMembers,
-            _monthlyRevenueAgg,
-            _pendingRevenueAgg,
-            _lastMonthRevenueAgg,
-            _todayCheckinsCount,
-            _urgentRenewalsCount,
-            _productSalesCount,
-        ] = await Promise.all([
-            prisma.member.count({ 
-                where: { 
-                    gymId: gym!.id, 
-                    status: 'ACTIVE',
-                    NOT: {
-                        AND: [
-                            { subscriptions: { some: { endDate: { lt: now } } } },
-                            { NOT: { subscriptions: { some: { endDate: { gte: now } } } } }
-                        ]
-                    }
-                } 
-            }).catch(() => 0),
-            prisma.member.count({ where: { gymId: gym!.id, deletedAt: null } }).catch(() => 0),
-            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfThisMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
-            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: { in: ['PENDING', 'PARTIAL'] }, deletedAt: null }, _sum: { balanceDue: true } }).catch(() => ({ _sum: { balanceDue: null } })),
-            prisma.invoice.aggregate({ where: { gymId: gym!.id, paymentStatus: 'PAID', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth }, deletedAt: null }, _sum: { total: true } }).catch(() => ({ _sum: { total: null } })),
-            prisma.attendance.count({ where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } }).catch(() => 0),
-            prisma.memberSubscription.count({ where: { gymId: gym!.id, status: 'ACTIVE', endDate: { gte: today, lte: addDays(today, 7) } } }).catch(() => 0),
-            prisma.invoice.count({ where: { gymId: gym!.id, type: 'PRODUCT' as any, createdAt: { gte: startOfThisMonth }, deletedAt: null } }).catch(() => 0),
-        ])
+        // Consolidate 8 summary counts into 1 Raw SQL query to save connection pool
+        const summaryRaw = await prisma.$queryRaw`
+            SELECT
+                (SELECT COUNT(*) FROM "Member" WHERE "gymId" = ${gym!.id} AND "status" = 'ACTIVE' AND "deletedAt" IS NULL) as active_members,
+                (SELECT COUNT(*) FROM "Member" WHERE "gymId" = ${gym!.id} AND "deletedAt" IS NULL) as total_members,
+                (SELECT SUM("total") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND "createdAt" >= ${startOfThisMonth} AND "deletedAt" IS NULL) as monthly_revenue,
+                (SELECT SUM("balanceDue") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" IN ('PENDING', 'PARTIAL') AND "deletedAt" IS NULL) as pending_revenue,
+                (SELECT SUM("total") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND "createdAt" >= ${startOfLastMonth} AND "createdAt" <= ${endOfLastMonth} AND "deletedAt" IS NULL) as last_month_revenue,
+                (SELECT COUNT(*) FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "date" >= ${today} AND "date" <= ${endOfToday()}) as today_checkins,
+                -- Expanded range: Expired 30 days ago to Expiring 7 days from now
+                (SELECT COUNT(*) FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "status" = 'ACTIVE' AND "endDate" >= ${subDays(today, 30)} AND "endDate" <= ${addDays(today, 7)}) as urgent_renewals,
+                (SELECT COUNT(*) FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "type" = 'PRODUCT' AND "createdAt" >= ${startOfThisMonth} AND "deletedAt" IS NULL) as product_sales
+        ` as any[]
+        
+        const summaryRow = summaryRaw[0] || {}
 
         const summary: DashboardSummary = {
             gym_id: gym!.id,
-            active_members: BigInt(_activeMembers),
-            total_members: BigInt(_totalMembers),
-            monthly_revenue: Number(_monthlyRevenueAgg._sum?.total || 0),
-            pending_revenue: Number(_pendingRevenueAgg._sum?.balanceDue || 0),
-            last_month_revenue: Number(_lastMonthRevenueAgg._sum?.total || 0),
-            today_checkins: BigInt(_todayCheckinsCount),
-            urgent_renewals: BigInt(_urgentRenewalsCount),
-            product_sales: BigInt(_productSalesCount),
+            active_members: BigInt(summaryRow.active_members || 0),
+            total_members: BigInt(summaryRow.total_members || 0),
+            monthly_revenue: Number(summaryRow.monthly_revenue || 0),
+            pending_revenue: Number(summaryRow.pending_revenue || 0),
+            last_month_revenue: Number(summaryRow.last_month_revenue || 0),
+            today_checkins: BigInt(summaryRow.today_checkins || 0),
+            urgent_renewals: BigInt(summaryRow.urgent_renewals || 0),
+            product_sales: BigInt(summaryRow.product_sales || 0),
         }
 
-        const [
-            invoices,
-            attendance,
-            birthdays,
-            monthlyRevenue,
-            churnResult,
-            retentionResult,
-            frequencyResult,
-            expiringSubscriptions,
-            followUpsToday,
-            partialInvoices,
-            lowStockProducts,
-            remindersResult,
-            outstandingInvoicesResult,
-            memberGrowthRaw,
-            attendanceRaw,
-            birthdayDataRaw,
-            totalExpensesResult,
-            membersBeforeWindow,
-        ] = await Promise.all([
-            prisma.invoice.findMany({
-                where: { gymId: gym!.id } as any,
-                include: { member: { select: { name: true } } } as any,
-                orderBy: { createdAt: 'desc' } as any,
-                take: 5
-            }).catch(() => []),
-            prisma.attendance.findMany({
-                where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } } as any,
-                include: { member: { select: { name: true } } },
-                orderBy: { checkInTime: 'desc' },
-                take: 3,
-            }).catch(() => []),
-            (prisma.$queryRaw`
-                WITH ist AS (
-                    SELECT
-                        (NOW() AT TIME ZONE 'Asia/Kolkata')::date AS today_ist,
-                        ((NOW() AT TIME ZONE 'Asia/Kolkata')::date + INTERVAL '30 days')::date AS end_ist
-                ),
-                birthdays AS (
-                    SELECT
-                        m."name",
-                        m."phone",
-                        m."dateOfBirth",
-                        EXTRACT(MONTH FROM m."dateOfBirth")::int AS dob_month,
-                        EXTRACT(DAY FROM m."dateOfBirth")::int AS dob_day
-                    FROM "Member" m
-                    WHERE m."gymId" = ${gym!.id}
-                      AND m."status" = 'ACTIVE'
-                      AND m."deletedAt" IS NULL
-                      AND m."dateOfBirth" IS NOT NULL
-                )
-                SELECT
-                    b."name",
-                    b."phone",
-                    b."dateOfBirth"
-                FROM birthdays b
-                CROSS JOIN ist
-                WHERE (
-                    make_date(
-                        EXTRACT(YEAR FROM ist.today_ist)::int,
-                        b.dob_month,
-                        LEAST(
-                            b.dob_day,
-                            EXTRACT(DAY FROM (date_trunc('month', make_date(EXTRACT(YEAR FROM ist.today_ist)::int, b.dob_month, 1)) + INTERVAL '1 month - 1 day'))::int
-                        )
-                    ) BETWEEN ist.today_ist AND ist.end_ist
-                    OR
-                    make_date(
-                        EXTRACT(YEAR FROM ist.today_ist)::int + 1,
-                        b.dob_month,
-                        LEAST(
-                            b.dob_day,
-                            EXTRACT(DAY FROM (date_trunc('month', make_date(EXTRACT(YEAR FROM ist.today_ist)::int + 1, b.dob_month, 1)) + INTERVAL '1 month - 1 day'))::int
-                        )
-                    ) BETWEEN ist.today_ist AND ist.end_ist
-                )
-            ` as Promise<{ name: string; phone: string | null; dateOfBirth: Date | string }[]>).catch(() => []),
-            (prisma.$queryRaw`
-                SELECT
-                    EXTRACT(MONTH FROM "createdAt")::int AS month,
-                    COALESCE(SUM("total"), 0) AS total
-                FROM "Invoice"
-                WHERE "gymId" = ${gym!.id}
-                    AND "paymentStatus" = 'PAID'
-                    AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW())
-                    AND "deletedAt" IS NULL
-                GROUP BY month
-                ORDER BY month
-            ` as Promise<{ month: number; total: any }[]>).catch(() => []),
-
-            // Churn Raw Query
-            (prisma.$queryRaw`
-                WITH MonthlyActive AS (
-                    SELECT 
-                        date_trunc('month', "createdAt") as create_month,
-                        COUNT(*) as count
-                    FROM "Member"
-                    WHERE "gymId" = ${gym!.id} AND status NOT IN ('INACTIVE', 'EXPIRED')
-                    GROUP BY 1
-                )
-                SELECT 
-                    to_char(date_trunc('month', m."churnedAt"), 'YYYY-MM-DD') as month,
-                    COUNT(m.id)::bigint as churned,
-                    (SELECT COALESCE(SUM(count), 0)::bigint FROM MonthlyActive WHERE create_month <= date_trunc('month', m."churnedAt") + interval '1 month') as total_active
-                FROM "Member" m
-                WHERE m."gymId" = ${gym!.id}
-                    AND m.status IN ('INACTIVE', 'EXPIRED')
-                    AND m."churnedAt" IS NOT NULL
-                    AND m."churnedAt" >= ${startDate5Months}
-                GROUP BY date_trunc('month', m."churnedAt")
-                ORDER BY month ASC
-            ` as Promise<{ month: string; churned: bigint; total_active: bigint }[]>).catch(() => []),
-            // Retention Raw Query
-            (prisma.$queryRaw`
-                SELECT 
-                    to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month,
-                    SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END)::bigint as renewed,
-                    SUM(CASE WHEN "status" = 'EXPIRED' THEN 1 ELSE 0 END)::bigint as expired
-                FROM "MemberSubscription"
-                WHERE "gymId" = ${gym!.id}
-                  AND "endDate" >= ${startDate5Months}
-                  AND "endDate" <= ${today}
-                GROUP BY 1
-                ORDER BY 1 ASC
-            ` as Promise<{ month: string; renewed: bigint; expired: bigint }[]>).catch(() => []),
-            // Member Frequency
-            (prisma.$queryRaw`
-                SELECT 
-                    m.id as member_id,
-                    m.name as member_name,
-                    m.phone,
-                    COUNT(a.id)::bigint as visit_count,
-                    MAX(a.date) as last_visit
-                FROM "Member" m
-                LEFT JOIN "Attendance" a ON m.id = a."memberId" AND a.date >= ${thirtyDaysAgo}
-                WHERE m."gymId" = ${gym!.id}
-                  AND m.status = 'ACTIVE'
-                GROUP BY m.id
-                ORDER BY visit_count DESC, last_visit DESC NULLS FIRST
-                LIMIT 50
-            ` as Promise<{ member_id: string; member_name: string; phone: string; visit_count: bigint; last_visit: string | null }[]>).catch(() => []),
-            // Expiring Soon
-            prisma.memberSubscription.findMany({
-                where: {
-                    gymId: gym!.id,
-                    endDate: { gte: today, lte: addDays(today, 7) },
-                    status: 'ACTIVE'
-                },
-                select: {
-                    id: true,
-                    endDate: true,
-                    status: true,
-                    member: {
-                        select: {
-                            id: true,
-                            name: true,
-                            phone: true,
-                            photo: true
-                        }
-                    },
-                    plan: {
-                        select: {
-                            name: true
-                        }
-                    }
-                },
-                orderBy: { endDate: 'asc' }
-            }).catch(() => []),
-            // Daily briefing queries
-            prisma.lead.findMany({
-                where: {
-                    gymId: gym!.id,
-                    followUpDate: { gte: today, lte: endOfToday() },
-                    status: { notIn: ['CONVERTED', 'NOT_INTERESTED'] }
-                },
-                select: { id: true, name: true, phone: true, planInterest: true }
-            }).catch(() => []),
-            prisma.invoice.findMany({
-                where: {
-                    gymId: gym!.id,
-                    paymentStatus: 'PARTIAL',
-                    deletedAt: null
-                },
-                select: { id: true, invoiceNumber: true, balanceDue: true, member: { select: { name: true } } }
-            }).catch(() => []),
-            prisma.product.findMany({
-                where: {
-                    gymId: gym!.id,
-                    stock: { lte: 5 }
-                },
-                select: { id: true, name: true, stock: true, category: true }
-            }).catch(() => []),
-            // End daily briefing queries
-            Promise.all([
-                prisma.member.findMany({
-                    where: { gymId: gym!.id, status: 'ACTIVE' },
-                    select: { id: true, name: true, phone: true, dateOfBirth: true }
-                }).catch(() => []),
+            // Wave 1: Core Performance & Growth
+            const [invoices, attendance, birthdayDataRaw, monthlyRevenue, growthRaw, attRaw] = await Promise.all([
                 prisma.invoice.findMany({
-                    where: { gymId: gym!.id, paymentStatus: 'OVERDUE', memberId: { not: null } },
-                    select: { id: true, invoiceNumber: true, total: true, member: { select: { name: true, phone: true } } }
-                }).catch(() => [])
-            ]).catch(() => [[], []]),
-            prisma.invoice.findMany({
-                where: {
-                    gymId: gym!.id,
-                    paymentStatus: { in: ['PARTIAL', 'PENDING'] },
-                    deletedAt: null
-                },
-                include: { member: { select: { name: true, phone: true } } },
-                orderBy: { issueDate: 'asc' },
-                take: 5
-            }).catch(() => []),
+                    where: { gymId: gym!.id },
+                    include: { member: { select: { name: true } } },
+                    orderBy: { createdAt: 'desc' },
+                    take: 5
+                }).catch(() => []),
+                prisma.attendance.findMany({
+                    where: { gymId: gym!.id, date: { gte: today, lte: endOfToday() } },
+                    include: { member: { select: { name: true } } },
+                    orderBy: { checkInTime: 'desc' },
+                    take: 3,
+                }).catch(() => []),
+                (prisma.$queryRaw`SELECT m."name", m."phone", m."dateOfBirth" FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m."status" = 'ACTIVE' AND m."deletedAt" IS NULL AND m."dateOfBirth" IS NOT NULL LIMIT 50` as Promise<any[]>).catch(() => []),
+                (prisma.$queryRaw`SELECT EXTRACT(MONTH FROM "createdAt")::int as month, COALESCE(SUM("total"), 0) as total FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW()) AND "deletedAt" IS NULL GROUP BY month ORDER BY month` as Promise<any[]>).catch(() => []),
+                (prisma.$queryRaw`SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month, COUNT(*)::bigint as count FROM "Member" WHERE "gymId" = ${gym!.id} AND "createdAt" >= ${startDate5Months} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                (prisma.$queryRaw`SELECT to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") < 12 THEN 1 END)::bigint as morning, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") >= 12 THEN 1 END)::bigint as evening FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "checkInTime" >= ${lastWeekStart} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+            ])
 
-            // REAL Member Growth query
-            (prisma.$queryRaw`
-                SELECT 
-                    to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month,
-                    COUNT(*)::bigint as count
-                FROM "Member"
-                WHERE "gymId" = ${gym!.id}
-                  AND "createdAt" >= ${startDate5Months}
-                  AND "name" NOT ILIKE '%Seed%'
-                  AND "name" NOT ILIKE '%Demo%'
-                GROUP BY 1
-                ORDER BY 1 ASC
-            ` as Promise<{ month: string; count: bigint }[]>).catch(() => []),
-            // SEGMENTED Attendance query
-            (prisma.$queryRaw`
-                SELECT
-                    to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day,
-                    COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") < 12 THEN 1 END)::bigint as morning,
-                    COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") >= 12 THEN 1 END)::bigint as evening
-                FROM "Attendance"
-                WHERE "gymId" = ${gym!.id}
-                  AND "checkInTime" >= ${lastWeekStart}
-                  AND "checkInTime" <= ${endOfToday()}
-                GROUP BY 1
-                ORDER BY 1 ASC
-            ` as Promise<{ day: string; morning: bigint; evening: bigint }[]>).catch(() => []),
-            prisma.member.findMany({
-                where: { gymId: gym!.id, status: 'ACTIVE' },
-                select: { dateOfBirth: true }
-            }).catch(() => []),
-            // Safely fetch expenses if model exists
-            (async () => {
-                const model = (prisma as any).expense
-                if (model && typeof model.aggregate === 'function') {
-                    try {
-                        return await model.aggregate({
-                            where: { gymId: gym!.id, date: { gte: startOfThisMonth } },
-                            _sum: { amount: true }
-                        })
-                    } catch (e) {
-                        return { _sum: { amount: null } }
-                    }
-                }
-                return { _sum: { amount: null } }
-            })(),
-            prisma.member.count({
-                where: {
-                    gymId: gym!.id,
-                    createdAt: { lt: startDate5Months },
-                    NOT: [
-                        { name: { contains: 'Seed', mode: 'insensitive' } },
-                        { name: { contains: 'Demo', mode: 'insensitive' } }
-                    ]
-                }
-            }).catch(() => 0)
-        ])
+            // Wave 2: Retention & Risk (Sequentialized to breathe life into pool)
+            const [churnRes, retentionRes, freqRes, expiringSubs] = await Promise.all([
+                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', m."churnedAt"), 'YYYY-MM-DD') as month, COUNT(m.id)::bigint as churned FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m.status IN ('INACTIVE', 'EXPIRED') AND m."churnedAt" >= ${startDate5Months} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month, SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END)::bigint as renewed, SUM(CASE WHEN "status" = 'EXPIRED' THEN 1 ELSE 0 END)::bigint as expired FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "endDate" >= ${startDate5Months} AND "endDate" <= ${today} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                 (prisma.$queryRaw`SELECT m.id, m.name, COUNT(a.id)::bigint as visit_count FROM "Member" m LEFT JOIN "Attendance" a ON m.id = a."memberId" AND a.date >= ${thirtyDaysAgo} WHERE m."gymId" = ${gym!.id} AND m.status = 'ACTIVE' GROUP BY m.id ORDER BY visit_count DESC LIMIT 50` as Promise<any[]>).catch(() => []),
+                 prisma.memberSubscription.findMany({ where: { gymId: gym!.id, endDate: { gte: subDays(today, 7), lte: addDays(today, 14) }, status: 'ACTIVE' }, include: { member: { select: { name: true, phone: true } }, plan: { select: { name: true } } }, orderBy: { endDate: 'asc' } }).catch(() => []),
+            ])
 
-         const birthdayCount = (birthdayDataRaw as any[]).filter((m: any) => isBirthdayToday(m.dateOfBirth)).length
+            // Wave 3: Daily Briefing & Financials (Sorted Newest-First)
+            const [followUpsToday, partialInvoices, lowStockProducts, outstandingInvoicesResult, totalExpensesResult] = await Promise.all([
+                 prisma.lead.findMany({ where: { gymId: gym!.id, followUpDate: { gte: today, lte: endOfToday() }, status: { notIn: ['CONVERTED', 'NOT_INTERESTED'] } }, select: { id: true, name: true, phone: true, planInterest: true } }).catch(() => []),
+                 prisma.invoice.findMany({ where: { gymId: gym!.id, paymentStatus: 'PARTIAL', deletedAt: null }, select: { id: true, invoiceNumber: true, balanceDue: true, member: { select: { name: true } } } }).catch(() => []),
+                 prisma.product.findMany({ where: { gymId: gym!.id, stock: { lte: 5 } }, select: { id: true, name: true, stock: true } }).catch(() => []),
+                 // FIX: Changed order from ASC to DESC to resolve '700 days older data' bug
+                 prisma.invoice.findMany({ where: { gymId: gym!.id, paymentStatus: { in: ['PARTIAL', 'PENDING'] }, deletedAt: null }, include: { member: { select: { name: true, phone: true } } }, orderBy: { issueDate: 'desc' }, take: 5 }).catch(() => []),
+                 (prisma as any).expense?.aggregate?.({ where: { gymId: gym!.id, date: { gte: startOfThisMonth } }, _sum: { amount: true } }).catch(() => ({ _sum: { amount: null } })),
+            ])
+
+            recentInvoices = invoices
+            upcomingBirthdays = birthdayDataRaw // Maps 'births' from Wave 1 if I renaming it
+            monthlyRevenueData = monthlyRevenue
+            const churnResult = churnRes
+            const retentionResult = retentionRes
+            const frequencyResult = freqRes
+            const expiringSubscriptions = expiringSubs
+            const memberGrowthRaw = growthRaw
+            const attendanceRaw = attRaw
+            const birthdayCount = birthdayDataRaw.filter((m: any) => isBirthdayToday(m.dateOfBirth)).length
+            const membersBeforeWindow = await prisma.member.count({ where: { gymId: gym!.id, createdAt: { lt: startDate5Months }, deletedAt: null } }).catch(() => 0)
+
 
         // Process REAL Member Growth data
         const growthMap = new Map<string, number>()
@@ -578,7 +340,7 @@ export default async function DashboardPage({
             retentionData: retentionResult,
             frequencyData: frequencyResult,
             expiringSubscriptions,
-            remindersRaw: remindersResult,
+            remindersRaw: [birthdayDataRaw, outstandingInvoicesResult], // Using real results now
             weeklyAttendance: weeklyAttendanceData,
             growthData: growthData,
             outstandingInvoices: JSON.parse(JSON.stringify(outstandingInvoicesResult || [])),
@@ -589,7 +351,7 @@ export default async function DashboardPage({
             lowStockItems: JSON.parse(JSON.stringify(lowStockProducts || [])),
             totalExpenses: Number(totalExpensesResult?._sum?.amount || 0),
         }
-        recentInvoices = invoices as any[]
+        recentInvoices = JSON.parse(JSON.stringify(invoices || []))
 
         // Process Attendance
         if (attendance.length > 0) {
@@ -609,13 +371,12 @@ export default async function DashboardPage({
         }
 
          // Process Birthdays
-         upcomingBirthdays = birthdays
+         const allBirthdays = dashboardData.remindersRaw[0] || []
+         upcomingBirthdays = allBirthdays
              .filter((m: any) => {
                  // Validate DOB before processing
                  if (!m.dateOfBirth) return false;
-                 const dob = new Date(m.dateOfBirth);
-                 // Check if date is valid (not Invalid Date)
-                 return !isNaN(dob.getTime());
+                 return isBirthdayUpcoming(m.dateOfBirth, 7);
              })
              .map((m: any) => {
                  const dobString = typeof m.dateOfBirth === 'string' ? m.dateOfBirth : m.dateOfBirth.toISOString();
@@ -675,7 +436,8 @@ export default async function DashboardPage({
 
 
     return (
-        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <Skeleton name="dashboard" loading={false}>
+            <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
             {isDemo && (
                 <div className="bg-[#1a365d] border-b border-[#4FC3F7]/20 text-white px-4 py-3 text-xs sm:text-sm font-medium shadow-sm mb-6 -mx-4 md:-mx-8 -mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 relative z-10">
                     <div className="flex items-center gap-2 text-[#4FC3F7]">
@@ -800,8 +562,8 @@ export default async function DashboardPage({
                                     return (renewed + expired) > 0 ? Math.round((renewed / (renewed + expired)) * 100) : 100
                                 })() : 0,
                                 atRiskMembers: dashboardData.frequencyData?.filter((m: any) => Number(m.visit_count || 0) < 4).map((m: any) => ({
-                                    memberId: m.member_id,
-                                    memberName: m.member_name,
+                                    memberId: m.id, // FIX: Changed from m.member_id to m.id
+                                    memberName: m.name,
                                     phone: m.phone,
                                     visitCount: Number(m.visit_count || 0),
                                     lastVisit: m.last_visit ? format(new Date(m.last_visit), 'yyyy-MM-dd') : null
@@ -837,7 +599,13 @@ export default async function DashboardPage({
                                 attendance: dashboardData.weeklyAttendance || [],
                                 expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
                                     const diff = new Date(sub.endDate).getTime() - new Date().getTime();
-                                    return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) };
+                                    // FIX: Decimal to Number conversion for Client Component serialization
+                                    const plainSub = JSON.parse(JSON.stringify(sub))
+                                    return { 
+                                        ...plainSub, 
+                                        price: Number(sub.price || 0),
+                                        daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) 
+                                    };
                                 }) || [],
                                 reminders: (() => {
                                         if (!dashboardData.remindersRaw) {
@@ -845,8 +613,7 @@ export default async function DashboardPage({
                                         }
 
                                         const today = new Date()
-
-                                        const birthdays = dashboardData.remindersRaw[0]?.filter((m: any) => isBirthdayToday(m.dateOfBirth)) || []
+                                        const todayBirthdays = dashboardData.remindersRaw[0]?.filter((m: any) => isBirthdayToday(m.dateOfBirth)) || []
 
                                         const overdueInvoices = dashboardData.remindersRaw[1] || []
 
@@ -882,7 +649,7 @@ export default async function DashboardPage({
                                         }) || []
 
                                         return {
-                                            birthdays: birthdays.map((m: any) => ({
+                                            birthdays: todayBirthdays.map((m: any) => ({
                                                 type: 'BIRTHDAY',
                                                 memberId: m.id,
                                                 name: m.name,
@@ -893,10 +660,10 @@ export default async function DashboardPage({
                                                 const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
                                                 return {
                                                     type: 'INACTIVE',
-                                                    memberId: m.member_id,
-                                                    name: m.member_name,
+                                                    memberId: m.id, // FIX: Changed from m.member_id to m.id
+                                                    name: m.name, // FIX: Changed from m.member_name to m.name
                                                     daysInactive: daysSince,
-                                                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.member_name, daysSince, gym?.name || 'GymMitra')) : null
+                                                    link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.name, daysSince, gym?.name || 'GymMitra')) : null
                                                 }
                                             }),
                                             expiring: expiring
@@ -910,6 +677,7 @@ export default async function DashboardPage({
                 </TabsContent>
             </Tabs>
 
-        </div >
-    )
+            </div>
+        </Skeleton>
+    );
 }

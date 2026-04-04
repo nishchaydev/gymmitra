@@ -4,7 +4,14 @@ import { Prisma } from '@prisma/client'
 export class AttendanceRepository {
     async findMemberById(id: string, gymId: string) {
         return prisma.member.findFirst({
-            where: { id, gymId }
+            where: { id, gymId },
+            include: {
+                subscriptions: {
+                    where: { deletedAt: null },
+                    orderBy: { endDate: 'desc' },
+                    take: 1
+                }
+            }
         })
     }
 
@@ -35,7 +42,7 @@ export class AttendanceRepository {
     }
 
     async createAttendance(data: any) {
-        return (prisma as any).attendance.create({
+        return prisma.attendance.create({
             data,
             select: {
                 id: true,
@@ -62,9 +69,9 @@ export class AttendanceRepository {
         })
     }
 
-    async getAttendanceByMemberId(memberId: string, skip: number, take: number) {
+    async getAttendanceByMemberId(memberId: string, gymId: string, skip: number, take: number) {
         return prisma.attendance.findMany({
-            where: { memberId },
+            where: { memberId, gymId },
             orderBy: { date: 'desc' },
             skip,
             take
@@ -85,9 +92,9 @@ export class AttendanceRepository {
         return prisma.attendance.create({ data })
     }
 
-    async updateAttendanceTime(id: string, checkInTime: string, date: Date) {
+    async updateAttendanceTime(id: string, gymId: string, checkInTime: string, date: Date) {
         return prisma.attendance.update({
-            where: { id },
+            where: { id, gymId },
             data: { checkInTime, date }
         })
     }
