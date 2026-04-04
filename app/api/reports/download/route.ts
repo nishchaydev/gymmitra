@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         switch (type) {
             case 'members': {
                 const members = await prisma.member.findMany({
-                    where: { gymId },
+                    where: { gymId, deletedAt: null },
                     include: {
                         subscriptions: {
                             where: { status: 'ACTIVE' },
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
             }
             case 'invoices': {
                 const invoices = await prisma.invoice.findMany({
-                    where: { gymId },
+                    where: { gymId, deletedAt: null },
                     include: { member: { select: { name: true } } },
                     orderBy: { issueDate: 'desc' }
                 })

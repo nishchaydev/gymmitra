@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
 import * as React from "react"
+import { Skeleton } from "@/src/components/SkeletonProvider"
 import { prisma } from '@/lib/prisma'
 import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
@@ -37,7 +38,7 @@ export default async function MembersPage({
 
     const cookieStore = await cookies()
     const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemo = (envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true') || (process.env.NODE_ENV === 'development' && slug === 'demo')
 
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
@@ -98,7 +99,8 @@ export default async function MembersPage({
 
 
     return (
-        <div className="container mx-auto p-4 md:p-8 space-y-6">
+        <Skeleton name="members" loading={false}>
+            <div className="container mx-auto p-4 md:p-8 space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900">Members</h1>
@@ -139,6 +141,7 @@ export default async function MembersPage({
                 />
             </React.Suspense>
         </div>
+        </Skeleton>
     )
 }
 

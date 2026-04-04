@@ -64,13 +64,17 @@ export function daysSince(date: Date | null | undefined): number | null {
 /**
  * Check if a date of birth matches today's month and day.
  * Single source of truth — replaces 3 duplicated checks across the dashboard.
+ * Uses IST timezone to prevent UTC midnight-boundary bugs on Vercel (UTC).
  */
 export function isBirthdayToday(dob: Date | string | null | undefined): boolean {
   if (!dob) return false;
   const d = new Date(dob);
   if (isNaN(d.getTime())) return false;
-  const today = new Date();
-  return d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+  // Use IST date strings to avoid UTC midnight-boundary mismatches
+  const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const dobIST = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  // Compare only MM-DD portion
+  return todayIST.slice(5) === dobIST.slice(5);
 }
 
 /**
@@ -81,11 +85,15 @@ export function isBirthdayUpcoming(dob: Date | string | null | undefined, within
   if (!dob) return false;
   const d = new Date(dob);
   if (isNaN(d.getTime())) return false;
-  const today = new Date();
-  const thisYear = today.getFullYear();
-  let nextBirthday = new Date(thisYear, d.getMonth(), d.getDate());
+  // Use IST dates to avoid timezone boundary issues on UTC servers
+  const todayISTStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const dobISTStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const [, dobMonth, dobDay] = dobISTStr.split('-').map(Number);
+  const [todayYear, todayMonth, todayDay] = todayISTStr.split('-').map(Number);
+  const today = new Date(todayYear, todayMonth - 1, todayDay);
+  let nextBirthday = new Date(todayYear, dobMonth - 1, dobDay);
   if (nextBirthday < today) {
-    nextBirthday = new Date(thisYear + 1, d.getMonth(), d.getDate());
+    nextBirthday = new Date(todayYear + 1, dobMonth - 1, dobDay);
   }
   const diff = differenceInDays(nextBirthday, today);
   return diff >= 0 && diff <= withinDays;

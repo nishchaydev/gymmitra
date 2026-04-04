@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
+import { BillingService } from '@/src/modules/billing/service'
 
 // Validations
 const invoiceItemSchema = z.object({
@@ -13,12 +14,23 @@ const invoiceItemSchema = z.object({
 
 const invoiceCreateSchema = z.object({
     memberId: z.string().optional(), // Optional for walk-ins
-    type: z.enum(['MEMBERSHIP', 'SALE', 'RENEWAL']),
+    walkInName: z.string().optional(),
+    walkInPhone: z.string().optional(),
+    walkInEmail: z.string().optional(),
+    walkInAddress: z.string().optional(),
+    type: z.enum(['MEMBERSHIP', 'SALE', 'RENEWAL', 'PRODUCT']).default('SALE'),
     paymentStatus: z.enum(['PAID', 'PENDING', 'OVERDUE', 'PARTIAL']).default('PENDING'),
     paymentMethod: z.enum(['CASH', 'CARD', 'UPI', 'OTHER']).optional(),
-    items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
+    items: z.array(z.object({
+        description: z.string(),
+        quantity: z.number(),
+        unitPrice: z.number(),
+        type: z.enum(['MEMBERSHIP', 'PRODUCT', 'OTHER']).default('OTHER'),
+        productId: z.string().optional(),
+    })).min(1, "At least one item is required"),
     notes: z.string().optional(),
-    dueDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
+    dueDate: z.string().optional(),
+    issueDate: z.string().optional(),
     discount: z.number().nonnegative().optional().default(0),
     taxAmount: z.number().nonnegative().optional().default(0),
     idempotencyKey: z.string().optional(),
@@ -73,6 +85,7 @@ export async function GET(request: NextRequest) {
 
         const whereClause: any = {
             gymId: gym.id,
+            deletedAt: null,
             ...(validatedStatus ? { paymentStatus: validatedStatus } : {}),
             ...(q
                 ? {
@@ -154,92 +167,26 @@ export async function POST(request: NextRequest) {
         }
         const validatedData = invoiceCreateSchema.parse(body)
 
-        // Calculate totals
-        const subtotal = validatedData.items.reduce((acc, item) => {
-            return acc + (item.quantity * item.unitPrice)
-        }, 0)
+        const ipHeader = request.headers.get('x-forwarded-for')
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
-        // Tax applied AFTER discount — matches BillingService convention
-        const afterDiscount = Math.max(0, subtotal - validatedData.discount)
-        const total = Math.round((afterDiscount + validatedData.taxAmount) * 100) / 100
+        const result = await BillingService.createInvoice(
+            gym,
+            validatedData as any,
+            auth.userId,
+            ip
+        )
 
-        const amountPaid = validatedData.paymentStatus === 'PARTIAL'
-            ? Math.min(validatedData.amountPaid ?? 0, total)
-            : validatedData.paymentStatus === 'PENDING'
-                ? 0
-                : total
-
-        const balanceDue = validatedData.paymentStatus === 'PARTIAL'
-            ? Math.max(0, total - Math.min(validatedData.amountPaid ?? 0, total))
-            : validatedData.paymentStatus === 'PENDING'
-                ? total
-                : 0
-
-        // Generate Invoice Number
-        const { BillingRepository } = await import("@/src/modules/billing/repository")
-        const invoiceNumber = await BillingRepository.generateInvoiceNumber(gym.id)
-
-        const crypto = await import('crypto')
-        const shareToken = crypto.randomBytes(32).toString('hex')
-        const expiryDays = Math.max(0, gym.invoiceLinkExpiryDays ?? 30)
-        const shareTokenExpiresAt = expiryDays > 0
-            ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
-            : null // 0 = never expire
-
-        try {
-            const invoice = await prisma.invoice.create({
-                data: {
-                    invoiceNumber,
-                    type: validatedData.type,
-                    gymId: gym.id,
-                    memberId: validatedData.memberId,
-                    paymentStatus: validatedData.paymentStatus,
-                    paymentMethod: validatedData.paymentMethod,
-                    notes: validatedData.notes,
-                    dueDate: validatedData.dueDate,
-                    subtotal: subtotal,
-                    taxAmount: validatedData.taxAmount,
-                    discount: validatedData.discount,
-                    total: total,
-                    amountPaid: amountPaid as any,
-                    balanceDue: balanceDue as any,
-                    idempotencyKey: validatedData.idempotencyKey,
-                    shareToken: shareToken,
-                    shareTokenExpiresAt: shareTokenExpiresAt,
-                    items: {
-                        create: validatedData.items.map(item => ({
-                            description: item.description,
-                            quantity: item.quantity,
-                            unitPrice: item.unitPrice,
-                            amount: item.quantity * item.unitPrice,
-                            gymId: gym.id, // Mandatory for multi-tenancy
-                        }))
-                    }
-                } as any,
-                include: {
-                    items: true
-                }
-            })
-
-            return NextResponse.json(invoice, { status: 201 })
-        } catch (createErr: any) {
-            if (createErr.code === 'P2002' && validatedData.idempotencyKey) {
-                // Ensure the collision was actually on idempotencyKey before returning success
-                if (createErr.meta?.target?.includes('idempotencyKey')) {
-                    const existingInvoice = await prisma.invoice.findFirst({
-                        where: {
-                            idempotencyKey: validatedData.idempotencyKey,
-                            gymId: gym.id
-                        },
-                        include: { items: true }
-                    })
-                    if (existingInvoice) {
-                        return NextResponse.json(existingInvoice, { status: 200 })
-                    }
-                }
-            }
-            throw createErr
+        if (!result.success) {
+            return NextResponse.json({ error: result.error }, { status: 400 })
         }
+
+        const invoice = await prisma.invoice.findUnique({
+            where: { id: result.id },
+            include: { items: true }
+        })
+
+        return NextResponse.json(invoice, { status: 201 })
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(

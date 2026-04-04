@@ -93,6 +93,6 @@ export async function syncMemberStatuses(gymId: string) {
   }))
 
   if (updates.length > 0) {
-    await MemberRepository.batchUpdateStatuses(updates)
+    await MemberRepository.batchUpdateStatuses(gymId, updates as any)
   }
 }

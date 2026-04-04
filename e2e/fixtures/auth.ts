@@ -9,10 +9,11 @@ type AuthFixtures = {
   authenticatedPage: AuthenticatedPage
 }
 
-// Test credentials
+// Test credentials — loaded from environment variables to prevent leaking secrets in source control.
+// Set E2E_TEST_EMAIL and E2E_TEST_PASSWORD in your .env.local or CI secrets.
 export const TEST_CREDENTIALS = {
-  email: 'guptanishchay1158@gmail.com',
-  password: 'UOF7hJdq',
+  email: process.env.E2E_TEST_EMAIL || (() => { throw new Error('E2E_TEST_EMAIL env var is required for E2E tests') })() as string,
+  password: process.env.E2E_TEST_PASSWORD || (() => { throw new Error('E2E_TEST_PASSWORD env var is required for E2E tests') })() as string,
 }
 
 /**

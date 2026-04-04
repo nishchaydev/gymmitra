@@ -59,6 +59,16 @@ export class MemberRepository {
     }
 
     /**
+     * Count all non-deleted members in a gym (for SaaS cap enforcement)
+     */
+    static async countByGym(gymId: string, tx?: Prisma.TransactionClient) {
+        const client = tx || prisma
+        return client.member.count({
+            where: { gymId, deletedAt: null }
+        })
+    }
+
+    /**
      * Find the latest active subscription for a member
      */
     static async findLatestActiveSubscription(memberId: string, tx?: Prisma.TransactionClient) {
@@ -225,15 +235,16 @@ export class MemberRepository {
     }
 
     /**
-     * Batch update member statuses by status type.
+     * Batch update member statuses by status type (scoped to gymId for isolation).
      * Used by status-engine.ts — replaces direct Prisma call.
      */
     static async batchUpdateStatuses(
+        gymId: string,
         updates: Array<{ ids: string[]; status: string; churnedAt: Date | null }>
     ) {
         const promises = updates.map(({ ids, status, churnedAt }) =>
             prisma.member.updateMany({
-                where: { id: { in: ids } },
+                where: { id: { in: ids }, gymId },
                 data: {
                     status: status as any,
                     churnedAt

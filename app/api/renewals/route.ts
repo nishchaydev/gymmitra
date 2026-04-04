@@ -26,6 +26,7 @@ export async function GET() {
         const subscriptions = await prisma.memberSubscription.findMany({
             where: {
                 gymId: gym.id,
+                member: { deletedAt: null },
                 // Only Active subscriptions going to expire, OR Expired subscriptions recently missed
                 OR: [
                     {

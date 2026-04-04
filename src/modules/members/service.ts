@@ -296,11 +296,27 @@ export class MemberService {
         return { success: true }
     }
 
-    static async importMembers(data: any[], gymId: string, userId: string, ip: string) {
+    static async importMembers(data: any[], gymId: string, userId: string, ip: string, gymSaasPlan?: string) {
         const MAX_IMPORT_ROWS = 500
         if (data.length > MAX_IMPORT_ROWS) {
             return { error: `Import limit exceeded: maximum ${MAX_IMPORT_ROWS} rows allowed per import. You sent ${data.length}.` }
         }
+
+        // ── SaaS Member Cap Enforcement (pre-import) ──
+        const plan = (gymSaasPlan ?? 'TRIAL') as SaaSPlan
+        const limit = PLAN_MEMBER_LIMITS[plan]
+        if (limit !== null) {
+            const currentCount = await MemberRepository.countByGym(gymId)
+            if (currentCount >= limit) {
+                return { error: `Member limit reached: your ${plan} plan allows ${limit} members. You currently have ${currentCount}.` }
+            }
+            // Cap how many can actually be imported
+            const remaining = limit - currentCount
+            if (data.length > remaining) {
+                return { error: `Import would exceed member cap: your ${plan} plan allows ${limit} members. You have ${currentCount}, and can import at most ${remaining} more.` }
+            }
+        }
+        // ─────────────────────────────────────────────────
 
         let imported = 0
         let skippedDuplicate = 0

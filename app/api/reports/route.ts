@@ -72,7 +72,8 @@ export async function GET(request: NextRequest) {
                 where: {
                     gymId: gym.id,
                     endDate: { gte: today, lte: nextWeek },
-                    status: 'ACTIVE'
+                    status: 'ACTIVE',
+                    member: { deletedAt: null }
                 },
                 select: {
                     id: true,
@@ -192,6 +193,7 @@ export async function GET(request: NextRequest) {
                     AND status IN ('INACTIVE', 'EXPIRED')
                     AND "churnedAt" IS NOT NULL
                     AND "churnedAt" >= ${startDate}
+                    AND "deletedAt" IS NULL
                 GROUP BY 1
                 ORDER BY 1 ASC
             `.catch((err) => {
@@ -269,6 +271,7 @@ export async function GET(request: NextRequest) {
                 LEFT JOIN "Attendance" a ON m.id = a."memberId" AND a.date >= ${thirtyDaysAgo}
                 WHERE m."gymId" = ${gym.id}
                   AND m.status = 'ACTIVE'
+                  AND m."deletedAt" IS NULL
                 GROUP BY m.id
                 ORDER BY visit_count DESC, last_visit DESC NULLS FIRST
                 LIMIT 50
@@ -301,6 +304,7 @@ export async function GET(request: NextRequest) {
                 prisma.member.count({
                     where: {
                         gymId: gym.id,
+                        deletedAt: null,
                         NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
                     }
                 }).catch((err) => { console.error('Failed to fetch totalMembers:', err); return 0 }),
@@ -308,6 +312,7 @@ export async function GET(request: NextRequest) {
                     where: {
                         gymId: gym.id,
                         status: 'ACTIVE',
+                        deletedAt: null,
                         NOT: { name: { contains: 'Seed', mode: 'insensitive' as any } }
                     }
                 }).catch((err) => { console.error('Failed to fetch activeMembers:', err); return 0 }),

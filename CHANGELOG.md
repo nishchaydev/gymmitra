@@ -8,6 +8,10 @@ All notable changes to the GymMitra ERP platform will be documented in this file
 - **Query Batching:** Refactored 18 concurrent dashboard widget queries into a 3-wave sequential execution pattern to respect strict database connection limits.
 - **Next.js Serialization:** Fixed `Decimal objects are not supported` runtime crashes by converting all financial and count fields to plain numbers before passing to Client Components.
 - **Reporting Integrity:** Restored the "Overdue Payments" reminder tab and synchronized "Inactive Members" data mapping from the centralized frequency analytics.
+- **Churn Logic Alignment:** Corrected SQL grouping error (`42803`) in the churn calculation query by ensuring the subquery uses correctly grouped columns.
+- **Skeleton Framework (`boneyard-js`):** Integrated `boneyard-js` for automated, pixel-perfect skeleton loading across the dashboard and members modules.
+- **Server-Side Compatibility:** Created `components/SkeletonProvider.tsx` Client Component wrapper to safely use `boneyard-js` in Next.js Server Components.
+- **Developer Experience:** Implemented a `demo` slug auth bypass in development mode to allow the `boneyard-js` crawler to snapshot skeleton states efficiently.
 
 ### 🛡️ Multi-Tenant Integrity
 - **Attendance Hardening:** Synchronized `AttendanceService` and `AttendanceRepository` to mandate explicit `gymId` scoping on all check-in lookups, eliminating unsafe global type casts.

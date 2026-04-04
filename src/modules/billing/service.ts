@@ -1,7 +1,7 @@
-import { BillingRepository } from "./repository"
-import { CreateInvoiceInput, RecordPaymentInput } from "./types"
 import { calculateBillingTotal, resolveEffectiveTaxRate, distributeTaxAcrossItems } from "../shared/billing-calc"
 import crypto from "crypto"
+import { Prisma } from "@prisma/client"
+import { recordAuditLog } from "@/lib/audit-logger"
 
 export class BillingService {
     /**
@@ -12,10 +12,11 @@ export class BillingService {
         gym: any,
         data: CreateInvoiceInput,
         userId: string,
-        ip: string
+        ip: string,
+        existingTx?: Prisma.TransactionClient
     ): Promise<{ success: boolean; id?: string; error?: string }> {
         try {
-            const invoiceResult = await BillingRepository.executeTransaction(async (tx) => {
+            const executeInContext = async (tx: Prisma.TransactionClient) => {
                 const invoiceNumber = await BillingRepository.generateInvoiceNumber(gym.id, tx)
                 
                 // 1. Resolve tax percentage based on gym settings and item override
@@ -66,13 +67,19 @@ export class BillingService {
                     : data.paymentStatus === 'PENDING'
                         ? finalTotal
                         : 0
+                        
+                // Auto-upgrade status if fully paid during creation
+                const finalPaymentStatus = (data.paymentStatus === 'PARTIAL' && balanceDue <= 0.001) 
+                    ? 'PAID' 
+                    : data.paymentStatus
 
                 // 7. DB Creation — via BillingRepository (no direct tx.invoice calls)
                 const invoice = await BillingRepository.createInvoiceInTransaction({
                     invoiceNumber,
-                    type: "SALE",
+                    type: data.type || "SALE",
                     gymId: gym.id,
                     memberId: data.memberId || null,
+                    subscriptionId: data.subscriptionId || null,
                     subtotal: calcResult.subtotal,
                     taxAmount: finalTaxAmountCents / 100,
                     taxPercentage: finalEffectiveTaxPercentage,
@@ -80,7 +87,7 @@ export class BillingService {
                     total: finalTotal,
                     amountPaid,
                     balanceDue,
-                    paymentStatus: data.paymentStatus,
+                    paymentStatus: finalPaymentStatus,
                     paymentMethod: data.paymentMethod,
                     idempotencyKey: data.idempotencyKey ?? null,
                     walkInName: data.walkInName ?? null,
@@ -90,6 +97,8 @@ export class BillingService {
                     notes: data.notes ?? null,
                     shareToken,
                     shareTokenExpiresAt,
+                    issueDate: data.issueDate || new Date(),
+                    dueDate: data.dueDate || null,
                     items: data.items.map((item, index) => {
                         const amount = Math.round(item.quantity * item.unitPrice * 100) / 100
                         const taxAmount = distributedTaxList[index] / 100
@@ -106,8 +115,47 @@ export class BillingService {
                     })
                 }, tx)
 
+                // 7.1 Deduct inventory stock for physical products
+                for (const item of data.items) {
+                    if (item.type === 'PRODUCT') {
+                        // Priority 1: Match by productId if provided
+                        // Priority 2: Match by exact name (fallback)
+                        const matchedProduct = item.productId 
+                            ? await tx.product.findFirst({ where: { id: item.productId, gymId: gym.id, isActive: true } })
+                            : await tx.product.findFirst({ where: { gymId: gym.id, name: item.description, isActive: true } })
+                        
+                        if (matchedProduct) {
+                            await tx.product.update({
+                                where: { id: matchedProduct.id },
+                                data: { stock: Math.max(0, matchedProduct.stock - item.quantity) }
+                            })
+                        }
+                    }
+                }
+
+                // 7.2 Record Audit Log
+                await recordAuditLog({
+                    gymId: gym.id,
+                    actorId: userId,
+                    action: 'CREATE_INVOICE',
+                    entityType: 'INVOICE',
+                    entityId: invoice.id,
+                    ipAddress: ip,
+                    payload: {
+                        invoiceNumber: invoice.invoiceNumber,
+                        total: invoice.total,
+                        type: invoice.type,
+                        memberId: invoice.memberId,
+                        itemsCount: invoice.items.length
+                    }
+                }, tx)
+
                 return invoice
-            })
+            }
+
+            const invoiceResult = existingTx 
+                ? await executeInContext(existingTx) 
+                : await BillingRepository.executeTransaction(executeInContext)
 
             return { success: true, id: invoiceResult.id }
         } catch (error: any) {
@@ -131,30 +179,51 @@ export class BillingService {
         data: RecordPaymentInput
     ): Promise<{ success: boolean; error?: string }> {
         try {
-            const invoice = await BillingRepository.findInvoiceById(data.invoiceId, gymId)
+            await BillingRepository.executeTransaction(async (tx) => {
+                const invoice = await BillingRepository.findInvoiceById(data.invoiceId, gymId, tx)
 
-            if (!invoice) return { success: false, error: "Invoice not found." }
-            if (invoice.paymentStatus === 'PAID') return { success: false, error: "Invoice is already fully paid." }
+                if (!invoice) throw new Error("Invoice not found.")
+                if (invoice.paymentStatus === 'PAID') throw new Error("Invoice is already fully paid.")
 
-            const total = Number(invoice.total)
-            const currentPaid = Number(invoice.amountPaid || 0)
-            let newPaid = currentPaid + data.additionalAmount
+                const total = Number(invoice.total)
+                const currentPaid = Number(invoice.amountPaid || 0)
+                const balanceRemaining = Math.max(0, total - currentPaid)
 
-            if (newPaid > total) newPaid = total
+                // Reject overpayment — don't silently clamp
+                if (data.additionalAmount > balanceRemaining) {
+                    throw new Error(`Overpayment rejected: balance due is ₹${balanceRemaining.toFixed(2)}, but ₹${data.additionalAmount.toFixed(2)} was entered.`)
+                }
 
-            const newBalance = Math.max(0, total - newPaid)
-            const newStatus = newBalance <= 0 ? 'PAID' : 'PARTIAL'
+                const newPaid = currentPaid + data.additionalAmount
+                const newBalance = Math.max(0, total - newPaid)
+                const newStatus = newBalance <= 0 ? 'PAID' : 'PARTIAL'
 
-            await BillingRepository.updatePaymentInfo(invoice.id, {
-                amountPaid: Math.round(newPaid * 100) / 100,
-                balanceDue: Math.round(newBalance * 100) / 100,
-                paymentStatus: newStatus
-            })
+                await BillingRepository.updatePaymentInfo(invoice.id, {
+                    amountPaid: Math.round(newPaid * 100) / 100,
+                    balanceDue: Math.round(newBalance * 100) / 100,
+                    paymentStatus: newStatus
+                }, tx)
+
+                // Audit Log for payment Recording
+                await recordAuditLog({
+                    gymId,
+                    actorId: "SYSTEM", // Ideally would be passed, but SYSTEM for batch/server-side actions
+                    action: 'PROCESS_SALE',
+                    entityType: 'INVOICE',
+                    entityId: invoice.id,
+                    payload: {
+                        additionalAmount: data.additionalAmount,
+                        newBalance,
+                        newStatus
+                    }
+                }, tx)
+            }, { isolationLevel: 'Serializable' as any })
 
             return { success: true }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Billing Service: recordPayment Error:", error)
-            return { success: false, error: "Failed to record payment." }
+            const msg = error?.message || "Failed to record payment."
+            return { success: false, error: msg }
         }
     }
 }

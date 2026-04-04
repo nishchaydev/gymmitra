@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Skeleton } from "@/components/SkeletonProvider"
+import { Skeleton } from "@/src/components/SkeletonProvider"
 import { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"

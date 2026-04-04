@@ -6,6 +6,7 @@ export const invoiceItemSchema = z.object({
     quantity: z.coerce.number().min(1),
     unitPrice: z.coerce.number().min(0),
     type: z.enum(["MEMBERSHIP", "PRODUCT", "OTHER"]),
+    productId: z.string().optional(),
 })
 
 // ─── Create Invoice Schema ──────────────────────────────────────────
@@ -16,8 +17,8 @@ export const createInvoiceSchema = z.object({
     walkInPhone: z.string().regex(/^[+\d][\d\s\-().]{6,19}$/, "Invalid phone number").optional(),
     walkInEmail: z.string().email("Invalid email").optional().or(z.literal('')),
     walkInAddress: z.string().optional(),
-    paymentMethod: z.enum(["CASH", "UPI"]),
-    paymentStatus: z.enum(["PAID", "PARTIAL", "PENDING"]).default("PAID"),
+    paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]),
+    paymentStatus: z.enum(["PAID", "PARTIAL", "PENDING", "OVERDUE"]).default("PAID"),
     amountPaid: z.coerce.number().min(0).optional(),
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),
@@ -25,6 +26,10 @@ export const createInvoiceSchema = z.object({
     taxPercentage: z.coerce.number().min(0).max(100).optional(),
     taxAmount: z.coerce.number().min(0).optional(),
     idempotencyKey: z.string().optional(),
+    type: z.enum(["MEMBERSHIP", "SALE", "RENEWAL", "PRODUCT"]).default("SALE"),
+    subscriptionId: z.string().optional(),
+    issueDate: z.coerce.date().optional(),
+    dueDate: z.coerce.date().optional(),
 }).refine(data => data.memberId || data.walkInName, {
     message: "Customer identification is required (Member or Walk-in Name)",
     path: ["walkInName"]

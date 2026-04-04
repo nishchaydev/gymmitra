@@ -121,7 +121,7 @@ export async function GET(req: Request) {
       const monthNum = parseInt(dobMonth);
       const membersWithMonth = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Member" 
-        WHERE EXTRACT(MONTH FROM "dateOfBirth") = ${monthNum}
+        WHERE EXTRACT(MONTH FROM "dateOfBirth" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = ${monthNum}
         AND "gymId" = ${auth.gym.id}
         AND "deletedAt" IS NULL
       `;
@@ -139,8 +139,8 @@ export async function GET(req: Request) {
       const day = parseInt(dayStr, 10);
       const birthdaysToday = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Member" 
-        WHERE EXTRACT(MONTH FROM "dateOfBirth") = ${month}
-        AND EXTRACT(DAY FROM "dateOfBirth") = ${day}
+        WHERE EXTRACT(MONTH FROM "dateOfBirth" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = ${month}
+        AND EXTRACT(DAY FROM "dateOfBirth" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = ${day}
         AND "gymId" = ${auth.gym.id}
         AND "deletedAt" IS NULL
       `;

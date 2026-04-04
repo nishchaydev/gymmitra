@@ -25,12 +25,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const body = await request.json()
         const validatedData = planSchema.parse(body)
 
-        // Verify ownership
-        const existingPlan = await prisma.membershipPlan.findUnique({
-            where: { id }
+        // Defense-in-depth: findFirst with gymId prevents IDOR
+        const existingPlan = await prisma.membershipPlan.findFirst({
+            where: { id, gymId: auth.gym.id }
         })
 
-        if (!existingPlan || existingPlan.gymId !== auth.gym.id) {
+        if (!existingPlan) {
             return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
         }
 
@@ -61,17 +61,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         const roleCheck = checkRole(auth, ['OWNER'])
         if (roleCheck) return roleCheck
 
-        const existingPlan = await prisma.membershipPlan.findUnique({
-            where: { id }
+        // Defense-in-depth: findFirst with gymId prevents IDOR
+        const existingPlan = await prisma.membershipPlan.findFirst({
+            where: { id, gymId: auth.gym.id }
         })
 
-        if (!existingPlan || existingPlan.gymId !== auth.gym.id) {
+        if (!existingPlan) {
             return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
         }
 
         // Check if there are active memberships with this plan
         const membershipsCount = await prisma.memberSubscription.count({
-            where: { planId: id, status: 'ACTIVE' }
+            where: { planId: id, gymId: auth.gym.id, status: 'ACTIVE' }
         })
 
         if (membershipsCount > 0) {

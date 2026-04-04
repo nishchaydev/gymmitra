@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
                      WHERE "gymId" = ${gym.id}
                        AND status = 'ACTIVE'
                        AND "dateOfBirth" IS NOT NULL
-                       AND EXTRACT(MONTH FROM "dateOfBirth") = ${todayMonth}
-                       AND EXTRACT(DAY FROM "dateOfBirth") = ${todayDay}
+                       AND EXTRACT(MONTH FROM "dateOfBirth" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = ${todayMonth}
+                       AND EXTRACT(DAY FROM "dateOfBirth" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = ${todayDay}
                  `
              })(),
 

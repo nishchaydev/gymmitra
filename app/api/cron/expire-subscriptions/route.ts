@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             where: {
                 status: 'EXPIRED',
                 endDate: { lt: now },
-                member: { status: 'ACTIVE' },
+                member: { status: 'ACTIVE', deletedAt: null },
             },
             select: { memberId: true, gymId: true },
             distinct: ['memberId'],

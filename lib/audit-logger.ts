@@ -38,9 +38,10 @@ export interface AuditLogParams {
  * Enterprise-grade internal audit logger.
  * async but not awaited by default to minimize request latency.
  */
-export async function recordAuditLog(params: AuditLogParams) {
+export async function recordAuditLog(params: AuditLogParams, tx?: Prisma.TransactionClient) {
     try {
-        await prisma.auditLog.create({
+        const client = tx || prisma
+        await client.auditLog.create({
             data: {
                 gymId: params.gymId,
                 actorId: params.actorId,

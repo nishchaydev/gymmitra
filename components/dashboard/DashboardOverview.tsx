@@ -348,8 +348,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                 </div>
             </div>
 
-            {/* ━━━ ROW 4: Outstanding Balances + Upcoming Birthdays (hidden when empty) ━━━ */}
-            <div className={`grid gap-6 grid-cols-1 ${(isDemo || d.upcomingBirthdays?.length > 0) ? 'lg:grid-cols-2' : ''} relative z-[1]`}>
+            {/* ━━━ ROW 4: Outstanding Balances + Upcoming Birthdays ━━━ */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 relative z-[1]">
                 <div>
                     <OutstandingBalances
                         data={d.outstandingInvoices}
@@ -357,15 +357,13 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                         slug={slug}
                     />
                 </div>
-                {(isDemo || d.upcomingBirthdays?.length > 0) && (
-                    <div>
-                        <UpcomingBirthdays
-                            isDemo={isDemo}
-                            gymName={gymName}
-                            data={d.upcomingBirthdays}
-                        />
-                    </div>
-                )}
+                <div>
+                    <UpcomingBirthdays
+                        isDemo={isDemo}
+                        gymName={gymName}
+                        data={d.upcomingBirthdays}
+                    />
+                </div>
             </div>
 
             {/* ━━━ ROW 5: At-Risk Members (full width) ━━━ */}

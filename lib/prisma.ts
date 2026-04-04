@@ -6,6 +6,8 @@ function withSslMode(url: string): string {
   try {
     const u = new URL(url)
     if (!u.searchParams.get('sslmode')) u.searchParams.set('sslmode', 'require')
+    // Set a healthier connection pool limit for Next.js parallel queries
+    if (!u.searchParams.get('connection_limit')) u.searchParams.set('connection_limit', '10')
     return u.toString()
   } catch {
     return url

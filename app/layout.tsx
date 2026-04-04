@@ -3,6 +3,7 @@ import { Outfit, Inter } from "next/font/google";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from '@vercel/analytics/next';
 import { headers } from 'next/headers';
+import "@/src/bones/registry";
 import "./globals.css";
 
 const fontDisplay = Outfit({
@@ -80,7 +81,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="scroll-smooth scroll-pt-24" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
-        className={`${fontDisplay.variable} ${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white selection:bg-primary-500/10 selection:text-primary-900`}
+        className={`${fontDisplay.variable} ${fontSans.variable} font-sans antialiased min-h-screen flex flex-col bg-white`}
       >
         <Providers>
           <main className="flex-1 bg-gray-50/50">

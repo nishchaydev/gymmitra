@@ -108,7 +108,10 @@ export async function GET(req: NextRequest) {
                 lastVisit,
                 daysInactive
             }
-        }).sort((a, b) => b.daysInactive - a.daysInactive) // Sort by most inactive first
+        })
+        // Cap the window: if they haven't attended for more than (days + 30) days, they are considered 'zombies', not 'at risk'
+        .filter(m => m.daysInactive <= days + 30)
+        .sort((a, b) => a.daysInactive - b.daysInactive) // Sort by newly inactive first
 
         return NextResponse.json({
             count: formattedMembers.length,

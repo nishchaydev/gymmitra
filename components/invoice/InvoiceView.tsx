@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { InvoiceTemplate } from './InvoiceTemplate'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Share2, MessageCircle, CreditCard, Loader2, CheckCircle2 } from 'lucide-react'
@@ -307,6 +308,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
     const [isPaymentOpen, setIsPaymentOpen] = useState(false)
     const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false)
     const [additionalAmount, setAdditionalAmount] = useState<number | ''>('')
+    const router = useRouter()
 
     const openInvoicePrintWindow = (forDownload: boolean) => {
         if (!componentRef.current) return
@@ -374,6 +376,12 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
             return
         }
 
+        const balanceDue = Number(invoice.balanceDue)
+        if (Number(additionalAmount) > balanceDue) {
+            toast.error(`Amount cannot exceed the balance due of ₹${balanceDue.toLocaleString('en-IN')}`)
+            return
+        }
+
         startTransition(async () => {
             const res = await recordInvoicePayment({
                 invoiceId: invoice.id,
@@ -386,6 +394,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
                 toast.success("Payment recorded successfully")
                 setIsPaymentOpen(false)
                 setAdditionalAmount('')
+                router.refresh() // Force re-render with updated invoice data
             }
         })
     }
@@ -402,6 +411,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
             } else {
                 toast.success("Invoice marked as fully paid!")
                 setIsMarkPaidOpen(false)
+                router.refresh() // Force re-render with updated invoice data
             }
         })
     }

@@ -132,7 +132,7 @@ export const importMembers = withAuth(async (context, data: any[]) => {
     const ipHeader = headerList.get('x-forwarded-for')
     const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
-    const result = await MemberService.importMembers(data, gymId, context.userId, ip)
+    const result = await MemberService.importMembers(data, gymId, context.userId, ip, context.gym.saasPlan)
 
     revalidatePath(`/${slug}/members`)
     revalidatePath(`/${slug}/dashboard`)

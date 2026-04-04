@@ -6,7 +6,7 @@ import { getAuthGym, checkRole } from '@/lib/auth'
 import { Prisma, SubscriptionStatus, MemberStatus, PaymentMethod } from '@prisma/client'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { subscriptionSchema } from '@/src/modules/memberships/validator'
-import { BillingRepository } from '@/src/modules/billing/repository'
+import { BillingService } from '@/src/modules/billing/service'
 import crypto from 'crypto'
 import { getBaseUrl } from '@/lib/utils'
 
@@ -99,48 +99,38 @@ export async function POST(request: NextRequest) {
                 data: { status: MemberStatus.ACTIVE }
             })
 
-            // Create invoice atomically — no more missing invoices on renewal
-            const invoiceNumber = await BillingRepository.generateInvoiceNumber(gym.id, tx)
-            const shareToken = crypto.randomBytes(32).toString('hex')
-            invoiceShareToken = shareToken
-            const gymSettings = await tx.gymProfile.findFirst({ where: { id: gym.id }, select: { invoiceLinkExpiryDays: true } })
-            const expiryDays = gymSettings?.invoiceLinkExpiryDays ?? 30
-            const shareTokenExpiresAt = expiryDays > 0
-                ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
-                : null
+            // Create invoice atomically via unified BillingService
+            const ipHeader = request.headers.get('x-forwarded-for')
+            const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
-            await BillingRepository.createInvoiceInTransaction({
-                invoiceNumber,
-                type: 'MEMBERSHIP',
-                gymId: gym.id,
-                memberId: validatedData.memberId,
-                subscriptionId: sub.id,
-                subtotal: price,
-                taxAmount: 0,
-                taxPercentage: 0,
-                discount: 0,
-                total: price,
-                // Correctly reflect actual payment state — mirrors POST /api/invoices logic
-                amountPaid: validatedData.amountPaid !== undefined 
-                    ? validatedData.amountPaid 
-                    : (validatedData.paymentStatus === 'PAID' ? price : (validatedData.paymentStatus === 'PARTIAL' ? Math.min(price / 2, price) : 0)),
-                balanceDue: price - (validatedData.amountPaid !== undefined 
-                    ? validatedData.amountPaid 
-                    : (validatedData.paymentStatus === 'PAID' ? price : (validatedData.paymentStatus === 'PARTIAL' ? Math.min(price / 2, price) : 0))),
-                paymentStatus: validatedData.paymentStatus,
-                paymentMethod: validatedData.paymentMethod as any,
-                shareToken,
-                shareTokenExpiresAt,
-                issueDate: new Date(),
-                dueDate: new Date(),
-                items: [{
-                    description: `${plan.name} Membership Renewal (${plan.duration} Months)`,
-                    amount: price,
-                    quantity: 1,
-                    unitPrice: price,
-                    gymId: gym.id,
-                }]
-            }, tx)
+            const invoiceResult = await BillingService.createInvoice(
+                gym,
+                {
+                    memberId: validatedData.memberId,
+                    subscriptionId: sub.id,
+                    type: 'RENEWAL',
+                    items: [{
+                        description: `${plan.name} Membership Renewal (${plan.duration} Months)`,
+                        quantity: 1,
+                        unitPrice: price,
+                        type: 'MEMBERSHIP'
+                    }],
+                    paymentMethod: validatedData.paymentMethod as any,
+                    paymentStatus: validatedData.paymentStatus as any,
+                    amountPaid: validatedData.amountPaid,
+                    discount: 0,
+                },
+                auth.userId,
+                ip,
+                tx
+            )
+
+            if (!invoiceResult.success) {
+                throw new Error(invoiceResult.error || "Failed to create subscription invoice")
+            }
+
+            const invoice = await tx.invoice.findUnique({ where: { id: invoiceResult.id } })
+            invoiceShareToken = invoice?.shareToken || undefined
 
             return [sub]
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
