@@ -15,6 +15,7 @@ import { UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { startOfToday, endOfToday, startOfMonth, subMonths, endOfMonth, startOfDay, subDays, format, eachMonthOfInterval, addDays, isEqual } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { SHOWCASE_STATS, MOCKUP_DATA } from "@/lib/showcase-data"
@@ -37,6 +38,9 @@ interface DashboardSummary {
 
 
 export const revalidate = 60
+const TIMEZONE_IST = 'Asia/Kolkata'
+const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
+type GymWithBusinessName = { businessName?: string } | null
 
 export const metadata: Metadata = {
     title: "GymMitra Dashboard",
@@ -267,11 +271,51 @@ export default async function DashboardPage({
                 orderBy: { checkInTime: 'desc' },
                 take: 3,
             }).catch(() => []),
-            prisma.member.findMany({
-                where: { gymId: gym!.id, status: 'ACTIVE' },
-                select: { name: true, phone: true, dateOfBirth: true },
-                take: 50,
-            }).catch(() => []),
+            (prisma.$queryRaw`
+                WITH ist AS (
+                    SELECT
+                        (NOW() AT TIME ZONE 'Asia/Kolkata')::date AS today_ist,
+                        ((NOW() AT TIME ZONE 'Asia/Kolkata')::date + INTERVAL '30 days')::date AS end_ist
+                ),
+                birthdays AS (
+                    SELECT
+                        m."name",
+                        m."phone",
+                        m."dateOfBirth",
+                        EXTRACT(MONTH FROM m."dateOfBirth")::int AS dob_month,
+                        EXTRACT(DAY FROM m."dateOfBirth")::int AS dob_day
+                    FROM "Member" m
+                    WHERE m."gymId" = ${gym!.id}
+                      AND m."status" = 'ACTIVE'
+                      AND m."deletedAt" IS NULL
+                      AND m."dateOfBirth" IS NOT NULL
+                )
+                SELECT
+                    b."name",
+                    b."phone",
+                    b."dateOfBirth"
+                FROM birthdays b
+                CROSS JOIN ist
+                WHERE (
+                    make_date(
+                        EXTRACT(YEAR FROM ist.today_ist)::int,
+                        b.dob_month,
+                        LEAST(
+                            b.dob_day,
+                            EXTRACT(DAY FROM (date_trunc('month', make_date(EXTRACT(YEAR FROM ist.today_ist)::int, b.dob_month, 1)) + INTERVAL '1 month - 1 day'))::int
+                        )
+                    ) BETWEEN ist.today_ist AND ist.end_ist
+                    OR
+                    make_date(
+                        EXTRACT(YEAR FROM ist.today_ist)::int + 1,
+                        b.dob_month,
+                        LEAST(
+                            b.dob_day,
+                            EXTRACT(DAY FROM (date_trunc('month', make_date(EXTRACT(YEAR FROM ist.today_ist)::int + 1, b.dob_month, 1)) + INTERVAL '1 month - 1 day'))::int
+                        )
+                    ) BETWEEN ist.today_ist AND ist.end_ist
+                )
+            ` as Promise<{ name: string; phone: string | null; dateOfBirth: Date | string }[]>).catch(() => []),
             (prisma.$queryRaw`
                 SELECT
                     EXTRACT(MONTH FROM "createdAt")::int AS month,
@@ -679,9 +723,13 @@ export default async function DashboardPage({
 
                 <TabsContent value="overview" className="space-y-6" forceMount={true}>
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Overview...</span></div>}>
+                        {(() => {
+                            const istNow = toZonedTime(new Date(), TIMEZONE_IST)
+                            const businessName = (gym as GymWithBusinessName)?.businessName
+                            return (
                         <DashboardOverview
                             slug={slug}
-                            gymName={(gym as any)?.businessName || gym?.name || "GymMitra Showcase"}
+                            gymName={businessName || gym?.name || "GymMitra Showcase"}
                             isDemo={isDemo}
                             initialData={{
                                 totalMembers: dashboardData.totalMembers,
@@ -700,9 +748,21 @@ export default async function DashboardPage({
                                 outstandingInvoices: JSON.parse(JSON.stringify(dashboardData.outstandingInvoices || [])),
                                 urgentCount: dashboardData.urgentCount,
                                 birthdayCount: dashboardData.birthdayCount,
-                                totalExpenses: (dashboardData as any).totalExpenses || 0,
+                                followUps: JSON.parse(JSON.stringify(dashboardData.followUps || [])),
+                                partialPayments: JSON.parse(JSON.stringify(dashboardData.partialPayments || [])),
+                                lowStockItems: JSON.parse(JSON.stringify(dashboardData.lowStockItems || [])),
+                                expiringSubscriptions: JSON.parse(JSON.stringify((dashboardData.expiringSubscriptions || []).map((sub) => {
+                                    const diff = new Date(sub.endDate).getTime() - istNow.getTime();
+                                    return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / MILLISECONDS_PER_DAY)) };
+                                }))),
+                                totalExpenses: (() => {
+                                    const parsed = Number.parseFloat(String(dashboardData.totalExpenses ?? 0))
+                                    return Number.isFinite(parsed) ? parsed : 0
+                                })(),
                             }}
                         />
+                            )
+                        })()}
                     </React.Suspense>
                 </TabsContent>
 
