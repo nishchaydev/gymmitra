@@ -458,6 +458,7 @@ export default function NewInvoiceForm({
                                                 })),
                                                 discount,
                                                 taxPercentage: taxEnabled ? invoiceTaxPercentage : 0,
+                                                type: 'SALE',
                                             }) as { success: boolean, id?: string, error?: string }
 
                                             if (result?.error) {

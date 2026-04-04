@@ -426,15 +426,16 @@ export class MemberService {
                      }
                  }
                  
-                 // Check 2: DOB validation
-                 if (row.dob) {
-                     const dobParsed = safeParseDate(row.dob);
-                     if (!dobParsed) {
-                         console.warn(`[Import] Row "${name}" has invalid DOB: ${row.dob}`);
-                     }
-                 } else {
-                     console.warn(`[Import] Row "${name}" has no DOB — birthday reminders won't work`);
-                 }
+                  // Check 2: DOB validation
+                  let parsedDob: Date | null = null
+                  if (row.dob) {
+                      parsedDob = safeParseDate(row.dob)
+                      if (!parsedDob) {
+                          console.warn(`[Import] Row "${name}" has invalid DOB: ${row.dob}`);
+                      }
+                  } else {
+                      console.warn(`[Import] Row "${name}" has no DOB — birthday reminders won't work`);
+                  }
                  
                  // Only hard errors cause row rejection
                  if (importErrors.length > 0) {
@@ -450,7 +451,7 @@ export class MemberService {
                      name,
                      phone,
                      email,
-                     dateOfBirth: row.dob ? new Date(row.dob) : undefined,
+                      dateOfBirth: parsedDob ?? undefined,
                      joiningDate: joinDate,
                      gymId,
                      status: 'ACTIVE',
@@ -465,9 +466,9 @@ export class MemberService {
                  // Prepare Subscription if plan exists
                  if (plan) {
                      const startDate = joinDate;
-                     const expiryDate = row.expirydate ? new Date(row.expirydate) : null;
-     
-                     if (expiryDate && isValid(new Date(expiryDate))) {
+                      const expiryDate = row.expirydate ? safeParseDate(row.expirydate) : null;
+      
+                      if (expiryDate && isValid(expiryDate)) {
                          newSubscriptions.push({
                              id: crypto.randomUUID(),
                              memberId: newMemberId,

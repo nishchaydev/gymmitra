@@ -2,6 +2,8 @@ import { calculateBillingTotal, resolveEffectiveTaxRate, distributeTaxAcrossItem
 import crypto from "crypto"
 import { Prisma } from "@prisma/client"
 import { recordAuditLog } from "@/lib/audit-logger"
+import { BillingRepository } from "./repository"
+import { CreateInvoiceInput, RecordPaymentInput } from "./validator"
 
 export class BillingService {
     /**

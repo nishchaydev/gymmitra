@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { safeParseDate } from '@/lib/utils'
+import { nullableDateField, optionalDateField } from '@/lib/date-validation'
 
 // ─── Base Member Schema (API-level) ─────────────────────────────────
 // This is the SINGLE SOURCE OF TRUTH for member input validation.
@@ -8,8 +10,7 @@ export const memberSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
     email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.union([z.string(), z.null()]).optional().nullable()
-        .transform(str => str && str !== '' && !isNaN(Date.parse(str)) ? new Date(str) : null),
+    dateOfBirth: nullableDateField('dateOfBirth'),
     pincode: z.string().optional(),
     state: z.string().optional(),
     city: z.string().optional(),
@@ -21,15 +22,14 @@ export const memberSchema = z.object({
     customPrice: z.coerce.number().nonnegative().optional(),
     discount: z.coerce.number().nonnegative().optional().default(0),
     amountPaid: z.coerce.number().nonnegative().optional(),
-    customEndDate: z.union([z.string(), z.null()]).optional().nullable()
-        .transform(str => str && str !== '' && !isNaN(Date.parse(str)) ? new Date(str) : null),
+    customEndDate: nullableDateField('customEndDate'),
 })
 
 export const memberUpdateSchema = z.object({
     name: z.string().min(2).optional(),
     phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits").optional(),
     email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.string().transform(str => new Date(str)).optional(),
+    dateOfBirth: optionalDateField('dateOfBirth'),
     status: z.enum(['ACTIVE', 'INACTIVE', 'EXPIRED', 'PENDING']).optional(),
     address: z.string().optional(),
     city: z.string().optional(),
@@ -47,10 +47,10 @@ export const memberUpdateSchema = z.object({
 
 export const memberFormSchema = memberSchema.extend({
     email: z.string().email("Valid email is required to send the welcome message"),
-    dateOfBirth: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+    dateOfBirth: z.string().optional().refine((val) => !val || safeParseDate(val) !== null, {
         message: "Invalid date",
     }),
-    customEndDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+    customEndDate: z.string().optional().refine((val) => !val || safeParseDate(val) !== null, {
         message: "Invalid date",
     }),
 })

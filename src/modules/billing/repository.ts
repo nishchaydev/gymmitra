@@ -129,7 +129,8 @@ export class BillingRepository {
                         gymId: item.gymId,
                     }))
                 }
-            }
+            },
+            include: { items: true }
         })
     }
 

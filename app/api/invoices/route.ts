@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 import { BillingService } from '@/src/modules/billing/service'
+import { optionalDateField } from '@/lib/date-validation'
 
 // Validations
 const invoiceItemSchema = z.object({
@@ -29,8 +30,8 @@ const invoiceCreateSchema = z.object({
         productId: z.string().optional(),
     })).min(1, "At least one item is required"),
     notes: z.string().optional(),
-    dueDate: z.string().optional(),
-    issueDate: z.string().optional(),
+    dueDate: optionalDateField('dueDate'),
+    issueDate: optionalDateField('issueDate'),
     discount: z.number().nonnegative().optional().default(0),
     taxAmount: z.number().nonnegative().optional().default(0),
     idempotencyKey: z.string().optional(),
