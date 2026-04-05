@@ -271,20 +271,16 @@ export const OnboardingEmail = ({
                             {/* Legal Links */}
                             <Row className="mb-[16px]">
                                 <Column className="text-center">
-                                    <Link href={`${baseUrl}/legal/privacy`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
+                                    <Link href={`${baseUrl}/privacy`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Privacy Policy
                                     </Link>
                                     <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
-                                    <Link href={`${baseUrl}/legal/terms`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
+                                    <Link href={`${baseUrl}/terms`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Terms of Service
                                     </Link>
                                     <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
                                     <Link href={serviceAgreementUrl} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Service Agreement
-                                    </Link>
-                                    <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
-                                    <Link href={`${baseUrl}/legal/refund`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
-                                        Refund Policy
                                     </Link>
                                 </Column>
                             </Row>
@@ -328,7 +324,7 @@ OnboardingEmail.PreviewProps = {
     ownerName: 'Nishchay',
     gymName: 'Iron Paradise Gym',
     loginUrl: `${previewBaseUrl}/dashboard`,
-    serviceAgreementUrl: `${previewBaseUrl}/legal/service-agreement`,
+    serviceAgreementUrl: `${previewBaseUrl}/terms`,
     saasPlan: 'FREE',
 } as OnboardingEmailProps;
 

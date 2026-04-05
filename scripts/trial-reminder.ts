@@ -51,7 +51,8 @@ async function runTrialReminders() {
         let subject = '';
         let html = '';
 
-        const loginUrl = `https://gym.emitra.dev/${gym.slug}/settings?tab=billing`;
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://gym.emitra.dev';
+        const loginUrl = `${siteUrl.replace(/\/$/, '')}/${gym.slug}/settings?tab=billing`;
 
         if (daysLeft === 30) {
             subject = `Your GymMitra Trial: 30 Days Remaining`;

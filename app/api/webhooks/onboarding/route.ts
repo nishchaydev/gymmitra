@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
                 ownerName,
                 gymName,
                 loginUrl: gymProfile.slug ? `${baseUrl}/${gymProfile.slug}/dashboard` : `${baseUrl}/login`,
-                serviceAgreementUrl: `${baseUrl}/legal/service-agreement`,
+                serviceAgreementUrl: `${baseUrl}/terms`,
                 saasPlan: (gymProfile as any).saasPlan || 'BASIC',
                 trialExpiresAt: gymProfile.trialExpiresAt || undefined,
             }));
