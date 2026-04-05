@@ -34,12 +34,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
         }
 
-        const plan = await prisma.membershipPlan.update({
-            where: { id },
+        const plan = await prisma.membershipPlan.updateMany({
+            where: { id, gymId: auth.gym.id },
             data: validatedData
         })
 
-        return NextResponse.json(plan)
+        if (plan.count === 0) {
+            return NextResponse.json({ error: 'Plan not found or not authorized' }, { status: 404 })
+        }
+
+        // Return updated plan details
+        const updatedPlan = await prisma.membershipPlan.findUnique({ where: { id } })
+        return NextResponse.json(updatedPlan)
     } catch (error: any) {
         console.error("Plan PUT Error:", error instanceof z.ZodError ? error.issues : error)
         if (error instanceof z.ZodError) {

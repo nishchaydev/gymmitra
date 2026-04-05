@@ -45,11 +45,30 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Plan not found or access denied' }, { status: 404 })
         }
 
-        const startDate = validatedData.startDate
+        let startDate = validatedData.startDate
+        
+        // --- Subscription Stacking Logic ---
+        // Find the latest active subscription for this member
+        const currentSub = await prisma.memberSubscription.findFirst({
+            where: {
+                memberId: validatedData.memberId,
+                gymId: gym.id,
+                status: SubscriptionStatus.ACTIVE,
+                endDate: { gte: new Date() }
+            },
+            orderBy: { endDate: 'desc' }
+        })
+
+        // If an active subscription exists and extends past the requested start date, stack from the end date
+        if (currentSub && currentSub.endDate > startDate) {
+            startDate = currentSub.endDate
+        }
+
         const endDate = addMonths(startDate, plan.duration)
         const price = validatedData.price ?? Number(plan.price)
 
-        // Block duplicate active subscription (allow upgrades via force: true)
+        // Block duplicate active subscriptions if start dates overlap (unless forced)
+        // Note: With stacking, startDate is shifted, so this protects against identical end dates or edge cases.
         if (!validatedData.force) {
             const duplicateActive = await prisma.memberSubscription.findFirst({
                 where: {

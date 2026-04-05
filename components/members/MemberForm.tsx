@@ -553,6 +553,44 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                 </div>
                             </div>
 
+                            <div className="bg-white/40 backdrop-blur-md border border-emerald-500/20 bg-emerald-50/10 p-6 rounded-2xl shadow-xl space-y-4">
+                                <div className="flex items-center gap-2 mb-2 pb-2">
+                                    <h3 className="font-semibold text-slate-900">Legal & Consents</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="whatsappConsentGiven"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-white">
+                                                <FormControl>
+                                                    <input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4 text-emerald-600 rounded border-gray-300 mt-1" />
+                                                </FormControl>
+                                                <div className="space-y-1 leading-none">
+                                                    <FormLabel>WhatsApp Communications</FormLabel>
+                                                    <p className="text-xs text-slate-500">I consent to receiving transactional updates on WhatsApp.</p>
+                                                </div>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="marketingConsentGiven"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-white">
+                                                <FormControl>
+                                                    <input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4 text-emerald-600 rounded border-gray-300 mt-1" />
+                                                </FormControl>
+                                                <div className="space-y-1 leading-none">
+                                                    <FormLabel>Marketing & Offers</FormLabel>
+                                                    <p className="text-xs text-slate-500">I consent to receiving promotional offers and newsletters via Email/WhatsApp. <a href="/privacy" target="_blank" className="text-blue-500 hover:underline">Privacy Policy</a></p>
+                                                </div>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
                             {!member && activePlans.length > 0 ? (
                                 <div className="flex justify-end pt-4">
                                     <Button

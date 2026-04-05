@@ -23,6 +23,8 @@ export const memberSchema = z.object({
     discount: z.coerce.number().nonnegative().optional().default(0),
     amountPaid: z.coerce.number().nonnegative().optional(),
     customEndDate: nullableDateField('customEndDate'),
+    whatsappConsentGiven: z.boolean().optional().default(false),
+    marketingConsentGiven: z.boolean().optional().default(false),
 })
 
 export const memberUpdateSchema = z.object({
@@ -39,6 +41,8 @@ export const memberUpdateSchema = z.object({
     emergencyPhone: z.string().optional(),
     emergencyRelation: z.string().optional(),
     notes: z.string().optional(),
+    whatsappConsentGiven: z.boolean().optional(),
+    marketingConsentGiven: z.boolean().optional(),
 })
 
 // ─── Frontend Form Extension ────────────────────────────────────────

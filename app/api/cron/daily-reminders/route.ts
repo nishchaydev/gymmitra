@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     // ── TARGET_DAYS: exact milestone days before expiry ─────────────────
     // A member expiring in exactly D days gets ONE email today.
     // This prevents the "email every day for 7 days" spam bug.
-    const TARGET_DAYS = [10, 7, 5, 3, 2, 1]
+    const TARGET_DAYS = [10, 7, 6, 5, 4, 3, 2, 1]
 
     try {
         // Timezone normalization for India Standard Time (IST)

@@ -106,6 +106,8 @@ model Member {
   memberState       MemberState          @default(ACTIVE) // ACTIVE, PAUSED, CHURNED
   pauseReturnDate   DateTime?
   notes             String?
+  whatsappConsentGiven Boolean           @default(false)
+  marketingConsentGiven Boolean          @default(false)
   gymId             String
   deletedAt         DateTime?
   churnedAt         DateTime?
