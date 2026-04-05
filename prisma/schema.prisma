@@ -118,7 +118,8 @@ model Member {
   nudgeLogs         NudgeLog[]
 
   @@index([gymId])
-  @@unique([gymId, phone])
+  // Replaced by partial unique index in SQL migration
+  // @@unique([gymId, phone])
 }
 
 model MembershipPlan {
@@ -413,7 +414,7 @@ enum SaaSPlan {
 }
 
 enum PlanTier {
-  TRIAL // 60-day premium trial window
+  TRIAL // 30-day premium trial window
   PRO // Licensed/Commercial usage
 }
 

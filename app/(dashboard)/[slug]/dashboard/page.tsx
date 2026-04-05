@@ -205,7 +205,7 @@ export default async function DashboardPage({
                 (SELECT SUM("total") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND "createdAt" >= ${startOfLastMonth} AND "createdAt" <= ${endOfLastMonth} AND "deletedAt" IS NULL) as last_month_revenue,
                 (SELECT COUNT(*) FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "date" >= ${today} AND "date" <= ${endOfToday()}) as today_checkins,
                 -- Expanded range: Expired 30 days ago to Expiring 7 days from now
-                (SELECT COUNT(*) FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "status" = 'ACTIVE' AND "endDate" >= ${subDays(today, 30)} AND "endDate" <= ${addDays(today, 7)}) as urgent_renewals,
+                (SELECT COUNT(*) FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "status" = 'ACTIVE' AND "endDate" >= ${subDays(today, 30)} AND "endDate" <= ${addDays(today, 7)} AND "deletedAt" IS NULL) as urgent_renewals,
                 (SELECT COUNT(*) FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "type" = 'PRODUCT' AND "createdAt" >= ${startOfThisMonth} AND "deletedAt" IS NULL) as product_sales
         ` as any[]
         
@@ -237,17 +237,17 @@ export default async function DashboardPage({
                     orderBy: { checkInTime: 'desc' },
                     take: 3,
                 }).catch(() => []),
-                (prisma.$queryRaw`SELECT m."name", m."phone", m."dateOfBirth" FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m."status" = 'ACTIVE' AND m."deletedAt" IS NULL AND m."dateOfBirth" IS NOT NULL LIMIT 50` as Promise<any[]>).catch(() => []),
+                (prisma.$queryRaw`SELECT m."name", m."phone", m."dateOfBirth" FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m."status" = 'ACTIVE' AND m."deletedAt" IS NULL AND m."dateOfBirth" IS NOT NULL` as Promise<any[]>).catch(() => []),
                 (prisma.$queryRaw`SELECT EXTRACT(MONTH FROM "createdAt")::int as month, COALESCE(SUM("total"), 0) as total FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW()) AND "deletedAt" IS NULL GROUP BY month ORDER BY month` as Promise<any[]>).catch(() => []),
-                (prisma.$queryRaw`SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month, COUNT(*)::bigint as count FROM "Member" WHERE "gymId" = ${gym!.id} AND "createdAt" >= ${startDate5Months} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                (prisma.$queryRaw`SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month, COUNT(*)::bigint as count FROM "Member" WHERE "gymId" = ${gym!.id} AND "createdAt" >= ${startDate5Months} AND "deletedAt" IS NULL GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
                 (prisma.$queryRaw`SELECT to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") < 12 THEN 1 END)::bigint as morning, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") >= 12 THEN 1 END)::bigint as evening FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "checkInTime" >= ${lastWeekStart} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
             ])
 
             // Wave 2: Retention & Risk (Sequentialized to breathe life into pool)
             const [churnRes, retentionRes, freqRes, expiringSubs] = await Promise.all([
-                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', m."churnedAt"), 'YYYY-MM-DD') as month, COUNT(m.id)::bigint as churned FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m.status IN ('INACTIVE', 'EXPIRED') AND m."churnedAt" >= ${startDate5Months} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
-                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month, SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END)::bigint as renewed, SUM(CASE WHEN "status" = 'EXPIRED' THEN 1 ELSE 0 END)::bigint as expired FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "endDate" >= ${startDate5Months} AND "endDate" <= ${today} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
-                 (prisma.$queryRaw`SELECT m.id, m.name, COUNT(a.id)::bigint as visit_count FROM "Member" m LEFT JOIN "Attendance" a ON m.id = a."memberId" AND a.date >= ${thirtyDaysAgo} WHERE m."gymId" = ${gym!.id} AND m.status = 'ACTIVE' GROUP BY m.id ORDER BY visit_count DESC LIMIT 50` as Promise<any[]>).catch(() => []),
+                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', m."churnedAt"), 'YYYY-MM-DD') as month, COUNT(m.id)::bigint as churned FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m.status IN ('INACTIVE', 'EXPIRED') AND m."churnedAt" >= ${startDate5Months} AND m."deletedAt" IS NULL GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', "endDate"), 'YYYY-MM-DD') as month, SUM(CASE WHEN "status" = 'ACTIVE' THEN 1 ELSE 0 END)::bigint as renewed, SUM(CASE WHEN "status" = 'EXPIRED' THEN 1 ELSE 0 END)::bigint as expired FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "endDate" >= ${startDate5Months} AND "endDate" <= ${today} AND "deletedAt" IS NULL GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                 (prisma.$queryRaw`SELECT m.id, m.name, COUNT(a.id)::bigint as visit_count FROM "Member" m LEFT JOIN "Attendance" a ON m.id = a."memberId" AND a.date >= ${thirtyDaysAgo} WHERE m."gymId" = ${gym!.id} AND m.status = 'ACTIVE' AND m."deletedAt" IS NULL GROUP BY m.id ORDER BY visit_count DESC` as Promise<any[]>).catch(() => []),
                  prisma.memberSubscription.findMany({ where: { gymId: gym!.id, endDate: { gte: subDays(today, 7), lte: addDays(today, 14) }, status: 'ACTIVE' }, include: { member: { select: { name: true, phone: true } }, plan: { select: { name: true } } }, orderBy: { endDate: 'asc' } }).catch(() => []),
             ])
 

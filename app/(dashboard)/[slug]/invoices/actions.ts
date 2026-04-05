@@ -41,7 +41,7 @@ export const createInvoice = withAuth(async (context, data: z.infer<typeof creat
     }
 
     return result
-}, ['OWNER', 'STAFF']) // Only Owners and Staff can create invoices
+}, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
 
 
 export const recordInvoicePayment = withAuth(async (context, data: z.infer<typeof recordPaymentSchema>) => {
@@ -58,4 +58,4 @@ export const recordInvoicePayment = withAuth(async (context, data: z.infer<typeo
     }
 
     return result
-}, ['OWNER', 'STAFF'])
+}, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])

@@ -231,6 +231,7 @@ export async function GET(request: NextRequest) {
                 WHERE "gymId" = ${gym.id}
                   AND "endDate" >= ${startDate}
                   AND "endDate" <= ${new Date()}
+                  AND "deletedAt" IS NULL
                 GROUP BY 1
                 ORDER BY 1 ASC
             `.catch((err) => {
@@ -274,7 +275,6 @@ export async function GET(request: NextRequest) {
                   AND m."deletedAt" IS NULL
                 GROUP BY m.id
                 ORDER BY visit_count DESC, last_visit DESC NULLS FIRST
-                LIMIT 50
             `.catch((err) => {
                 console.error('Failed to fetch member frequency report data:', err);
                 throw err;
@@ -317,21 +317,22 @@ export async function GET(request: NextRequest) {
                     }
                 }).catch((err) => { console.error('Failed to fetch activeMembers:', err); return 0 }),
                 prisma.product.count({ where: { gymId: gym.id, isActive: true } }).catch((err) => { console.error('Failed to fetch totalProducts:', err); return 0 }),
-                prisma.sale.findMany({
-                    where: { gymId: gym.id },
+                prisma.invoice.findMany({
+                    where: { gymId: gym.id, type: { in: ['PRODUCT', 'SALE'] }, deletedAt: null },
                     take: 10,
-                    orderBy: { saleDate: 'desc' },
+                    orderBy: { createdAt: 'desc' },
                     select: {
                         id: true,
-                        quantity: true,
-                        finalAmount: true,
-                        saleDate: true,
-                        product: { select: { name: true, category: true } },
-                        member: { select: { name: true } }
+                        invoiceNumber: true,
+                        total: true,
+                        type: true,
+                        createdAt: true,
+                        member: { select: { name: true } },
+                        items: { select: { description: true, quantity: true } }
                     }
                 }).catch((err) => {
                     console.error('Failed to fetch summary data (recentSales):', err);
-                    return []; // Only recent sales is allowed to be empty for summary
+                    return [];
                 })
             ])
 
@@ -342,9 +343,9 @@ export async function GET(request: NextRequest) {
                 totalProducts: Number(totalProducts || 0),
                 recentSales: (recentSales as any[]).map(s => ({
                     ...s,
-                    finalAmount: Number(s.finalAmount?.toString() || s.finalAmount || 0),
-                    productName: s.product?.name || 'Unknown',
-                    category: s.product?.category || 'Uncategorized',
+                    finalAmount: Number(s.total?.toString() || s.total || 0),
+                    productName: s.items?.[0]?.description || 'Multiple Items',
+                    category: s.type || 'PRODUCT',
                     memberName: s.member?.name || 'Walk-in'
                 }))
             })
