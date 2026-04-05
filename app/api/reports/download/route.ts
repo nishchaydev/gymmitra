@@ -59,7 +59,8 @@ export async function GET(request: NextRequest) {
                 const invoices = await prisma.invoice.findMany({
                     where: { gymId, deletedAt: null },
                     include: { member: { select: { name: true } } },
-                    orderBy: { issueDate: 'desc' }
+                    orderBy: { issueDate: 'desc' },
+                    take: 10000
                 })
                 const headers = ['Invoice Number', 'Member', 'Status', 'Date', 'Amount']
                 csvContent = [
@@ -97,7 +98,8 @@ export async function GET(request: NextRequest) {
             case 'products':
             case 'inventory': {
                 const products = await prisma.product.findMany({
-                    where: { gymId, isActive: true }
+                    where: { gymId, isActive: true },
+                    take: 5000
                 })
                 const headers = ['Name', 'Category', 'Price', 'Cost', 'Stock', 'Low Stock Alert']
                 csvContent = [
@@ -148,7 +150,8 @@ export async function GET(request: NextRequest) {
                         member: { select: { name: true, phone: true } },
                         plan: { select: { name: true } }
                     },
-                    orderBy: { endDate: 'asc' }
+                    orderBy: { endDate: 'asc' },
+                    take: 5000
                 })
 
                 const headers = ['Member Name', 'Phone', 'Plan Name', 'Expiry Date', 'Days Offset']
@@ -173,7 +176,8 @@ export async function GET(request: NextRequest) {
             case 'expenses': {
                 const expenses = await prisma.expense.findMany({
                     where: { gymId },
-                    orderBy: { date: 'desc' }
+                    orderBy: { date: 'desc' },
+                    take: 10000
                 })
                 const headers = ['Date', 'Category', 'Amount', 'Description']
                 const rows = expenses.map(e => [

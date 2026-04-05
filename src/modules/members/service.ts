@@ -110,7 +110,7 @@ export class MemberService {
                 const endDate = validatedData.customEndDate
                     ? validatedData.customEndDate
                     : addMonths(startDate, plan.duration)
-                const paymentMethod = (validatedData.paymentMethod || 'CASH') as PaymentStatus
+                const paymentMethod = (validatedData.paymentMethod || 'CASH') as PaymentMethod
 
                 const planPrice = (validatedData.customPrice !== undefined && validatedData.customPrice > 0) ? validatedData.customPrice : Number(plan.price)
                 const discount = validatedData.discount || 0

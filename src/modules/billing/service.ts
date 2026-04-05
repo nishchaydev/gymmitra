@@ -127,10 +127,15 @@ export class BillingService {
                             : await tx.product.findFirst({ where: { gymId: gym.id, name: item.description, isActive: true } })
                         
                         if (matchedProduct) {
-                            await tx.product.update({
-                                where: { id: matchedProduct.id },
-                                data: { stock: Math.max(0, matchedProduct.stock - item.quantity) }
+                            const decrementResult = await tx.product.updateMany({
+                                where: { id: matchedProduct.id, stock: { gte: item.quantity } },
+                                data: { stock: { decrement: item.quantity } }
                             })
+                            if (decrementResult.count === 0) {
+                                throw new Error(
+                                    `Insufficient stock for "${item.description}". Available: ${matchedProduct.stock}, Requested: ${item.quantity}`
+                                )
+                            }
                         }
                     }
                 }
