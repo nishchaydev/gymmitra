@@ -114,6 +114,16 @@ export default function PrivacyPolicyPage() {
                     <li><strong>WhatsApp:</strong> +91 62618 54014 (business hours)</li>
                     <li><strong>Location:</strong> Indore, Madhya Pradesh, India</li>
                 </ul>
+
+                <hr className="my-8" />
+                <div className="flex justify-center gap-6">
+                    <a href="/terms" className="text-emerald-600 hover:text-emerald-700 font-medium no-underline hover:underline">
+                        Terms & Conditions
+                    </a>
+                    <a href="/refund" className="text-emerald-600 hover:text-emerald-700 font-medium no-underline hover:underline">
+                        Refund Policy
+                    </a>
+                </div>
             </div>
         </div>
     )

@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         // Return updated plan details
-        const updatedPlan = await prisma.membershipPlan.findUnique({ where: { id } })
+        const updatedPlan = await prisma.membershipPlan.findFirst({ where: { id, gymId: auth.gym.id } })
         return NextResponse.json(updatedPlan)
     } catch (error: any) {
         console.error("Plan PUT Error:", error instanceof z.ZodError ? error.issues : error)
@@ -84,15 +84,16 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         if (membershipsCount > 0) {
             // Soft delete instead by setting isActive = false, or just return error
             // For now, let's just do soft delete
-            const plan = await prisma.membershipPlan.update({
-                where: { id },
+            await prisma.membershipPlan.updateMany({
+                where: { id, gymId: auth.gym.id },
                 data: { isActive: false }
             })
+            const plan = await prisma.membershipPlan.findFirst({ where: { id, gymId: auth.gym.id } })
             return NextResponse.json(plan)
         }
 
-        await prisma.membershipPlan.delete({
-            where: { id }
+        await prisma.membershipPlan.deleteMany({
+            where: { id, gymId: auth.gym.id }
         })
 
         return NextResponse.json({ success: true })

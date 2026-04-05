@@ -93,6 +93,8 @@ export class MemberService {
             memberData.emergencyName = validatedData.emergencyName || "";
             memberData.emergencyPhone = validatedData.emergencyPhone || "";
             memberData.emergencyRelation = validatedData.emergencyRelation || "";
+            if (validatedData.whatsappConsentGiven !== undefined) memberData.whatsappConsentGiven = validatedData.whatsappConsentGiven;
+            if (validatedData.marketingConsentGiven !== undefined) memberData.marketingConsentGiven = validatedData.marketingConsentGiven;
 
             const member = await MemberRepository.createMember(memberData, tx)
             finalMemberId = member.id
@@ -226,7 +228,7 @@ export class MemberService {
             }
 
             const resend = new Resend(resendKey)
-            
+
             const latestSub = await MemberRepository.findLatestActiveSubscription(memberId)
 
             let publicInvoiceUrl: string | undefined = undefined
@@ -408,80 +410,80 @@ export class MemberService {
                     continue
                 }
 
-                 // Prepare Member record
-                 const email = row.email ? String(row.email).trim().substring(0, 190) : null
-                 const city = row.city ? String(row.city).trim().substring(0, 190) : undefined
-                 
-                 // Import validation checks — using enterprise-grade date safety
-                 const joinDate = safeParseDate(row.joindate) || new Date();
-                 let importErrors: string[] = [];
-                 
-                 // Check 1: expiry before joindate using validateDateRange
-                 if (row.expirydate) {
-                     const expiryDate = safeParseDate(row.expirydate);
-                     if (!expiryDate) {
-                         importErrors.push(`Invalid expiry date format`);
-                     } else if (expiryDate < joinDate) {
-                         importErrors.push(`Expiry date is before join date`);
-                     }
-                 }
-                 
-                  // Check 2: DOB validation
-                  let parsedDob: Date | null = null
-                  if (row.dob) {
-                      parsedDob = safeParseDate(row.dob)
-                      if (!parsedDob) {
-                          console.warn(`[Import] Row "${name}" has invalid DOB: ${row.dob}`);
-                      }
-                  } else {
-                      console.warn(`[Import] Row "${name}" has no DOB — birthday reminders won't work`);
-                  }
-                 
-                 // Only hard errors cause row rejection
-                 if (importErrors.length > 0) {
-                     skippedInvalidData++;
-                     failedRows.push({ row, reason: importErrors.join('; ') });
-                     continue;
-                 }
-     
-                 const newMemberId = crypto.randomUUID()
-     
-                 newMembers.push({
-                     id: newMemberId,
-                     name,
-                     phone,
-                     email,
-                      dateOfBirth: parsedDob ?? undefined,
-                     joiningDate: joinDate,
-                     gymId,
-                     status: 'ACTIVE',
-                     memberState: 'ACTIVE',
-                     pauseReturnDate: null,
-                     city,
-                     emergencyName: '',
-                     emergencyPhone: '',
-                     emergencyRelation: '',
-                 })
-     
-                 // Prepare Subscription if plan exists
-                 if (plan) {
-                     const startDate = joinDate;
-                      const expiryDate = row.expirydate ? safeParseDate(row.expirydate) : null;
-      
-                      if (expiryDate && isValid(expiryDate)) {
-                         newSubscriptions.push({
-                             id: crypto.randomUUID(),
-                             memberId: newMemberId,
-                             planId: plan.id,
-                             gymId,
-                             startDate: startDate,
-                             endDate: expiryDate,
-                             price: plan.price,
-                             status: 'ACTIVE',
-                             paymentStatus: 'PAID'
-                         })
-                     }
-                 }
+                // Prepare Member record
+                const email = row.email ? String(row.email).trim().substring(0, 190) : null
+                const city = row.city ? String(row.city).trim().substring(0, 190) : undefined
+
+                // Import validation checks — using enterprise-grade date safety
+                const joinDate = safeParseDate(row.joindate) || new Date();
+                let importErrors: string[] = [];
+
+                // Check 1: expiry before joindate using validateDateRange
+                if (row.expirydate) {
+                    const expiryDate = safeParseDate(row.expirydate);
+                    if (!expiryDate) {
+                        importErrors.push(`Invalid expiry date format`);
+                    } else if (expiryDate < joinDate) {
+                        importErrors.push(`Expiry date is before join date`);
+                    }
+                }
+
+                // Check 2: DOB validation
+                let parsedDob: Date | null = null
+                if (row.dob) {
+                    parsedDob = safeParseDate(row.dob)
+                    if (!parsedDob) {
+                        console.warn(`[Import] Row "${name}" has invalid DOB: ${row.dob}`);
+                    }
+                } else {
+                    console.warn(`[Import] Row "${name}" has no DOB — birthday reminders won't work`);
+                }
+
+                // Only hard errors cause row rejection
+                if (importErrors.length > 0) {
+                    skippedInvalidData++;
+                    failedRows.push({ row, reason: importErrors.join('; ') });
+                    continue;
+                }
+
+                const newMemberId = crypto.randomUUID()
+
+                newMembers.push({
+                    id: newMemberId,
+                    name,
+                    phone,
+                    email,
+                    dateOfBirth: parsedDob ?? undefined,
+                    joiningDate: joinDate,
+                    gymId,
+                    status: 'ACTIVE',
+                    memberState: 'ACTIVE',
+                    pauseReturnDate: null,
+                    city,
+                    emergencyName: '',
+                    emergencyPhone: '',
+                    emergencyRelation: '',
+                })
+
+                // Prepare Subscription if plan exists
+                if (plan) {
+                    const startDate = joinDate;
+                    const expiryDate = row.expirydate ? safeParseDate(row.expirydate) : null;
+
+                    if (expiryDate && isValid(expiryDate)) {
+                        newSubscriptions.push({
+                            id: crypto.randomUUID(),
+                            memberId: newMemberId,
+                            planId: plan.id,
+                            gymId,
+                            startDate: startDate,
+                            endDate: expiryDate,
+                            price: plan.price,
+                            status: 'ACTIVE',
+                            paymentStatus: 'PAID'
+                        })
+                    }
+                }
 
                 imported++
             }

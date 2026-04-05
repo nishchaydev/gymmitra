@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
                     memberId: validatedData.memberId,
                     gymId: gym.id,
                     status: SubscriptionStatus.ACTIVE,
-                    endDate: { gte: validatedData.startDate }
+                    endDate: { gte: startDate }
                 }
             })
 
