@@ -137,7 +137,7 @@ export async function GET(request: Request) {
                 const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
                     type: 'recovery',
                     email: gym.email,
-                    options: { redirectTo: `${baseUrl}/${gym.slug || gym.id}/dashboard` }
+                    options: { redirectTo: `${baseUrl}/auth/callback?next=/reset-password` }
                 })
                 const resetUrl = linkData?.properties?.action_link || `${baseUrl}/reset-password`
 

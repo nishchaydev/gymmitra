@@ -387,7 +387,7 @@ export async function adminCreateTrialGym(raw: {
         gymName: data.gymName,
         email,
         slug,
-        resetUrl: `${getBaseUrl()}/reset-password`,
+        resetUrl: `${getBaseUrl()}/forgot-password`,
         trialExpiresAt,
     }).catch(() => { })
 

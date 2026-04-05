@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertCircle, CheckCircle2, Loader2, Info } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
+import Link from 'next/link'
 import { signup } from './actions'
 
 // 1. Zod Schema for strong client-side validation
@@ -20,7 +22,8 @@ const signupSchema = z.object({
         .regex(/[a-z]/, "Must contain at least one lowercase letter")
         .regex(/[0-9]/, "Must contain at least one number"),
     confirmPassword: z.string(),
-    license_key: z.string().min(5, "Registration code is required")
+    license_key: z.string().min(5, "Registration code is required"),
+    acceptTerms: z.boolean().refine(val => val === true, "You must accept the Terms and Privacy Policy"),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"]
@@ -44,7 +47,8 @@ export function ClientRegistrationForm() {
             email: '',
             password: '',
             confirmPassword: '',
-            license_key: ''
+            license_key: '',
+            acceptTerms: undefined as unknown as boolean
         }
     })
 
@@ -168,6 +172,25 @@ export function ClientRegistrationForm() {
                         Plan applied based on code.
                     </div>
                 )}
+            </div>
+
+            <div className="flex items-start space-x-2 pt-2 px-1">
+                <Checkbox 
+                    id="acceptTerms" 
+                    checked={watch("acceptTerms")}
+                    onCheckedChange={(checked) => {
+                        register("acceptTerms").onChange({
+                            target: { value: checked === true ? true : undefined, name: "acceptTerms" }
+                        })
+                    }}
+                    className="mt-0.5"
+                />
+                <div className="space-y-1">
+                    <Label htmlFor="acceptTerms" className="text-xs text-slate-500 font-medium leading-snug cursor-pointer">
+                        I confirm I am an authorized gym representative and I agree to the <Link href="/terms" target="_blank" className="text-primary hover:underline font-bold">Terms</Link> & <Link href="/privacy" target="_blank" className="text-primary hover:underline font-bold">Privacy Policy</Link>.
+                    </Label>
+                    {errors.acceptTerms && <p className="text-xs text-red-500">{errors.acceptTerms.message}</p>}
+                </div>
             </div>
 
             <Button type="submit" className="w-full mt-6" disabled={isSubmitting || !isValid}>

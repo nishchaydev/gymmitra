@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Loader2, ArrowRight, CheckCircle2, Building2, UserCircle2, Sparkles, MapPin, Users, Mail, Phone, Dumbbell } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { createTrialGym } from '@/app/actions/trial'
 import { resendVerificationEmail } from '@/app/actions/auth'
 import Link from 'next/link'
@@ -24,6 +25,7 @@ export default function TrialRequestForm() {
         phone: '',
         city: '',
         approxMembers: '',
+        acceptTerms: false,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +46,10 @@ export default function TrialRequestForm() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
+        if (!form.acceptTerms) {
+            toast.error('You must accept the Terms and Privacy Policy')
+            return
+        }
         setIsSubmitting(true)
 
         try {
@@ -278,6 +284,18 @@ export default function TrialRequestForm() {
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="flex items-start space-x-2 pt-2 px-1">
+                                <Checkbox 
+                                    id="acceptTerms" 
+                                    checked={form.acceptTerms}
+                                    onCheckedChange={(checked) => setForm(prev => ({ ...prev, acceptTerms: checked as boolean }))}
+                                    className="mt-0.5"
+                                />
+                                <Label htmlFor="acceptTerms" className="text-xs text-slate-500 font-medium leading-snug cursor-pointer">
+                                    I confirm I am an authorized gym representative and I agree to the <Link href="/terms" target="_blank" className="text-primary hover:underline font-bold">Terms</Link> & <Link href="/privacy" target="_blank" className="text-primary hover:underline font-bold">Privacy Policy</Link>.
+                                </Label>
                             </div>
 
                             <div className="flex gap-3 pt-2">
