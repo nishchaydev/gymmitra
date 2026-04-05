@@ -31,31 +31,43 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
 
     const { user } = data
 
-    // 1. Check if user is an Owner (Creator of the Gym)
-    const gymAsOwner = await prisma.gymProfile.findUnique({
-        where: { userId: user.id }
-    })
-
-    if (gymAsOwner) {
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`[Auth] User ${user.id} matched Gym Owner role for gym: ${gymAsOwner.slug}`)
+    // 1 & 2. Check if user is an Owner OR Staff/Trainer (combined query via gym relation)
+    const gymWithAuth = await prisma.gymProfile.findFirst({
+        where: {
+            OR: [
+                { userId: user.id },
+                { staff: { some: { userId: user.id, isActive: true } } }
+            ]
+        },
+        include: {
+            staff: {
+                where: { userId: user.id, isActive: true },
+                orderBy: { createdAt: 'asc' },
+                take: 1
+            }
         }
-        return { gym: gymAsOwner, role: 'OWNER', userId: user.id }
-    }
-
-    // 2. Check if user is Staff/Trainer
-    const staffProfile = await prisma.staffMember.findFirst({
-        where: { userId: user.id, isActive: true },
-        orderBy: { createdAt: 'asc' },
-        include: { gym: true }
     })
 
-    if (staffProfile) {
-        return {
-            gym: staffProfile.gym,
-            role: staffProfile.role,
-            staffId: staffProfile.id,
-            userId: user.id
+    if (gymWithAuth) {
+        if (gymWithAuth.userId === user.id) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`[Auth] User ${user.id} matched Gym Owner role for gym: ${gymWithAuth.slug}`)
+            }
+            // Strip out staff relation before returning gym context
+            const { staff, ...gymWithoutStaff } = gymWithAuth
+            return { gym: gymWithoutStaff as GymProfile, role: 'OWNER', userId: user.id }
+        }
+
+        const staffProfile = gymWithAuth.staff[0]
+        if (staffProfile) {
+            // Strip out staff relation before returning gym context
+            const { staff, ...gymWithoutStaff } = gymWithAuth
+            return {
+                gym: gymWithoutStaff as GymProfile,
+                role: staffProfile.role,
+                staffId: staffProfile.id,
+                userId: user.id
+            }
         }
     }
 

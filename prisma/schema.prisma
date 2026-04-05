@@ -54,8 +54,8 @@ model GymProfile {
   tempPassword String?
 
   deletedAt          DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   members            Member[]
   plans              MembershipPlan[]
   products           Product[]
@@ -68,11 +68,13 @@ model GymProfile {
   staff              StaffMember[]
   ptSessions         PTSession[]
   registrationCodeId String?
-  registrationCode   RegistrationCode? @relation(fields: [registrationCodeId], references: [id], onDelete: SetNull)
+  registrationCode   RegistrationCode?    @relation(fields: [registrationCodeId], references: [id], onDelete: SetNull)
   invoiceSequence    InvoiceSequence?
   auditLogs          AuditLog[]
   leads              Lead[]
   nudgeLogs          NudgeLog[]
+
+  @@index([lastBriefingSentAt])
 }
 
 model InvoiceSequence {
@@ -116,10 +118,10 @@ model Member {
   sales             Sale[]
   ptSessions        PTSession[]
   nudgeLogs         NudgeLog[]
-
-  @@index([gymId])
   // Replaced by partial unique index in SQL migration
   // @@unique([gymId, phone])
+
+  @@index([gymId])
 }
 
 model MembershipPlan {
@@ -166,16 +168,16 @@ model MemberSubscription {
 }
 
 model NudgeLog {
-  id        String   @id @default(cuid())
-  memberId  String
-  gymId     String
-  type      String   // 'INACTIVITY' | 'EXPIRY' | 'OFFER'
-  sentAt    DateTime @default(now())
-  channel   String   // 'WHATSAPP' | 'EMAIL'
-  outcome   String?  // 'RETURNED' | 'NO_RESPONSE' — owner updates this
+  id       String   @id @default(cuid())
+  memberId String
+  gymId    String
+  type     String // 'INACTIVITY' | 'EXPIRY' | 'OFFER'
+  sentAt   DateTime @default(now())
+  channel  String // 'WHATSAPP' | 'EMAIL'
+  outcome  String? // 'RETURNED' | 'NO_RESPONSE' — owner updates this
 
-  member    Member   @relation(fields: [memberId], references: [id])
-  gym       GymProfile @relation(fields: [gymId], references: [id])
+  member Member     @relation(fields: [memberId], references: [id])
+  gym    GymProfile @relation(fields: [gymId], references: [id])
 
   @@index([gymId])
   @@index([memberId])
@@ -266,16 +268,16 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   invoiceId     String
   gymId         String // Direct gymId for multi-tenant isolation
   description   String
   quantity      Int
-  unitPrice     Decimal  @db.Decimal(10, 2)
-  taxPercentage Decimal? @db.Decimal(5, 2)
-  taxAmount     Decimal  @default(0.0) @db.Decimal(10, 2)
-  amount        Decimal  @db.Decimal(10, 2)
-  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  unitPrice     Decimal    @db.Decimal(10, 2)
+  taxPercentage Decimal?   @db.Decimal(5, 2)
+  taxAmount     Decimal    @default(0.0) @db.Decimal(10, 2)
+  amount        Decimal    @db.Decimal(10, 2)
+  invoice       Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   gym           GymProfile @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
@@ -331,7 +333,7 @@ model RegistrationCode {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
+
 enum MemberState {
   ACTIVE
   PAUSED
@@ -408,8 +410,8 @@ enum SessionStatus {
 enum SaaSPlan {
   // NOTE: BASIC, GROWTH, ENTERPRISE were removed in favor of MAIN_PLAN. 
   // Migrations handle the data mapping.
-  TRIAL      // Default for new gyms — no member cap, full feature access
-  MAIN_PLAN  // Licensed gyms — flat ₹12,000/year, capped at 200 members
+  TRIAL // Default for new gyms — no member cap, full feature access
+  MAIN_PLAN // Licensed gyms — flat ₹12,000/year, capped at 200 members
   PER_MEMBER // Usage-based — ₹8/active member/month, unlimited members
 }
 
@@ -465,8 +467,8 @@ model StaffMember {
   ptSessions PTSession[]
   attendance Attendance[]
 
-  isFirstLogin Boolean  @default(true)  // True until staff completes first-login password decision
-  tempPassword String?                  // AES-encrypted temp password — cleared after first login
+  isFirstLogin Boolean @default(true) // True until staff completes first-login password decision
+  tempPassword String? // AES-encrypted temp password — cleared after first login
 
   @@unique([userId, gymId]) // A user can only have one staff profile per gym
   @@unique([email, gymId]) // Prevent duplicate emails within the same gym

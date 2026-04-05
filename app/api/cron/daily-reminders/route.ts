@@ -134,26 +134,30 @@ export async function GET(request: NextRequest) {
                  const notificationBatch: Prisma.NotificationCreateManyInput[] = []
 
                 // ── Expiring Subscriptions — exact-day countdown ───────
-                // Query each target day separately so a member expiring in
-                // exactly 8 days receives ZERO emails today (not in any window).
-                for (const daysAhead of TARGET_DAYS) {
-                    const windowStart = new Date(istMidnightUTC.getTime() + daysAhead * 24 * 60 * 60 * 1000)
-                    const windowEnd = new Date(istMidnightUTC.getTime() + (daysAhead + 1) * 24 * 60 * 60 * 1000 - 1)
+                // Query a single window to save DB round-trips
+                const maxDaysAhead = Math.max(...TARGET_DAYS)
+                const minDaysAhead = Math.min(...TARGET_DAYS)
+                const overallWindowStart = new Date(istMidnightUTC.getTime() + minDaysAhead * 24 * 60 * 60 * 1000)
+                const overallWindowEnd = new Date(istMidnightUTC.getTime() + (maxDaysAhead + 1) * 24 * 60 * 60 * 1000 - 1)
 
-                    const expiringSubs = await prisma.memberSubscription.findMany({
-                        where: {
-                            gymId: gym.id,
-                            status: 'ACTIVE',
-                            endDate: { gte: windowStart, lte: windowEnd },
-                            member: { deletedAt: null }  // exclude soft-deleted members
-                        },
-                        include: {
-                            member: { select: { id: true, name: true, email: true, phone: true } },
-                            plan: { select: { name: true } }
-                        }
-                    })
+                const allExpiringSubs = await prisma.memberSubscription.findMany({
+                    where: {
+                        gymId: gym.id,
+                        status: 'ACTIVE',
+                        endDate: { gte: overallWindowStart, lte: overallWindowEnd },
+                        member: { deletedAt: null }  // exclude soft-deleted members
+                    },
+                    include: {
+                        member: { select: { id: true, name: true, email: true, phone: true } },
+                        plan: { select: { name: true } }
+                    }
+                })
 
-                    for (const sub of expiringSubs) {
+                for (const sub of allExpiringSubs) {
+                    const diffTime = sub.endDate.getTime() - istMidnightUTC.getTime();
+                    const daysAhead = Math.floor(diffTime / (1000 * 3600 * 24));
+                    
+                    if (!TARGET_DAYS.includes(daysAhead)) continue;
                         if (!sub.member.email) continue
 
                         const isUrgent = daysAhead <= 2
@@ -194,7 +198,6 @@ export async function GET(request: NextRequest) {
                             userId: gym.userId,
                             gymId: gym.id
                         })
-                    }
                 }
 
                 // ── Overdue Invoices ──────────────────────────────────

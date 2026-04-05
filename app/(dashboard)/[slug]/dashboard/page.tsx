@@ -224,9 +224,9 @@ export default async function DashboardPage({
         }
 
             // Wave 1: Core Performance & Growth
-            const [invoices, attendance, birthdayDataRaw, monthlyRevenue, growthRaw, attRaw] = await Promise.all([
+            const [invoices, attendance, birthdayDataRaw, monthlyRevenue, growthRaw, attRaw, membersBeforeWindowResult] = await Promise.all([
                 prisma.invoice.findMany({
-                    where: { gymId: gym!.id },
+                    where: { gymId: gym!.id, deletedAt: null },
                     include: { member: { select: { name: true } } },
                     orderBy: { createdAt: 'desc' },
                     take: 5
@@ -241,6 +241,7 @@ export default async function DashboardPage({
                 (prisma.$queryRaw`SELECT EXTRACT(MONTH FROM "createdAt")::int as month, COALESCE(SUM("total"), 0) as total FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW()) AND "deletedAt" IS NULL GROUP BY month ORDER BY month` as Promise<any[]>).catch(() => []),
                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month, COUNT(*)::bigint as count FROM "Member" WHERE "gymId" = ${gym!.id} AND "createdAt" >= ${startDate5Months} AND "deletedAt" IS NULL GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
                 (prisma.$queryRaw`SELECT to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") < 12 THEN 1 END)::bigint as morning, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") >= 12 THEN 1 END)::bigint as evening FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "checkInTime" >= ${lastWeekStart} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
+                prisma.member.count({ where: { gymId: gym!.id, createdAt: { lt: startDate5Months }, deletedAt: null } }).catch(() => 0),
             ])
 
             // Wave 2: Retention & Risk (Sequentialized to breathe life into pool)
@@ -271,7 +272,7 @@ export default async function DashboardPage({
             const memberGrowthRaw = growthRaw
             const attendanceRaw = attRaw
             const birthdayCount = birthdayDataRaw.filter((m: any) => isBirthdayToday(m.dateOfBirth)).length
-            const membersBeforeWindow = await prisma.member.count({ where: { gymId: gym!.id, createdAt: { lt: startDate5Months }, deletedAt: null } }).catch(() => 0)
+            const membersBeforeWindow = membersBeforeWindowResult
 
 
         // Process REAL Member Growth data
