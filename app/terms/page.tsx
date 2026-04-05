@@ -112,9 +112,12 @@ export default function TermsAndConditionsPage() {
                 </ul>
 
                 <hr className="my-8" />
-                <div className="flex justify-center">
+                <div className="flex justify-center gap-6">
                     <Link href="/privacy" className="text-emerald-600 hover:text-emerald-700 font-medium no-underline hover:underline">
-                        Read our Privacy Policy &rarr;
+                        Privacy Policy
+                    </Link>
+                    <Link href="/refund" className="text-emerald-600 hover:text-emerald-700 font-medium no-underline hover:underline">
+                        Refund Policy
                     </Link>
                 </div>
             </div>

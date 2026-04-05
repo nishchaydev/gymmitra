@@ -84,6 +84,7 @@ export default function Home() {
                 <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
                 <a href="/privacy" className="hover:text-primary transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-primary transition-colors">Terms</a>
+                <a href="/refund" className="hover:text-primary transition-colors">Refund</a>
             </div>
             <div className="pt-12 border-t border-white/5 w-full flex justify-center">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">

@@ -282,6 +282,10 @@ export const OnboardingEmail = ({
                                     <Link href={serviceAgreementUrl} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
                                         Service Agreement
                                     </Link>
+                                    <Text className="inline text-[12px] text-[#475569] mx-[4px]">•</Text>
+                                    <Link href={`${baseUrl}/refund`} className="text-[12px] text-[#94a3b8] no-underline mx-[6px]">
+                                        Refund Policy
+                                    </Link>
                                 </Column>
                             </Row>
 
