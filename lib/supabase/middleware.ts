@@ -76,6 +76,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         pathname.startsWith('/invoice/') || // Public invoice sharing
         pathname === '/manifest.webmanifest' || // PWA manifest
         pathname === '/api/csp-report' || // CSP Violation Reporting
+        pathname.startsWith('/privacy') || // Legal pages
+        pathname.startsWith('/terms') || // Legal pages
         pathname.startsWith('/api/webhooks') // External webhooks handle their own auth
 
     if (isPublicRoute) {
