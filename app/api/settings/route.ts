@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { settingsService } from '@/src/modules/settings/service'
+import { revalidatePath } from 'next/cache'
 
 // Fix 13 request: rate limit 20
 const SETTINGS_RATE_LIMIT = 20
@@ -58,6 +59,11 @@ export async function PUT(request: NextRequest) {
         }
 
         const gymProfile = await settingsService.updateSettings(auth.userId, auth.gym.slug || undefined, body)
+
+        // Force revalidation of all components under the gym's dashboard slug
+        if (auth.gym.slug) {
+            revalidatePath(`/${auth.gym.slug}`, 'layout')
+        }
 
         return NextResponse.json(gymProfile)
     } catch (error: any) {

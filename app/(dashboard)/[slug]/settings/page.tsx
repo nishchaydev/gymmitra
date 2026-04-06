@@ -26,7 +26,7 @@ import { StaffManagement } from "@/components/settings/StaffManagement"
 import { PlanManagement } from "@/components/settings/PlanManagement"
 import { BillingSettings } from "@/components/settings/BillingSettings"
 import Link from "next/link"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { QRPosterSection } from "@/components/settings/QRPosterSection"
 import { WhatsAppTemplates } from "@/components/settings/WhatsAppTemplates"
 import { NotificationSettings } from "@/components/settings/NotificationSettings"
@@ -68,6 +68,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>
 export default function SettingsPage() {
     const { slug } = useParams() as { slug: string }
     const searchParams = useSearchParams()
+    const router = useRouter()
     
     // Default to the tab specified in the URL, or 'profile' if not provided
     const defaultTab = searchParams.get('tab') || 'profile'
@@ -149,6 +150,7 @@ export default function SettingsPage() {
 
             toast.success("Settings updated successfully")
             setGymName(values.name)
+            router.refresh()
 
             if (values.slug && values.slug !== slug) {
                 toast.loading("Slug changed. Redirecting to new dashboard...")
