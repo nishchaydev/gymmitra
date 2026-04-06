@@ -16,7 +16,11 @@ export default async function NewInvoicePage() {
 
     // Convert Decimals to numbers for client components
     const membershipPlans = dbMembershipPlans.map(p => ({ ...p, price: Number(p.price) }))
-    const products = dbProducts.map(p => ({ ...p, price: Number(p.price) }))
+    const products = dbProducts.map(p => ({ 
+        ...p, 
+        price: Number(p.price),
+        purchasePrice: p.purchasePrice ? Number(p.purchasePrice) : null
+    }))
 
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
