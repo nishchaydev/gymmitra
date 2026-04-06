@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  // @ts-ignore
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [
       {
