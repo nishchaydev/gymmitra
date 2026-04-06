@@ -1,15 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "functions": {
-        "app/api/**": {
-            "maxDuration": 60
-        }
-    },
     "crons": [
-        {
-            "path": "/api/cron/keepalive",
-            "schedule": "0 0 */3 * *"
-        },
         {
             "path": "/api/cron/daily-reminders",
             "schedule": "30 2 * * *"
@@ -17,10 +8,6 @@
         {
             "path": "/api/cron/expire-subscriptions",
             "schedule": "30 18 * * *"
-        },
-        {
-            "path": "/api/cron/cleanup-notifications",
-            "schedule": "30 20 * * 6"
         }
     ]
 }

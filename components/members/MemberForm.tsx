@@ -77,6 +77,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             customPrice: "",
             amountPaid: "",
             customEndDate: "",
+            whatsappConsentGiven: false,
+            marketingConsentGiven: false,
         }
 
         // Prefill from query params for 'Convert Lead'
@@ -97,6 +99,8 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
             customPrice: "",
             amountPaid: "",
             customEndDate: "",
+            whatsappConsentGiven: false,
+            marketingConsentGiven: false,
         }
     }, [member, searchParams])
 
