@@ -76,9 +76,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
             return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
         }
 
-        // Check if there are active memberships with this plan
+        // Check if there are any memberships linked to this plan
         const membershipsCount = await prisma.memberSubscription.count({
-            where: { planId: id, gymId: auth.gym.id, status: 'ACTIVE' }
+            where: { planId: id, gymId: auth.gym.id, status: { in: ['ACTIVE', 'EXPIRED'] } }
         })
 
         if (membershipsCount > 0) {

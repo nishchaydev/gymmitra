@@ -18,7 +18,7 @@ export const createInvoiceSchema = z.object({
     walkInEmail: z.string().email("Invalid email").optional().or(z.literal('')),
     walkInAddress: z.string().optional(),
     paymentMethod: z.enum(["CASH", "UPI", "CARD", "OTHER"]),
-    paymentStatus: z.enum(["PAID", "PARTIAL", "PENDING", "OVERDUE"]).default("PAID"),
+    paymentStatus: z.enum(["PAID", "PARTIAL", "PENDING"]).default("PAID"),
     amountPaid: z.coerce.number().min(0).optional(),
     notes: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1),

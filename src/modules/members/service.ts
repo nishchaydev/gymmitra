@@ -279,8 +279,8 @@ export class MemberService {
                 .join(' ')
         }
 
-        const count = await MemberRepository.countById(memberId, gymId)
-        if (count === 0) return { error: 'Member not found', status: 404 }
+        const member = await MemberRepository.findById(memberId, gymId)
+        if (!member || member.deletedAt) return { error: 'Member not found', status: 404 }
 
         await MemberRepository.updateMember(memberId, gymId, validatedData)
 

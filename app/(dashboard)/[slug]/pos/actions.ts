@@ -21,6 +21,16 @@ export async function processPosSale(slug: string, data: {
             // Generate inside transaction to prevent invoice race conditions
             const invoiceNumber = await BillingRepository.generateInvoiceNumber(auth.gym.id, tx)
 
+            // IDOR check: verify member belongs to this gym
+            if (data.memberId) {
+                const member = await tx.member.findFirst({
+                    where: { id: data.memberId, gymId: auth.gym.id }
+                })
+                if (!member) {
+                    throw new Error("Unauthorized or invalid member for this gym.")
+                }
+            }
+
             // 1. Fetch and validate all products upfront (ownership + stock) before any writes
             const productIds = data.items.map(i => i.productId)
             const products = await tx.product.findMany({

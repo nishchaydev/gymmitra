@@ -168,6 +168,16 @@ export async function POST(request: NextRequest) {
         }
         const validatedData = invoiceCreateSchema.parse(body)
 
+        // IDOR check: verify member belongs to this gym
+        if (validatedData.memberId) {
+            const memberExists = await prisma.member.findFirst({
+                where: { id: validatedData.memberId, gymId: gym.id }
+            })
+            if (!memberExists) {
+                return NextResponse.json({ error: 'Unauthorized: Member does not belong to this gym' }, { status: 403 })
+            }
+        }
+
         const ipHeader = request.headers.get('x-forwarded-for')
         const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
