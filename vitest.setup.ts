@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { vi } from 'vitest'
+import { vi, beforeEach } from 'vitest'
 import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended'
 import { PrismaClient } from '@prisma/client'
 import { prisma } from './lib/prisma'
