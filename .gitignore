@@ -57,3 +57,7 @@ __pycache__/
 # debug artifacts
 tsc_errors*.txt
 email-result.txt
+test_output*.txt
+
+# Sentry Config File
+.env.sentry-build-plugin

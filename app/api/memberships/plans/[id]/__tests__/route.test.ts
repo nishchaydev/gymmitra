@@ -3,16 +3,16 @@ import { NextRequest } from 'next/server'
 import { PUT, DELETE } from '../route'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
-
-// Mock global dependencies
-vi.mock('@/lib/auth', () => ({
-  getAuthGym: vi.fn(),
-  checkRole: vi.fn().mockReturnValue(null),
-}))
-
 import { DeepMockProxy } from 'vitest-mock-extended'
 import { PrismaClient } from '@prisma/client'
 
+// Mock local dependencies
+vi.mock('@/lib/auth', () => ({
+  getAuthGym: vi.fn(),
+  checkRole: vi.fn(),
+}))
+
+// Use the globally mocked prisma instance
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 const getAuthGymMock = vi.mocked(getAuthGym)
 

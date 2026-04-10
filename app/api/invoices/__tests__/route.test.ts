@@ -5,10 +5,10 @@ import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { BillingService } from '@/src/modules/billing/service'
 
-// Mock global dependencies
+// Mock local dependencies
 vi.mock('@/lib/auth', () => ({
   getAuthGym: vi.fn(),
-  checkRole: vi.fn().mockReturnValue(null), // Default to success
+  checkRole: vi.fn(),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -26,6 +26,7 @@ vi.mock('@/src/modules/billing/service', () => ({
 import { DeepMockProxy } from 'vitest-mock-extended'
 import { PrismaClient } from '@prisma/client'
 
+// Use the globally mocked prisma instance
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 const getAuthGymMock = vi.mocked(getAuthGym)
 const billingServiceMock = vi.mocked(BillingService)

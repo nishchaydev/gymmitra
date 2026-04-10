@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET, POST } from '../route'
 import { NextRequest } from 'next/server'
-import { prismaMock } from '../../../../vitest.setup'
+import { prismaMock } from '@/vitest.setup'
 import { DeepMockProxy } from 'vitest-mock-extended'
 import { PrismaClient } from '@prisma/client'
 
+// Use the globally mocked prisma instance
 const mockPrisma = prismaMock as unknown as DeepMockProxy<PrismaClient>
 
 vi.mock('@/lib/auth', () => ({
