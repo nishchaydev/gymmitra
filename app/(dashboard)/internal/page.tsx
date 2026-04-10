@@ -10,8 +10,8 @@ import ManualTrialGenerator from "./components/ManualTrialGenerator"
 import { Button } from '@/components/ui/button'
 
 export default function InternalAdminPage() {
-    const [stats, setStats] = useState(null)
-    const [gyms, setGyms] = useState([])
+    const [stats, setStats] = useState<any>(null)
+    const [gyms, setGyms] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isRefreshing, setIsRefreshing] = useState(false)
 

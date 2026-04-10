@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { CheckCircle2, XCircle, MoreVertical, ExternalLink, Calendar, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
@@ -133,18 +132,11 @@ export default function GymManagementTable({ gyms, onUpdate }: Props) {
                                             Verify
                                         </Button>
                                     )}
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-                                                    <a href={`/${gym.slug}/dashboard`} target="_blank">
-                                                        <ExternalLink className="w-3 h-3" />
-                                                    </a>
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>View Dashboard</TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" asChild title="View Dashboard">
+                                        <a href={`/${gym.slug}/dashboard`} target="_blank">
+                                            <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </Button>
                                 </div>
                             </TableCell>
                         </TableRow>

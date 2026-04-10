@@ -8,8 +8,6 @@ import crypto from 'crypto';
 import { verifyWebhookSignature } from '@/lib/webhook-utils';
 import { getBaseUrl } from '@/lib/utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 function isTrustedProxy(ip: string): boolean {
     if (ip === '127.0.0.1' || ip === '::1') return true
     const trusted = process.env.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
@@ -142,6 +140,7 @@ export async function POST(req: NextRequest) {
 
         // 6. Send Welcome Email using Resend
         try {
+            const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
             const emailHtml = await render(OnboardingEmail({
                 ownerName,
                 gymName,
