@@ -2,14 +2,25 @@ import { PrismaClient } from '@prisma/client'
 
 const SOFT_DELETE_MODELS = ['Member', 'Invoice', 'GymProfile', 'MemberSubscription', 'Sale']
 
-function withSslMode(url: string): string {
+function withSslMode(url: string, isPooler: boolean = false): string {
   try {
     const u = new URL(url)
     if (!u.searchParams.get('sslmode')) u.searchParams.set('sslmode', 'require')
     // Set a healthier connection pool limit for Next.js parallel queries
     if (!u.searchParams.get('connection_limit')) u.searchParams.set('connection_limit', '10')
+    
+    // Automatically add pgbouncer=true if on pooler port
+    if (isPooler && !u.searchParams.get('pgbouncer')) {
+      u.searchParams.set('pgbouncer', 'true')
+    }
+    
     return u.toString()
   } catch {
+    // If parsing fails, it's likely due to special characters in password. 
+    // We should warn about this in dev.
+    if (process.env.NODE_ENV !== 'production' && url) {
+      console.warn('Prisma: Failed to parse DATABASE_URL. Ensure password is URL-encoded.')
+    }
     return url
   }
 }
@@ -18,7 +29,9 @@ function pickPrismaUrl(): { url: string; reason: string; host: string | null } {
   const rawDb = process.env.DATABASE_URL || ''
   const rawDirect = process.env.DIRECT_URL || ''
 
-  const db = rawDb ? withSslMode(rawDb) : ''
+  const isPooler = (v: string) => v.includes(':6543')
+  
+  const db = rawDb ? withSslMode(rawDb, isPooler(rawDb)) : ''
   const direct = rawDirect ? withSslMode(rawDirect) : ''
 
   const getHost = (v: string) => {
@@ -33,24 +46,19 @@ function pickPrismaUrl(): { url: string; reason: string; host: string | null } {
   const directHost = getHost(direct)
 
   // In local dev, we prefer the Transaction Pooler (port 6543) if available in DATABASE_URL
-  // because port 5432 (Session mode/Direct) is often blocked or less reliable.
   if (process.env.NODE_ENV !== 'production') {
-    if (db.includes(':6543')) {
+    if (isPooler(db)) {
       return { url: db, reason: 'dev:preferring Transaction Pooler (6543)', host: dbHost }
     }
     
     if (direct) {
-      // Inline normalization: ensure SSL and remove pgbouncer if present
-      let normalized = direct
-      try {
-        const u = new URL(direct)
-        u.searchParams.delete('pgbouncer')
-        normalized = withSslMode(u.toString())
-      } catch {
-        normalized = withSslMode(direct)
-      }
-      return { url: normalized, reason: 'dev:using DIRECT_URL', host: getHost(normalized) }
+      return { url: direct, reason: 'dev:using DIRECT_URL', host: directHost }
     }
+  }
+
+  // Production diagnostics (Masked log)
+  if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+    console.log(`[Prisma] Initializing with host: ${dbHost || 'unknown'}, port: ${isPooler(db) ? '6543 (Pooler)' : '5432 (Session)'}`)
   }
 
   // Production or fallback
