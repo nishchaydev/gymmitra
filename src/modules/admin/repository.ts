@@ -79,4 +79,46 @@ export class AdminRepository {
             data
         })
     }
+
+    /**
+     * REGISTRATION CODES
+     */
+    static async createRegistrationCode(code: string, plan: SaaSPlan, maxUses: number, daysValid: number) {
+        return prisma.registrationCode.create({
+            data: {
+                code,
+                plan,
+                maxUses,
+                expiresAt: daysValid > 0 ? new Date(Date.now() + daysValid * 24 * 60 * 60 * 1000) : null
+            }
+        })
+    }
+
+    static async listRegistrationCodes() {
+        return prisma.registrationCode.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                _count: {
+                    select: { gyms: true }
+                }
+            }
+        })
+    }
+
+    static async deleteRegistrationCode(id: string) {
+        return prisma.registrationCode.delete({
+            where: { id }
+        })
+    }
+
+    /**
+     * BROADCAST SYSTEM
+     */
+    static async getAllVerifiedGymEmails() {
+        const gyms = await prisma.gymProfile.findMany({
+            where: { isVerified: true },
+            select: { email: true, ownerName: true, name: true, businessName: true }
+        })
+        return gyms
+    }
 }

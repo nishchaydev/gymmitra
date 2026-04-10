@@ -7,6 +7,8 @@ import { LayoutDashboard, Building, Settings, Sparkles, RefreshCcw } from "lucid
 import AdminStatsCards from "./components/AdminStatsCards"
 import GymManagementTable from "./components/GymManagementTable"
 import ManualTrialGenerator from "./components/ManualTrialGenerator"
+import RegistrationCodeManager from "./components/RegistrationCodeManager"
+import SystemBroadcast from "./components/SystemBroadcast"
 import { Button } from '@/components/ui/button'
 
 export default function InternalAdminPage() {
@@ -127,19 +129,12 @@ export default function InternalAdminPage() {
                 </TabsContent>
 
                 <TabsContent value="tools" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
                         <ManualTrialGenerator />
-                        <Card className="border-dashed border-2 flex items-center justify-center p-12 bg-slate-50/50">
-                            <div className="text-center space-y-2">
-                                <div className="p-3 bg-white rounded-full shadow-sm w-fit mx-auto">
-                                    <Settings className="w-6 h-6 text-slate-400" />
-                                </div>
-                                <h3 className="font-semibold text-slate-900">More Tools Coming Soon</h3>
-                                <p className="text-sm text-slate-500 max-w-[200px]">
-                                    Refund processing, database cleaning, and mass notifications.
-                                </p>
-                            </div>
-                        </Card>
+                        <SystemBroadcast />
+                    </div>
+                    <div className="mt-6">
+                        <RegistrationCodeManager />
                     </div>
                 </TabsContent>
             </Tabs>
