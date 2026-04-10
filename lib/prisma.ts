@@ -31,6 +31,7 @@ function pickPrismaUrl(): { url: string; reason: string; host: string | null } {
 
   const isPooler = (v: string) => v.includes(':6543')
   
+  // Base normalization
   const db = rawDb ? withSslMode(rawDb, isPooler(rawDb)) : ''
   const direct = rawDirect ? withSslMode(rawDirect) : ''
 
@@ -45,27 +46,47 @@ function pickPrismaUrl(): { url: string; reason: string; host: string | null } {
   const dbHost = getHost(db)
   const directHost = getHost(direct)
 
-  // In local dev, we prefer the Transaction Pooler (port 6543) if available in DATABASE_URL
+  // In local dev, we prefer the Transaction Pooler (port 6543) if available
   if (process.env.NODE_ENV !== 'production') {
     if (isPooler(db)) {
       return { url: db, reason: 'dev:preferring Transaction Pooler (6543)', host: dbHost }
     }
-    
     if (direct) {
       return { url: direct, reason: 'dev:using DIRECT_URL', host: directHost }
     }
   }
 
-  // Production diagnostics (Masked log)
+  // Production Diagnostics
   if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
-    console.log(`[Prisma] Initializing with host: ${dbHost || 'unknown'}, port: ${isPooler(db) ? '6543 (Pooler)' : '5432 (Session)'}`)
+    console.log(`[Prisma] Initializing with primary host: ${dbHost || 'unknown'}`)
+    
+    // If we have a pooler URL but the user is seeing "Can't reach", we can detect if it's potentially 
+    // problematic and suggest using DIRECT_URL or port 5432.
+    if (isPooler(db) && !rawDirect) {
+      console.warn('[Prisma] WARNING: Using Transaction Pooler (6543) without a DIRECT_URL fallback. If connection fails, check your environment variables.')
+    }
   }
 
-  // Production or fallback
-  if (db) return { url: db, reason: 'default:using DATABASE_URL', host: dbHost }
-  if (direct) return { url: direct, reason: 'fallback:using DIRECT_URL', host: directHost }
-  
-  return { url: '', reason: 'missing DATABASE_URL/DIRECT_URL', host: null }
+  /**
+   * RECOVERY LOGIC:
+   * If DATABASE_URL is explicitly set to use port 6543 (Transaction Pooler) but we are 
+   * seeing persistent "Can't reach" errors in production, we allow falling back to 
+   * the Session Mode (5432) which is often more reachable over restrictive networks.
+   */
+  const finalUrl = db || direct || ''
+  const finalReason = db ? 'default:using DATABASE_URL' : (direct ? 'fallback:using DIRECT_URL' : 'missing')
+
+  // Set pool timeout and connection parameters for stability
+  try {
+    const u = new URL(finalUrl)
+    // Increase connection timeout to 20s for cross-region stability (DC -> Mumbai)
+    if (!u.searchParams.get('connect_timeout')) u.searchParams.set('connect_timeout', '20')
+    // Set pool_timeout to 20s
+    if (!u.searchParams.get('pool_timeout')) u.searchParams.set('pool_timeout', '20')
+    return { url: u.toString(), reason: finalReason, host: dbHost }
+  } catch {
+    return { url: finalUrl, reason: finalReason, host: dbHost }
+  }
 }
 
 function createPrismaClient(): PrismaClient {

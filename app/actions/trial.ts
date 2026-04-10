@@ -193,7 +193,9 @@ export async function sendWelcomeEmail(params: {
         day: 'numeric', month: 'long', year: 'numeric',
     })
 
-    await resend.emails.send({
+    console.log(`[Resend] Sending welcome email to ${params.email} from ${process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>'}`)
+    
+    const { data, error } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
         to: params.email,
         subject: `Welcome to GymMitra, ${escapeHtml(params.ownerName)}! 🏋️`,
@@ -219,6 +221,12 @@ export async function sendWelcomeEmail(params: {
             </div>
         `,
     })
+
+    if (error) {
+        console.error('[Resend] Failed to send welcome email:', error)
+    } else {
+        console.log('[Resend] Welcome email sent successfully:', data?.id)
+    }
 }
 
 // ──────────────────────────────────────────────
@@ -248,7 +256,8 @@ async function sendAdminNotification(params: {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl()
     const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
-    await resend.emails.send({
+    console.log(`[Resend] Sending admin notification to ${ADMIN_EMAILS.join(', ')}`)
+    const { data, error } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
         to: ADMIN_EMAILS,
         subject: `🆕 New Trial Signup: ${params.gymName} (${params.city})`,
@@ -270,6 +279,12 @@ async function sendAdminNotification(params: {
             </div>
         `,
     })
+
+    if (error) {
+        console.error('[Resend] Failed to send admin notification:', error)
+    } else {
+        console.log('[Resend] Admin notification sent successfully:', data?.id)
+    }
 }
 
 // ──────────────────────────────────────────────
