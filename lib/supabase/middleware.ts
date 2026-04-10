@@ -100,8 +100,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
 
     // 1. SUPABASE AUTH & SESSION REFRESH (ALREADY DONE ABOVE)
 
-    // 1b. ADMIN ROUTE PROTECTION — block non-admin users
-    if (pathname.startsWith('/admin')) {
+    // 1b. ADMIN & INTERNAL ROUTE PROTECTION — block non-admin users
+    if (pathname.startsWith('/admin') || pathname.startsWith('/internal')) {
         const adminEmails = (process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean)
         if (!user || !adminEmails.includes(user.email ?? '')) {
             const url = request.nextUrl.clone()

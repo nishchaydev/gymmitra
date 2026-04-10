@@ -53,15 +53,15 @@ export const getAuthGym = cache(async (): Promise<AuthContext | null> => {
             if (process.env.NODE_ENV === 'development') {
                 console.log(`[Auth] User ${user.id} matched Gym Owner role for gym: ${gymWithAuth.slug}`)
             }
-            // Strip out staff relation before returning gym context
-            const { staff, ...gymWithoutStaff } = gymWithAuth
+            // Strip out staff relation AND sensitive password fields before returning gym context
+            const { staff, tempPassword, ...gymWithoutStaff } = gymWithAuth
             return { gym: gymWithoutStaff as GymProfile, role: 'OWNER', userId: user.id }
         }
 
         const staffProfile = gymWithAuth.staff[0]
         if (staffProfile) {
-            // Strip out staff relation before returning gym context
-            const { staff, ...gymWithoutStaff } = gymWithAuth
+            // Strip out staff relation AND sensitive password fields before returning gym context
+            const { staff, tempPassword: _, ...gymWithoutStaff } = gymWithAuth
             return {
                 gym: gymWithoutStaff as GymProfile,
                 role: staffProfile.role,
