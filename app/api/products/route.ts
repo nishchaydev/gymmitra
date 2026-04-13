@@ -5,6 +5,7 @@ import { apiLimiter } from '@/lib/rate-limit'
 import { productService } from '@/src/modules/products/service'
 import { productRepository } from '@/src/modules/products/repository'
 import { productSchema } from '@/src/modules/products/validator'
+import { CACHE_TTL, cacheKey, getOrFetch, invalidateCache } from '@/lib/redis-cache'
 
 export async function GET(request: NextRequest) {
     try {
@@ -35,9 +36,37 @@ export async function GET(request: NextRequest) {
         const category = searchParams.get('category') || undefined
         const lowStock = searchParams.get('lowStock') === 'true'
 
-        const products = await productRepository.findAll(gym.id, { q, category, lowStock })
+        // Skip cache for search or precise filtering, cache the main list
+        const isDefaultFetch = !q && !category && !lowStock
 
-        return NextResponse.json(products)
+        let products;
+        let fromCache = false;
+
+        if (isDefaultFetch) {
+            const result = await getOrFetch(
+                cacheKey.products(gym.id, 'DEFAULT'),
+                CACHE_TTL.PRODUCTS,
+                () => productRepository.findAll(gym.id, { q, category, lowStock })
+            )
+            products = result.data
+            fromCache = result.fromCache
+        } else {
+            products = await productRepository.findAll(gym.id, { q, category, lowStock })
+        }
+
+        const response = NextResponse.json(products)
+        
+        if (fromCache) {
+            response.headers.set('X-Cache', 'HIT')
+        } else {
+            response.headers.set('X-Cache', 'MISS')
+        }
+
+        if (isDefaultFetch) {
+            response.headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
+        }
+
+        return response
     } catch (error) {
         console.error('Error fetching products:', error)
         return NextResponse.json(
@@ -86,6 +115,9 @@ export async function POST(request: NextRequest) {
         const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
         const product = await productService.createProduct(gym.id, body, auth.userId, ip)
+
+        // Write-through: bust the products list
+        await invalidateCache(cacheKey.products(gym.id, 'DEFAULT')).catch(() => {})
 
         return NextResponse.json(product, { status: 201 })
     } catch (error) {

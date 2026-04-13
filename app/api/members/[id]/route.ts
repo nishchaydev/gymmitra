@@ -6,6 +6,7 @@ import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { MemberService } from '@/src/modules/members/service'
 import { memberUpdateSchema } from '@/src/modules/members/validator'
+import { invalidateCache, cacheKey } from '@/lib/redis-cache'
 
 export async function GET(
     request: NextRequest,
@@ -81,6 +82,13 @@ export async function PUT(
             return NextResponse.json({ error: result.error }, { status: result.status })
         }
 
+        // Bust the tier 1 members cache
+        await invalidateCache(
+            cacheKey.membersList(auth.gym.id, 'ALL:ALL:p1:t10'),
+            cacheKey.membersList(auth.gym.id, 'ACTIVE:ALL:p1:t10'),
+            cacheKey.membersCount(auth.gym.id)
+        ).catch(() => {})
+
         return NextResponse.json({ success: true })
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -142,6 +150,13 @@ export async function DELETE(
             entityId: id,
             ipAddress: ip
         }).catch(err => console.error('recordAuditLog DELETE_MEMBER', err))
+
+        // Bust the tier 1 members cache
+        await invalidateCache(
+            cacheKey.membersList(auth.gym.id, 'ALL:ALL:p1:t10'),
+            cacheKey.membersList(auth.gym.id, 'ACTIVE:ALL:p1:t10'),
+            cacheKey.membersCount(auth.gym.id)
+        ).catch(() => {})
 
         return NextResponse.json({ success: true })
     } catch (error: any) {

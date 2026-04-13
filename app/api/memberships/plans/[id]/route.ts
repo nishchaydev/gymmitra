@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
+import { invalidateCache, cacheKey } from '@/lib/redis-cache'
 
 const planSchema = z.object({
     name: z.string().min(2),
@@ -45,6 +46,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         // Return updated plan details
         const updatedPlan = await prisma.membershipPlan.findFirst({ where: { id, gymId: auth.gym.id } })
+        
+        // Write-through: bust the plans cache so the main list gets fresh data
+        await invalidateCache(cacheKey.plans(auth.gym.id)).catch(() => {})
+        
         return NextResponse.json(updatedPlan)
     } catch (error: any) {
         console.error("Plan PUT Error:", error instanceof z.ZodError ? error.issues : error)
@@ -95,6 +100,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         await prisma.membershipPlan.deleteMany({
             where: { id, gymId: auth.gym.id }
         })
+
+        // Write-through: bust the plans cache
+        await invalidateCache(cacheKey.plans(auth.gym.id)).catch(() => {})
 
         return NextResponse.json({ success: true })
     } catch (error) {

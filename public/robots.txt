@@ -3,5 +3,7 @@ Allow: /
 Disallow: /api/
 Disallow: /dashboard/
 Disallow: /onboarding/
+Disallow: /admin/
+Disallow: /internal/
 
-Sitemap: https://gymmitra.vercel.app/sitemap.xml
+Sitemap: https://gym.emitra.dev/sitemap.xml

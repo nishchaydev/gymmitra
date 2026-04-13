@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
+import { invalidateCache, cacheKey } from '@/lib/redis-cache'
 import { productService } from '@/src/modules/products/service'
 import { productRepository } from '@/src/modules/products/repository'
 import { productUpdateSchema } from '@/src/modules/products/validator'
@@ -62,6 +63,9 @@ export async function PUT(
         const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
 
         const product = await productService.updateProduct(id, auth.gym.id, validatedData, auth.userId, ip)
+
+        // Write-through: bust the products list
+        await invalidateCache(cacheKey.products(auth.gym.id, 'DEFAULT')).catch(() => {})
 
         return NextResponse.json(product)
     } catch (error: any) {
