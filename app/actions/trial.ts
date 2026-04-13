@@ -1,6 +1,6 @@
 'use server'
 
-import { prisma } from '@/lib/prisma'
+import { prisma, withRetry } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
@@ -75,16 +75,18 @@ export async function createTrialGym(raw: {
 
     // 2. Check duplicate by PHONE (primary anti-abuse gate) and email
     const normalizedPhone = data.phone.replace(/\D/g, '').slice(-10)
-    const existingByPhone = await prisma.gymProfile.findFirst({
+    // withRetry handles PrismaClientInitializationError on Vercel cold starts
+    // (Can't reach database server at pooler:6543) — retries up to 3x with backoff
+    const existingByPhone = await withRetry(() => prisma.gymProfile.findFirst({
         where: { phone: normalizedPhone, deletedAt: null },
-    })
+    }))
     if (existingByPhone) {
         return { success: false, error: 'This phone number is already registered. Please login instead.' }
     }
 
-    const existingByEmail = await prisma.gymProfile.findFirst({
+    const existingByEmail = await withRetry(() => prisma.gymProfile.findFirst({
         where: { email: { equals: email, mode: 'insensitive' }, deletedAt: null },
-    })
+    }))
     if (existingByEmail) {
         return { success: false, error: 'This email is already registered. Please login instead.' }
     }
@@ -326,16 +328,16 @@ export async function adminCreateTrialGym(raw: {
 
     // Check duplicate by phone first (anti-abuse), then email
     const normalizedPhone = data.phone.replace(/\D/g, '').slice(-10)
-    const existingByPhone = await prisma.gymProfile.findFirst({
+    const existingByPhone = await withRetry(() => prisma.gymProfile.findFirst({
         where: { phone: normalizedPhone, deletedAt: null },
-    })
+    }))
     if (existingByPhone) {
         return { success: false, error: 'This phone number is already registered.' }
     }
 
-    const existing = await prisma.gymProfile.findFirst({
+    const existing = await withRetry(() => prisma.gymProfile.findFirst({
         where: { email: { equals: email, mode: 'insensitive' }, deletedAt: null },
-    })
+    }))
     if (existing) {
         return { success: false, error: 'This email is already registered.' }
     }

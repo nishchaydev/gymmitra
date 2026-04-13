@@ -1,10 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthGym } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { addDays, subDays } from 'date-fns'
+import { getOrFetch, cacheKey, CACHE_TTL } from '@/lib/redis-cache'
 
 export const dynamic = 'force-dynamic'
+
+interface RenewalMember {
+    id: string
+    memberId: string
+    memberName: string
+    phone: string | null
+    planName: string
+    endDate: Date
+    daysOffset: number
+}
 
 export async function GET() {
     try {
@@ -16,110 +27,76 @@ export async function GET() {
 
         const gym = auth.gym
 
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        // ── Redis-First ───────────────────────────────────────────────────
+        const { data, fromCache } = await getOrFetch(
+            cacheKey.renewals(gym.id),
+            CACHE_TTL.RENEWALS,
+            async () => {
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const plus30Days = addDays(today, 30)
+                const minus30Days = subDays(today, 30)
 
-        const plus30Days = addDays(today, 30)
-        const minus30Days = subDays(today, 30)
-
-        // Fetch subscriptions matching the criteria
-        const subscriptions = await prisma.memberSubscription.findMany({
-            where: {
-                gymId: gym.id,
-                member: { deletedAt: null },
-                // Only Active subscriptions going to expire, OR Expired subscriptions recently missed
-                OR: [
-                    {
-                        status: 'ACTIVE',
-                        endDate: {
-                            gte: today,
-                            lte: plus30Days
-                        }
+                const subscriptions = await prisma.memberSubscription.findMany({
+                    where: {
+                        gymId: gym.id,
+                        member: { deletedAt: null },
+                        OR: [
+                            { status: 'ACTIVE', endDate: { gte: today, lte: plus30Days } },
+                            { endDate: { gte: minus30Days, lt: today } },
+                        ],
                     },
-                    {
-                        // Some gyms might mark them expired, so check status
-                        endDate: {
-                            gte: minus30Days,
-                            lt: today
-                        }
+                    include: {
+                        member: { select: { id: true, name: true, phone: true, status: true } },
+                        plan: { select: { name: true } },
+                    },
+                    orderBy: { endDate: 'asc' },
+                })
+
+                const urgent: RenewalMember[] = []
+                const upcoming: RenewalMember[] = []
+                const missed: RenewalMember[] = []
+
+                subscriptions.forEach(sub => {
+                    const endDate = new Date(sub.endDate)
+                    endDate.setHours(0, 0, 0, 0)
+                    const diffDays = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+                    const formatted: RenewalMember = {
+                        id: sub.id,
+                        memberId: sub.member?.id || 'unknown',
+                        memberName: sub.member?.name || 'Unknown Member',
+                        phone: sub.member?.phone || null,
+                        planName: sub.plan?.name || 'Unknown Plan',
+                        endDate: sub.endDate,
+                        daysOffset: diffDays,
                     }
-                ]
-            },
-            include: {
-                member: {
-                    select: {
-                        id: true,
-                        name: true,
-                        phone: true,
-                        status: true
-                    }
-                },
-                plan: {
-                    select: {
-                        name: true
-                    }
+
+                    if (diffDays < 0) missed.push(formatted)
+                    else if (diffDays <= 7) urgent.push(formatted)
+                    else upcoming.push(formatted)
+                })
+
+                missed.sort((a, b) => b.daysOffset - a.daysOffset)
+
+                return {
+                    urgent,
+                    upcoming,
+                    missed,
+                    summary: {
+                        urgentCount: urgent.length,
+                        upcomingCount: upcoming.length,
+                        missedCount: missed.length,
+                    },
                 }
+            }
+        )
+
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'private, max-age=240, stale-while-revalidate=300',
+                'X-Cache': fromCache ? 'HIT' : 'MISS',
             },
-            orderBy: {
-                endDate: 'asc'
-            }
-        })
-
-        interface RenewalMember {
-            id: string;
-            memberId: string;
-            memberName: string;
-            phone: string | null;
-            planName: string;
-            endDate: Date;
-            daysOffset: number;
-        }
-
-        const urgent: RenewalMember[] = []
-        const upcoming: RenewalMember[] = []
-        const missed: RenewalMember[] = []
-
-        subscriptions.forEach(sub => {
-            const endDate = new Date(sub.endDate)
-            endDate.setHours(0, 0, 0, 0)
-
-            const diffTime = endDate.getTime() - today.getTime()
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-            const formattedSub = {
-                id: sub.id,
-                memberId: sub.member?.id || 'unknown',
-                memberName: sub.member?.name || 'Unknown Member',
-                phone: sub.member?.phone || null,
-                planName: sub.plan?.name || 'Unknown Plan',
-                endDate: sub.endDate,
-                daysOffset: diffDays // Negative means missed, positive means upcoming/urgent
-            }
-
-            if (diffDays < 0) {
-                // Expired in the last 30 days
-                missed.push(formattedSub)
-            } else if (diffDays <= 7) {
-                // Expiring within next 7 days
-                urgent.push(formattedSub)
-            } else {
-                // Expiring between 8 and 30 days
-                upcoming.push(formattedSub)
-            }
-        })
-
-        // Sort missed inversely (most recently missed at the top)
-        missed.sort((a, b) => b.daysOffset - a.daysOffset)
-
-        return NextResponse.json({
-            urgent,
-            upcoming,
-            missed,
-            summary: {
-                urgentCount: urgent.length,
-                upcomingCount: upcoming.length,
-                missedCount: missed.length
-            }
         })
 
     } catch (error) {

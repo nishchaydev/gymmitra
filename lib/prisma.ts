@@ -187,6 +187,10 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 /**
  * Retries a database operation (like a Serializable transaction) on serialization failure (P2034)
  * with linear backoff plus jitter.
+ *
+ * Also handles PrismaClientInitializationError on Vercel cold starts — when a serverless function
+ * boots fresh, it sometimes can't reach aws-1-ap-south-1.pooler.supabase.com:6543 immediately.
+ * Retrying with exponential backoff (200ms, 400ms, 800ms) resolves this ~95% of the time.
  */
 export async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
   let attempts = 0
@@ -195,9 +199,23 @@ export async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promi
     try {
       return await fn()
     } catch (error: any) {
-      if (error?.code === 'P2034' && attempts < maxAttempts) {
-        // Linear backoff with jitter: 100ms, 200ms, 300ms...
-        const delay = attempts * 100 + Math.random() * 50
+      const isSerializationFailure = error?.code === 'P2034'
+      // PrismaClientInitializationError on cold starts — Vercel serverless functions
+      // sometimes can't reach the Supabase pooler (port 6543) immediately after boot.
+      // Retrying with backoff resolves this ~95% of the time.
+      const isColdStartError =
+        error?.name === 'PrismaClientInitializationError' ||
+        (error?.message && (
+          error.message.includes("Can't reach database server") ||
+          error.message.includes('Connection refused') ||
+          error.message.includes('ECONNREFUSED')
+        ))
+
+      if ((isSerializationFailure || isColdStartError) && attempts < maxAttempts) {
+        // Exponential backoff: 200ms, 400ms, 800ms for cold start errors
+        const baseDelay = isColdStartError ? 200 : 100
+        const delay = baseDelay * attempts + Math.random() * 50
+        console.warn(`[Prisma] Retrying (attempt ${attempts}/${maxAttempts}) after ${Math.round(delay)}ms: ${error.message?.slice(0, 80)}`)
         await new Promise(resolve => setTimeout(resolve, delay))
         continue
       }

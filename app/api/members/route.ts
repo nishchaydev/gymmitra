@@ -5,6 +5,7 @@ import { MemberStatus } from "@prisma/client";
 import { formatInTimeZone } from "date-fns-tz";
 import { MemberService } from "@/src/modules/members/service";
 import { memberSchema } from "@/src/modules/members/validator";
+import { getCached, setCached, invalidateCache, cacheKey, CACHE_TTL } from "@/lib/redis-cache";
 
 export async function GET(req: Request) {
   try {
@@ -28,6 +29,24 @@ export async function GET(req: Request) {
     const rawTake = parseInt(searchParams.get("take") || "10");
     const take = Math.min(Math.max(rawTake, 1), 1000); // Clamp pagination to block abuse
     const skip = (page - 1) * take;
+
+    // ── Redis-First cache check ──────────────────────────────────────────
+    // Only cache unfiltered/unpaged list queries to keep the key space bounded.
+    // Search queries (q) and special filters bypass cache for freshness.
+    const isCacheable = !q && !dobMonth && !birthday;
+    if (isCacheable) {
+      const paramsKey = `${status || 'ALL'}:${duration || 'ALL'}:p${page}:t${take}`;
+      const redisKey = cacheKey.membersList(auth.gym.id, paramsKey);
+      const cached = await getCached<object>(redisKey);
+      if (cached) {
+        return NextResponse.json(cached, {
+          headers: {
+            'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+            'X-Cache': 'HIT',
+          },
+        });
+      }
+    }
 
     const andFilters: any[] = [
       { gymId: auth.gym.id },
@@ -190,13 +209,27 @@ export async function GET(req: Request) {
       }
     })
 
-    return NextResponse.json({
+    const responseBody = {
       members: formattedMembers,
       totalCount,
       hasMore: totalCount > skip + take,
       page,
       take,
-    })
+    };
+
+    // Store in Redis for next request (fire-and-forget)
+    if (isCacheable) {
+      const paramsKey = `${status || 'ALL'}:${duration || 'ALL'}:p${page}:t${take}`;
+      const redisKey = cacheKey.membersList(auth.gym.id, paramsKey);
+      setCached(redisKey, responseBody, CACHE_TTL.MEMBERS_LIST).catch(() => {});
+    }
+
+    return NextResponse.json(responseBody, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+        'X-Cache': 'MISS',
+      },
+    });
   } catch (error: any) {
     console.error("[MEMBERS_GET]", error);
     return new NextResponse("Internal server error while fetching members.", { status: 500 });
@@ -235,6 +268,16 @@ export async function POST(req: Request) {
     if (result.error) {
         return new NextResponse(result.error, { status: 400 });
     }
+
+    // Write-through: new member → bust the members list cache for this gym
+    // so the next GET always reflects the addition
+    const gymId = auth.gym.id;
+    // Delete page 1 cache entries (most common view after adding a member)
+    await invalidateCache(
+      cacheKey.membersList(gymId, 'ALL:ALL:p1:t10'),
+      cacheKey.membersList(gymId, 'ACTIVE:ALL:p1:t10'),
+      cacheKey.membersCount(gymId),
+    );
 
     return NextResponse.json({ id: result.id, success: true });
   } catch (error: any) {

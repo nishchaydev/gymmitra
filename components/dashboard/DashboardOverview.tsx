@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RevenueSnapshot } from '@/components/dashboard/RevenueSnapshot'
 import { AtRiskMembers } from '@/components/dashboard/AtRiskMembers'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -66,6 +66,24 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
     const initialDataRef = useRef(initialData)
 
     const d = initialData
+    const [isRefreshing, setIsRefreshing] = useState(false)
+
+    // Cache-busting refresh: clears Redis for this gym, then triggers Next.js revalidation
+    const handleRefresh = useCallback(async () => {
+        if (isRefreshing) return
+        setIsRefreshing(true)
+        try {
+            await fetch('/api/cache/refresh', { method: 'POST' })
+            // Invalidate all React Query cache too
+            queryClient.invalidateQueries()
+        } catch {
+            // fail silently — router.refresh() below still works
+        } finally {
+            router.refresh()
+            // Keep spinner for a moment so user sees feedback
+            setTimeout(() => setIsRefreshing(false), 1500)
+        }
+    }, [isRefreshing, queryClient, router])
 
     useEffect(() => {
       if (!initialData) return
@@ -163,11 +181,12 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                          <TrendingUp className="h-4 w-4 text-primary" />
                          Dashboard Overview • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                          <button
-                           onClick={() => router.refresh()}
-                           className="text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-primary/10 ml-1"
-                           title="Refresh dashboard"
+                           onClick={handleRefresh}
+                           disabled={isRefreshing}
+                           className="text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-primary/10 ml-1 disabled:opacity-50"
+                           title="Refresh dashboard (clears cache)"
                          >
-                           <RefreshCw className="h-4 w-4" />
+                           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                          </button>
                      </p>
                  </div>
