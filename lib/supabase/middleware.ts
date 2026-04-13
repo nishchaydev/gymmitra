@@ -79,7 +79,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         pathname.startsWith('/privacy') || // Legal pages
         pathname.startsWith('/terms') || // Legal pages
         pathname.startsWith('/refund') || // Legal pages
-        pathname.startsWith('/api/webhooks') // External webhooks handle their own auth
+        pathname.startsWith('/api/webhooks') || // External webhooks handle their own auth
+        pathname.startsWith('/~offline') // PWA offline fallback
 
     if (isPublicRoute) {
         // If user is logged in, but tries to access login page or landing page, redirect to dashboard
