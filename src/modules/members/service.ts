@@ -52,6 +52,8 @@ export class MemberService {
 
         let finalMemberId: string = ""
         let finalInvoiceId: string | undefined = undefined
+        let finalAmountPaid: number | undefined = undefined
+        let finalBalanceDue: number | undefined = undefined
 
         await MemberRepository.executeTransaction(async (tx) => {
             // ── TOCTOU-safe member cap: count inside the transaction ──────────
@@ -119,6 +121,8 @@ export class MemberService {
                 const total = Math.max(0, planPrice - discount)
                 const amountPaid = validatedData.amountPaid ?? total
                 const balanceDue = Math.max(0, total - amountPaid)
+                finalAmountPaid = amountPaid
+                finalBalanceDue = balanceDue
 
                 let paymentStatus: PaymentStatus = 'PAID'
                 if (balanceDue > 0 && amountPaid > 0) {
@@ -201,7 +205,7 @@ export class MemberService {
         }
 
         const templateOverride = gymSettings.waWelcomeMsg || undefined;
-        const welcomeMessage = templates.welcomeMessage(validatedData.name, gymSettings.name, publicInvoiceUrl, templateOverride)
+        const welcomeMessage = templates.welcomeMessage(validatedData.name, gymSettings.name, publicInvoiceUrl, templateOverride, finalAmountPaid, finalBalanceDue)
         const whatsappUrl = getWhatsAppLink(validatedData.phone, welcomeMessage)
 
         return { success: true, id: finalMemberId, invoiceId: finalInvoiceId, whatsappUrl, email: validatedData.email }

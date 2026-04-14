@@ -108,11 +108,11 @@ export async function GET(request: NextRequest) {
             const revenueResult = await (prisma.$queryRaw<RevenueRow[]>`
                 SELECT 
                     to_char(date_trunc('month', "issueDate"), 'YYYY-MM-DD') as month,
-                    SUM(total) as total
+                    SUM("amountPaid") as total
                 FROM "Invoice"
                 WHERE "gymId" = ${gym.id}
                   AND "issueDate" >= ${startDate}
-                  AND "paymentStatus" = 'PAID'
+                  AND "paymentStatus" IN ('PAID', 'PARTIAL')
                   AND "deletedAt" IS NULL
                 GROUP BY 1
                 ORDER BY 1 ASC
@@ -298,9 +298,9 @@ export async function GET(request: NextRequest) {
                 recentSales
             ] = await Promise.all([
                 prisma.invoice.aggregate({
-                    where: { gymId: gym.id, paymentStatus: 'PAID', deletedAt: null },
-                    _sum: { total: true }
-                }).catch((err) => { console.error('Failed to fetch totalRevenue:', err); return { _sum: { total: null } } }),
+                    where: { gymId: gym.id, paymentStatus: { in: ['PAID', 'PARTIAL'] }, deletedAt: null },
+                    _sum: { amountPaid: true }
+                }).catch((err) => { console.error('Failed to fetch totalRevenue:', err); return { _sum: { amountPaid: null } } }),
                 prisma.member.count({
                     where: {
                         gymId: gym.id,
@@ -337,7 +337,7 @@ export async function GET(request: NextRequest) {
             ])
 
             return NextResponse.json({
-                totalRevenue: Number(totalRevenue._sum.total?.toString() || totalRevenue._sum.total || 0),
+                totalRevenue: Number(totalRevenue._sum.amountPaid?.toString() || totalRevenue._sum.amountPaid || 0),
                 totalMembers: Number(totalMembers || 0),
                 activeMembers: Number(activeMembers || 0),
                 totalProducts: Number(totalProducts || 0),

@@ -200,9 +200,9 @@ export default async function DashboardPage({
             SELECT
                 (SELECT COUNT(*) FROM "Member" WHERE "gymId" = ${gym!.id} AND "status" = 'ACTIVE' AND "deletedAt" IS NULL) as active_members,
                 (SELECT COUNT(*) FROM "Member" WHERE "gymId" = ${gym!.id} AND "deletedAt" IS NULL) as total_members,
-                (SELECT SUM("total") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND "createdAt" >= ${startOfThisMonth} AND "deletedAt" IS NULL) as monthly_revenue,
-                (SELECT SUM("balanceDue") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" IN ('PENDING', 'PARTIAL') AND "deletedAt" IS NULL) as pending_revenue,
-                (SELECT SUM("total") FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND "createdAt" >= ${startOfLastMonth} AND "createdAt" <= ${endOfLastMonth} AND "deletedAt" IS NULL) as last_month_revenue,
+                (SELECT COALESCE(SUM("amountPaid"), 0) FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" IN ('PAID', 'PARTIAL') AND "createdAt" >= ${startOfThisMonth} AND "deletedAt" IS NULL) as monthly_revenue,
+                (SELECT COALESCE(SUM("balanceDue"), 0) FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" IN ('PENDING', 'PARTIAL') AND "deletedAt" IS NULL) as pending_revenue,
+                (SELECT COALESCE(SUM("amountPaid"), 0) FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" IN ('PAID', 'PARTIAL') AND "createdAt" >= ${startOfLastMonth} AND "createdAt" <= ${endOfLastMonth} AND "deletedAt" IS NULL) as last_month_revenue,
                 (SELECT COUNT(*) FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "date" >= ${today} AND "date" <= ${endOfToday()}) as today_checkins,
                 -- Expanded range: Expired 30 days ago to Expiring 7 days from now
                 (SELECT COUNT(*) FROM "MemberSubscription" WHERE "gymId" = ${gym!.id} AND "status" = 'ACTIVE' AND "endDate" >= ${subDays(today, 30)} AND "endDate" <= ${addDays(today, 7)} AND "deletedAt" IS NULL) as urgent_renewals,
@@ -238,7 +238,7 @@ export default async function DashboardPage({
                     take: 3,
                 }).catch(() => []),
                 (prisma.$queryRaw`SELECT m."name", m."phone", m."dateOfBirth" FROM "Member" m WHERE m."gymId" = ${gym!.id} AND m."status" = 'ACTIVE' AND m."deletedAt" IS NULL AND m."dateOfBirth" IS NOT NULL` as Promise<any[]>).catch(() => []),
-                (prisma.$queryRaw`SELECT EXTRACT(MONTH FROM "createdAt")::int as month, COALESCE(SUM("total"), 0) as total FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" = 'PAID' AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW()) AND "deletedAt" IS NULL GROUP BY month ORDER BY month` as Promise<any[]>).catch(() => []),
+                (prisma.$queryRaw`SELECT EXTRACT(MONTH FROM "createdAt")::int as month, COALESCE(SUM("amountPaid"), 0) as total FROM "Invoice" WHERE "gymId" = ${gym!.id} AND "paymentStatus" IN ('PAID', 'PARTIAL') AND EXTRACT(YEAR FROM "createdAt") = EXTRACT(YEAR FROM NOW()) AND "deletedAt" IS NULL GROUP BY month ORDER BY month` as Promise<any[]>).catch(() => []),
                 (prisma.$queryRaw`SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM-DD') as month, COUNT(*)::bigint as count FROM "Member" WHERE "gymId" = ${gym!.id} AND "createdAt" >= ${startDate5Months} AND "deletedAt" IS NULL GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
                 (prisma.$queryRaw`SELECT to_char(date_trunc('day', "checkInTime"), 'YYYY-MM-DD') as day, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") < 12 THEN 1 END)::bigint as morning, COUNT(CASE WHEN EXTRACT(HOUR FROM "checkInTime") >= 12 THEN 1 END)::bigint as evening FROM "Attendance" WHERE "gymId" = ${gym!.id} AND "checkInTime" >= ${lastWeekStart} GROUP BY 1 ORDER BY 1 ASC` as Promise<any[]>).catch(() => []),
                 prisma.member.count({ where: { gymId: gym!.id, createdAt: { lt: startDate5Months }, deletedAt: null } }).catch(() => 0),

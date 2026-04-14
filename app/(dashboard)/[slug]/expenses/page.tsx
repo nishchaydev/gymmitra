@@ -55,10 +55,10 @@ export default async function ExpensesPage({
         .reduce((acc: number, curr: any) => acc + curr.amount, 0)
 
     const monthlyRevenueResult = await prisma.invoice.aggregate({
-        where: { gymId: auth.gym.id, paymentStatus: 'PAID', deletedAt: null, createdAt: { gte: startOfMonth } },
-        _sum: { total: true }
+        where: { gymId: auth.gym.id, paymentStatus: { in: ['PAID', 'PARTIAL'] }, deletedAt: null, createdAt: { gte: startOfMonth } },
+        _sum: { amountPaid: true }
     })
-    const monthlyRevenue = Number(monthlyRevenueResult._sum.total || 0)
+    const monthlyRevenue = Number(monthlyRevenueResult._sum.amountPaid || 0)
 
     const netIncome = monthlyRevenue - monthlyExpenses
 
@@ -71,7 +71,7 @@ export default async function ExpensesPage({
     const recentInvoices = await prisma.invoice.findMany({
         where: {
             gymId: auth.gym.id,
-            paymentStatus: 'PAID',
+            paymentStatus: { in: ['PAID', 'PARTIAL'] },
             deletedAt: null,
             createdAt: { gte: sixMonthsAgo }
         }
@@ -89,7 +89,7 @@ export default async function ExpensesPage({
 
         const monthRev = recentInvoices
             .filter((inv) => inv.createdAt >= monthStart && inv.createdAt <= monthEnd)
-            .reduce((acc, inv) => acc + Number(inv.total), 0);
+            .reduce((acc, inv) => acc + Number(inv.amountPaid), 0);
 
         const monthExp = recentExpenses
             .filter((exp: any) => new Date(exp.date) >= monthStart && new Date(exp.date) <= monthEnd)

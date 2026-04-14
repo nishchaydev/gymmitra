@@ -148,6 +148,7 @@ export const cacheKey = {
   membersCount:     (gymId: string)                  => `gym:${gymId}:members:count`,
   renewals:         (gymId: string)                  => `gym:${gymId}:renewals`,
   atRisk:           (gymId: string, days: number)    => `gym:${gymId}:at-risk:${days}`,
+  invoicesList:     (gymId: string, params: string)  => `gym:${gymId}:invoices:list:${params}`,
   plans:            (gymId: string)                  => `gym:${gymId}:plans`,
   products:         (gymId: string, params: string)  => `gym:${gymId}:products:${params}`,
   settings:         (gymId: string)                  => `gym:${gymId}:settings`,

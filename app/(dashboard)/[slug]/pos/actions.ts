@@ -66,6 +66,7 @@ export async function processPosSale(slug: string, data: {
                     walkInPhone: data.walkInPhone || null,
                     subtotal: trustedSubtotal,
                     total: trustedSubtotal,
+                    amountPaid: trustedSubtotal,
                     paymentStatus: 'PAID',
                     paymentMethod: data.paymentMethod,
                     type: 'PRODUCT',

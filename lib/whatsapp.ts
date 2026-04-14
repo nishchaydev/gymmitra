@@ -49,19 +49,26 @@ export const templates = {
     /**
      * Sent upon successful new member registration.
      */
-    welcomeMessage: (name: string, gymName: string, url?: string, customTemplate?: string) => {
+    welcomeMessage: (name: string, gymName: string, url?: string, customTemplate?: string, amountPaid?: number, balanceDue?: number) => {
         if (customTemplate) {
             return customTemplate
                 .replace(/{name}/g, name)
                 .replace(/{gymName}/g, gymName)
                 .replace(/{url}/g, url || '')
+                .replace(/{amountPaid}/g, amountPaid !== undefined ? formatCurrency(amountPaid) : '')
+                .replace(/{balanceDue}/g, balanceDue !== undefined ? formatCurrency(balanceDue) : '')
                 .replace(/\\n/g, '\n')
         }
 
         const invoiceLine = url ? `\n\nYour joining invoice is here: ${url}` : ''
+        let paymentLine = ''
+        if (amountPaid !== undefined && balanceDue !== undefined && balanceDue > 0) {
+            paymentLine = `\n\nYou paid ${formatCurrency(amountPaid)}. Remaining balance is ${formatCurrency(balanceDue)}.`
+        }
+
         return (
             `Welcome to *${gymName}*, ${name}! 🎉\n\n` +
-            `We're happy to have you as part of our community. Your digital pass is now active.${invoiceLine}\n\n` +
+            `We're happy to have you as part of our community. Your digital pass is now active.${paymentLine}${invoiceLine}\n\n` +
             `If you need any help, please contact the front desk. Let's start your fitness journey! 💪🏋️‍♂️\n\n` +
             `Regards,\n${gymName}`
         )

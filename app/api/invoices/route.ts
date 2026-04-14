@@ -5,6 +5,7 @@ import { getAuthGym, checkRole } from '@/lib/auth'
 import { apiLimiter } from '@/lib/rate-limit'
 import { BillingService } from '@/src/modules/billing/service'
 import { optionalDateField } from '@/lib/date-validation'
+import { getCached, setCached, invalidateCache, cacheKey, CACHE_TTL } from "@/lib/redis-cache"
 
 // Validations
 const invoiceItemSchema = z.object({
@@ -112,6 +113,21 @@ export async function GET(request: NextRequest) {
             whereClause.memberId = memberId
         }
 
+        // ── Redis-First cache check ──────────────────────────────────────────
+        const isCacheable = !q && !memberId
+        if (isCacheable) {
+            const paramsKey = `${validatedStatus || 'ALL'}:p${page}:t${take}`
+            const redisKey = cacheKey.invoicesList(gym.id, paramsKey)
+            const cached = await getCached<object>(redisKey)
+            if (cached) {
+                return NextResponse.json(cached, {
+                    headers: {
+                        'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+                        'X-Cache': 'HIT',
+                    },
+                })
+            }
+        }
 
         const [invoices, totalCount] = await Promise.all([
             prisma.invoice.findMany({
@@ -129,7 +145,20 @@ export async function GET(request: NextRequest) {
             prisma.invoice.count({ where: whereClause })
         ])
 
-        return NextResponse.json({ invoices, totalCount, page, hasMore: totalCount > page * take })
+        const responseBody = { invoices, totalCount, page, hasMore: totalCount > page * take }
+
+        if (isCacheable) {
+            const paramsKey = `${validatedStatus || 'ALL'}:p${page}:t${take}`
+            const redisKey = cacheKey.invoicesList(gym.id, paramsKey)
+            setCached(redisKey, responseBody, CACHE_TTL.INVOICES_LIST).catch(() => {})
+        }
+
+        return NextResponse.json(responseBody, {
+            headers: {
+                'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+                'X-Cache': 'MISS',
+            },
+        })
     } catch (error) {
         console.error('Error fetching invoices:', error)
         return NextResponse.json(
@@ -191,6 +220,13 @@ export async function POST(request: NextRequest) {
         if (!result.success) {
             return NextResponse.json({ error: result.error }, { status: 400 })
         }
+
+        // Write-through: bust cache for invoices
+        await invalidateCache(
+            cacheKey.invoicesList(gym.id, 'ALL:p1:t50'),
+            cacheKey.invoicesList(gym.id, 'PENDING:p1:t50'),
+            cacheKey.invoicesList(gym.id, 'PAID:p1:t50')
+        ).catch(() => {})
 
         const invoice = await prisma.invoice.findUnique({
             where: { id: result.id },

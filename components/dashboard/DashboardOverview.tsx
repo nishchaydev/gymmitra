@@ -147,17 +147,9 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
       }, 3000)
 
-      const routePrefetchTimer = setTimeout(() => {
-        router.prefetch(`/${slug}/members`)
-        router.prefetch(`/${slug}/invoices`)
-        router.prefetch(`/${slug}/attendance`)
-        router.prefetch(`/${slug}/leads`)
-      }, 1500)
-
       // CRITICAL: cleanup timer on unmount
       return () => {
         clearTimeout(prefetchTimer)
-        clearTimeout(routePrefetchTimer)
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [queryClient])
