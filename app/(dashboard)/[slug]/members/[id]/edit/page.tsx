@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
 import { getIsDemo } from '@/lib/demo'
 import { getShowcaseMember } from '@/lib/showcase-data'
 import EditMemberForm from './EditMemberForm'

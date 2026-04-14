@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
+import { getAuthGym } from '@/lib/auth'
 import { getIsDemo } from '@/lib/demo'
 import { ExpenseForm } from '@/components/expenses/ExpenseForm'
 import { ExpensesList } from '@/components/expenses/ExpensesList'

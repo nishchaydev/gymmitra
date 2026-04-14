@@ -1,4 +1,6 @@
 import { cookies } from 'next/headers'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getIsDemo } from '@/lib/demo'
 import { SHOWCASE_PRODUCTS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
