@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        if (isDemo && !auth) {
+        if (isDemo) {
             // Return mock leads for demo mode
             const mockLeads = [
                 { id: 'l1', name: 'Rahul Khanna', phone: '9876543210', status: 'NEW', source: 'Instagram', createdAt: new Date() },
@@ -45,14 +45,12 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ leads: mockLeads, totalCount: 3, page: 1, hasMore: false })
         }
 
-        // Standard auth check for real users
-        if (auth) {
-            const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
-            if (roleCheck) return roleCheck
-            
-            const rateLimited = await guardRateLimit(100, `${auth.userId}:leads:get`)
-            if (rateLimited) return rateLimited
-        }
+        // Standard auth check for real users (auth exists here because !isDemo)
+        const roleCheck = checkRole(auth!, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
+        if (roleCheck) return roleCheck
+        
+        const rateLimited = await guardRateLimit(100, `${auth!.userId}:leads:get`)
+        if (rateLimited) return rateLimited
         const status = searchParams.get('status')
         const q = searchParams.get('q') || ''
         const parsedPage = parseInt(searchParams.get('page') || '1', 10)
@@ -65,7 +63,7 @@ export async function GET(request: NextRequest) {
         const isValidStatus = status && status !== 'ALL' && validStatuses.includes(status)
 
         const whereClause = {
-            gymId: auth.gym.id,
+            gymId: auth!.gym.id,
             ...(isValidStatus ? { status: status as import('@prisma/client').$Enums.LeadStatus } : {}),
             ...(q
                 ? {
@@ -112,17 +110,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        if (isDemo && !auth) {
+        if (isDemo) {
              return NextResponse.json({ lead: { id: 'demo-new-lead', name: 'Mock Lead' } }, { status: 201 })
         }
 
-        if (auth) {
-            const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
-            if (roleCheck) return roleCheck
+        // Standard auth check (auth exists here because !isDemo)
+        const roleCheck = checkRole(auth!, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
+        if (roleCheck) return roleCheck
 
-            const rateLimited = await guardRateLimit(30, `${auth.userId}:leads:post`)
-            if (rateLimited) return rateLimited
-        }
+        const rateLimited = await guardRateLimit(30, `${auth!.userId}:leads:post`)
+        if (rateLimited) return rateLimited
 
         let body
         try {
@@ -134,7 +131,7 @@ export async function POST(request: NextRequest) {
 
         const lead = await prisma.lead.create({
             data: {
-                gymId: auth.gym.id,
+                gymId: auth!.gym.id,
                 name: validatedData.name,
                 phone: validatedData.phone,
                 email: validatedData.email || null,
@@ -146,8 +143,8 @@ export async function POST(request: NextRequest) {
         })
 
         recordAuditLog({
-            gymId: auth.gym.id,
-            actorId: auth.userId,
+            gymId: auth!.gym.id,
+            actorId: auth!.userId,
             action: 'CREATE_LEAD',
             entityType: 'LEAD',
             entityId: lead.id,
