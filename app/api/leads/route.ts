@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const auth = await getAuthGym()
-        const slug = searchParams.get('slug') || auth?.gym?.slug
+        const slug = (searchParams.get('slug') || auth?.gym?.slug) || undefined
         
         const isDemo = await getIsDemo(slug)
 
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const auth = await getAuthGym()
-        const slug = searchParams.get('slug') || auth?.gym?.slug
+        const slug = (searchParams.get('slug') || auth?.gym?.slug) || undefined
         
         const isDemo = await getIsDemo(slug)
 
