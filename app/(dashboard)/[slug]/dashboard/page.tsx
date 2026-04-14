@@ -91,6 +91,7 @@ export default async function DashboardPage({
     const searchParamTab = Array.isArray(resolvedSearchParams?.tab) ? resolvedSearchParams.tab[0] : resolvedSearchParams?.tab
     const rawTab = searchParamTab?.toString().toLowerCase() || "overview"
     const allowedTabs = ["overview", "analytics", "insights", "reports"]
+    const tab = allowedTabs.includes(rawTab) ? rawTab : "overview"
     const isDemo = await getIsDemo(slug)
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
