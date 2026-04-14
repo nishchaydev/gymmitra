@@ -2,26 +2,27 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { InvoiceView } from "@/components/invoice/InvoiceView"
 import { redirect, notFound } from "next/navigation"
-import { SHOWCASE_STATS } from "@/lib/showcase-data"
+import { SHOWCASE_STATS, SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
+import { getIsDemo } from "@/lib/demo"
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ slug: string; id: string }> }) {
     const { slug, id } = await params
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 
-    const cookieStore = await cookies()
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemoMode = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemoMode = await getIsDemo(slug)
 
     if (!auth && !isDemoMode) redirect("/login")
 
     let invoice: any; // Using any for large combined object, but could be refined
 
-    if (id.startsWith("demo-")) {
-        const demoId = id.replace("demo-", "")
-        const mockInv = SHOWCASE_STATS.recentInvoices.find(inv => inv.id === demoId)
+    if (isDemoMode || id.startsWith("demo-")) {
+        const cleanId = id.replace("demo-", "")
+        const mockInv = SHOWCASE_STATS.recentInvoices.find(inv => inv.id === cleanId) || 
+                       SHOWCASE_INVOICES.find(inv => inv.id === cleanId) ||
+                       SHOWCASE_INVOICES[0]
 
-        if (!mockInv) notFound()
+        if (!mockInv && !isDemoMode) notFound()
 
         // Construct a full invoice object for the template
         invoice = {

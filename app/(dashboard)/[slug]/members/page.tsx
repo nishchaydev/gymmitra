@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
+import { getIsDemo } from '@/lib/demo'
 import * as React from "react"
 import { Skeleton } from "@/src/components/SkeletonProvider"
 import { prisma } from '@/lib/prisma'
@@ -36,9 +37,7 @@ export default async function MembersPage({
     const take = 10
     const skip = (page - 1) * take
 
-    const cookieStore = await cookies()
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = (envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true') || (process.env.NODE_ENV === 'development' && slug === 'demo')
+    const isDemo = await getIsDemo(slug)
 
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 

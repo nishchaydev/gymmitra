@@ -1,58 +1,88 @@
-const CACHE_NAME = 'gym-mitra-offline-v1';
+const CACHE_NAME = 'gym-mitra-cache-v2';
 const OFFLINE_URL = '/offline';
 
+const PRECACHE_ASSETS = [
+    '/',
+    OFFLINE_URL,
+    '/manifest.webmanifest',
+    '/favicon.ico',
+    '/icon-192x192.png',
+    '/icon-512x512.png'
+];
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      // Cache the offline fallback page on install
-      await cache.add(new Request(OFFLINE_URL, { cache: 'reload' }));
-    })()
-  );
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            console.log('[PWA] Precaching critical assets');
+            return cache.addAll(PRECACHE_ASSETS);
+        })
+    );
+    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    (async () => {
-      // Enable navigation preload if it's supported.
-      if ('navigationPreload' in self.registration) {
-        await self.registration.navigationPreload.enable();
-      }
-    })()
-  );
-  // Tell the active service worker to take control of the page immediately.
-  self.clients.claim();
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('[PWA] Clearing old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', (event) => {
-  // We only want to call event.respondWith() if this is a navigation request
-  // for an HTML page (like a user navigating to a route).
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      (async () => {
-        try {
-          // First, try to use the navigation preload response if it's supported.
-          const preloadResponse = await event.preloadResponse;
-          if (preloadResponse) {
-            return preloadResponse;
-          }
+    // Skip non-GET requests
+    if (event.request.method !== 'GET') return;
 
-          // Always try the network first.
-          const networkResponse = await fetch(event.request);
-          // Return the network response if it was successful.
-          return networkResponse;
-        } catch (error) {
-          // catch is only triggered if an exception occurs, which is likely
-          // due to a network error (being offline).
-          // If fetch did fail, return the offline fallback page.
-          console.log('[PWA] Network failed, serving offline fallback', error);
-          const cache = await caches.open(CACHE_NAME);
-          const cachedResponse = await cache.match(OFFLINE_URL);
-          return cachedResponse;
-        }
-      })()
-    );
-  }
+    const url = new URL(event.request.url);
+
+    // 1. Navigation requests - Network First, Fallback to Offline
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Update cache with the latest version of the page
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    return response;
+                })
+                .catch(() => {
+                    // If network fails, try cache, then offline page
+                    return caches.match(event.request).then(response => {
+                        return response || caches.match(OFFLINE_URL);
+                    });
+                })
+        );
+        return;
+    }
+
+    // 2. Static Assets (JS, CSS, Images) - Stale While Revalidate
+    const isStaticAsset = 
+        url.origin === self.location.origin && 
+        (url.pathname.startsWith('/_next/static/') || 
+         url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2)$/));
+
+    if (isStaticAsset) {
+        event.respondWith(
+            caches.match(event.request).then(cachedResponse => {
+                const fetchedResponse = fetch(event.request).then(networkResponse => {
+                    if (networkResponse.ok) {
+                        const copy = networkResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    }
+                    return networkResponse;
+                }).catch(() => null);
+
+                return cachedResponse || fetchedResponse;
+            })
+        );
+        return;
+    }
+
+    // 3. API calls and others - Network Only (handled by browser default)
 });

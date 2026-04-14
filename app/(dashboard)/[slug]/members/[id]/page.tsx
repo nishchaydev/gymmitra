@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers'
 import { getShowcaseMember } from '@/lib/showcase-data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,6 +14,7 @@ import { redirect } from 'next/navigation'
 import { MemberRepository } from '@/src/modules/members/repository'
 import { computeMemberFlags } from '@/src/modules/members/member-flags'
 import { serializeDecimals, toNumber } from '@/src/modules/shared/serializers'
+import { getIsDemo } from '@/lib/demo'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,9 +24,7 @@ export default async function MemberDetailPage({
     params: Promise<{ slug: string; id: string }>
 }) {
     const { slug, id } = await params
-    const cookieStore = await cookies()
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemo = await getIsDemo(slug)
 
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 

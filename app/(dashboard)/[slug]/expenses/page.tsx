@@ -1,6 +1,5 @@
-import { prisma } from '@/lib/prisma'
-import { getAuthGym } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { getIsDemo } from '@/lib/demo'
 import { ExpenseForm } from '@/components/expenses/ExpenseForm'
 import { ExpensesList } from '@/components/expenses/ExpensesList'
 import { ExpenseCharts } from '@/components/expenses/ExpenseCharts'
@@ -16,11 +15,13 @@ export default async function ExpensesPage({
     params: Promise<{ slug: string }>
 }) {
     const { slug } = await params
+    const isDemo = await getIsDemo(slug)
     const auth = await getAuthGym()
-    if (!auth) redirect('/login')
+
+    if (!auth && !isDemo) redirect('/login')
 
     // Tenant isolation fix
-    if (auth.gym.slug !== slug) {
+    if (auth && !isDemo && auth.gym.slug !== slug) {
         redirect('/login')
     }
 
@@ -29,8 +30,8 @@ export default async function ExpensesPage({
         throw new Error("Expense model is missing from Prisma schema!")
     }
 
-    const rawExpenses = await expenseModel.findMany({
-        where: { gymId: auth.gym.id },
+    const rawExpenses = isDemo ? [] : await expenseModel.findMany({
+        where: { gymId: auth?.gym.id },
         orderBy: { date: 'desc' }
     })
 
@@ -54,8 +55,8 @@ export default async function ExpensesPage({
         .filter((e: any) => new Date(e.date) >= startOfMonth)
         .reduce((acc: number, curr: any) => acc + curr.amount, 0)
 
-    const monthlyRevenueResult = await prisma.invoice.aggregate({
-        where: { gymId: auth.gym.id, paymentStatus: { in: ['PAID', 'PARTIAL'] }, deletedAt: null, createdAt: { gte: startOfMonth } },
+    const monthlyRevenueResult = isDemo ? { _sum: { amountPaid: 450000 } } : await prisma.invoice.aggregate({
+        where: { gymId: auth?.gym.id, paymentStatus: { in: ['PAID', 'PARTIAL'] }, deletedAt: null, createdAt: { gte: startOfMonth } },
         _sum: { amountPaid: true }
     })
     const monthlyRevenue = Number(monthlyRevenueResult._sum.amountPaid || 0)
@@ -68,16 +69,16 @@ export default async function ExpensesPage({
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const recentInvoices = await prisma.invoice.findMany({
+    const recentInvoices = isDemo ? [] : await prisma.invoice.findMany({
         where: {
-            gymId: auth.gym.id,
+            gymId: auth?.gym.id,
             paymentStatus: { in: ['PAID', 'PARTIAL'] },
             deletedAt: null,
             createdAt: { gte: sixMonthsAgo }
         }
     });
 
-    const recentExpenses = rawExpenses.filter((e: any) => new Date(e.date) >= sixMonthsAgo);
+    const recentExpenses = isDemo ? [] : rawExpenses.filter((e: any) => new Date(e.date) >= sixMonthsAgo);
 
     const trendData = [];
     for (let i = 5; i >= 0; i--) {

@@ -1,7 +1,7 @@
 import * as React from "react"
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
 import { SHOWCASE_INVOICES } from "@/lib/showcase-data"
+import { getIsDemo } from "@/lib/demo"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Plus, Download } from 'lucide-react'
@@ -31,9 +31,7 @@ export default async function InvoicesPage({
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
 
-    // Secure Demo Logic
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemo = await getIsDemo(slug)
 
     if (!auth && !isDemo) {
         redirect("/login")

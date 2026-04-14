@@ -1,7 +1,5 @@
-import * as React from "react"
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
+import { getIsDemo } from '@/lib/demo'
 import { SHOWCASE_PRODUCTS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,9 +27,7 @@ export default async function ProductsPage({
     const category = sParams.category
     const showLowStock = sParams.lowStock === 'true'
 
-    const cookieStore = await cookies()
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemo = await getIsDemo(slug)
 
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
 

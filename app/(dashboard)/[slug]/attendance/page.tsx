@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
+import { getIsDemo } from "@/lib/demo"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock, MonitorPlay, Users, Download } from "lucide-react"
@@ -26,9 +26,7 @@ export default async function AttendancePage({
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
     const cookieStore = await cookies()
 
-    // Secure Demo Logic
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true'
+    const isDemo = await getIsDemo(slug)
 
     if (!auth && !isDemo) {
         redirect("/login")

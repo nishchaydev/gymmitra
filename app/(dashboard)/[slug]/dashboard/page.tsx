@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { SHOWCASE_STATS, MOCKUP_DATA } from "@/lib/showcase-data"
 import { cookies } from "next/headers"
+import { getIsDemo } from "@/lib/demo"
 import { exitDemo } from "./actions"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 import { isBirthdayToday, isBirthdayUpcoming } from "@/lib/utils"
@@ -90,11 +91,8 @@ export default async function DashboardPage({
     const searchParamTab = Array.isArray(resolvedSearchParams?.tab) ? resolvedSearchParams.tab[0] : resolvedSearchParams?.tab
     const rawTab = searchParamTab?.toString().toLowerCase() || "overview"
     const allowedTabs = ["overview", "analytics", "insights", "reports"]
-    const tab = allowedTabs.includes(rawTab) ? rawTab : "overview"
+    const isDemo = await getIsDemo(slug)
     const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
-    const cookieStore = await cookies()
-    const envDemoEnabled = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true'
-    const isDemo = (envDemoEnabled && cookieStore.get('mitra_demo_mode')?.value === 'true') || (process.env.NODE_ENV === 'development' && slug === 'demo')
 
     if (!auth && !isDemo) {
         redirect("/login")

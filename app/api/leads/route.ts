@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getAuthGym, checkRole } from '@/lib/auth'
 import { guardRateLimit } from '@/lib/rate-limit'
 import { recordAuditLog } from '@/lib/audit-logger'
+import { getIsDemo } from '@/lib/demo'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,18 +23,36 @@ const leadCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
+        const { searchParams } = new URL(request.url)
+        const referer = request.headers.get('referer') || ''
+        const urlObj = new URL(referer, 'http://localhost')
+        const slug = urlObj.pathname.split('/')[1] || ''
+        
+        const isDemo = await getIsDemo(slug)
         const auth = await getAuthGym()
-        if (!auth) {
+
+        if (!auth && !isDemo) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
-        if (roleCheck) return roleCheck
-        
-        const rateLimited = await guardRateLimit(100, `${auth.userId}:leads:get`)
-        if (rateLimited) return rateLimited
+        if (isDemo && !auth) {
+            // Return mock leads for demo mode
+            const mockLeads = [
+                { id: 'l1', name: 'Rahul Khanna', phone: '9876543210', status: 'NEW', source: 'Instagram', createdAt: new Date() },
+                { id: 'l2', name: 'Sneha Rao', phone: '9123456789', status: 'CONTACTED', source: 'Facebook', createdAt: new Date() },
+                { id: 'l3', name: 'Vikram Mehta', phone: '9988776655', status: 'INTERESTED', source: 'Walk-in', createdAt: new Date() }
+            ]
+            return NextResponse.json({ leads: mockLeads, totalCount: 3, page: 1, hasMore: false })
+        }
 
-        const { searchParams } = new URL(request.url)
+        // Standard auth check for real users
+        if (auth) {
+            const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
+            if (roleCheck) return roleCheck
+            
+            const rateLimited = await guardRateLimit(100, `${auth.userId}:leads:get`)
+            if (rateLimited) return rateLimited
+        }
         const status = searchParams.get('status')
         const q = searchParams.get('q') || ''
         const parsedPage = parseInt(searchParams.get('page') || '1', 10)
@@ -82,16 +101,28 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const referer = request.headers.get('referer') || ''
+        const urlObj = new URL(referer, 'http://localhost')
+        const slug = urlObj.pathname.split('/')[1] || ''
+        
+        const isDemo = await getIsDemo(slug)
         const auth = await getAuthGym()
-        if (!auth) {
+
+        if (!auth && !isDemo) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
-        if (roleCheck) return roleCheck
+        if (isDemo && !auth) {
+             return NextResponse.json({ lead: { id: 'demo-new-lead', name: 'Mock Lead' } }, { status: 201 })
+        }
 
-        const rateLimited = await guardRateLimit(30, `${auth.userId}:leads:post`)
-        if (rateLimited) return rateLimited
+        if (auth) {
+            const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
+            if (roleCheck) return roleCheck
+
+            const rateLimited = await guardRateLimit(30, `${auth.userId}:leads:post`)
+            if (rateLimited) return rateLimited
+        }
 
         let body
         try {
