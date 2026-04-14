@@ -58,6 +58,7 @@ export default function LeadsPage() {
     const { data, isLoading, error } = useLeads({
         status: statusFilter || undefined,
         q: debouncedSearch || undefined,
+        slug,
     })
 
     // Search debounce

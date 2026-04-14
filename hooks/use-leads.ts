@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { SHOWCASE_LEADS } from '@/lib/showcase-data'
 
 interface LeadsParams {
     status?: string
@@ -54,11 +55,23 @@ async function fetchLeads(params: LeadsParams): Promise<LeadsResponse> {
     }
 }
 
-export function useLeads(params: LeadsParams) {
+export function useLeads(params: LeadsParams & { slug?: string }) {
+    const isDemo = params.slug === 'demo'
+
     return useQuery({
         queryKey: ['leads', params],
-        queryFn: () => fetchLeads(params),
-        staleTime: 30_000,
+        queryFn: async () => {
+            if (isDemo) {
+                return {
+                    leads: SHOWCASE_LEADS,
+                    totalCount: SHOWCASE_LEADS.length,
+                    page: 1,
+                    hasMore: false,
+                }
+            }
+            return fetchLeads(params)
+        },
+        staleTime: isDemo ? Infinity : 30_000,
         gcTime: 5 * 60_000,
     })
 }

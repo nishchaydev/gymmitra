@@ -24,12 +24,10 @@ const leadCreateSchema = z.object({
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const referer = request.headers.get('referer') || ''
-        const urlObj = new URL(referer, 'http://localhost')
-        const slug = urlObj.pathname.split('/')[1] || ''
+        const auth = await getAuthGym()
+        const slug = searchParams.get('slug') || auth?.gym?.slug
         
         const isDemo = await getIsDemo(slug)
-        const auth = await getAuthGym()
 
         if (!auth && !isDemo) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -99,12 +97,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const referer = request.headers.get('referer') || ''
-        const urlObj = new URL(referer, 'http://localhost')
-        const slug = urlObj.pathname.split('/')[1] || ''
+        const { searchParams } = new URL(request.url)
+        const auth = await getAuthGym()
+        const slug = searchParams.get('slug') || auth?.gym?.slug
         
         const isDemo = await getIsDemo(slug)
-        const auth = await getAuthGym()
 
         if (!auth && !isDemo) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -66,6 +66,7 @@ export function MembersList({ slug, query, status, dobMonth, birthday, duration,
         duration: duration || undefined,
         page,
         take,
+        slug,
     })
 
     if (isLoading) {

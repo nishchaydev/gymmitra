@@ -43,8 +43,9 @@ export function InvoicesList({ slug, query, status, page, take, isDemo, initialD
         status: status || undefined,
         page,
         take,
+        slug,
         initialData,
-    } as any)
+    })
 
     const isPendingAndNoData = isLoading && !initialData
 

@@ -22,7 +22,7 @@ interface ProductsListProps {
 
 export function ProductsList({ slug, query, category, lowStock, initialData }: ProductsListProps) {
     const { data: products, isLoading, isFetching, error } = useProductsQuery(
-        { q: query || undefined, category: category || undefined, lowStock: lowStock || undefined },
+        { q: query || undefined, category: category || undefined, lowStock: lowStock || undefined, slug },
         initialData,
     )
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 
 interface MembersParams {
     q?: string
@@ -34,11 +35,23 @@ async function fetchMembers(params: MembersParams): Promise<MembersResponse> {
     return res.json()
 }
 
-export function useMembers(params: MembersParams) {
+export function useMembers(params: MembersParams & { slug?: string }) {
+    const isDemo = params.slug === 'demo'
+
     return useQuery({
         queryKey: ['members', params],
-        queryFn: () => fetchMembers(params),
-        staleTime: 2 * 60_000,  // 2 min — matches Redis MEMBERS_LIST TTL; prevents tab-switch refetch
-        gcTime: 10 * 60_000, // 10 min in memory
+        queryFn: async () => {
+            if (isDemo) {
+                return {
+                    members: SHOWCASE_MEMBERS,
+                    totalCount: SHOWCASE_MEMBERS.length,
+                    page: 1,
+                    hasMore: false,
+                }
+            }
+            return fetchMembers(params)
+        },
+        staleTime: isDemo ? Infinity : 2 * 60_000,
+        gcTime: 10 * 60_000,
     })
 }

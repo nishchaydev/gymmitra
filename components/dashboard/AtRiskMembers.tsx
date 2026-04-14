@@ -31,8 +31,8 @@ export function AtRiskMembers({ slug, gymName = "GymMitra", isDemo = false }: At
     const parsedDays = inactiveDaysParam ? parseInt(inactiveDaysParam, 10) : 14
     const configDays = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 14
 
-    const { data: atRiskData, isLoading: isLoadingAtRisk } = useAtRiskQuery(configDays, { enabled: !isDemo })
-    const { data: expiringData, isLoading: isLoadingExpiring } = useExpiringMembersQuery({ enabled: !isDemo })
+    const { data: atRiskData, isLoading: isLoadingAtRisk } = useAtRiskQuery(configDays, { slug })
+    const { data: expiringData, isLoading: isLoadingExpiring } = useExpiringMembersQuery({ slug })
 
     const handleDaysChange = (value: string) => {
         const newParams = new URLSearchParams(searchParams?.toString())

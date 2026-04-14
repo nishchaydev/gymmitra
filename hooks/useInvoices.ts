@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { SHOWCASE_INVOICES } from '@/lib/showcase-data'
 
 interface UseInvoicesOptions {
     q?: string
@@ -8,10 +9,20 @@ interface UseInvoicesOptions {
     memberId?: string
 }
 
-export function useInvoices(options: UseInvoicesOptions = {}) {
+export function useInvoices(options: UseInvoicesOptions & { slug?: string } = {}) {
+    const isDemo = options.slug === 'demo'
+
     return useQuery({
         queryKey: ['invoices', options],
         queryFn: async () => {
+            if (isDemo) {
+                return {
+                    invoices: SHOWCASE_INVOICES,
+                    totalCount: SHOWCASE_INVOICES.length,
+                    page: 1,
+                    hasMore: false,
+                }
+            }
             const params = new URLSearchParams()
             if (options.q) params.set('q', options.q)
             if (options.status && options.status !== 'ALL') params.set('status', options.status)
@@ -25,6 +36,6 @@ export function useInvoices(options: UseInvoicesOptions = {}) {
             }
             return response.json()
         },
-        staleTime: 30_000, // 30 seconds — prevents refetch on tab-switch/focus
+        staleTime: isDemo ? Infinity : 30_000,
     })
 }

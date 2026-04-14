@@ -104,4 +104,15 @@ export const SHOWCASE_INVOICES = [
     { id: "inv003", member: { id: "m3", name: "Vikram Singh" }, amount: 4500, status: "PENDING", date: new Date("2024-02-05"), type: "MEMBERSHIP" },
 ]
 
+export const SHOWCASE_LEADS = [
+    { id: 'l1', name: 'Rahul Khanna', phone: '9876543210', status: 'NEW', source: 'Instagram', createdAt: new Date() },
+    { id: 'l2', name: 'Sneha Rao', phone: '9123456789', status: 'CONTACTED', source: 'Facebook', createdAt: new Date() },
+    { id: 'l3', name: 'Vikram Mehta', phone: '9988776655', status: 'INTERESTED', source: 'Walk-in', createdAt: new Date() }
+]
+
+export const SHOWCASE_AT_RISK = [
+    { id: 'm3', name: 'Vikram Singh', phone: '7766554433', status: 'EXPIRED', lastAttended: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) },
+    { id: 'm6', name: 'Suresh Kumar', phone: '9000000000', status: 'ACTIVE', lastAttended: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000) }
+]
+
 export const getShowcaseMember = (id: string) => SHOWCASE_MEMBERS.find(m => m.id === id) || SHOWCASE_MEMBERS[0]

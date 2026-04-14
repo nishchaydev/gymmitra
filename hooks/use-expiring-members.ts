@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 
 interface ExpiringMember {
     id: string
@@ -14,11 +15,36 @@ interface ExpiringData {
     members: ExpiringMember[]
 }
 
-export function useExpiringMembersQuery(options?: { enabled?: boolean }) {
+export function useExpiringMembersQuery(options?: { enabled?: boolean; slug?: string }) {
+    const isDemo = options?.slug === 'demo'
+
     return useQuery<ExpiringData>({
-        queryKey: ['expiring-members'],
+        queryKey: ['expiring-members', options?.slug],
         enabled: options?.enabled,
         queryFn: async () => {
+            if (isDemo) {
+                const today = new Date()
+                const members = SHOWCASE_MEMBERS
+                    .filter(m => m.status === 'ACTIVE' && new Date(m.endDate) > today)
+                    .map(m => {
+                        const daysLeft = Math.ceil((new Date(m.endDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                        return {
+                            id: m.id,
+                            name: m.name,
+                            phone: m.phone,
+                            endDate: m.endDate.toISOString(),
+                            daysLeft,
+                            planName: m.planName
+                        }
+                    })
+                    .sort((a, b) => a.daysLeft - b.daysLeft)
+
+                return {
+                    count: members.length,
+                    members
+                }
+            }
+
             const res = await fetch('/api/renewals')
             if (!res.ok) throw new Error('Failed to fetch expiring members')
             const data = await res.json()
@@ -38,6 +64,6 @@ export function useExpiringMembersQuery(options?: { enabled?: boolean }) {
                 members
             }
         },
-        staleTime: 300_000, // 5 minutes
+        staleTime: isDemo ? Infinity : 300_000, // 5 minutes
     })
 }
