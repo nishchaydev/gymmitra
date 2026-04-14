@@ -19,7 +19,7 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
         : await prisma.member.findUnique({ where: { id } })
 
     if (!member) notFound()
-    if (!isDemo && auth && member.gymId !== auth.gym.id) notFound()
+    if (!isDemo && auth && (member as any).gymId !== auth.gym.id) notFound()
 
     return (
         <div className="container mx-auto p-8 max-w-2xl">

@@ -83,11 +83,11 @@ export const MOCKUP_DATA: any = {
 }
 
 export const SHOWCASE_MEMBERS = [
-    { id: "m1", name: "Rahul Sharma", email: "rahul@example.com", phone: "9876543210", status: "ACTIVE", joiningDate: new Date("2023-10-12"), planName: "Gold Annual", endDate: new Date("2024-10-12"), gender: "MALE", dob: new Date("1995-05-15"), address: "123 Main St, Delhi" },
-    { id: "m2", name: "Anjali Gupta", email: "anjali@example.com", phone: "9123456789", status: "ACTIVE", joiningDate: new Date("2024-01-05"), planName: "Black Monthly", endDate: new Date("2024-02-05"), gender: "FEMALE", dob: new Date("1998-08-20"), address: "456 Park Ave, Mumbai" },
-    { id: "m3", name: "Vikram Singh", email: "vikram@example.com", phone: "9988776655", status: "EXPIRED", joiningDate: new Date("2023-09-20"), planName: "Silver Quarterly", endDate: new Date("2023-12-20"), gender: "MALE", dob: new Date("1990-12-10"), address: "789 Lake View, Bangalore" },
-    { id: "m4", name: "Priya Verma", email: "priya@example.com", phone: "9445566778", status: "ACTIVE", joiningDate: new Date("2023-11-15"), planName: "Gold Annual", endDate: new Date("2024-11-15"), gender: "FEMALE", dob: new Date("1996-03-25"), address: "321 Hill Road, Chennai" },
-    { id: "m5", name: "Amit Patel", email: "amit@example.com", phone: "9001122334", status: "ACTIVE", joiningDate: new Date("2024-02-01"), planName: "Gold Annual", endDate: new Date("2025-02-01"), gender: "MALE", dob: new Date("1992-07-08"), address: "654 River Side, Kolkata" },
+    { id: "m1", name: "Rahul Sharma", email: "rahul@example.com", phone: "9876543210", status: "ACTIVE", joiningDate: new Date("2024-01-15"), planName: "Premium Quarterly", endDate: new Date("2024-04-15"), gender: "MALE", dob: new Date("1995-05-20"), address: "123 Park Street, Delhi", gymId: "demo" },
+    { id: "m2", name: "Anjali Gupta", email: "anjali@example.com", phone: "8877665544", status: "ACTIVE", joiningDate: new Date("2023-11-20"), planName: "Gold Annual", endDate: new Date("2024-11-20"), gender: "FEMALE", dob: new Date("1998-12-10"), address: "45-B Green Road, Mumbai", gymId: "demo" },
+    { id: "m3", name: "Vikram Singh", email: "vikram@example.com", phone: "7766554433", status: "EXPIRED", joiningDate: new Date("2023-08-10"), planName: "Basic Monthly", endDate: new Date("2023-09-10"), gender: "MALE", dob: new Date("1990-03-15"), address: "Sector 15, Chandigarh", gymId: "demo" },
+    { id: "m4", name: "Priya Verma", email: "priya@example.com", phone: "9988776655", status: "ACTIVE", joiningDate: new Date("2024-02-05"), planName: "Premium Quarterly", endDate: new Date("2024-05-05"), gender: "FEMALE", dob: new Date("1997-09-25"), address: "MG Road, Pune", gymId: "demo" },
+    { id: "m5", name: "Amit Patel", email: "amit@example.com", phone: "9001122334", status: "ACTIVE", joiningDate: new Date("2024-02-01"), planName: "Gold Annual", endDate: new Date("2025-02-01"), gender: "MALE", dob: new Date("1992-07-08"), address: "654 River Side, Kolkata", gymId: "demo" },
 ]
 
 export const SHOWCASE_PRODUCTS = [
