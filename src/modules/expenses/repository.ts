@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { Expense, Prisma } from '@prisma/client'
 
 export class ExpenseRepository {
-    async create(data: Prisma.ExpenseCreateInput, tx?: Prisma.TransactionClient): Promise<Expense> {
+    async create(data: Prisma.ExpenseUncheckedCreateInput, tx?: Prisma.TransactionClient): Promise<Expense> {
         const client = tx || prisma
         return client.expense.create({ data })
     }
