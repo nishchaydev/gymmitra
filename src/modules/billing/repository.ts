@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+import { Prisma, PaymentStatus, PaymentMethod, InvoiceType } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
 export class BillingRepository {
@@ -95,7 +95,7 @@ export class BillingRepository {
         return tx.invoice.create({
             data: {
                 invoiceNumber: data.invoiceNumber,
-                type: data.type as any,
+                type: data.type as InvoiceType,
                 gymId: data.gymId,
                 memberId: data.memberId || null,
                 subscriptionId: data.subscriptionId || null,
@@ -106,8 +106,8 @@ export class BillingRepository {
                 total: data.total,
                 amountPaid: data.amountPaid,
                 balanceDue: data.balanceDue,
-                paymentStatus: data.paymentStatus as Prisma.PaymentStatus,
-                paymentMethod: data.paymentMethod as Prisma.PaymentMethod | null,
+                paymentStatus: data.paymentStatus as PaymentStatus,
+                paymentMethod: data.paymentMethod as PaymentMethod | null,
                 idempotencyKey: data.idempotencyKey ?? null,
                 walkInName: data.walkInName ?? null,
                 walkInPhone: data.walkInPhone ?? null,
