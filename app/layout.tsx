@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { GoogleAnalytics } from '@next/third-parties/google';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { headers } from 'next/headers';
 import "@/src/bones/registry";
 import "./globals.css";
@@ -91,6 +92,7 @@ export default async function RootLayout({
           <Toaster />
           {gaId && <GoogleAnalytics gaId={gaId} nonce={nonce} />}
           <Analytics />
+          <SpeedInsights />
         </Providers>
       </body>
     </html>
