@@ -5,10 +5,10 @@ import withPWA from "@ducanh2912/next-pwa";
 const pwa = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: true,
+  register: false,
   cacheOnFrontEndNav: true,
   fallbacks: {
-    document: "/~offline",
+    document: "/offline",
   },
 });
 
@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
               `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://va.vercel-scripts.com https://*.upstash.io ${process.env.NODE_ENV !== 'production' ? "ws://localhost:* http://localhost:*" : ''}`,
-              "worker-src 'self'",
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
               process.env.NODE_ENV === 'production' ? "report-uri /api/csp-report" : "",
             ].filter(Boolean).join('; ')
