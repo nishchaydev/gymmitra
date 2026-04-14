@@ -10,11 +10,11 @@ export const SHOWCASE_STATS = {
     memberGrowth: "+48 this week",
     expiringSoon: 12,
     recentInvoices: [
-        { id: "inv1", member: { name: "Rahul Sharma" }, amount: 1500, status: "PAID", date: new Date().toISOString(), type: "Membership" },
-        { id: "inv2", member: { name: "Anjali Gupta" }, amount: 3000, status: "PAID", date: new Date(Date.now() - 3600000).toISOString(), type: "Membership" },
-        { id: "inv3", member: { name: "Vikram Singh" }, amount: 1200, status: "PENDING", date: new Date(Date.now() - 7200000).toISOString(), type: "Product" },
-        { id: "inv4", member: { name: "Priya Verma" }, amount: 4500, status: "PAID", date: new Date(Date.now() - 10800000).toISOString(), type: "Membership" },
-        { id: "inv5", member: { name: "Amit Patel" }, amount: 1500, status: "PAID", date: new Date(Date.now() - 14400000).toISOString(), type: "Product" },
+        { id: "inv1", member: { id: "m1", name: "Rahul Sharma" }, amount: 1500, status: "PAID", date: new Date(), type: "Membership" },
+        { id: "inv2", member: { id: "m2", name: "Anjali Gupta" }, amount: 3000, status: "PAID", date: new Date(Date.now() - 3600000), type: "Membership" },
+        { id: "inv3", member: { id: "m3", name: "Vikram Singh" }, amount: 1200, status: "PENDING", date: new Date(Date.now() - 7200000), type: "Product" },
+        { id: "inv4", member: { id: "m4", name: "Priya Verma" }, amount: 4500, status: "PAID", date: new Date(Date.now() - 10800000), type: "Membership" },
+        { id: "inv5", member: { id: "m5", name: "Amit Patel" }, amount: 1500, status: "PAID", date: new Date(Date.now() - 14400000), type: "Product" },
     ],
     overviewData: [
         { name: "Jan", total: 120000 },

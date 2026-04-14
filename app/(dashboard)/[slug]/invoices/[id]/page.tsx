@@ -27,9 +27,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         // Construct a full invoice object for the template
         invoice = {
             id: id,
-            invoiceNumber: `GM-INV-${String(SHOWCASE_STATS.recentInvoices.indexOf(mockInv) + 1).padStart(4, '0')}`,
-            createdAt: new Date(mockInv.date),
-            paymentStatus: mockInv.status as any,
+            invoiceNumber: `GM-INV-${String(SHOWCASE_STATS.recentInvoices.indexOf(mockInv as any) + 1).padStart(4, '0')}`,
+            createdAt: new Date((mockInv as any).date),
+            paymentStatus: (mockInv as any).status as any,
             paymentMethod: "UPI",
             total: mockInv.amount,
             amountPaid: 0,
