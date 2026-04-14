@@ -61,7 +61,12 @@ describe('MemberService.createMember', () => {
     const result = await MemberService.createMember(gymId, settings, defaultUserId, defaultIp, {
       name: 'John Doe',
       phone: '9876543210',
-      planId: 'none' // skip subscription/invoice flow for this test
+      planId: 'none', // skip subscription/invoice flow for this test
+      dateOfBirth: null,
+      customEndDate: null,
+      discount: 0,
+      whatsappConsentGiven: true,
+      marketingConsentGiven: false
     })
     
     expect(result.success).toBe(true)
@@ -82,7 +87,12 @@ describe('MemberService.createMember', () => {
       MemberService.createMember(gymId, settings, defaultUserId, defaultIp, {
         name: 'Jane Doe',
         phone: '9876543210',
-        planId: 'none'
+        planId: 'none',
+        dateOfBirth: null,
+        customEndDate: null,
+        discount: 0,
+        whatsappConsentGiven: true,
+        marketingConsentGiven: false
       })
     ).rejects.toThrow('MEMBER_CAP:200:MAIN_PLAN')
     
@@ -101,7 +111,12 @@ describe('MemberService.createMember', () => {
     const result = await MemberService.createMember(gymId, settings, defaultUserId, defaultIp, {
       name: 'Trial User',
       phone: '9876543210',
-      planId: 'none'
+      planId: 'none',
+      dateOfBirth: null,
+      customEndDate: null,
+      discount: 0,
+      whatsappConsentGiven: true,
+      marketingConsentGiven: false
     })
     
     expect(result.success).toBe(true)
@@ -118,7 +133,12 @@ describe('MemberService.createMember', () => {
     const result = await MemberService.createMember(gymId, settings, defaultUserId, defaultIp, {
       name: 'Dup User',
       phone: '9876543210',
-      planId: 'none'
+      planId: 'none',
+      dateOfBirth: null,
+      customEndDate: null,
+      discount: 0,
+      whatsappConsentGiven: true,
+      marketingConsentGiven: false
     })
     
     expect(result as any).toHaveProperty('error')
