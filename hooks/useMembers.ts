@@ -38,7 +38,7 @@ export function useMembers(params: MembersParams) {
     return useQuery({
         queryKey: ['members', params],
         queryFn: () => fetchMembers(params),
-        staleTime: 30_000,  // 30 seconds — prevents tab-switch refetch
-        gcTime: 5 * 60_000, // 5 minutes
+        staleTime: 2 * 60_000,  // 2 min — matches Redis MEMBERS_LIST TTL; prevents tab-switch refetch
+        gcTime: 10 * 60_000, // 10 min in memory
     })
 }

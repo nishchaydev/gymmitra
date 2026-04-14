@@ -115,6 +115,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
       const prefetchTimer = setTimeout(() => {
 
         // Prefetch members data
+        // staleTime matches Redis TTL (2 min) — if already fetched, this is a no-op
         queryClient.prefetchQuery({
           queryKey: ['members', {
             q: '', status: '', dobMonth: '',
@@ -123,15 +124,17 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
           }],
           queryFn: () => fetch(`/api/members?page=1&take=10`)
             .then(r => r.json()),
-          staleTime: 5 * 60 * 1000,
+          staleTime: 2 * 60 * 1000, // 2 min — matches Redis MEMBERS_LIST TTL
         })
 
         // Prefetch renewals
+        // staleTime matches Redis TTL (5 min) — RenewalCommandCenter may have already
+        // fetched this; if so React Query dedupes and this becomes a zero-cost no-op
         queryClient.prefetchQuery({
           queryKey: ['renewals-dashboard'],
           queryFn: () => fetch(`/api/renewals`)
             .then(r => r.json()),
-          staleTime: 5 * 60 * 1000,
+          staleTime: 5 * 60 * 1000, // 5 min — matches Redis RENEWALS TTL
         })
 
         // Prefetch invoices
@@ -139,7 +142,7 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
           queryKey: ['invoices', { query: '', status: '', date: '', page: 1, limit: 10 }],
           queryFn: () => fetch(`/api/invoices?page=1&limit=10`)
             .then(r => r.json()),
-          staleTime: 5 * 60 * 1000,
+          staleTime: 2 * 60 * 1000, // 2 min
         })
 
       }, 3000)

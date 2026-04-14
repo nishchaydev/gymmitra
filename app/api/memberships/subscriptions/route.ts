@@ -7,6 +7,7 @@ import { Prisma, SubscriptionStatus, MemberStatus, PaymentMethod } from '@prisma
 import { guardRateLimit } from '@/lib/rate-limit'
 import { subscriptionSchema } from '@/src/modules/memberships/validator'
 import { BillingService } from '@/src/modules/billing/service'
+import { invalidateCache, cacheKey } from '@/lib/redis-cache'
 import crypto from 'crypto'
 import { getBaseUrl } from '@/lib/utils'
 
@@ -158,6 +159,17 @@ export async function POST(request: NextRequest) {
         const invoiceUrl = invoiceShareToken
             ? `${getBaseUrl()}/${gymSlug}/invoice/${invoiceShareToken}`
             : undefined
+
+        // ── Cache invalidation ────────────────────────────────────────────
+        // A new subscription changes: member status, renewals list, at-risk list
+        // Bust all three so next request fetches fresh from Supabase
+        invalidateCache(
+            cacheKey.renewals(gym.id),
+            cacheKey.atRisk(gym.id, 14),
+            cacheKey.membersList(gym.id, 'ALL:ALL:p1:t10'),
+            cacheKey.membersList(gym.id, 'ACTIVE:ALL:p1:t10'),
+            cacheKey.membersCount(gym.id),
+        ).catch(() => {})
 
         return NextResponse.json({
             ...subscription,

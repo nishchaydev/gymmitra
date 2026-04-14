@@ -21,6 +21,38 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // ── Browser caching for API routes ───────────────────────────────────
+      // Works in tandem with Redis: Redis serves repeated server requests,
+      // Cache-Control serves the same response from the browser for N seconds.
+      // stale-while-revalidate means browser shows cached instantly then updates in bg.
+      {
+        source: '/api/memberships/plans/:path*',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
+        source: '/api/products/:path*',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
+        source: '/api/settings',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
+        source: '/api/renewals',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=240, stale-while-revalidate=300' }],
+      },
+      {
+        source: '/api/members/at-risk',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=600, stale-while-revalidate=900' }],
+      },
+      {
+        source: '/api/members',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=60, stale-while-revalidate=120' }],
+      },
+      {
+        source: '/api/invoices',
+        headers: [{ key: 'Cache-Control', value: 'private, max-age=60, stale-while-revalidate=120' }],
+      },
       {
         source: '/(.*)',
         headers: [
