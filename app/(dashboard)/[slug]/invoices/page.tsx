@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { getIsDemo } from "@/lib/demo"
