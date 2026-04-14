@@ -37,7 +37,12 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
             setUser(user)
 
             const demoCookie = document.cookie.split('; ').find(row => row.startsWith('mitra_demo_mode='))
-            setIsDemo(!user && demoCookie?.split('=')[1] === 'true')
+            const cookieIsDemo = demoCookie?.split('=')[1] === 'true'
+            
+            // isDemo is only true if:
+            // 1. We are NOT logged in as a real user
+            // 2. AND (we are on the /demo slug OR we have the cookie and no slug)
+            setIsDemo(!user && (slug === 'demo' || (cookieIsDemo && !slug)))
 
             setLoading(false)
         }

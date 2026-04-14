@@ -141,17 +141,29 @@ export default async function DashboardPage({
 
     if (!gym && !isDemo) {
         return (
-            <div className="flex h-[80vh] items-center justify-center">
-                <Card className="w-full max-w-md">
+            <div className="flex h-[80vh] items-center justify-center p-6 text-center">
+                <Card className="w-full max-w-md border-slate-200">
                     <CardHeader>
-                        <CardTitle>Welcome to GymMitra Showcase!</CardTitle>
-                        <CardDescription>We&apos;re finishing setting up your profile.</CardDescription>
+                        <CardTitle>Unable to Load Dashboard</CardTitle>
+                        <CardDescription>We couldn&apos;t retrieve your gym profile records.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p>It looks like your gym profile wasn&apos;t created yet, or we&apos;re having trouble loading it.</p>
-                        <Link href="/onboarding">
-                            <Button className="w-full">Initialize Gym Profile</Button>
-                        </Link>
+                        <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl text-amber-900 text-sm">
+                            <p className="font-bold mb-1">Possible Causes:</p>
+                            <ul className="list-disc list-inside text-left space-y-1">
+                                <li>Weak or no internet connection</li>
+                                <li>Database connectivity issues</li>
+                                <li>Session expired (please try logging in again)</li>
+                            </ul>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <Link href={`/${slug}/dashboard`}>
+                                <Button className="w-full">Try Again</Button>
+                            </Link>
+                            <Link href="/login">
+                                <Button variant="ghost" className="w-full">Back to Login</Button>
+                            </Link>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

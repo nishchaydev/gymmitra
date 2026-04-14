@@ -12,7 +12,10 @@ export async function getIsDemo(slug?: string): Promise<boolean> {
     // If slug is explicitly 'demo', we are in demo mode
     if (slug === 'demo') return true
 
-    // Otherwise check the cookie
+    // If we have a non-demo slug, we are NOT in demo mode, regardless of the cookie
+    if (slug && slug !== 'demo') return false
+
+    // Root page or fallback: check the cookie
     const cookieStore = await cookies()
     return cookieStore.get('mitra_demo_mode')?.value === 'true'
 }

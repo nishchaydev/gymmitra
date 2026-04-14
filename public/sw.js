@@ -84,5 +84,33 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 3. API calls and others - Network Only (handled by browser default)
+    // 3. API calls (GET only) - Stale While Revalidate
+    // This provides the offline "show last data" functionality for real gyms
+    const isApiGet = 
+        url.origin === self.location.origin && 
+        url.pathname.startsWith('/api/') &&
+        !url.pathname.includes('/api/auth'); // Avoid caching auth session specifically
+
+    if (isApiGet) {
+        event.respondWith(
+            caches.match(event.request).then(cachedResponse => {
+                const fetchedResponse = fetch(event.request).then(networkResponse => {
+                    if (networkResponse.ok && networkResponse.status === 200) {
+                        const copy = networkResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    }
+                    return networkResponse;
+                }).catch(() => {
+                    // Silent fail for network - if we have cache, we use it
+                    console.log('[PWA] API Fetch failed (offline), serving from cache if available');
+                    return null;
+                });
+
+                return cachedResponse || fetchedResponse;
+            })
+        );
+        return;
+    }
+
+    // 4. Everything else - Network Only (handled by browser default)
 });

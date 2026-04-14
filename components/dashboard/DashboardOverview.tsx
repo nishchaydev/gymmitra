@@ -86,9 +86,10 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
     }, [isRefreshing, queryClient, router])
 
     useEffect(() => {
-      if (!initialData) return
+      if (!initialData || isDemo) return
 
       // Seed Members default view (no filters, page 1)
+      // This ensures if user navigates to /members right away, they see metadata instantly
       queryClient.setQueryData(
         ['members', { 
           q: '', 
@@ -97,7 +98,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
           birthday: '', 
           page: 1, 
           take: 10,
-          duration: ''
+          duration: '',
+          slug: slug
         }],
         {
           members: [],
@@ -105,54 +107,44 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
         }
       )
 
-      // Note: Renewals and invoices are NOT seeded here because initialData
-      // doesn't contain the full data shape those hooks expect (e.g. urgent/upcoming/missed
-      // arrays + summary object). They will fetch fresh on navigation.
-
       // Background prefetch other pages
-      // Fires 3 seconds after dashboard loads
-      // Low priority - browser idle time only
+      // Fires 3 seconds after dashboard loads to give priority to initial render
       const prefetchTimer = setTimeout(() => {
-
         // Prefetch members data
-        // staleTime matches Redis TTL (2 min) — if already fetched, this is a no-op
         queryClient.prefetchQuery({
           queryKey: ['members', {
             q: '', status: '', dobMonth: '',
             birthday: '', page: 1, take: 10,
-            duration: ''
+            duration: '', slug: slug
           }],
           queryFn: () => fetch(`/api/members?page=1&take=10`)
             .then(r => r.json()),
-          staleTime: 2 * 60 * 1000, // 2 min — matches Redis MEMBERS_LIST TTL
+          staleTime: 2 * 60 * 1000, 
         })
 
         // Prefetch renewals
-        // staleTime matches Redis TTL (5 min) — RenewalCommandCenter may have already
-        // fetched this; if so React Query dedupes and this becomes a zero-cost no-op
         queryClient.prefetchQuery({
-          queryKey: ['renewals-dashboard'],
+          queryKey: ['expiring-members', slug],
           queryFn: () => fetch(`/api/renewals`)
             .then(r => r.json()),
-          staleTime: 5 * 60 * 1000, // 5 min — matches Redis RENEWALS TTL
+          staleTime: 5 * 60 * 1000,
         })
 
         // Prefetch invoices
         queryClient.prefetchQuery({
-          queryKey: ['invoices', { query: '', status: '', date: '', page: 1, limit: 10 }],
+          queryKey: ['invoices', { q: '', status: '', page: 1, take: 10, slug: slug }],
           queryFn: () => fetch(`/api/invoices?page=1&limit=10`)
             .then(r => r.json()),
-          staleTime: 2 * 60 * 1000, // 2 min
+          staleTime: 2 * 60 * 1000,
         })
 
       }, 3000)
 
-      // CRITICAL: cleanup timer on unmount
       return () => {
         clearTimeout(prefetchTimer)
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [queryClient])
+    }, [queryClient, isDemo, slug])
 
     // Computations
     const totalRev = Number(d.revenueRaw || 0)
