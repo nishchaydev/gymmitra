@@ -15,7 +15,7 @@ interface AtRiskData {
     daysThreshold: number
 }
 
-export function useAtRiskQuery(days: number = 14, options?: { enabled?: boolean; slug?: string }) {
+export function useAtRiskQuery(days: number = 14, options?: { enabled?: boolean; slug?: string; initialData?: AtRiskData }) {
     const isDemo = options?.slug === 'demo'
 
     return useQuery<AtRiskData>({
@@ -36,5 +36,6 @@ export function useAtRiskQuery(days: number = 14, options?: { enabled?: boolean;
         staleTime: isDemo ? Infinity : 300_000, // 5 minutes
         gcTime: 600_000, // 10 minutes
         refetchOnWindowFocus: false,
+        initialData: options?.initialData,
     })
 }

@@ -35,10 +35,10 @@ async function fetchMembers(params: MembersParams): Promise<MembersResponse> {
     return res.json()
 }
 
-export function useMembers(params: MembersParams & { slug?: string }) {
+export function useMembers(params: MembersParams & { slug?: string; initialData?: MembersResponse }) {
     const isDemo = params.slug === 'demo'
 
-    return useQuery({
+    return useQuery<MembersResponse>({
         queryKey: ['members', params],
         queryFn: async () => {
             if (isDemo) {
@@ -53,5 +53,6 @@ export function useMembers(params: MembersParams & { slug?: string }) {
         },
         staleTime: isDemo ? Infinity : 2 * 60_000,
         gcTime: 10 * 60_000,
+        initialData: params.initialData,
     })
 }

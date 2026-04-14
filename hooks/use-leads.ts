@@ -55,10 +55,10 @@ async function fetchLeads(params: LeadsParams): Promise<LeadsResponse> {
     }
 }
 
-export function useLeads(params: LeadsParams & { slug?: string }) {
+export function useLeads(params: LeadsParams & { slug?: string; initialData?: LeadsResponse }) {
     const isDemo = params.slug === 'demo'
 
-    return useQuery({
+    return useQuery<LeadsResponse>({
         queryKey: ['leads', params],
         queryFn: async () => {
             if (isDemo) {
@@ -73,5 +73,6 @@ export function useLeads(params: LeadsParams & { slug?: string }) {
         },
         staleTime: isDemo ? Infinity : 30_000,
         gcTime: 5 * 60_000,
+        initialData: params.initialData,
     })
 }

@@ -15,7 +15,7 @@ interface ExpiringData {
     members: ExpiringMember[]
 }
 
-export function useExpiringMembersQuery(options?: { enabled?: boolean; slug?: string }) {
+export function useExpiringMembersQuery(options?: { enabled?: boolean; slug?: string; initialData?: ExpiringData }) {
     const isDemo = options?.slug === 'demo'
 
     return useQuery<ExpiringData>({
@@ -65,5 +65,6 @@ export function useExpiringMembersQuery(options?: { enabled?: boolean; slug?: st
             }
         },
         staleTime: isDemo ? Infinity : 300_000, // 5 minutes
+        initialData: options?.initialData,
     })
 }
