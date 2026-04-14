@@ -77,7 +77,13 @@ export async function PUT(request: NextRequest) {
         }
 
         // Bust settings cache — new settings take effect on next request
-        await invalidateCache(cacheKey.settings(auth.gym.id))
+        try {
+            await invalidateCache(cacheKey.settings(auth.gym.id))
+        } catch (cacheErr) {
+            console.error('[Settings PUT] Redis cache invalidation failed:', cacheErr, {
+                key: cacheKey.settings(auth.gym.id)
+            })
+        }
 
         return NextResponse.json(gymProfile)
     } catch (error: any) {

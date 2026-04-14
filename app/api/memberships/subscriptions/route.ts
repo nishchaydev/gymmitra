@@ -162,14 +162,25 @@ export async function POST(request: NextRequest) {
 
         // ── Cache invalidation ────────────────────────────────────────────
         // A new subscription changes: member status, renewals list, at-risk list
-        // Bust all three so next request fetches fresh from Supabase
-        invalidateCache(
+        // Bust all possible variants so next request fetches fresh from Supabase
+        const keysToInvalidate = [
             cacheKey.renewals(gym.id),
-            cacheKey.atRisk(gym.id, 14),
-            cacheKey.membersList(gym.id, 'ALL:ALL:p1:t10'),
-            cacheKey.membersList(gym.id, 'ACTIVE:ALL:p1:t10'),
-            cacheKey.membersCount(gym.id),
-        ).catch(() => {})
+            cacheKey.membersCount(gym.id)
+        ]
+        
+        const atRiskThresholds = [7, 14, 30]
+        const listStatuses = ['ALL', 'ACTIVE', 'INACTIVE', 'EXPIRED']
+        
+        atRiskThresholds.forEach(days => {
+            keysToInvalidate.push(cacheKey.atRisk(gym.id, days))
+        })
+        listStatuses.forEach(status => {
+            keysToInvalidate.push(cacheKey.membersList(gym.id, `${status}:ALL:p1:t10`))
+        })
+
+        invalidateCache(...keysToInvalidate).catch((err) => {
+            console.error('[Subscriptions POST] Redis cache invalidation failed:', err)
+        })
 
         return NextResponse.json({
             ...subscription,
