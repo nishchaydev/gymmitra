@@ -8,6 +8,14 @@ import { NextResponse, type NextRequest } from 'next/server'
  * 3. Onboarding status enforcement (Cookie-based for Edge compatibility)
  */
 export async function updateSession(request: NextRequest, mergedHeaders?: Headers) {
+    // Guard: skip Supabase auth if env vars aren't configured (e.g. preview deployments)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.warn('[middleware] NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY missing — skipping auth')
+        return NextResponse.next({ request: { headers: mergedHeaders || request.headers } })
+    }
+
     let supabaseResponse = NextResponse.next({
         request: {
             headers: mergedHeaders || request.headers,
@@ -15,8 +23,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
     })
 
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseAnonKey,
         {
             cookies: {
                 getAll() {
