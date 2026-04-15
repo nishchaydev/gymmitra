@@ -103,7 +103,7 @@ export class MemberService {
 
             // If a Plan is Selected, Create Subscription and Invoice
             if (validatedData.planId && validatedData.planId !== 'none') {
-                const plan = await MemberRepository.findPlanById(validatedData.planId, tx)
+                const plan = await MemberRepository.findPlanById(validatedData.planId, gymId, tx)
                 if (!plan) throw new Error("Selected plan not found")
 
                 // Stack: start from current end date if active sub exists, else today

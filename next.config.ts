@@ -43,11 +43,11 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/api/members',
-        headers: [{ key: 'Cache-Control', value: 'private, max-age=60, stale-while-revalidate=120' }],
+        headers: [{ key: 'Cache-Control', value: 'private, no-store' }],
       },
       {
         source: '/api/invoices',
-        headers: [{ key: 'Cache-Control', value: 'private, max-age=60, stale-while-revalidate=120' }],
+        headers: [{ key: 'Cache-Control', value: 'private, no-store' }],
       },
       {
         source: '/(.*)',

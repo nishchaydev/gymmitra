@@ -108,7 +108,7 @@ export class MemberRepository {
     static async updateMember(id: string, gymId: string, data: any, tx?: Prisma.TransactionClient) {
         const client = tx || prisma
         return client.member.updateMany({
-            where: { id, gymId },
+            where: { id, gymId, deletedAt: null },
             data
         })
     }
@@ -138,10 +138,10 @@ export class MemberRepository {
     /**
      * Find a plan by ID
      */
-    static async findPlanById(planId: string, tx?: Prisma.TransactionClient) {
+    static async findPlanById(planId: string, gymId: string, tx?: Prisma.TransactionClient) {
         const client = tx || prisma
-        return client.membershipPlan.findUnique({
-            where: { id: planId }
+        return client.membershipPlan.findFirst({
+            where: { id: planId, gymId }
         })
     }
 

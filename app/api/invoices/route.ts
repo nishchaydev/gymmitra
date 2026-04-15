@@ -1,19 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getAuthGym, checkRole } from '@/lib/auth'
-import { apiLimiter } from '@/lib/rate-limit'
+import { withGymAuth } from '@/lib/with-gym-auth'
 import { BillingService } from '@/src/modules/billing/service'
 import { optionalDateField } from '@/lib/date-validation'
 import { getCached, setCached, invalidateCache, cacheKey, CACHE_TTL } from "@/lib/redis-cache"
 
 // Validations
-const invoiceItemSchema = z.object({
-    description: z.string().min(1, "Description is required"),
-    quantity: z.number().int().positive(),
-    unitPrice: z.number().nonnegative(),
-})
-
 const invoiceCreateSchema = z.object({
     memberId: z.string().optional(), // Optional for walk-ins
     walkInName: z.string().optional(),
@@ -21,7 +14,7 @@ const invoiceCreateSchema = z.object({
     walkInEmail: z.string().optional(),
     walkInAddress: z.string().optional(),
     type: z.enum(['MEMBERSHIP', 'SALE', 'RENEWAL', 'PRODUCT']).default('SALE'),
-    paymentStatus: z.enum(['PAID', 'PENDING', 'OVERDUE', 'PARTIAL']).default('PENDING'),
+    paymentStatus: z.enum(['PAID', 'PENDING', 'PARTIAL']).default('PENDING'),
     paymentMethod: z.enum(['CASH', 'CARD', 'UPI', 'OTHER']).optional(),
     items: z.array(z.object({
         description: z.string(),
@@ -39,27 +32,8 @@ const invoiceCreateSchema = z.object({
     amountPaid: z.number().nonnegative().optional().default(0),
 })
 
-export async function GET(request: NextRequest) {
+export const GET = withGymAuth(async ({ gym, request }) => {
     try {
-        const auth = await getAuthGym()
-
-        if (!auth) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        // Rate limit: 100 requests per minute per user
-        try {
-            await apiLimiter.check(100, auth.userId)
-        } catch (error) {
-            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-        }
-
-        const gym = auth.gym
-
-        // Only STAFF-level and above can list invoices; TRAINER has no need for billing data
-        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
-        if (roleCheck) return roleCheck
-
         const { searchParams } = new URL(request.url)
         const memberId = searchParams.get('memberId')
         const status = searchParams.get('status')
@@ -122,7 +96,8 @@ export async function GET(request: NextRequest) {
             if (cached) {
                 return NextResponse.json(cached, {
                     headers: {
-                        'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+                        'Cache-Control': 'private, no-store',
+                        'Vary': 'Cookie',
                         'X-Cache': 'HIT',
                     },
                 })
@@ -155,7 +130,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(responseBody, {
             headers: {
-                'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+                'Cache-Control': 'private, no-store',
+                'Vary': 'Cookie',
                 'X-Cache': 'MISS',
             },
         })
@@ -166,33 +142,14 @@ export async function GET(request: NextRequest) {
             { status: 500 }
         )
     }
-}
+}, { rateLimit: 100, roles: ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'] })
 
-export async function POST(request: NextRequest) {
+export const POST = withGymAuth(async ({ gym, userId, ip, request }) => {
     try {
-        const auth = await getAuthGym()
-
-        if (!auth) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        // Rate limit: 20 creations per minute per user
-        try {
-            await apiLimiter.check(20, auth.userId)
-        } catch (error) {
-            return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-        }
-
-        const gym = auth.gym
-
-        // STAFF and above can create invoices
-        const roleCheck = checkRole(auth, ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'])
-        if (roleCheck) return roleCheck
-
         let body;
         try {
             body = await request.json()
-        } catch (e) {
+        } catch {
             return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 })
         }
         const validatedData = invoiceCreateSchema.parse(body)
@@ -207,13 +164,10 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        const ipHeader = request.headers.get('x-forwarded-for')
-        const ip = ipHeader ? ipHeader.split(',')[0].trim() : '127.0.0.1'
-
         const result = await BillingService.createInvoice(
             gym,
             validatedData as any,
-            auth.userId,
+            userId,
             ip
         )
 
@@ -247,4 +201,4 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         )
     }
-}
+}, { rateLimit: 20, roles: ['OWNER', 'MANAGER', 'STAFF', 'FRONT_DESK'] })

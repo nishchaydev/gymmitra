@@ -41,7 +41,8 @@ export async function GET(req: Request) {
       if (cached) {
         return NextResponse.json(cached, {
           headers: {
-            'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+            'Cache-Control': 'private, no-store',
+            'Vary': 'Cookie',
             'X-Cache': 'HIT',
           },
         });
@@ -226,7 +227,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json(responseBody, {
       headers: {
-        'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+        'Cache-Control': 'private, no-store',
+        'Vary': 'Cookie',
         'X-Cache': 'MISS',
       },
     });

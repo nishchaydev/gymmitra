@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gym-mitra-cache-v2';
+const CACHE_NAME = 'gym-mitra-cache-v3';
 const OFFLINE_URL = '/offline';
 
 const PRECACHE_ASSETS = [
@@ -84,14 +84,18 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 3. API calls (GET only) - Stale While Revalidate
-    // This provides the offline "show last data" functionality for real gyms
-    const isApiGet = 
-        url.origin === self.location.origin && 
-        url.pathname.startsWith('/api/') &&
-        !url.pathname.includes('/api/auth'); // Avoid caching auth session specifically
+    // 3. API calls (GET only)
+    // SECURITY: never cache authenticated tenant APIs in service worker.
+    // Cache only explicitly public read-only APIs.
+    const isCacheablePublicApiGet =
+        url.origin === self.location.origin &&
+        event.request.method === 'GET' &&
+        (
+            url.pathname.startsWith('/api/public/') ||
+            url.pathname === '/api/health'
+        );
 
-    if (isApiGet) {
+    if (isCacheablePublicApiGet) {
         event.respondWith(
             caches.match(event.request).then(cachedResponse => {
                 const fetchedResponse = fetch(event.request).then(networkResponse => {

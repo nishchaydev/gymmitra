@@ -12,6 +12,7 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
+  guardRateLimit: vi.fn().mockResolvedValue(null),
   apiLimiter: {
     check: vi.fn().mockResolvedValue(undefined),
   },
