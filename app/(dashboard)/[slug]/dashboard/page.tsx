@@ -488,7 +488,8 @@ export default async function DashboardPage({
 
     // ── Single-pass serialization at server→client boundary ──
     // Converts Prisma Decimal/Date to plain primitives for Client Components
-    const serialize = <T,>(data: T): T => JSON.parse(JSON.stringify(data))
+    // BigInt values from raw Prisma queries crash JSON.stringify — convert to Number
+    const serialize = <T,>(data: T): T => JSON.parse(JSON.stringify(data, (_, v) => typeof v === 'bigint' ? Number(v) : v))
     const safeInvoices = serialize(recentInvoices)
     const safeBirthdays = serialize(upcomingBirthdays)
     const safeDashboard = serialize(dashboardData)
