@@ -204,7 +204,7 @@ export async function signup(formData: FormData) {
             }
 
             return { userId: authData.user!.id, gymId: targetGymIds[0], session: authData.session };
-        });
+        }, { timeout: 15000, maxWait: 10000 });
     } catch (error: any) {
         console.error('Registration failed:', error);
 

@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
                     return updateResult.count
                 }
                 return 0
-            })
+            }, { timeout: 15000, maxWait: 10000 })
         }
 
         console.log(`[Cron:ExpireSubs] Updated ${membersExpired} member statuses to EXPIRED`)

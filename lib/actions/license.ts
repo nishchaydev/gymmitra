@@ -61,7 +61,7 @@ export async function activateLicense(licenseKey: string) {
                 licenseActivatedAt: new Date(),
             }
         })
-    })
+    }, { timeout: 15000, maxWait: 10000 })
 
     revalidatePath(`/${gym.slug}/settings/billing`)
     revalidatePath(`/${gym.slug}/dashboard`)

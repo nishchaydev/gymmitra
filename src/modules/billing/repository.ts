@@ -9,7 +9,7 @@ export class BillingRepository {
         callback: (tx: Prisma.TransactionClient) => Promise<T>,
         options?: { isolationLevel?: Prisma.TransactionIsolationLevel }
     ): Promise<T> {
-        return prisma.$transaction(callback, options)
+        return prisma.$transaction(callback, { timeout: 15000, maxWait: 10000, ...options })
     }
 
     /**

@@ -67,7 +67,7 @@ export class ProductRepository {
     }
 
     async executeBatch<T>(operation: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-        return prisma.$transaction(operation)
+        return prisma.$transaction(operation, { timeout: 15000, maxWait: 10000 })
     }
 }
 

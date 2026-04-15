@@ -73,7 +73,7 @@ export async function PATCH(
                 where: { id: params.id },
                 data
             })
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 }))
 
         return NextResponse.json(updatedSession)
     } catch (error) {

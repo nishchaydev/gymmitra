@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
             invoiceShareToken = invoice?.shareToken || undefined
 
             return [sub]
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 }))
 
         const gymSlug = gym.slug
         const invoiceUrl = invoiceShareToken

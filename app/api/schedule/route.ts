@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
                     status: 'SCHEDULED'
                 }
             })
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 }))
 
         return NextResponse.json(session, { status: 201 })
     } catch (error) {

@@ -99,7 +99,7 @@ export async function processPosSale(slug: string, data: {
             }
 
             return invoice
-        })
+        }, { timeout: 15000, maxWait: 10000 })
 
         // Revalidate using the safe, exact auth.gym.slug to avoid tampering
         revalidatePath(`/${auth.gym.slug}/pos`)

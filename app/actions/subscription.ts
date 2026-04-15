@@ -89,7 +89,7 @@ export async function activateSubscription(code: string) {
                     licenseActivatedAt: new Date(),
                 },
             });
-        });
+        }, { timeout: 15000, maxWait: 10000 });
 
         // Revalidate the entire layout structure cache so the warning banner goes away
         revalidatePath(`/${auth.gym.slug}`, 'layout');
