@@ -23,11 +23,13 @@ function optionalEnv(key: string, fallback: string = ''): string {
 
 // ── Cached & parsed environment ────────────────────────────────────────
 
-const _adminEmailRaw = optionalEnv('ADMIN_EMAIL')
+const _adminEmailRaw = optionalEnv('ADMIN_EMAILS') || optionalEnv('ADMIN_EMAIL')
 const _adminEmails = _adminEmailRaw
     .split(',')
-    .map(e => e.trim())
+    .map(e => e.trim().toLowerCase())
     .filter(Boolean)
+
+const _nodeEnv = optionalEnv('NODE_ENV', 'development')
 
 export const env = {
     // Auth & Security
@@ -47,12 +49,15 @@ export const env = {
 
     // App
     NEXT_PUBLIC_APP_URL: optionalEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
-    NODE_ENV: optionalEnv('NODE_ENV', 'development'),
+    NODE_ENV: _nodeEnv,
 
-    // Helpers
-    isProduction: process.env.NODE_ENV === 'production',
-    isDevelopment: process.env.NODE_ENV === 'development',
+    // Helpers — derive from cached _nodeEnv, not raw process.env
+    isProduction: _nodeEnv === 'production',
+    isDevelopment: _nodeEnv === 'development',
 
-    /** Check if an email is in the admin whitelist */
-    isAdmin: (email: string) => _adminEmails.includes(email),
+    /** Check if an email is in the admin whitelist (case-insensitive) */
+    isAdmin: (email: string) => {
+        if (!email) return false
+        return _adminEmails.includes(email.trim().toLowerCase())
+    },
 } as const

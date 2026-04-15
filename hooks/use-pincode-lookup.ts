@@ -26,8 +26,16 @@ export function usePincodeLookup(
                         `https://api.postalpincode.in/pincode/${pincodeValue}`,
                         { signal: controller.signal }
                     )
+                    if (!res.ok) {
+                        console.warn("Pincode API returned status:", res.status)
+                        return
+                    }
                     const data = await res.json()
-                    if (data?.[0]?.Status === 'Success') {
+                    if (
+                        data?.[0]?.Status === 'Success' &&
+                        Array.isArray(data[0]?.PostOffice) &&
+                        data[0].PostOffice.length > 0
+                    ) {
                         const postOffice = data[0].PostOffice[0]
                         form.setValue('state', postOffice.State, { shouldValidate: true })
                         form.setValue('city', postOffice.District, { shouldValidate: true })

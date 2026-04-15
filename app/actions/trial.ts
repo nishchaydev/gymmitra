@@ -117,7 +117,7 @@ async function provisionGym(input: GymFactoryInput): Promise<{
                 ownerName: input.ownerName,
                 slug,
                 email,
-                phone: input.phone,
+                phone: normalizedPhone,
                 city: input.city,
                 userId,
                 isVerified: false,

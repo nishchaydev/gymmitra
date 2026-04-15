@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
         if (emailResult.error) {
             console.error('[Webhooks] Gym activation email failed', emailResult.error);
-            return NextResponse.json({ error: emailResult.error }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to send activation email' }, { status: 500 });
         }
 
 
@@ -139,6 +139,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true })
     } catch (e: any) {
         console.error('[Webhooks] Gym activation error', e)
-        return NextResponse.json({ error: e.message || 'Internal Error' }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

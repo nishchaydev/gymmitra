@@ -146,8 +146,12 @@ export function withGymAuthOrDemo(
             const slug = (searchParams.get('slug') || auth?.gym?.slug) || undefined
             const isDemo = await getIsDemo(slug)
 
-            // Demo mode — return mock data
+            // Demo mode — rate limit then return mock data
             if (isDemo) {
+                const ip = extractIp(request)
+                const demoKey = `demo:${ip}:${request.nextUrl.pathname}`
+                const rl = await guardRateLimit(limit, demoKey)
+                if (rl) return rl
                 return await demoHandler(request)
             }
 

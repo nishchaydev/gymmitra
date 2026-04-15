@@ -2,15 +2,19 @@ import { AdminRepository } from "./repository"
 import { SaaSPlan, PlanTier } from "@prisma/client"
 import { sendBatch, FROM_EMAIL } from "@/lib/email"
 
-// Cache admin emails at module load — no re-parsing on every request
-const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean)
+// Cache admin emails at module load — normalized to lowercase
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean)
 
 export class AdminService {
     /**
-     * Helper to verify if an email is in the admin whitelist
+     * Helper to verify if an email is in the admin whitelist (case-insensitive)
      */
     static isAdmin(email: string): boolean {
-        return ADMIN_EMAILS.includes(email)
+        if (!email) return false
+        return ADMIN_EMAILS.includes(email.trim().toLowerCase())
     }
 
     /**

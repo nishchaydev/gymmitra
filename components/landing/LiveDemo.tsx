@@ -164,7 +164,7 @@ export function LiveDemo() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <ResponsiveContainer width="100%" height="100%">
+                                                <ResponsiveContainer width="100%" height={180}>
                                                     <BarChart data={SHOWCASE_STATS.overviewData}>
                                                         <XAxis
                                                             dataKey="name"

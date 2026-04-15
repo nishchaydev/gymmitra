@@ -46,7 +46,12 @@ export async function sendEmail(
             return { error: error.message }
         }
 
-        return { id: data?.id }
+        if (!data) {
+            console.error('[email] Send returned empty data — no error but no response')
+            return { error: 'Missing response data from Resend API' }
+        }
+
+        return { id: data.id }
     } catch (e: any) {
         console.error('[email] Send exception:', e)
         return { error: e.message || 'Unknown email error' }
@@ -58,14 +63,20 @@ export interface BatchResult {
     sent: number
     failed: number
     results: Array<{ id?: string; error?: string }>
+    error?: string
 }
 
 export async function sendBatch(
     emails: CreateEmailOptions[]
 ): Promise<BatchResult> {
-    const resend = getResend()
-    if (!resend || emails.length === 0) {
+    if (emails.length === 0) {
         return { sent: 0, failed: 0, results: [] }
+    }
+
+    const resend = getResend()
+    if (!resend) {
+        console.warn('[email] RESEND_API_KEY not configured — skipping batch of', emails.length, 'emails')
+        return { sent: 0, failed: 0, results: [], error: 'RESEND_API_KEY not configured' }
     }
 
     let sent = 0

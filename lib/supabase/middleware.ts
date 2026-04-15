@@ -103,8 +103,8 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
 
     // 1b. ADMIN & INTERNAL ROUTE PROTECTION — block non-admin users
     if (pathname.startsWith('/admin') || pathname.startsWith('/internal')) {
-        const adminEmails = (process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean)
-        if (!user || !adminEmails.includes(user.email ?? '')) {
+        const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+        if (!user || !adminEmails.includes((user.email ?? '').trim().toLowerCase())) {
             const url = request.nextUrl.clone()
             url.pathname = '/login'
             return NextResponse.redirect(url)

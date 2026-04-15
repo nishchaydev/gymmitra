@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
         expiryReminders: 0,
         overdueReminders: 0,
         birthdayWishes: 0,
+        monthlySummaries: 0,
         errors: 0,
         gymsProcessed: 0,
         gymsRemaining: 0
@@ -107,9 +108,8 @@ export async function GET(request: NextRequest) {
                   // Step 0: Sync member statuses before sending any reminders
                   await syncMemberStatuses(gym.id);
                   
-                  // ── Collect all emails for this gym ───────────────────
-                 const emailBatch: CreateEmailOptions[] = []
-                 const notificationBatch: Prisma.NotificationCreateManyInput[] = []
+                  // ── Collect paired email+notification items for this gym ─
+                 const batchItems: Array<{ email: CreateEmailOptions; notification?: Prisma.NotificationCreateManyInput }> = []
 
                 // ── Expiring Subscriptions — exact-day countdown ───────
                 // Query a single window to save DB round-trips
@@ -155,26 +155,27 @@ export async function GET(request: NextRequest) {
                             ? `<p><em>Act soon — spots fill up fast!</em> 🏃</p>`
                             : ''
 
-                        emailBatch.push({
-                            from: FROM_EMAIL,
-                            to: [sub.member.email],
-                            subject: `${subjectPrefix}${gym.name} - Membership Expiring in ${daysAhead} Day${daysAhead === 1 ? '' : 's'}`,
-                            html: `
-                                <h2>Hi ${safeMemberName},</h2>
-                                ${urgencyHtml}
-                                ${actSoonHtml}
-                                <p>Please visit the gym or contact us to renew and continue your fitness journey! 💪</p>
-                                <br/>
-                                <p>Best regards,<br/>Team ${safeGymName}</p>
-                            `
-                        })
-
-                        notificationBatch.push({
-                            type: 'EXPIRY_REMINDER',
-                            title: 'Membership Expiry Reminder',
-                            message: `Sent day-${daysAhead} countdown reminder to memberId=${sub.member.id}`,
-                            userId: gym.userId,
-                            gymId: gym.id
+                        batchItems.push({
+                            email: {
+                                from: FROM_EMAIL,
+                                to: [sub.member.email],
+                                subject: `${subjectPrefix}${gym.name} - Membership Expiring in ${daysAhead} Day${daysAhead === 1 ? '' : 's'}`,
+                                html: `
+                                    <h2>Hi ${safeMemberName},</h2>
+                                    ${urgencyHtml}
+                                    ${actSoonHtml}
+                                    <p>Please visit the gym or contact us to renew and continue your fitness journey! 💪</p>
+                                    <br/>
+                                    <p>Best regards,<br/>Team ${safeGymName}</p>
+                                `
+                            },
+                            notification: {
+                                type: 'EXPIRY_REMINDER',
+                                title: 'Membership Expiry Reminder',
+                                message: `Sent day-${daysAhead} countdown reminder to memberId=${sub.member.id}`,
+                                userId: gym.userId,
+                                gymId: gym.id
+                            }
                         })
                 }
 
@@ -194,25 +195,26 @@ export async function GET(request: NextRequest) {
                     if (!inv.member?.email) continue
                     const formattedTotal = formatINR(Number(inv.balanceDue || inv.total))
 
-                    emailBatch.push({
-                        from: FROM_EMAIL,
-                        to: [inv.member.email],
-                        subject: `${gym.name} - Payment Reminder`,
-                        html: `
-                            <h2>Hi ${escapeHtml(inv.member.name)},</h2>
-                            <p>This is a gentle reminder that invoice <strong>#${escapeHtml(inv.invoiceNumber)}</strong> of <strong>${formattedTotal}</strong> is overdue.</p>
-                            <p>Please clear the payment at your earliest convenience to avoid any interruption in your membership.</p>
-                            <br/>
-                            <p>Thank you,<br/>Team ${escapeHtml(gym.name)}</p>
-                        `
-                    })
-
-                    notificationBatch.push({
-                        type: 'PAYMENT_OVERDUE',
-                        title: 'Overdue Payment Reminder Sent',
-                        message: `Sent overdue reminder to memberId=${inv.member.id} for ${formattedTotal}`,
-                        userId: gym.userId,
-                        gymId: gym.id
+                    batchItems.push({
+                        email: {
+                            from: FROM_EMAIL,
+                            to: [inv.member.email],
+                            subject: `${gym.name} - Payment Reminder`,
+                            html: `
+                                <h2>Hi ${escapeHtml(inv.member.name)},</h2>
+                                <p>This is a gentle reminder that invoice <strong>#${escapeHtml(inv.invoiceNumber)}</strong> of <strong>${formattedTotal}</strong> is overdue.</p>
+                                <p>Please clear the payment at your earliest convenience to avoid any interruption in your membership.</p>
+                                <br/>
+                                <p>Thank you,<br/>Team ${escapeHtml(gym.name)}</p>
+                            `
+                        },
+                        notification: {
+                            type: 'PAYMENT_OVERDUE',
+                            title: 'Overdue Payment Reminder Sent',
+                            message: `Sent overdue reminder to memberId=${inv.member.id} for ${formattedTotal}`,
+                            userId: gym.userId,
+                            gymId: gym.id
+                        }
                     })
                 }
 
@@ -247,25 +249,26 @@ export async function GET(request: NextRequest) {
                 for (const member of birthdayMembers) {
                     if (!member.email) continue
 
-                    emailBatch.push({
-                        from: FROM_EMAIL,
-                        to: [member.email],
-                        subject: `🎂 Happy Birthday from ${gym.name}!`,
-                        html: `
-                            <h2>🎉 Happy Birthday, ${escapeHtml(member.name)}!</h2>
-                            <p>The entire team at <strong>${escapeHtml(gym.name)}</strong> wishes you a wonderful year ahead filled with health and happiness!</p>
-                            <p>Keep crushing your fitness goals! 💪🎂</p>
-                            <br/>
-                            <p>With love,<br/>Team ${escapeHtml(gym.name)}</p>
-                        `
-                    })
-
-                    notificationBatch.push({
-                        type: 'BIRTHDAY',
-                        title: 'Birthday Wish Sent',
-                        message: `Sent birthday wish to memberId=${member.id}`,
-                        userId: gym.userId,
-                        gymId: gym.id
+                    batchItems.push({
+                        email: {
+                            from: FROM_EMAIL,
+                            to: [member.email],
+                            subject: `🎂 Happy Birthday from ${gym.name}!`,
+                            html: `
+                                <h2>🎉 Happy Birthday, ${escapeHtml(member.name)}!</h2>
+                                <p>The entire team at <strong>${escapeHtml(gym.name)}</strong> wishes you a wonderful year ahead filled with health and happiness!</p>
+                                <p>Keep crushing your fitness goals! 💪🎂</p>
+                                <br/>
+                                <p>With love,<br/>Team ${escapeHtml(gym.name)}</p>
+                            `
+                        },
+                        notification: {
+                            type: 'BIRTHDAY',
+                            title: 'Birthday Wish Sent',
+                            message: `Sent birthday wish to memberId=${member.id}`,
+                            userId: gym.userId,
+                            gymId: gym.id
+                        }
                     })
                 }
 
@@ -304,42 +307,43 @@ export async function GET(request: NextRequest) {
                     })
 
                     const Component = (await import('@/components/emails/DailyBriefingEmail')).DailyBriefingEmail
-                    emailBatch.push({
-                        from: FROM_EMAIL,
-                        to: [gym.email],
-                        subject: `☀️ Good morning, ${gym.ownerName?.split(' ')[0] || 'Admin'} — ${gym.name} Briefing`,
-                        react: React.createElement(Component, {
-                            ownerName: gym.ownerName?.split(' ')[0] || 'Admin',
-                            gymName: gym.name,
-                            date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-                            slug: gym.slug || 'demo',
-                            urgentRenewals: urgentRenewals.map(u => ({
-                                id: u.id,
-                                name: u.member.name,
-                                planName: u.plan.name || 'Membership',
-                                daysLeft: Math.floor((u.endDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24))
-                            })),
-                            followUps: followUpsToday.map((l: any) => ({
-                                id: l.id, name: l.name, phone: l.phone, planInterest: l.planInterest
-                            })),
-                            partialPayments: partialInvoices.map((p: any) => ({
-                                id: p.id, memberName: p.member?.name || 'Unknown', amountDue: Number(p.balanceDue), invoiceNumber: p.invoiceNumber
-                            })),
-                            overdueInvoices: [], // Overdue logic handled by separate overdue block
-                            lowStockItems: lowStockProducts.map((p: any) => ({
-                                id: p.id, name: p.name, stock: p.stock, category: p.category
-                            })),
-                            yesterdayCheckIns: yesterdayCheckInsCount,
-                            activeMembers: activeMembersCount
-                        }) as React.ReactElement
-                    })
-
-                    notificationBatch.push({
-                        type: 'MONTHLY_SUMMARY',
-                        title: 'Daily Briefing Sent',
-                        message: `Sent daily briefing email with ${urgentRenewals.length} urgent renewals and ${followUpsToday.length} follow-ups`,
-                        userId: gym.userId,
-                        gymId: gym.id
+                    batchItems.push({
+                        email: {
+                            from: FROM_EMAIL,
+                            to: [gym.email],
+                            subject: `☀️ Good morning, ${gym.ownerName?.split(' ')[0] || 'Admin'} — ${gym.name} Briefing`,
+                            react: React.createElement(Component, {
+                                ownerName: gym.ownerName?.split(' ')[0] || 'Admin',
+                                gymName: gym.name,
+                                date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+                                slug: gym.slug || 'demo',
+                                urgentRenewals: urgentRenewals.map(u => ({
+                                    id: u.id,
+                                    name: u.member.name,
+                                    planName: u.plan.name || 'Membership',
+                                    daysLeft: Math.floor((u.endDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24))
+                                })),
+                                followUps: followUpsToday.map((l: any) => ({
+                                    id: l.id, name: l.name, phone: l.phone, planInterest: l.planInterest
+                                })),
+                                partialPayments: partialInvoices.map((p: any) => ({
+                                    id: p.id, memberName: p.member?.name || 'Unknown', amountDue: Number(p.balanceDue), invoiceNumber: p.invoiceNumber
+                                })),
+                                overdueInvoices: [], // Overdue logic handled by separate overdue block
+                                lowStockItems: lowStockProducts.map((p: any) => ({
+                                    id: p.id, name: p.name, stock: p.stock, category: p.category
+                                })),
+                                yesterdayCheckIns: yesterdayCheckInsCount,
+                                activeMembers: activeMembersCount
+                            }) as React.ReactElement
+                        },
+                        notification: {
+                            type: 'MONTHLY_SUMMARY',
+                            title: 'Daily Briefing Sent',
+                            message: `Sent daily briefing email with ${urgentRenewals.length} urgent renewals and ${followUpsToday.length} follow-ups`,
+                            userId: gym.userId,
+                            gymId: gym.id
+                        }
                     })
                 } catch (e) {
                     console.error('[CRON] Failed to generate Daily Briefing for gym:', gym.slug, e)
@@ -351,19 +355,21 @@ export async function GET(request: NextRequest) {
 
                     // Day 3 Email
                     if (daysSinceCreated === 3) {
-                        emailBatch.push({
-                            from: FROM_EMAIL,
-                            to: [gym.email],
-                            subject: `Your GymMitra check-in poster is ready!`,
-                            html: `
-                                <h2>Hi ${gym.ownerName?.split(' ')[0] || 'Gym Owner'},</h2>
-                                <p>It's been 3 days since you joined GymMitra. How are things going?</p>
-                                <p>We wanted to remind you that your members can check in using the self-service page. Have you printed your check-in poster yet?</p>
-                                <p>Your check-in URL is: <strong>https://gym.emitra.dev/${gym.slug}/checkin</strong></p>
-                                <p>If you'd like a laminated copy of your QR poster delivered to your gym, just reply to this email.</p>
-                                <br/>
-                                <p>Best regards,<br/>The GymMitra Team</p>
-                            `
+                        batchItems.push({
+                            email: {
+                                from: FROM_EMAIL,
+                                to: [gym.email],
+                                subject: `Your GymMitra check-in poster is ready!`,
+                                html: `
+                                    <h2>Hi ${gym.ownerName?.split(' ')[0] || 'Gym Owner'},</h2>
+                                    <p>It's been 3 days since you joined GymMitra. How are things going?</p>
+                                    <p>We wanted to remind you that your members can check in using the self-service page. Have you printed your check-in poster yet?</p>
+                                    <p>Your check-in URL is: <strong>https://gym.emitra.dev/${gym.slug}/checkin</strong></p>
+                                    <p>If you'd like a laminated copy of your QR poster delivered to your gym, just reply to this email.</p>
+                                    <br/>
+                                    <p>Best regards,<br/>The GymMitra Team</p>
+                                `
+                            }
                         })
                     }
 
@@ -377,31 +383,36 @@ export async function GET(request: NextRequest) {
                             _sum: { amountPaid: true }
                         })
 
-                        emailBatch.push({
-                            from: FROM_EMAIL,
-                            to: [gym.email],
-                            subject: `How is ${gym.name}'s first week jumping in?`,
-                            html: `
-                                <h2>Hi ${gym.ownerName?.split(' ')[0] || 'Gym Owner'},</h2>
-                                <p>Congratulations on completing your first week with GymMitra!</p>
-                                <p>So far, you've added <strong>${membersAdded}</strong> members and collected <strong>Rs. ${Number(invoicesAgg._sum?.amountPaid || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong> in payments.</p>
-                                <p>If you need any help scaling up your usage or have any technical issues, book a quick call with us.</p>
-                                <br/>
-                                <p>Best,<br/>The GymMitra Team</p>
-                            `
+                        batchItems.push({
+                            email: {
+                                from: FROM_EMAIL,
+                                to: [gym.email],
+                                subject: `How is ${gym.name}'s first week jumping in?`,
+                                html: `
+                                    <h2>Hi ${gym.ownerName?.split(' ')[0] || 'Gym Owner'},</h2>
+                                    <p>Congratulations on completing your first week with GymMitra!</p>
+                                    <p>So far, you've added <strong>${membersAdded}</strong> members and collected <strong>Rs. ${Number(invoicesAgg._sum?.amountPaid || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong> in payments.</p>
+                                    <p>If you need any help scaling up your usage or have any technical issues, book a quick call with us.</p>
+                                    <br/>
+                                    <p>Best,<br/>The GymMitra Team</p>
+                                `
+                            }
                         })
                     }
                 }
 
                 // ── Dispatch Batch APIs ───────────────────────────────
-                if (emailBatch.length > 0) {
+                if (batchItems.length > 0) {
+                    const emailBatch = batchItems.map(item => item.email)
                     const batchResult = await sendBatch(emailBatch)
                     
                     // Process notification persistence for successful sends
+                    // Using paired items so each result maps to the correct notification
                     const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
                     batchResult.results.forEach((result, idx) => {
-                        if (result.id && notificationBatch[idx]) {
-                            successfulNotifs.push(notificationBatch[idx])
+                        const item = batchItems[idx]
+                        if (result.id && item?.notification) {
+                            successfulNotifs.push(item.notification)
                         } else if (result.error) {
                             results.errors++
                         }
@@ -415,6 +426,7 @@ export async function GET(request: NextRequest) {
                                     case 'BIRTHDAY': results.birthdayWishes++; break;
                                     case 'EXPIRY_REMINDER': results.expiryReminders++; break;
                                     case 'PAYMENT_OVERDUE': results.overdueReminders++; break;
+                                    case 'MONTHLY_SUMMARY': results.monthlySummaries++; break;
                                 }
                             });
                         } catch (notifErr) {

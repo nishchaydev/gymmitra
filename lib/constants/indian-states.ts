@@ -1,14 +1,14 @@
 /**
- * Indian states list for select dropdowns.
+ * Indian states and Union Territories list for select dropdowns.
  * Single source of truth — imported by MemberForm and any address form.
  */
 export const INDIAN_STATES = [
+    // States
     "Andhra Pradesh",
     "Arunachal Pradesh",
     "Assam",
     "Bihar",
     "Chhattisgarh",
-    "Delhi",
     "Goa",
     "Gujarat",
     "Haryana",
@@ -32,6 +32,15 @@ export const INDIAN_STATES = [
     "Uttar Pradesh",
     "Uttarakhand",
     "West Bengal",
+    // Union Territories
+    "Andaman and Nicobar Islands",
+    "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi",
+    "Jammu and Kashmir",
+    "Ladakh",
+    "Lakshadweep",
+    "Puducherry",
 ] as const
 
 export type IndianState = (typeof INDIAN_STATES)[number]
