@@ -1,17 +1,10 @@
 import { LRUCache } from 'lru-cache'
 import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
+import { RateLimitError, ConflictError } from './errors'
 
-export class RateLimitError extends Error {
-    public retryAfter: number
-
-    constructor(message: string, retryAfter: number) {
-        super(message)
-        Object.setPrototypeOf(this, RateLimitError.prototype)
-        this.name = 'RateLimitError'
-        this.retryAfter = retryAfter
-    }
-}
+// Re-export for backward compatibility — consumers import from here
+export { RateLimitError, ConflictError }
 
 type RateLimitOptions = {
     interval: number  // Time window in ms
@@ -171,12 +164,4 @@ export async function guardRateLimit(
     }
 }
 
-// ── ConflictError for schedule routes ────────────────────────────────
-export class ConflictError extends Error {
-    constructor(message: string) {
-        super(message)
-        this.name = 'ConflictError'
-        Object.setPrototypeOf(this, ConflictError.prototype)
-    }
-}
 

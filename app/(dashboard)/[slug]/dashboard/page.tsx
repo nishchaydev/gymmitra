@@ -1,16 +1,36 @@
 import * as React from "react"
+import dynamic from "next/dynamic"
 import { Skeleton } from "@/src/components/SkeletonProvider"
 import { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Analytics } from "@/components/dashboard/Analytics"
-import { Reports } from "@/components/dashboard/Reports"
-import { RetentionMetrics } from "@/components/dashboard/RetentionMetrics"
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview"
-import { RenewalCommandCenter } from "@/components/renewals/RenewalCommandCenter"
-import { AtRiskMembers } from "@/components/dashboard/AtRiskMembers"
-import { OutstandingBalances } from "@/components/dashboard/OutstandingBalances"
-import { UpcomingBirthdays } from "@/components/dashboard/UpcomingBirthdays"
+
+// ── Lazy-load chart-heavy components (recharts ~200KB) ──
+// Only loaded when user clicks the respective tab
+const Analytics = dynamic(() => import("@/components/dashboard/Analytics").then(m => ({ default: m.Analytics })), {
+    loading: () => <div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-xl"><span className="text-gray-500">Loading Analytics...</span></div>,
+})
+const Reports = dynamic(() => import("@/components/dashboard/Reports").then(m => ({ default: m.Reports })), {
+    loading: () => <div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-xl"><span className="text-gray-500">Loading Reports...</span></div>,
+})
+const RetentionMetrics = dynamic(() => import("@/components/dashboard/RetentionMetrics").then(m => ({ default: m.RetentionMetrics })), {
+    loading: () => <div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-xl"><span className="text-gray-500">Loading Insights...</span></div>,
+})
+
+// ── Lazy-load Reports-tab components (only rendered when Reports tab is active) ──
+const RenewalCommandCenter = dynamic(() => import("@/components/renewals/RenewalCommandCenter").then(m => ({ default: m.RenewalCommandCenter })), {
+    loading: () => <div className="h-64 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-2xl border border-slate-100"><span className="text-gray-400 font-medium">Loading Renewals...</span></div>,
+})
+const AtRiskMembers = dynamic(() => import("@/components/dashboard/AtRiskMembers").then(m => ({ default: m.AtRiskMembers })), {
+    loading: () => <div className="h-64 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-2xl border border-slate-100"><span className="text-gray-400 font-medium">Loading At-Risk...</span></div>,
+})
+const OutstandingBalances = dynamic(() => import("@/components/dashboard/OutstandingBalances").then(m => ({ default: m.OutstandingBalances })), {
+    loading: () => <div className="h-64 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-2xl border border-slate-100"><span className="text-gray-400 font-medium">Loading Balances...</span></div>,
+})
+const UpcomingBirthdays = dynamic(() => import("@/components/dashboard/UpcomingBirthdays").then(m => ({ default: m.UpcomingBirthdays })), {
+    loading: () => <div className="h-64 w-full flex items-center justify-center animate-pulse bg-gray-50 rounded-2xl border border-slate-100"><span className="text-gray-400 font-medium">Loading Birthdays...</span></div>,
+})
 import { Button } from "@/components/ui/button"
 import { UserPlus, ShoppingBag } from "lucide-react"
 import Link from "next/link"
@@ -375,15 +395,15 @@ export default async function DashboardPage({
             remindersRaw: [birthdayDataRaw, outstandingInvoicesResult], // Using real results now
             weeklyAttendance: weeklyAttendanceData,
             growthData: growthData,
-            outstandingInvoices: JSON.parse(JSON.stringify(outstandingInvoicesResult || [])),
+            outstandingInvoices: outstandingInvoicesResult || [],
             urgentCount: Number(summary.urgent_renewals),
             birthdayCount: birthdayCount,
-            followUps: JSON.parse(JSON.stringify(followUpsToday || [])),
-            partialPayments: JSON.parse(JSON.stringify(partialInvoices || [])),
-            lowStockItems: JSON.parse(JSON.stringify(lowStockProducts || [])),
+            followUps: followUpsToday || [],
+            partialPayments: partialInvoices || [],
+            lowStockItems: lowStockProducts || [],
             totalExpenses: Number(totalExpensesResult?._sum?.amount || 0),
         }
-        recentInvoices = JSON.parse(JSON.stringify(invoices || []))
+        recentInvoices = invoices || []
 
         // Process Attendance
         if (attendance.length > 0) {
@@ -466,6 +486,12 @@ export default async function DashboardPage({
         }
     }
 
+    // ── Single-pass serialization at server→client boundary ──
+    // Converts Prisma Decimal/Date to plain primitives for Client Components
+    const serialize = <T,>(data: T): T => JSON.parse(JSON.stringify(data))
+    const safeInvoices = serialize(recentInvoices)
+    const safeBirthdays = serialize(upcomingBirthdays)
+    const safeDashboard = serialize(dashboardData)
 
     return (
         <Skeleton name="dashboard" loading={false}>
@@ -515,7 +541,7 @@ export default async function DashboardPage({
                     <TabsTrigger value="reports">Reports (Renewals)</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="space-y-6" forceMount={true}>
+                <TabsContent value="overview" className="space-y-6">
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Overview...</span></div>}>
                         {(() => {
                             const istNow = toZonedTime(new Date(), TIMEZONE_IST)
@@ -526,31 +552,31 @@ export default async function DashboardPage({
                             gymName={businessName || gym?.name || "GymMitra Showcase"}
                             isDemo={isDemo}
                             initialData={{
-                                totalMembers: dashboardData.totalMembers,
-                                activeMembers: dashboardData.activeMembers,
-                                revenue: dashboardData.revenue,
-                                revenueRaw: dashboardData.revenueRaw,
-                                lastMonthRevenue: (dashboardData as any).lastMonthRevenue || 0,
-                                revenueChange: (dashboardData as any).revenueChange || 0,
-                                pendingRevenue: (dashboardData as any).pendingRevenue || 0,
-                                productSalesCount: dashboardData.productSalesCount,
-                                dailyCheckins: dashboardData.dailyCheckins,
-                                recentInvoices: JSON.parse(JSON.stringify(recentInvoices)),
+                                totalMembers: safeDashboard.totalMembers,
+                                activeMembers: safeDashboard.activeMembers,
+                                revenue: safeDashboard.revenue,
+                                revenueRaw: safeDashboard.revenueRaw,
+                                lastMonthRevenue: (safeDashboard as any).lastMonthRevenue || 0,
+                                revenueChange: (safeDashboard as any).revenueChange || 0,
+                                pendingRevenue: (safeDashboard as any).pendingRevenue || 0,
+                                productSalesCount: safeDashboard.productSalesCount,
+                                dailyCheckins: safeDashboard.dailyCheckins,
+                                recentInvoices: safeInvoices,
                                 todayAttendance,
-                                upcomingBirthdays: JSON.parse(JSON.stringify(upcomingBirthdays)),
+                                upcomingBirthdays: safeBirthdays,
                                 monthlyRevenueData,
-                                outstandingInvoices: JSON.parse(JSON.stringify(dashboardData.outstandingInvoices || [])),
-                                urgentCount: dashboardData.urgentCount,
-                                birthdayCount: dashboardData.birthdayCount,
-                                followUps: JSON.parse(JSON.stringify(dashboardData.followUps || [])),
-                                partialPayments: JSON.parse(JSON.stringify(dashboardData.partialPayments || [])),
-                                lowStockItems: JSON.parse(JSON.stringify(dashboardData.lowStockItems || [])),
-                                expiringSubscriptions: JSON.parse(JSON.stringify((dashboardData.expiringSubscriptions || []).map((sub) => {
+                                outstandingInvoices: safeDashboard.outstandingInvoices || [],
+                                urgentCount: safeDashboard.urgentCount,
+                                birthdayCount: safeDashboard.birthdayCount,
+                                followUps: safeDashboard.followUps || [],
+                                partialPayments: safeDashboard.partialPayments || [],
+                                lowStockItems: safeDashboard.lowStockItems || [],
+                                expiringSubscriptions: (safeDashboard.expiringSubscriptions || []).map((sub: any) => {
                                     const diff = new Date(sub.endDate).getTime() - istNow.getTime();
                                     return { ...sub, daysLeft: Math.max(0, Math.ceil(diff / MILLISECONDS_PER_DAY)) };
-                                }))),
+                                }),
                                 totalExpenses: (() => {
-                                    const parsed = Number.parseFloat(String(dashboardData.totalExpenses ?? 0))
+                                    const parsed = Number.parseFloat(String(safeDashboard.totalExpenses ?? 0))
                                     return Number.isFinite(parsed) ? parsed : 0
                                 })(),
                             }}
@@ -605,7 +631,7 @@ export default async function DashboardPage({
                     </React.Suspense>
                 </TabsContent>
 
-                <TabsContent value="reports" className="space-y-6" forceMount={true}>
+                <TabsContent value="reports" className="space-y-6">
                     <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center animate-pulse bg-gray-50 dark:bg-[#1e293b] rounded-xl"><span className="text-gray-500">Loading Reports...</span></div>}>
                       <div className="relative premium-bg rounded-3xl p-1 space-y-6">
                         {/* Decorative background blobs */}
@@ -619,8 +645,8 @@ export default async function DashboardPage({
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-[1]">
-                            <OutstandingBalances data={dashboardData.outstandingInvoices} gymName={gym?.name || ''} slug={slug} waOverdueMsg={gym?.waOverdueMsg} />
-                            <UpcomingBirthdays data={upcomingBirthdays} gymName={gym?.name || ''} />
+                            <OutstandingBalances data={safeDashboard.outstandingInvoices || []} gymName={gym?.name || ''} slug={slug} waOverdueMsg={gym?.waOverdueMsg} />
+                            <UpcomingBirthdays data={safeBirthdays} gymName={gym?.name || ''} />
                         </div>
                         <div className="relative z-[1]">
                         <Reports
@@ -628,29 +654,27 @@ export default async function DashboardPage({
                             gymName={gym?.name || "GymMitra"}
                             initialData={isDemo ? undefined : {
                                 revenue: monthlyRevenueData,
-                                attendance: dashboardData.weeklyAttendance || [],
-                                expiring: dashboardData.expiringSubscriptions?.map((sub: any) => {
+                                attendance: safeDashboard.weeklyAttendance || [],
+                                expiring: safeDashboard.expiringSubscriptions?.map((sub: any) => {
                                     const diff = new Date(sub.endDate).getTime() - new Date().getTime();
-                                    // FIX: Decimal to Number conversion for Client Component serialization
-                                    const plainSub = JSON.parse(JSON.stringify(sub))
                                     return { 
-                                        ...plainSub, 
+                                        ...sub, 
                                         price: Number(sub.price || 0),
                                         daysLeft: Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))) 
                                     };
                                 }) || [],
                                 reminders: (() => {
-                                        if (!dashboardData.remindersRaw) {
+                                        if (!safeDashboard.remindersRaw) {
                                             return { birthdays: [], overdue: [], inactive: [], expiring: [] }
                                         }
 
                                         const today = new Date()
-                                        const todayBirthdays = dashboardData.remindersRaw[0]?.filter((m: any) => isBirthdayToday(m.dateOfBirth)) || []
+                                        const todayBirthdays = safeDashboard.remindersRaw[0]?.filter((m: any) => isBirthdayToday(m.dateOfBirth)) || []
 
-                                        const overdueInvoices = dashboardData.remindersRaw[1] || []
+                                        const overdueInvoices = safeDashboard.remindersRaw[1] || []
 
                                         const fourteenDaysAgo = subDays(startOfDay(today), 14)
-                                        const inactiveMembers = dashboardData.frequencyData?.filter((m: any) => {
+                                        const inactiveMembers = safeDashboard.frequencyData?.filter((m: any) => {
                                             return !m.last_visit || new Date(m.last_visit) < fourteenDaysAgo
                                         }) || []
 
@@ -666,7 +690,7 @@ export default async function DashboardPage({
                                             }
                                         })
 
-                                        const expiring = dashboardData.expiringSubscriptions?.map((sub: any) => {
+                                        const expiring = safeDashboard.expiringSubscriptions?.map((sub: any) => {
                                             const diffTime = new Date(sub.endDate).getTime() - today.getTime();
                                             const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)));
                                             const msg = templates.renewalReminder(sub.member?.name || 'Unknown', daysLeft, gym?.name || 'GymMitra', gym?.waRenewalMsg || undefined)
@@ -692,8 +716,8 @@ export default async function DashboardPage({
                                                 const daysSince = m.last_visit ? Math.floor((today.getTime() - new Date(m.last_visit).getTime()) / (1000 * 3600 * 24)) : 30
                                                 return {
                                                     type: 'INACTIVE',
-                                                    memberId: m.id, // FIX: Changed from m.member_id to m.id
-                                                    name: m.name, // FIX: Changed from m.member_name to m.name
+                                                    memberId: m.id,
+                                                    name: m.name,
                                                     daysInactive: daysSince,
                                                     link: m.phone ? getWhatsAppLink(m.phone, templates.inactivityNudge(m.name, daysSince, gym?.name || 'GymMitra')) : null
                                                 }

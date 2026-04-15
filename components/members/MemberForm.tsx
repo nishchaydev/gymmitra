@@ -22,6 +22,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, FileText, CheckCircle2, User, Phone, Mail, MapPin, Calendar } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { INDIAN_STATES } from "@/lib/constants/indian-states"
+import { usePincodeLookup } from "@/hooks/use-pincode-lookup"
 
 // Schema imported from centralized validator — single source of truth
 import { memberFormSchema, type MemberFormInput } from "@/src/modules/members/validator"
@@ -174,38 +176,7 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
         }
     }, [selectedPlanId, discountAmount, customPriceValue, activePlans, form, userEditedAmount])
 
-    const pincodeValue = form.watch('pincode')
-    useEffect(() => {
-        const controller = new AbortController()
-
-        const fetchPincodeDetails = async () => {
-            if (pincodeValue && pincodeValue.length === 6) {
-                try {
-                    const res = await fetch(`https://api.postalpincode.in/pincode/${pincodeValue}`, { signal: controller.signal })
-                    const data = await res.json()
-                    if (data && data[0] && data[0].Status === 'Success') {
-                        const postOffice = data[0].PostOffice[0]
-
-                        // We use getValues to check what state is currently there, to avoid overriding if user manually changed it
-                        form.setValue('state', postOffice.State, { shouldValidate: true })
-                        form.setValue('city', postOffice.District, { shouldValidate: true })
-                    }
-                } catch (error: any) {
-                    if (error.name === 'AbortError') return
-                    console.warn("Failed to fetch pincode details (API may be down or blocked):", error)
-                }
-            }
-        }
-
-        const timeoutId = setTimeout(() => {
-            fetchPincodeDetails()
-        }, 500)
-
-        return () => {
-            clearTimeout(timeoutId)
-            controller.abort()
-        }
-    }, [pincodeValue, form])
+    usePincodeLookup(form)
 
     const onNextStep = async () => {
         const isValid = await form.trigger(["name", "phone", "email", "dateOfBirth"])
@@ -453,36 +424,10 @@ export default function MemberForm({ member, gymSlug, onSubmitAction, activePlan
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent className="rounded-xl overflow-hidden backdrop-blur-xl">
-                                                        <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
-                                                        <SelectItem value="Arunachal Pradesh">Arunachal Pradesh</SelectItem>
-                                                        <SelectItem value="Assam">Assam</SelectItem>
-                                                        <SelectItem value="Bihar">Bihar</SelectItem>
-                                                        <SelectItem value="Chhattisgarh">Chhattisgarh</SelectItem>
-                                                        <SelectItem value="Delhi">Delhi</SelectItem>
-                                                        <SelectItem value="Goa">Goa</SelectItem>
-                                                        <SelectItem value="Gujarat">Gujarat</SelectItem>
-                                                        <SelectItem value="Haryana">Haryana</SelectItem>
-                                                        <SelectItem value="Himachal Pradesh">Himachal Pradesh</SelectItem>
-                                                        <SelectItem value="Jharkhand">Jharkhand</SelectItem>
-                                                        <SelectItem value="Karnataka">Karnataka</SelectItem>
-                                                        <SelectItem value="Kerala">Kerala</SelectItem>
-                                                        <SelectItem value="Madhya Pradesh">Madhya Pradesh</SelectItem>
-                                                        <SelectItem value="Maharashtra">Maharashtra</SelectItem>
-                                                        <SelectItem value="Manipur">Manipur</SelectItem>
-                                                        <SelectItem value="Meghalaya">Meghalaya</SelectItem>
-                                                        <SelectItem value="Mizoram">Mizoram</SelectItem>
-                                                        <SelectItem value="Nagaland">Nagaland</SelectItem>
-                                                        <SelectItem value="Odisha">Odisha</SelectItem>
-                                                        <SelectItem value="Punjab">Punjab</SelectItem>
-                                                        <SelectItem value="Rajasthan">Rajasthan</SelectItem>
-                                                        <SelectItem value="Sikkim">Sikkim</SelectItem>
-                                                        <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
-                                                        <SelectItem value="Telangana">Telangana</SelectItem>
-                                                        <SelectItem value="Tripura">Tripura</SelectItem>
-                                                        <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
-                                                        <SelectItem value="Uttarakhand">Uttarakhand</SelectItem>
-                                                        <SelectItem value="West Bengal">West Bengal</SelectItem>
-                                                        {field.value && !["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"].includes(field.value) && (
+                                                        {INDIAN_STATES.map(state => (
+                                                            <SelectItem key={state} value={state}>{state}</SelectItem>
+                                                        ))}
+                                                        {field.value && !INDIAN_STATES.includes(field.value as any) && (
                                                             <SelectItem value={field.value}>{field.value}</SelectItem>
                                                         )}
                                                     </SelectContent>

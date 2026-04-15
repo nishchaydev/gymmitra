@@ -1,13 +1,16 @@
 import { AdminRepository } from "./repository"
 import { SaaSPlan, PlanTier } from "@prisma/client"
+import { sendBatch, FROM_EMAIL } from "@/lib/email"
+
+// Cache admin emails at module load — no re-parsing on every request
+const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean)
 
 export class AdminService {
     /**
      * Helper to verify if an email is in the admin whitelist
      */
     static isAdmin(email: string): boolean {
-        const adminEmails = (process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean)
-        return adminEmails.includes(email)
+        return ADMIN_EMAILS.includes(email)
     }
 
     /**
@@ -72,52 +75,34 @@ export class AdminService {
     static async broadcastEmail(adminEmail: string, subject: string, htmlMessage: string) {
         if (!this.isAdmin(adminEmail)) throw new Error('Unauthorized')
         
-        let sentCount = 0;
-        let failedCount = 0;
-
         try {
-            const { Resend } = await import('resend');
-            const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
-            
             const gyms = await AdminRepository.getAllVerifiedGymEmails()
             if (gyms.length === 0) return { sentCount: 0, failedCount: 0 }
 
-            const BATCH_SIZE = 50; // Resend limit is usually 100
-            for (let i = 0; i < gyms.length; i += BATCH_SIZE) {
-                const batch = gyms.slice(i, i + BATCH_SIZE);
-                
-                const emails = batch.map(gym => ({
-                    from: 'GymMitra <hello@mail.emitra.dev>',
-                    to: gym.email,
-                    subject: subject,
-                    html: `
-                        <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-                            <h2>Hello ${gym.ownerName || 'Gym Owner'},</h2>
-                            <div style="font-size: 16px; line-height: 1.6;">
-                                ${htmlMessage}
-                            </div>
-                            <p style="color: #666; font-size: 14px; margin-top: 40px;">
-                                Best regards,<br>
-                                <strong>Nishchay Gupta</strong><br>
-                                Founder, GymMitra
-                            </p>
+            const emails = gyms.map(gym => ({
+                from: FROM_EMAIL,
+                to: [gym.email],
+                subject: subject,
+                html: `
+                    <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2>Hello ${gym.ownerName || 'Gym Owner'},</h2>
+                        <div style="font-size: 16px; line-height: 1.6;">
+                            ${htmlMessage}
                         </div>
-                    `
-                }))
+                        <p style="color: #666; font-size: 14px; margin-top: 40px;">
+                            Best regards,<br>
+                            <strong>Nishchay Gupta</strong><br>
+                            Founder, GymMitra
+                        </p>
+                    </div>
+                `
+            }))
 
-                const { error } = await resend.batch.send(emails);
-                if (error) {
-                    console.error('[Admin Broadcast Error]', error);
-                    failedCount += batch.length;
-                } else {
-                    sentCount += batch.length;
-                }
-            }
+            const result = await sendBatch(emails)
+            return { sentCount: result.sent, failedCount: result.failed }
         } catch (err) {
-            console.error('[Admin Broadcast Setup Error]', err);
-            throw new Error('Failed to setup broadcast system');
+            console.error('[Admin Broadcast Setup Error]', err)
+            throw new Error('Failed to setup broadcast system')
         }
-
-        return { sentCount, failedCount }
     }
 }

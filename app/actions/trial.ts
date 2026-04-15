@@ -11,6 +11,8 @@ import { getBaseUrl } from '@/lib/utils'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 import { encryptPassword } from '@/lib/crypto'
 import { apiLimiter } from '@/lib/rate-limit'
+import { sendEmail, FROM_EMAIL } from '@/lib/email'
+import { env } from '@/lib/env'
 
 // ── XSS Prevention ──────────────────────────────────────────────────
 function escapeHtml(unsafe: string): string {
@@ -43,14 +45,124 @@ function toSlug(text: string): string {
 }
 
 type TrialResult =
-    | { success: true; slug: string }
+    | { success: true; slug: string; tempPassword?: string }
     | { success: false; error: string }
 
+// ══════════════════════════════════════════════════════════════════════
+// Shared Gym Factory — single source of truth for trial provisioning
+// ══════════════════════════════════════════════════════════════════════
+
+interface GymFactoryInput {
+    gymName: string
+    ownerName: string
+    email: string
+    phone: string
+    city: string
+    password: string
+    emailRedirectUrl: string
+}
+
 /**
- * Self-serve trial signup.
- * Creates Supabase user (auto-generated password) + GymProfile with 30-day trial.
- * Sends welcome email via Resend and WhatsApp template via Meta Cloud API.
+ * Core provisioning logic. Both self-serve and admin flows call this.
+ * Handles: validation → duplicate check → auth → DB → cleanup on failure
  */
+async function provisionGym(input: GymFactoryInput): Promise<{
+    slug: string
+    userId: string
+    trialExpiresAt: Date
+}> {
+    const email = input.email.toLowerCase().trim()
+    const normalizedPhone = input.phone.replace(/\D/g, '').slice(-10)
+
+    // 1. Duplicate check — phone first (primary anti-abuse gate), then email
+    const existingByPhone = await withRetry(() => prisma.gymProfile.findFirst({
+        where: { phone: normalizedPhone, deletedAt: null },
+    }))
+    if (existingByPhone) {
+        throw new ProvisioningError('This phone number is already registered. Please login instead.')
+    }
+
+    const existingByEmail = await withRetry(() => prisma.gymProfile.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' }, deletedAt: null },
+    }))
+    if (existingByEmail) {
+        throw new ProvisioningError('This email is already registered. Please login instead.')
+    }
+
+    // 2. Create Supabase user
+    const supabase = await createClient()
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password: input.password,
+        options: { emailRedirectTo: input.emailRedirectUrl },
+    })
+
+    if (authError || !authData.user) {
+        throw new ProvisioningError(authError?.message || 'Failed to create account.')
+    }
+
+    const userId = authData.user.id
+
+    // 3. Generate slug + create GymProfile
+    const baseSlug = toSlug(input.gymName)
+    const suffix = randomBytes(2).toString('hex')
+    const slug = `${baseSlug}-${suffix}`
+    const trialExpiresAt = addDays(new Date(), 30)
+
+    try {
+        await prisma.gymProfile.create({
+            data: {
+                name: input.gymName,
+                businessName: input.gymName,
+                ownerName: input.ownerName,
+                slug,
+                email,
+                phone: input.phone,
+                city: input.city,
+                userId,
+                isVerified: false,
+                onboardingStep: 0,
+                saasPlan: 'TRIAL',
+                planTier: 'TRIAL',
+                trialExpiresAt,
+                tempPassword: null,
+            },
+        })
+    } catch (dbError) {
+        console.error('[GymFactory] Failed to create GymProfile:', dbError)
+        // Cleanup orphaned Supabase user
+        try {
+            const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+            if (serviceKey) {
+                const adminAuthClient = createServiceClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    serviceKey
+                )
+                await adminAuthClient.auth.admin.deleteUser(userId)
+            } else {
+                console.error('[GymFactory] Missing SUPABASE_SERVICE_ROLE_KEY')
+            }
+        } catch (cleanupError) {
+            console.error('[GymFactory] Failed to cleanup orphaned Auth user:', cleanupError)
+        }
+        throw new ProvisioningError('Failed to create gym profile. Please try again.')
+    }
+
+    return { slug, userId, trialExpiresAt }
+}
+
+/** Typed error for provisioning failures */
+class ProvisioningError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'ProvisioningError'
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Public: Self-serve trial signup
+// ══════════════════════════════════════════════════════════════════════
+
 export async function createTrialGym(raw: {
     gymName: string
     ownerName: string
@@ -65,7 +177,6 @@ export async function createTrialGym(raw: {
         return { success: false, error: parsed.error.issues[0].message }
     }
     const data = parsed.data
-    const email = data.email.toLowerCase().trim()
 
     try {
         await apiLimiter.check(5, `create-trial-gym:${data.phone.replace(/\D/g, '').slice(-10)}`)
@@ -73,109 +184,107 @@ export async function createTrialGym(raw: {
         return { success: false, error: 'Too many trial requests from this phone number. Please try again later.' }
     }
 
-    // 2. Check duplicate by PHONE (primary anti-abuse gate) and email
-    const normalizedPhone = data.phone.replace(/\D/g, '').slice(-10)
-    // withRetry handles PrismaClientInitializationError on Vercel cold starts
-    // (Can't reach database server at pooler:6543) — retries up to 3x with backoff
-    const existingByPhone = await withRetry(() => prisma.gymProfile.findFirst({
-        where: { phone: normalizedPhone, deletedAt: null },
-    }))
-    if (existingByPhone) {
-        return { success: false, error: 'This phone number is already registered. Please login instead.' }
-    }
-
-    const existingByEmail = await withRetry(() => prisma.gymProfile.findFirst({
-        where: { email: { equals: email, mode: 'insensitive' }, deletedAt: null },
-    }))
-    if (existingByEmail) {
-        return { success: false, error: 'This email is already registered. Please login instead.' }
-    }
-
-    // 3. Create Supabase user with auto-generated password
-    const autoPassword = randomBytes(6).toString('base64url') // 8-char URL-safe
-    // Get current origin for reliable redirect (fixes PKCE mismatch on custom domains)
+    // 2. Get origin for redirect
     const headerList = await headers()
     const host = headerList.get('host')
     const protocol = headerList.get('x-forwarded-proto') || 'https'
     const origin = `${protocol}://${host}`
 
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: autoPassword,
-        options: { emailRedirectTo: `${origin}/auth/callback` },
-    })
-
-    if (authError || !authData.user) {
-        return { success: false, error: authError?.message || 'Failed to create account.' }
-    }
-
-    const userId = authData.user.id
-
-    // 4. Generate slug: kebab-case + 4-char random suffix
-    const baseSlug = toSlug(data.gymName)
-    const suffix = randomBytes(2).toString('hex') // 4 hex chars
-    const slug = `${baseSlug}-${suffix}`
-    const trialExpiresAt = addDays(new Date(), 30)
-
-    // 5. Create GymProfile
     try {
-        await prisma.gymProfile.create({
-            data: {
-                name: data.gymName,
-                businessName: data.gymName,
-                ownerName: data.ownerName,
-                slug,
-                email,
-                phone: data.phone,
-                city: data.city,
-                userId,
-                isVerified: false,
-                onboardingStep: 0,
-                saasPlan: 'TRIAL',
-                planTier: 'TRIAL',
-                trialExpiresAt,
-                tempPassword: null,
-            },
+        const autoPassword = randomBytes(6).toString('base64url')
+        const { slug } = await provisionGym({
+            gymName: data.gymName,
+            ownerName: data.ownerName,
+            email: data.email,
+            phone: data.phone,
+            city: data.city,
+            password: autoPassword,
+            emailRedirectUrl: `${origin}/auth/callback`,
         })
-    } catch (dbError) {
-        console.error('[Trial Signup] Failed to create GymProfile in database:', dbError)
-        // Cleanup orphaned Supabase user using Service Role Key
-        try { 
-            const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-            if (serviceKey) {
-                const adminAuthClient = createServiceClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                    serviceKey
-                )
-                await adminAuthClient.auth.admin.deleteUser(userId)
-            } else {
-                console.error('[Trial Signup] Missing SUPABASE_SERVICE_ROLE_KEY, unable to delete user.');
-            }
-        } catch (cleanupError) { 
-            console.error('[Trial Signup] Failed to delete orphaned Auth user:', cleanupError)
+
+        // Admin notification (non-blocking)
+        sendAdminNotification({
+            ownerName: data.ownerName,
+            gymName: data.gymName,
+            email: data.email.toLowerCase().trim(),
+            phone: data.phone,
+            city: data.city,
+            slug,
+        }).catch(() => { /* swallow — non-critical */ })
+
+        return { success: true, slug }
+    } catch (e) {
+        if (e instanceof ProvisioningError) {
+            return { success: false, error: e.message }
         }
-        return { success: false, error: 'Failed to create gym profile. Please try again.' }
+        console.error('[Trial Signup] Unexpected error:', e)
+        return { success: false, error: 'An unexpected error occurred. Please try again.' }
     }
-
-    // Welcome email and WhatsApp with credentials will be sent upon email verification in the auth callback.
-
-    // 8. Notify founders about new signup (non-blocking)
-    sendAdminNotification({
-        ownerName: data.ownerName,
-        gymName: data.gymName,
-        email,
-        phone: data.phone,
-        city: data.city,
-        slug,
-    }).catch(() => { /* swallow — non-critical */ })
-
-    return { success: true, slug }
 }
 
-// ──────────────────────────────────────────────
-// Welcome email via Resend
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// Public: Admin-only manual onboard
+// ══════════════════════════════════════════════════════════════════════
+
+export async function adminCreateTrialGym(raw: {
+    gymName: string
+    ownerName: string
+    email: string
+    phone: string
+    city: string
+    approxMembers?: number
+}): Promise<
+    | { success: true; slug: string; tempPassword: string }
+    | { success: false; error: string }
+> {
+    // Admin auth gate
+    const supabaseClient = await createClient()
+    const { data: { user: adminUser } } = await supabaseClient.auth.getUser()
+    if (!adminUser || !env.isAdmin(adminUser.email ?? '')) {
+        return { success: false, error: 'Unauthorized: Admin access only' }
+    }
+
+    const parsed = trialSchema.safeParse(raw)
+    if (!parsed.success) {
+        return { success: false, error: parsed.error.issues[0].message }
+    }
+    const data = parsed.data
+
+    try {
+        const tempPassword = randomBytes(4).toString('hex')
+        const { slug, trialExpiresAt } = await provisionGym({
+            gymName: data.gymName,
+            ownerName: data.ownerName,
+            email: data.email,
+            phone: data.phone,
+            city: data.city,
+            password: tempPassword,
+            emailRedirectUrl: `${getBaseUrl()}/auth/callback`,
+        })
+
+        // Welcome email (non-blocking)
+        sendWelcomeEmail({
+            ownerName: data.ownerName,
+            gymName: data.gymName,
+            email: data.email.toLowerCase().trim(),
+            slug,
+            resetUrl: `${getBaseUrl()}/forgot-password`,
+            trialExpiresAt,
+        }).catch(() => { })
+
+        return { success: true, slug, tempPassword }
+    } catch (e) {
+        if (e instanceof ProvisioningError) {
+            return { success: false, error: e.message }
+        }
+        console.error('[Admin Trial Signup] Unexpected error:', e)
+        return { success: false, error: 'Failed to create gym profile.' }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Email helpers — now use centralized lib/email.ts
+// ══════════════════════════════════════════════════════════════════════
 
 export async function sendWelcomeEmail(params: {
     ownerName: string
@@ -185,20 +294,13 @@ export async function sendWelcomeEmail(params: {
     slug: string
     trialExpiresAt: Date
 }) {
-    const resendKey = process.env.RESEND_API_KEY
-    if (!resendKey) return
-
-    const { Resend } = await import('resend')
-    const resend = new Resend(resendKey)
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl()
     const trialEnd = params.trialExpiresAt.toLocaleDateString('en-IN', {
         day: 'numeric', month: 'long', year: 'numeric',
     })
 
-    console.log(`[Resend] Sending welcome email to ${params.email} from ${process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>'}`)
-    
-    const { data, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
+    const result = await sendEmail({
+        from: FROM_EMAIL,
         to: params.email,
         subject: `Welcome to GymMitra, ${escapeHtml(params.ownerName)}! 🏋️`,
         html: `
@@ -224,21 +326,10 @@ export async function sendWelcomeEmail(params: {
         `,
     })
 
-    if (error) {
-        console.error('[Resend] Failed to send welcome email:', error)
-    } else {
-        console.log('[Resend] Welcome email sent successfully:', data?.id)
+    if (result.error) {
+        console.error('[Trial] Failed to send welcome email:', result.error)
     }
 }
-
-// ──────────────────────────────────────────────
-// Admin notification — emails both founders
-// ──────────────────────────────────────────────
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || '')
-    .split(',')
-    .map(email => email.trim())
-    .filter(Boolean) as string[]
 
 async function sendAdminNotification(params: {
     ownerName: string
@@ -248,20 +339,14 @@ async function sendAdminNotification(params: {
     city: string
     slug: string
 }) {
-    if (ADMIN_EMAILS.length === 0) return
+    if (env.ADMIN_EMAILS.length === 0) return
 
-    const resendKey = process.env.RESEND_API_KEY
-    if (!resendKey) return
-
-    const { Resend } = await import('resend')
-    const resend = new Resend(resendKey)
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl()
     const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
-    console.log(`[Resend] Sending admin notification to ${ADMIN_EMAILS.join(', ')}`)
-    const { data, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'GymMitra <Admin@mail.emitra.dev>',
-        to: ADMIN_EMAILS,
+    await sendEmail({
+        from: FROM_EMAIL,
+        to: env.ADMIN_EMAILS,
         subject: `🆕 New Trial Signup: ${params.gymName} (${params.city})`,
         html: `
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px;">
@@ -281,132 +366,4 @@ async function sendAdminNotification(params: {
             </div>
         `,
     })
-
-    if (error) {
-        console.error('[Resend] Failed to send admin notification:', error)
-    } else {
-        console.log('[Resend] Admin notification sent successfully:', data?.id)
-    }
-}
-
-// ──────────────────────────────────────────────
-// Admin-only: manual onboard
-// ──────────────────────────────────────────────
-
-/**
- * Nish can use this to onboard a gym in person.
- * Returns the auto-generated password so it can be shared with the owner.
- */
-export async function adminCreateTrialGym(raw: {
-    gymName: string
-    ownerName: string
-    email: string
-    phone: string
-    city: string
-    approxMembers?: number
-}): Promise<
-    | { success: true; slug: string; tempPassword: string }
-    | { success: false; error: string }
-> {
-    // Admin auth gate — verify caller is an admin
-    const supabaseClient = await createClient()
-    const { data: { user: adminUser } } = await supabaseClient.auth.getUser()
-    if (!adminUser || !ADMIN_EMAILS.includes(adminUser.email ?? '')) {
-        return { success: false, error: 'Unauthorized: Admin access only' }
-    }
-
-    const tempPassword = randomBytes(4).toString('hex') // 8-char hex
-
-    // Temporarily patch createTrialGym to use our password
-    // We re-implement the flow here for control over the password
-    const parsed = trialSchema.safeParse(raw)
-    if (!parsed.success) {
-        return { success: false, error: parsed.error.issues[0].message }
-    }
-    const data = parsed.data
-    const email = data.email.toLowerCase().trim()
-
-    // Check duplicate by phone first (anti-abuse), then email
-    const normalizedPhone = data.phone.replace(/\D/g, '').slice(-10)
-    const existingByPhone = await withRetry(() => prisma.gymProfile.findFirst({
-        where: { phone: normalizedPhone, deletedAt: null },
-    }))
-    if (existingByPhone) {
-        return { success: false, error: 'This phone number is already registered.' }
-    }
-
-    const existing = await withRetry(() => prisma.gymProfile.findFirst({
-        where: { email: { equals: email, mode: 'insensitive' }, deletedAt: null },
-    }))
-    if (existing) {
-        return { success: false, error: 'This email is already registered.' }
-    }
-
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: tempPassword,
-        options: { emailRedirectTo: `${getBaseUrl()}/auth/callback` },
-    })
-
-    if (authError || !authData.user) {
-        return { success: false, error: authError?.message || 'Failed to create account.' }
-    }
-
-    const userId = authData.user.id
-    const baseSlug = toSlug(data.gymName)
-    const suffix = randomBytes(2).toString('hex')
-    const slug = `${baseSlug}-${suffix}`
-    const trialExpiresAt = addDays(new Date(), 30)
-
-    try {
-        await prisma.gymProfile.create({
-            data: {
-                name: data.gymName,
-                businessName: data.gymName,
-                ownerName: data.ownerName,
-                slug,
-                email,
-                phone: data.phone,
-                city: data.city,
-                userId,
-                isVerified: false,
-                onboardingStep: 0,
-                saasPlan: 'TRIAL',
-                planTier: 'TRIAL',
-                trialExpiresAt,
-                tempPassword: null,
-            },
-        })
-    } catch (dbError) {
-        console.error('[Admin Trial Signup] Failed to create GymProfile in database:', dbError)
-        try { 
-            const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-            if (serviceKey) {
-                const adminAuthClient = createServiceClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                    serviceKey
-                )
-                await adminAuthClient.auth.admin.deleteUser(userId)
-            } else {
-                console.error('[Admin Trial Signup] Missing SUPABASE_SERVICE_ROLE_KEY, unable to delete user.');
-            }
-        } catch (cleanupError) { 
-            console.error('[Admin Trial Signup] Failed to delete orphaned Auth user:', cleanupError)
-        }
-        return { success: false, error: 'Failed to create gym profile.' }
-    }
-
-    // Send welcome (non-blocking)
-    // For admin creation, we don't have a reliable resetUrl generated immediately here
-    sendWelcomeEmail({
-        ownerName: data.ownerName,
-        gymName: data.gymName,
-        email,
-        slug,
-        resetUrl: `${getBaseUrl()}/forgot-password`,
-        trialExpiresAt,
-    }).catch(() => { })
-
-    return { success: true, slug, tempPassword }
 }

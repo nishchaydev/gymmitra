@@ -3,10 +3,10 @@ import { CreateStaffInput } from "./validator"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { encryptPassword } from "@/lib/crypto"
 import { randomBytes } from "crypto"
-import { Resend } from "resend"
 import React from "react"
 import { StaffCredentialEmail } from "@/components/emails/StaffCredentialEmail"
 import { getBaseUrl } from "@/lib/utils"
+import { sendEmail, FROM_EMAIL } from "@/lib/email"
 
 export class StaffService {
     /**
@@ -81,12 +81,8 @@ export class StaffService {
         input: CreateStaffInput,
         tempPwd: string
     ) {
-        const resendKey = process.env.RESEND_API_KEY
-        if (!resendKey) return
-
-        const resend = new Resend(resendKey)
-        await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || `${gym.name} <hello@mail.emitra.dev>`,
+        await sendEmail({
+            from: FROM_EMAIL,
             to: input.email,
             subject: `Your login credentials for ${gym.name}`,
             react: React.createElement(StaffCredentialEmail, {

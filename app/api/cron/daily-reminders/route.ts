@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { addDays } from 'date-fns'
-import { Resend, CreateEmailOptions, CreateEmailResponseSuccess } from 'resend'
 import { Prisma } from '@prisma/client'
-import crypto from 'crypto'
-import { guardRateLimit } from '@/lib/rate-limit'
 import React from 'react'
+import { guardRateLimit } from '@/lib/rate-limit'
 import { syncMemberStatuses } from '@/src/modules/shared/status-engine'
-
-const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
+import { verifyCronSecret } from '@/lib/webhook-auth'
+import { extractIp } from '@/lib/with-gym-auth'
+import { sendBatch, FROM_EMAIL, type BatchResult } from '@/lib/email'
+import type { CreateEmailOptions } from 'resend'
 
 // ── XSS Prevention ─────────────────────────────────────────────────
 function escapeHtml(unsafe: string): string {
@@ -40,39 +40,17 @@ function formatINR(amount: number): string {
 }
 
 export async function GET(request: NextRequest) {
-    // Basic rate limit for cron to prevent DDOS attempts against the URL
-    const forwardedFor = request.headers.get('x-forwarded-for')
-    const realIp = request.headers.get('x-real-ip')
-    const rawIp = realIp || forwardedFor || '127.0.0.1'
-    const ip = rawIp.split(',')[0].trim() || '127.0.0.1'
+    const ip = extractIp(request)
 
     const rl = await guardRateLimit(5, `cron:reminders:${ip}`, false)
     if (rl) return rl
 
-    // 1. Timing-safe CRON_SECRET verification
-    const cronSecret = process.env.CRON_SECRET
-    if (!cronSecret) {
-        console.error('[Cron] CRON_SECRET not configured')
-        return new Response('Server misconfigured', { status: 500 })
-    }
-
-    const authHeader = request.headers.get('authorization') || ''
-    const expected = `Bearer ${cronSecret}`
-
-    // Constant-time comparison using fixed-length HMAC digests to prevent length leakage
-    const hmacHeader = crypto.createHmac('sha256', cronSecret).update(authHeader).digest()
-    const hmacExpected = crypto.createHmac('sha256', cronSecret).update(expected).digest()
-    if (!crypto.timingSafeEqual(hmacHeader, hmacExpected)) {
+    if (!verifyCronSecret(request)) {
         return new Response('Unauthorized', { status: 401 })
     }
 
-    // 2. Email Service Configuration
-    const resendKey = process.env.RESEND_API_KEY
-    if (!resendKey) {
-        console.error('[Cron] RESEND_API_KEY not configured')
-        return new Response('Email service misconfigured', { status: 500 })
-    }
-    const resend = new Resend(resendKey)
+    // 2. Email service is centralized in lib/email.ts (singleton)
+
 
     const results = {
         expiryReminders: 0,
@@ -417,46 +395,31 @@ export async function GET(request: NextRequest) {
 
                 // ── Dispatch Batch APIs ───────────────────────────────
                 if (emailBatch.length > 0) {
-                    const chunkCount = Math.ceil(emailBatch.length / BATCH_SIZE)
-                    for (let i = 0; i < chunkCount; i++) {
-                        const emailChunk = emailBatch.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
-                        const notifChunk = notificationBatch.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
+                    const batchResult = await sendBatch(emailBatch)
+                    
+                    // Process notification persistence for successful sends
+                    const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
+                    batchResult.results.forEach((result, idx) => {
+                        if (result.id && notificationBatch[idx]) {
+                            successfulNotifs.push(notificationBatch[idx])
+                        } else if (result.error) {
+                            results.errors++
+                        }
+                    })
 
+                    if (successfulNotifs.length > 0) {
                         try {
-                            const response = await resend.batch.send(emailChunk)
-                            if (response.error) {
-                                console.error(`[Cron] Resend batch error for gymId=${gym.id}:`, response.error)
-                                results.errors += emailChunk.length
-                            } else if (response.data && response.data.data) {
-                                const successfulNotifs: Prisma.NotificationCreateManyInput[] = []
-                                response.data.data.forEach((emailResult: CreateEmailResponseSuccess | Error | any, idx: number) => {
-                                    if (!emailResult || emailResult.error || !emailResult.id) {
-                                        results.errors++
-                                    } else {
-                                        if (notifChunk[idx]) {
-                                            successfulNotifs.push(notifChunk[idx])
-                                        }
-                                    }
-                                })
-                                if (successfulNotifs.length > 0) {
-                                    try {
-                                        await prisma.notification.createMany({ data: successfulNotifs })
-                                        successfulNotifs.forEach(notif => {
-                                            switch (notif.type) {
-                                                case 'BIRTHDAY': results.birthdayWishes++; break;
-                                                case 'EXPIRY_REMINDER': results.expiryReminders++; break;
-                                                case 'PAYMENT_OVERDUE': results.overdueReminders++; break;
-                                            }
-                                        });
-                                    } catch (notifErr) {
-                                        console.error(`[Cron] Database insertion failed for notifications:`, notifErr)
-                                        results.errors += successfulNotifs.length
-                                    }
+                            await prisma.notification.createMany({ data: successfulNotifs })
+                            successfulNotifs.forEach(notif => {
+                                switch (notif.type) {
+                                    case 'BIRTHDAY': results.birthdayWishes++; break;
+                                    case 'EXPIRY_REMINDER': results.expiryReminders++; break;
+                                    case 'PAYMENT_OVERDUE': results.overdueReminders++; break;
                                 }
-                            }
-                        } catch (e) {
-                            console.error(`[Cron] Resend batch failed for gymId=${gym.id}:`, e)
-                            results.errors += emailChunk.length
+                            });
+                        } catch (notifErr) {
+                            console.error(`[Cron] Database insertion failed for notifications:`, notifErr)
+                            results.errors += successfulNotifs.length
                         }
                     }
                 }

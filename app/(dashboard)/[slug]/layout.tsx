@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { TrialLockout } from "@/components/trial/TrialLockout";
+import { LazyMotionProvider } from "@/lib/lazy-motion";
 
 interface BrandedLayoutProps {
     children: ReactNode;
@@ -40,12 +41,12 @@ export default async function BrandedDashboardLayout({
     // Demo Bypass
     if (slug === 'demo' || isDemoMode) {
         return (
-            <>
+            <LazyMotionProvider>
                 <Navbar plan="TRIAL" role="OWNER" />
                 <div className="flex-1 overflow-y-auto pt-4">
                     {children}
                 </div>
-            </>
+            </LazyMotionProvider>
         );
     }
 
@@ -73,6 +74,7 @@ export default async function BrandedDashboardLayout({
     const showExpiryBanner = isTrial && !isExpired && daysRemaining <= 7 && daysRemaining >= 0 && auth.role === 'OWNER';
 
     return (
+        <LazyMotionProvider>
         <div className="flex flex-col min-h-screen">
             {showExpiryBanner && (
                 <div className="bg-amber-600 text-white py-2 px-4 shadow-md sticky top-0 z-[60] flex items-center justify-center gap-3 animate-in slide-in-from-top duration-500">
@@ -103,5 +105,6 @@ export default async function BrandedDashboardLayout({
                 </TrialLockout>
             </main>
         </div>
+        </LazyMotionProvider>
     );
 }

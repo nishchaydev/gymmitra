@@ -5,30 +5,15 @@ import { GymOwnerWelcomeEmail } from '@/components/emails/GymOwnerWelcomeEmail'
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import React from 'react'
-import crypto from 'crypto'
+import { verifyWebhookSecret } from '@/lib/webhook-auth'
+import { sendEmail, FROM_EMAIL } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
-
-function timingSafeEqual(a: string, b: string) {
-    if (!a || !b) return false;
-    try {
-        // Hash both strings to ensure constant length comparison
-        const hashA = crypto.createHash('sha256').update(a).digest();
-        const hashB = crypto.createHash('sha256').update(b).digest();
-        return crypto.timingSafeEqual(hashA, hashB);
-    } catch {
-        return false;
-    }
-}
-
-const FROM_EMAIL = 'GymMitra <hello@mail.emitra.dev>'
 
 // ── Webhook to send Day 0 Welcome Email + Poster ──────────────────
 export async function POST(request: NextRequest) {
     try {
-        // Internal webhook protection logic moved BEFORE body parse
-        const secret = request.headers.get('x-webhook-secret')
-        if (!timingSafeEqual(secret || '', process.env.WEBHOOK_SECRET || '')) {
+        if (!verifyWebhookSecret(request)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -111,11 +96,7 @@ export async function POST(request: NextRequest) {
         // Convert PDF to Buffer
         const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
 
-        // 3. Send Email with direct Fetch to bypass Resend SDK issues
-        const resendKey = process.env.RESEND_API_KEY
-        if (!resendKey) {
-            return NextResponse.json({ error: 'RESEND_API_KEY missing' }, { status: 500 })
-        }
+        // 3. Send Email via centralized gateway
 
         const fallbackOwnerName = (gym.ownerName && gym.ownerName.trim().length > 0) ? gym.ownerName.trim().split(' ')[0] : 'Gym Owner'
         
@@ -130,31 +111,23 @@ export async function POST(request: NextRequest) {
             })
         );
 
-        // Send via direct fetch
-        const resendResponse = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${resendKey}`
-            },
-            body: JSON.stringify({
-                from: FROM_EMAIL,
-                to: gym.email,
-                subject: `Welcome to GymMitra, ${fallbackOwnerName}! 🎉`,
-                html: emailHtml,
-                attachments: [
-                    {
-                        filename: 'GymMitra-Checkin-Poster.pdf',
-                        content: pdfBuffer.toString('base64'),
-                    }
-                ]
-            })
+        // Send via centralized email service
+        const emailResult = await sendEmail({
+            from: FROM_EMAIL,
+            to: gym.email,
+            subject: `Welcome to GymMitra, ${fallbackOwnerName}! 🎉`,
+            html: emailHtml,
+            attachments: [
+                {
+                    filename: 'GymMitra-Checkin-Poster.pdf',
+                    content: pdfBuffer.toString('base64'),
+                }
+            ]
         });
 
-        if (!resendResponse.ok) {
-            const errorData = await resendResponse.json();
-            console.error('[Webhooks] Gym activation email failed', errorData);
-            return NextResponse.json({ error: errorData.message || 'Resend API error' }, { status: 500 });
+        if (emailResult.error) {
+            console.error('[Webhooks] Gym activation email failed', emailResult.error);
+            return NextResponse.json({ error: emailResult.error }, { status: 500 });
         }
 
 
