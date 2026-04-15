@@ -1,7 +1,7 @@
 import TrialRequestForm from '@/components/trial/TrialRequestForm'
 import Link from 'next/link'
 import { GymMitraLogo } from '@/components/brand/GymMitraLogo'
-import { CheckCircle2, Sparkles, Star, Quote, Building2 } from 'lucide-react'
+import { CheckCircle2, Sparkles, Building2 } from 'lucide-react'
 
 export const metadata = {
     title: 'Start Free Trial | GymMitra',
@@ -38,36 +38,26 @@ export default function StartTrialPage() {
                             </h1>
                         </div>
 
-                        {/* Real Success Case: Tristar Fitness */}
+                        {/* Product Capabilities */}
                         <div className="relative pt-4">
                              <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 border border-white max-w-xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.06)] relative group">
                                 <div className="absolute -top-6 -right-6 h-24 w-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700" />
                                 
-                                <div className="flex gap-1 mb-4">
-                                    {[1, 2, 3, 4, 5].map((i) => (
-                                        <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                                    ))}
-                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    Built for Indian Gyms
+                                </h3>
+                                <p className="text-base text-slate-500 font-medium leading-relaxed mb-6">
+                                    Automate your billing, attendance, and member communication from day one.
+                                </p>
 
-                                <Quote className="w-10 h-10 text-slate-100 absolute top-8 right-8 -z-10" />
-                                
-                                <div className="space-y-2 mb-4">
-                                    <h3 className="text-lg font-bold text-slate-900 leading-tight italic">
-                                        &ldquo;Pure automation.&rdquo;
-                                    </h3>
-                                    <p className="text-lg text-slate-700 font-medium leading-relaxed">
-                                        Tristar Fitness INDORE saved over 20+ hours in their first month by automating member billing and check-ins.
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-8 border-t border-slate-100 pt-8">
+                                <div className="grid grid-cols-2 gap-6 border-t border-slate-100 pt-6">
                                     <div>
-                                        <div className="text-2xl font-bold text-primary">20+ Hours</div>
-                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wider">Manual Work Saved</div>
+                                        <div className="text-2xl font-bold text-primary">₹0</div>
+                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wider">For 30 Days</div>
                                     </div>
                                     <div>
-                                        <div className="text-2xl font-bold text-primary">0 Errors</div>
-                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wider">In Billing History</div>
+                                        <div className="text-2xl font-bold text-primary">2 Min</div>
+                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wider">Setup Time</div>
                                     </div>
                                 </div>
                              </div>
@@ -109,7 +99,7 @@ export default function StartTrialPage() {
                     <div className="w-full max-w-lg mt-12 lg:mt-0">
                         <div className="mb-6 text-center lg:text-left">
                             <h2 className="text-3xl font-bold text-slate-900 mb-1">Start Your Trial</h2>
-                            <p className="text-slate-500 font-medium">Join Tristar and 500+ others scaling today.</p>
+                            <p className="text-slate-500 font-medium">Full access. No credit card. Cancel anytime.</p>
                         </div>
 
                         <TrialRequestForm />

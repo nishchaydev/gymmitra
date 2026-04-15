@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Star, Zap, ShieldCheck, Award, Sparkles } from "lucide-react"
+import { ArrowRight, Zap, ShieldCheck, Award, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { MotionWrapper } from "@/components/landing/ui/MotionWrapper"
 import { AnimatedNumber } from "@/components/landing/ui/AnimatedNumber"
@@ -55,36 +55,32 @@ export function Hero() {
                         </button>
                     </MotionWrapper>
 
-                    {/* Simple Social Proof - Centered */}
+                    {/* Trust Signals */}
                     <MotionWrapper delay={0.5} className="mt-16 flex flex-col items-center gap-6">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full border-2 border-white bg-slate-100 shadow-sm overflow-hidden">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nikhil" alt="Owner" />
-                                </div>
-                                <div className="h-8 w-px bg-slate-200" />
-                                <div className="flex flex-col items-start gap-1">
-                                    <div className="flex items-center gap-0.5">
-                                        {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
-                                    </div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                                        Trusted by <span className="text-slate-900">TRI-STAR FITNESS INDORE</span>
-                                    </p>
-                                </div>
+                        <div className="flex items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                <span>Secure Cloud</span>
+                            </div>
+                            <div className="h-4 w-px bg-slate-200" />
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-primary" />
+                                <span>30-Day Free Trial</span>
+                            </div>
+                            <div className="h-4 w-px bg-slate-200" />
+                            <div className="flex items-center gap-2">
+                                <Award className="w-4 h-4 text-amber-500" />
+                                <span>Made in India</span>
                             </div>
                         </div>
                     </MotionWrapper>
 
-                    {/* Bottom Trust Indicators - Actual Stats */}
+                    {/* Bottom Product Indicators */}
                     <MotionWrapper delay={0.8} className="mt-20 pt-10 border-t border-slate-100 w-full">
                         <div className="flex flex-wrap justify-center gap-12 md:gap-24 opacity-60">
-                            <StatItem value={1} label="Live Gym" suffix="" />
-                            <StatItem value={500} label="Active Members" suffix="+" />
+                            <StatItem value={30} label="Day Free Trial" suffix="" />
+                            <StatItem value={10} label="Core Features" suffix="+" />
                             <StatItem value={100} label="System Uptime" suffix="%" />
-                            <div className="hidden lg:flex items-center gap-4 text-xs font-black text-slate-400 uppercase tracking-widest">
-                                <ShieldCheck className="w-5 h-5 text-emerald-500" /> Secure Cloud
-                                <Award className="w-5 h-5 text-amber-500" /> Premium Choice
-                            </div>
                         </div>
                     </MotionWrapper>
                 </div>

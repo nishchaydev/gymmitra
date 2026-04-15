@@ -14,7 +14,7 @@ export function FAQ() {
     const faqs = [
         {
             q: "What is GymMitra?",
-            a: "GymMitra (also known as Gym eMitra) is India's #1 gym management software built by eMitra Technologies. It automates member management, billing, WhatsApp reminders, attendance tracking, and invoicing – helping gym owners save 20+ hours every month."
+            a: "GymMitra is a gym management platform built by eMitra Technologies. It automates member management, billing, WhatsApp reminders, attendance tracking, and invoicing — designed to eliminate manual work for gym owners."
         },
         {
             q: "Do I need to pay a setup fee?",
@@ -73,7 +73,7 @@ export function FAQ() {
                         Ready to automate your gym?
                     </h2>
                     <p className="text-slate-300 text-lg mb-8 max-w-xl mx-auto relative z-10 font-medium">
-                         Join smart gym owners across India. No credit card required.
+                         Start managing your gym smarter. No credit card required.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
                         <Link href="/start-trial" className="w-full sm:w-auto">

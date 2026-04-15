@@ -194,7 +194,7 @@ export default function TrialRequestForm() {
                                             name="gymName"
                                             value={form.gymName}
                                             onChange={handleChange}
-                                            placeholder="e.g. Tristar Fitness"
+                                            placeholder="e.g. Iron Temple Gym"
                                             required
                                             className="h-12 pl-12 bg-slate-50/50 border-slate-100 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all font-bold text-slate-900"
                                         />

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import Image from "next/image"
-import { AlertCircle, Building2, Quote, Star, Sparkles } from "lucide-react"
+import { AlertCircle, Building2, Sparkles } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { GymMitraLogo } from '@/components/brand/GymMitraLogo'
 
@@ -55,31 +55,28 @@ export default async function LoginPage(props: {
                             </h1>
                         </div>
 
-                        {/* Real Customer Spotlight: Tristar Fitness */}
+                        {/* Product Capabilities */}
                         <div className="relative pt-4">
                              <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-white max-w-xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.06)] relative group">
                                 <div className="absolute -top-6 -right-6 h-20 w-20 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700" />
                                 
-                                <div className="flex gap-1 mb-4">
-                                    {[1, 2, 3, 4, 5].map((i) => (
-                                        <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">Everything in one place</h3>
+
+                                <div className="space-y-3">
+                                    {[
+                                        "Automated billing & invoicing",
+                                        "WhatsApp payment reminders",
+                                        "Member self-service portal",
+                                        "Real-time attendance tracking",
+                                        "Works offline — PWA powered",
+                                    ].map((feature, i) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                                <Sparkles className="w-3 h-3 text-primary" />
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-700">{feature}</span>
+                                        </div>
                                     ))}
-                                </div>
-
-                                <Quote className="w-10 h-10 text-slate-100 absolute top-8 right-8 -z-10" />
-                                
-                                <p className="text-xl text-slate-800 font-medium leading-relaxed mb-4">
-                                    &ldquo;Tristar Fitness switched to GymMitra to handle 500+ members without a single manual entry. It saved us 20 hours each month.&rdquo;
-                                </p>
-
-                                <div className="flex items-center gap-3">
-                                    <div className="h-12 w-12 rounded-xl bg-slate-950 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-slate-950/20">
-                                        TF
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-slate-900 leading-none mb-1">Tristar Fitness</div>
-                                        <div className="text-sm text-slate-500 font-medium tracking-tight">Indore, MP</div>
-                                    </div>
                                 </div>
                              </div>
                         </div>
