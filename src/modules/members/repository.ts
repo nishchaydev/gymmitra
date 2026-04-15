@@ -14,7 +14,9 @@ export class MemberRepository {
         // SERIALIZABLE forces one to retry after the other commits, so the second
         // call will see the updated count and correctly throw MEMBER_CAP.
         return prisma.$transaction(callback, {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+            timeout: 15000,  // 15s — Vercel cold starts can eat 3-5s
+            maxWait: 10000,  // 10s — wait for a connection from the pool
         })
     }
 
