@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   Users,
@@ -15,9 +16,9 @@ import {
   CalendarCheck,
   Settings,
   LogOut,
-  X,
   ChevronRight,
   UserPlus,
+  FileText,
 } from 'lucide-react'
 import {
   Sheet,
@@ -27,7 +28,6 @@ import {
   SheetDescription,
   SheetClose,
 } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
 interface MobileBottomDockProps {
@@ -54,18 +54,53 @@ const moreItems = [
   { label: 'Settings', icon: Settings, path: '/settings' },
 ]
 
+// ── Quick Action items that fan out from FAB ──
+const quickActions = [
+  {
+    id: 'add-member',
+    label: 'Add Member',
+    icon: UserPlus,
+    path: '/members/new',
+    color: 'bg-ocean-500',
+    shadowColor: 'shadow-ocean-500/30',
+  },
+  {
+    id: 'create-invoice',
+    label: 'New Invoice',
+    icon: FileText,
+    path: '/invoices/new',
+    color: 'bg-primary-500',
+    shadowColor: 'shadow-primary-500/30',
+  },
+]
+
 export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEmail }: MobileBottomDockProps) {
   const pathname = usePathname()
   const params = useParams()
   const router = useRouter()
   const slug = params?.slug as string
   const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const [isFabOpen, setIsFabOpen] = useState(false)
 
-  const handleNavTap = (path: string) => {
-    // Subtle haptic feedback on supported devices
+  const haptic = useCallback(() => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(10)
     }
+  }, [])
+
+  const handleNavTap = (path: string) => {
+    haptic()
+    router.push(`/${slug}${path}`)
+  }
+
+  const handleFabTap = () => {
+    haptic()
+    setIsFabOpen((prev) => !prev)
+  }
+
+  const handleQuickAction = (path: string) => {
+    haptic()
+    setIsFabOpen(false)
     router.push(`/${slug}${path}`)
   }
 
@@ -90,36 +125,128 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
 
   return (
     <>
-      {/* Dock - only visible on mobile */}
+      {/* ── FAB Quick Action Overlay ── */}
+      <AnimatePresence>
+        {isFabOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="fab-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-[2px] md:hidden"
+              onClick={() => setIsFabOpen(false)}
+            />
+
+            {/* Quick action buttons — fan out from center-bottom */}
+            <div className="fixed bottom-0 inset-x-0 z-[56] md:hidden pointer-events-none">
+              <div className="relative max-w-lg mx-auto h-[240px]">
+                {quickActions.map((action, i) => {
+                  // Position: fan out symmetrically from center
+                  // For 2 items: left-of-center, right-of-center
+                  const angleOffset = quickActions.length === 2 ? [-35, 35] : [-45, 0, 45]
+                  const angle = angleOffset[i] ?? 0
+                  const radius = 110 // distance from FAB
+                  const radians = ((angle - 90) * Math.PI) / 180
+                  const xPos = Math.cos(radians) * radius
+                  const yPos = Math.sin(radians) * radius
+
+                  return (
+                    <motion.button
+                      key={action.id}
+                      initial={{ opacity: 0, scale: 0.3, x: 0, y: 0 }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        x: xPos,
+                        y: yPos,
+                      }}
+                      exit={{ opacity: 0, scale: 0.3, x: 0, y: 0 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 400,
+                        damping: 22,
+                        delay: i * 0.06,
+                      }}
+                      className={cn(
+                        'pointer-events-auto absolute flex flex-col items-center gap-2',
+                        'active:scale-90 transition-transform duration-100',
+                      )}
+                      style={{
+                        // Anchor point: center-bottom of the dock area
+                        left: '50%',
+                        bottom: '90px', // just above the FAB
+                        marginLeft: '-28px', // half of button width
+                      }}
+                      onClick={() => handleQuickAction(action.path)}
+                      aria-label={action.label}
+                    >
+                      <div
+                        className={cn(
+                          'flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg',
+                          action.color,
+                          action.shadowColor,
+                        )}
+                      >
+                        <action.icon className="h-6 w-6 text-white" strokeWidth={2} />
+                      </div>
+                      <span className="text-[11px] font-bold text-white tracking-tight drop-shadow-sm whitespace-nowrap">
+                        {action.label}
+                      </span>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Dock — only visible on mobile ── */}
       <nav
         id="mobile-bottom-dock"
-        className="fixed bottom-0 inset-x-0 z-50 md:hidden dock-glass"
+        className="fixed bottom-0 inset-x-0 z-[57] md:hidden dock-glass"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="flex items-center justify-around h-[68px] px-2 max-w-lg mx-auto">
           {dockItems.map((item) => {
-            // FAB center button
+            // ── FAB center button ──
             if (item.id === 'fab') {
               return (
-                <button
+                <motion.button
                   key={item.id}
-                  onClick={() => handleNavTap('/checkin')}
-                  className="relative -mt-6 flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary/30 active:scale-90 transition-transform duration-150"
-                  aria-label="Quick Check-in"
+                  onClick={handleFabTap}
+                  className={cn(
+                    'relative -mt-6 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-shadow duration-200',
+                    isFabOpen
+                      ? 'bg-drift-800 shadow-drift-800/30'
+                      : 'bg-gradient-to-br from-primary-500 to-primary-600 shadow-primary/30',
+                  )}
+                  aria-label={isFabOpen ? 'Close quick actions' : 'Open quick actions'}
+                  whileTap={{ scale: 0.85 }}
                 >
-                  <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
-                  {/* Pulse ring */}
-                  <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" />
-                </button>
+                  <motion.div
+                    animate={{ rotate: isFabOpen ? 45 : 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                  >
+                    <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
+                  </motion.div>
+                  {/* Pulse ring — only when closed */}
+                  {!isFabOpen && (
+                    <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" />
+                  )}
+                </motion.button>
               )
             }
 
-            // "More" button  
+            // ── "More" button ──
             if (item.id === 'more') {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setIsMoreOpen(true)}
+                  onClick={() => { setIsFabOpen(false); setIsMoreOpen(true) }}
                   className="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 group active:scale-90 transition-transform duration-150"
                   aria-label="More options"
                 >
@@ -142,12 +269,12 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
               )
             }
 
-            // Regular nav items
+            // ── Regular nav items ──
             const active = isActive(item.path)
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavTap(item.path)}
+                onClick={() => { setIsFabOpen(false); handleNavTap(item.path) }}
                 className="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 group active:scale-90 transition-transform duration-150"
               >
                 <div className={cn(
@@ -175,7 +302,7 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
         </div>
       </nav>
 
-      {/* "More" Sheet */}
+      {/* ── "More" Sheet ── */}
       <Sheet open={isMoreOpen} onOpenChange={setIsMoreOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl pb-8 max-h-[70vh]" showCloseButton={false}>
           {/* Drag handle */}

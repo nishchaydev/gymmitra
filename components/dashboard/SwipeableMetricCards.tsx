@@ -106,6 +106,23 @@ export function SwipeableMetricCards({
     return () => window.removeEventListener('resize', measure)
   }, [])
 
+  // Reset carousel position on mount (fixes stale position on navigate-back)
+  useEffect(() => {
+    setActiveIndex(0)
+    x.set(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Sync x with current activeIndex when containerWidth re-measures
+  useEffect(() => {
+    if (containerWidth > 0 && activeIndex > 0) {
+      const CARD_GAP_SYNC = 12
+      const CARD_WIDTH_SYNC = containerWidth - 40
+      x.set(-(activeIndex * (CARD_WIDTH_SYNC + CARD_GAP_SYNC)))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerWidth])
+
   const CARD_GAP = 12
   const CARD_WIDTH = containerWidth - 40 // 20px padding each side for peek
   const totalDrag = (CARD_WIDTH + CARD_GAP) * (cards.length - 1)

@@ -100,7 +100,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: #F8FAFC;
   --foreground: #0F172A;
   --card: #FFFFFF;
@@ -150,7 +150,16 @@
   h4,
   h5,
   h6 {
-    @apply font-display tracking-tight;
+    @apply font-display;
+    letter-spacing: -0.035em;
+  }
+
+  h1 {
+    letter-spacing: -0.04em;
+  }
+
+  h2 {
+    letter-spacing: -0.035em;
   }
 
   ::selection {
@@ -273,6 +282,38 @@
   /* Safe area offset for bottom dock */
   .safe-bottom {
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Intercom-inspired: Physical button interaction ── */
+  .btn-physical {
+    transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
+                box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  @media (hover: hover) {
+    .btn-physical:hover {
+      transform: scale(1.04);
+    }
+  }
+
+  .btn-physical:active {
+    transform: scale(0.96);
+  }
+
+  /* ── Mono-style label (KPI badges, status tags) ── */
+  .label-mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  /* ── Flat card (no shadow, border only — Intercom style) ── */
+  .card-flat {
+    box-shadow: none;
+    border: 1px solid var(--border);
   }
 
   @media print {
