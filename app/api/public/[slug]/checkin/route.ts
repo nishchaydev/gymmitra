@@ -43,8 +43,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     const { slug } = await params
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
 
-    // Rate limit: 20 check-ins per minute per slug per IP (one device shouldn't spam)
-    const rateLimited = await guardRateLimit(20, `public-checkin-post:${slug}:${ip}`)
+    // Rate limit: 10 check-ins per minute per slug per IP
+    const rateLimited = await guardRateLimit(10, `public-checkin-post:${slug}:${ip}`)
     if (rateLimited) return rateLimited
 
     let body: unknown
@@ -95,26 +95,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
     if (!member) {
         return NextResponse.json(
-            { error: "No member found with this phone number. Please speak to the reception." },
-            { status: 404 }
+            { error: "Unable to check in. Please contact the front desk for assistance." },
+            { status: 400 }
         )
     }
 
     if (member.status !== "ACTIVE" && member.status !== "EXPIRING_SOON") {
-        const statusMessages: Record<string, string> = {
-            EXPIRED: "Your membership has expired. Please renew at the reception.",
-            INACTIVE: "Your account is inactive. Please contact the gym.",
-            PENDING: "Your membership is pending approval. Please contact the gym.",
-        }
+        // Generic message — don't reveal account status (expired/inactive/paused/pending)
         return NextResponse.json(
-            { error: statusMessages[member.status] || `Check-in denied. Status: ${member.status}.` },
+            { error: "Unable to check in. Please contact the front desk for assistance." },
             { status: 400 }
         )
     }
 
     if ((member as any).memberState === 'PAUSED') {
         return NextResponse.json(
-            { error: "Your membership is currently paused. Please contact the gym to resume." },
+            { error: "Unable to check in. Please contact the front desk for assistance." },
             { status: 400 }
         )
     }
@@ -123,7 +119,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     const activeSub = member.subscriptions[0];
     if (!activeSub || activeSub.endDate < new Date()) {
         return NextResponse.json(
-             { error: "Your membership has expired. Please renew at the reception." },
+             { error: "Unable to check in. Please contact the front desk for assistance." },
              { status: 400 }
         )
     }

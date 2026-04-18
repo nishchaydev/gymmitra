@@ -5,7 +5,11 @@ import { NextResponse, type NextRequest } from 'next/server'
  * Middleware handles:
  * 1. Supabase Session refreshing
  * 2. Route protection (Auth & Demo mode)
- * 3. Onboarding status enforcement (Cookie-based for Edge compatibility)
+ * 3. Onboarding & Trial enforcement (Cookie-based — zero DB queries)
+ *
+ * PERF: This middleware does NOT query the database. Trial/onboarding status
+ * is cached in the `gym_session` cookie, set during login, auth callback,
+ * and onboarding completion. The only network call is `getUser()`.
  */
 export async function updateSession(request: NextRequest, mergedHeaders?: Headers) {
     // Guard: skip Supabase auth if env vars aren't configured (e.g. preview deployments)
@@ -93,8 +97,6 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
     if (isPublicRoute) {
         // If user is logged in, but tries to access login page or landing page, redirect to dashboard
         if (user && (pathname.startsWith('/login') || pathname === '/')) {
-
-
             const url = request.nextUrl.clone()
             url.pathname = '/dashboard'
             return NextResponse.redirect(url)
@@ -135,7 +137,7 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         return NextResponse.redirect(url)
     }
 
-    // 3. TRIAL & ACCESS ENFORCEMENT
+    // 3. TRIAL & ACCESS ENFORCEMENT — Cookie-based, zero DB queries
     const protectedPaths = ['dashboard', 'members', 'invoices', 'products', 'attendance', 'settings', 'leads', 'staff']
     const isProtectedRoute = 
         protectedPaths.some(p => pathname.startsWith(`/${p}`)) ||
@@ -147,47 +149,33 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         const slugMatch = pathname.match(/^\/([^/]+)/)
         const currentSlug = slugMatch ? slugMatch[1] : null
 
-        // Fetch gym profile — first try as owner, then as staff member
+        // Read cached gym session from cookie — NO database queries
+        const gymSessionRaw = request.cookies.get('gym_session')?.value
         let gym: { saasPlan: string; trialExpiresAt: string | null; onboardingStep: number; isVerified: boolean } | null = null
 
-        const { data: ownerGym } = await supabase
-            .from('GymProfile')
-            .select('saasPlan, trialExpiresAt, onboardingStep, isVerified')
-            .eq('userId', user.id)
-            .single()
-
-        if (ownerGym) {
-            gym = ownerGym
-        } else {
-            // User might be a staff member — find their gym via StaffMember
-            const { data: staffMember } = await supabase
-                .from('StaffMember')
-                .select('gymId')
-                .eq('userId', user.id)
-                .single()
-
-            if (staffMember?.gymId) {
-                const { data: staffGym } = await supabase
-                    .from('GymProfile')
-                    .select('saasPlan, trialExpiresAt, onboardingStep, isVerified')
-                    .eq('id', staffMember.gymId)
-                    .single()
-
-                if (staffGym) {
-                    gym = staffGym
-                }
+        if (gymSessionRaw) {
+            try {
+                gym = JSON.parse(gymSessionRaw)
+            } catch {
+                // Corrupted cookie — will be refreshed on next login
+                gym = null
             }
         }
 
+        // If no gym_session cookie but user is authenticated + onboarded,
+        // redirect to sync-cookie to populate it (one-time cost)
+        if (!gym && isOnboarded && !pathname.startsWith('/api/auth/sync-cookie')) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/api/auth/sync-cookie'
+            return NextResponse.redirect(url)
+        }
+
         if (gym) {
-            // A. ONBOARDING ENFORCEMENT (owners only — staff can't onboard)
+            // A. ONBOARDING ENFORCEMENT
             if (!gym.isVerified && gym.onboardingStep < 2 && !pathname.includes('/onboarding')) {
-                // Only redirect to onboarding if this is the owner's account
-                if (ownerGym) {
-                    const url = request.nextUrl.clone()
-                    url.pathname = '/onboarding'
-                    return NextResponse.redirect(url)
-                }
+                const url = request.nextUrl.clone()
+                url.pathname = '/onboarding'
+                return NextResponse.redirect(url)
             }
 
             // B. TRIAL ENFORCEMENT — enforced for both owners AND staff
@@ -217,3 +205,4 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
 
     return supabaseResponse
 }
+

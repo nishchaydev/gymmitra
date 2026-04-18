@@ -19,6 +19,8 @@ export async function GET(request: Request) {
             include: { gym: true }
         }) : null
         
+        const gymData = gym || isTrainer?.gym
+        
         if (gym?.isVerified || isTrainer) {
             const cookieStore = await cookies()
             cookieStore.set('gym_onboarded', 'true', {
@@ -27,6 +29,22 @@ export async function GET(request: Request) {
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax'
             })
+            
+            // Cache gym session data for middleware (avoids DB queries on every request)
+            if (gymData) {
+                cookieStore.set('gym_session', JSON.stringify({
+                    saasPlan: gymData.saasPlan,
+                    trialExpiresAt: gymData.trialExpiresAt?.toISOString() ?? null,
+                    isVerified: gymData.isVerified,
+                    onboardingStep: gymData.onboardingStep,
+                }), {
+                    maxAge: 30 * 24 * 60 * 60,
+                    path: '/',
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax'
+                })
+            }
+            
             const slug = gym?.slug || isTrainer?.gym?.slug || 'gym'
             return NextResponse.redirect(`${baseUrl}/${slug}/dashboard`)
         }
@@ -34,3 +52,4 @@ export async function GET(request: Request) {
     
     return NextResponse.redirect(`${baseUrl}/login`)
 }
+

@@ -38,6 +38,14 @@ export default function ResetPasswordPage() {
             setValidationError('Password must be at least 8 characters.')
             return false
         }
+        if (!/[a-zA-Z]/.test(password)) {
+            setValidationError('Password must contain at least one letter.')
+            return false
+        }
+        if (!/[0-9]/.test(password)) {
+            setValidationError('Password must contain at least one number.')
+            return false
+        }
         if (password !== confirmPassword) {
             setValidationError('Passwords do not match.')
             return false

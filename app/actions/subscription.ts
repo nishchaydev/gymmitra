@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthGym } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export async function activateSubscription(code: string) {
     const auth = await getAuthGym();
@@ -91,6 +92,20 @@ export async function activateSubscription(code: string) {
             });
         }, { timeout: 15000, maxWait: 10000 });
 
+        // Refresh gym_session cookie so middleware reflects the new plan immediately
+        const cookieStore = await cookies()
+        cookieStore.set('gym_session', JSON.stringify({
+            saasPlan: auth.gym.saasPlan === 'TRIAL' ? 'MAIN_PLAN' : auth.gym.saasPlan,
+            trialExpiresAt: null,
+            isVerified: auth.gym.isVerified,
+            onboardingStep: auth.gym.onboardingStep,
+        }), {
+            maxAge: 30 * 24 * 60 * 60,
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
+
         // Revalidate the entire layout structure cache so the warning banner goes away
         revalidatePath(`/${auth.gym.slug}`, 'layout');
         
@@ -100,3 +115,4 @@ export async function activateSubscription(code: string) {
         return { success: false, error: "Failed to activate subscription" };
     }
 }
+

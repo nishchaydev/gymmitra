@@ -46,6 +46,22 @@ export async function login(formData: FormData) {
         })
     }
 
+    // Cache gym session data for middleware (avoids DB queries on every request)
+    const gymData = gym || isTrainerProfile?.gym
+    if (gymData) {
+        cookieStore.set('gym_session', JSON.stringify({
+            saasPlan: gymData.saasPlan,
+            trialExpiresAt: gymData.trialExpiresAt?.toISOString() ?? null,
+            isVerified: gymData.isVerified,
+            onboardingStep: gymData.onboardingStep,
+        }), {
+            maxAge: 30 * 24 * 60 * 60,
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
+    }
+
     if (gym && !gym.isVerified) {
         return redirect('/onboarding')
     }

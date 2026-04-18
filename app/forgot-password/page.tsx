@@ -15,6 +15,7 @@ export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('')
     const [submitted, setSubmitted] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [cooldown, setCooldown] = useState(0)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -32,6 +33,15 @@ export default function ForgotPasswordPage() {
         // Always show success regardless of result
         setLoading(false)
         setSubmitted(true)
+
+        // Start 60s cooldown to prevent spam
+        setCooldown(60)
+        const timer = setInterval(() => {
+            setCooldown(prev => {
+                if (prev <= 1) { clearInterval(timer); return 0 }
+                return prev - 1
+            })
+        }, 1000)
     }
 
     return (
@@ -85,12 +95,14 @@ export default function ForgotPasswordPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                 />
                             </div>
-                            <Button type="submit" className="w-full" disabled={loading}>
+                            <Button type="submit" className="w-full" disabled={loading || cooldown > 0}>
                                 {loading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                         Sending...
                                     </>
+                                ) : cooldown > 0 ? (
+                                    `Resend in ${cooldown}s`
                                 ) : (
                                     'Send Reset Link'
                                 )}

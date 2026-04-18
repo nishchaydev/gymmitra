@@ -118,8 +118,6 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
 
     const userId = data.user.id
 
-
-
     const rawData = {
         businessName: formData.get("businessName"),
         ownerName: formData.get("ownerName"),
@@ -143,6 +141,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
     let gymProfile: GymProfile | undefined;
     let redirectSlug: string | null = null;
     const warnings: string[] = [];
+
     try {
         const validatedData = onboardingSchema.parse(rawData)
         const updateData = {
@@ -161,7 +160,8 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             logoUrl: null as string | null,
         }
 
-        // Handle Logo Upload if present
+        // ── External API: Cloudinary upload BEFORE transaction ──
+        // Keep external network calls outside the DB transaction to avoid holding locks
         const logoFile = formData.get("logo") as File | null;
         if (logoFile && logoFile.size > 0) {
             try {
@@ -172,69 +172,9 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
             }
         }
 
-        // Look up existing profile to preserve slug on updates
-        const existingProfile = await prisma.gymProfile.findUnique({
-            where: { userId: userId },
-            select: { slug: true },
-        });
-
-        const trialExpiresAt = addDays(new Date(), 60)
-        let slug = generateSlug(validatedData.businessName, existingProfile?.slug);
-
-        // Retry-on-conflict loop to handle TOCTOU race on the unique slug constraint
-        for (let attempt = 0; attempt <= MAX_SLUG_RETRIES; attempt++) {
-            try {
-                gymProfile = await prisma.gymProfile.upsert({
-                    where: { userId: userId },
-                    update: {
-                        ...updateData,
-                        name: validatedData.businessName,
-                        slug,
-                        isVerified: true,
-                        onboardingStep: ONBOARDING_COMPLETE_STEP,
-                        saasPlan: 'TRIAL' as any,
-                        planTier: 'TRIAL' as any,
-                        futurePlanPreference: validatedData.futurePlanPreference as any,
-                        trialExpiresAt,
-                    },
-                    create: {
-                        userId: userId,
-                        ...updateData,
-                        name: validatedData.businessName,
-                        slug,
-                        isVerified: true,
-                        onboardingStep: ONBOARDING_COMPLETE_STEP,
-                        saasPlan: 'TRIAL' as any,
-                        planTier: 'TRIAL' as any,
-                        futurePlanPreference: validatedData.futurePlanPreference as any,
-                        trialExpiresAt,
-                    }
-                })
-                break; // Success — exit retry loop
-            } catch (upsertError) {
-                const isSlugConflict =
-                    upsertError instanceof Prisma.PrismaClientKnownRequestError &&
-                    upsertError.code === 'P2002' &&
-                    (upsertError.meta?.target as string[] | undefined)?.includes('slug');
-
-                if (isSlugConflict && attempt < MAX_SLUG_RETRIES) {
-                    // Append random suffix and retry
-                    const baseSlug = toSlug(validatedData.businessName) || 'gym';
-                    slug = `${baseSlug}-${randomSuffix()}`;
-                    continue;
-                }
-                throw upsertError; // Not a slug conflict or out of retries
-            }
-        }
-
-        // Defensive check — gymProfile must exist after upsert
-        if (!gymProfile) {
-            return { error: "Failed to create or update your gym profile. Please try again." }
-        }
-
-        const gymId = gymProfile.id;
-
-        // Process Plans
+        // ── Pre-parse all data BEFORE transaction ──
+        // Validate and prepare all data upfront so the transaction only does DB writes
+        let enabledPlans: { name: string; durationMonths: number; price: number; enabled: boolean }[] = [];
         if (validatedData.plans) {
             try {
                 const planSchema = z.array(z.object({
@@ -243,31 +183,15 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                     price: z.coerce.number().nonnegative(),
                     enabled: z.coerce.boolean()
                 }))
-
                 const parsedPlans = JSON.parse(validatedData.plans)
-                const validPlans = planSchema.parse(parsedPlans)
-                const enabledPlans = validPlans.filter(p => p.enabled)
-
-                if (enabledPlans.length > 0) {
-                    await prisma.membershipPlan.createMany({
-                        data: enabledPlans.map(p => ({
-                            gymId,
-                            name: p.name,
-                            description: `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''} Membership`,
-                            duration: p.durationMonths,
-                            price: p.price,
-                            isActive: true
-                        })),
-                        skipDuplicates: true
-                    })
-                }
+                enabledPlans = planSchema.parse(parsedPlans).filter(p => p.enabled)
             } catch (planError) {
-                console.error("Failed to parse or create onboarding plans:", planError)
+                console.error("Failed to parse onboarding plans:", planError)
                 warnings.push("Your membership plans could not be saved. You can add them later in Settings.")
             }
         }
 
-        // Process Staff
+        let validStaff: { name: string; phone: string; email: string; role: 'OWNER' | 'MANAGER' | 'TRAINER' | 'FRONT_DESK' }[] = [];
         if (validatedData.staffList) {
             try {
                 const staffSchema = z.array(z.object({
@@ -276,50 +200,147 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                     email: z.string().email(),
                     role: z.enum(['OWNER', 'MANAGER', 'TRAINER', 'FRONT_DESK']),
                 }))
-
-                const parsedStaff = JSON.parse(validatedData.staffList)
-                const validStaff = staffSchema.parse(parsedStaff)
-
-                if (validStaff.length > 0) {
-                    await prisma.staffMember.createMany({
-                        data: validStaff.map(s => ({
-                            gymId,
-                            name: s.name,
-                            email: s.email,
-                            phone: s.phone,
-                            role: s.role as any,
-                            isActive: true,
-                        })),
-                        skipDuplicates: true,
-                    })
-                }
+                validStaff = staffSchema.parse(JSON.parse(validatedData.staffList))
             } catch (staffError) {
-                console.error("Failed to parse or create onboarding staff:", staffError)
+                console.error("Failed to parse onboarding staff:", staffError)
                 warnings.push("Some staff could not be saved. You can add them later in Settings.")
             }
         }
 
-        // Process Members
+        const singleMemberSchema = z.object({
+            name: z.string().min(1),
+            phone: z.coerce.string().min(10),
+            planName: z.string().optional(),
+            joinDate: z.string().optional(),
+        })
+        let validMembers: z.infer<typeof singleMemberSchema>[] = [];
         if (validatedData.members) {
             try {
-                const singleMemberSchema = z.object({
-                    name: z.string().min(1),
-                    phone: z.coerce.string().min(10),
-                    planName: z.string().optional(),
-                    joinDate: z.string().optional(),
-                })
-
                 const parsedArray = JSON.parse(validatedData.members)
-                const validMembers = Array.isArray(parsedArray) 
+                validMembers = Array.isArray(parsedArray)
                     ? parsedArray.map(m => singleMemberSchema.safeParse(m)).filter(res => res.success).map(res => res.data)
                     : []
-                
                 if (validMembers.length < (Array.isArray(parsedArray) ? parsedArray.length : 0)) {
                     warnings.push("Some members were skipped because their phone numbers or names were invalid.")
                 }
+            } catch (memberError) {
+                console.error("Failed to parse onboarding members:", memberError)
+                warnings.push("Some members could not be saved. You can add them later in Members section.")
+            }
+        }
 
-                // Pre-fetch gym plans so we can link members to their plan
-                const gymPlans = await prisma.membershipPlan.findMany({
+        let validProducts: { name: string; price: number; stock: number }[] = [];
+        if (validatedData.products) {
+            try {
+                const productSchema = z.array(z.object({
+                    name: z.string().min(1),
+                    price: z.coerce.number().nonnegative(),
+                    stock: z.coerce.number().int().nonnegative(),
+                }))
+                validProducts = productSchema.parse(JSON.parse(validatedData.products))
+            } catch (productError) {
+                console.error("Failed to parse onboarding products:", productError)
+                warnings.push("Some products could not be saved. You can add them later in Inventory.")
+            }
+        }
+
+        // Look up existing profile to preserve slug on updates
+        const existingProfile = await prisma.gymProfile.findUnique({
+            where: { userId: userId },
+            select: { slug: true },
+        });
+
+        const trialExpiresAt = addDays(new Date(), 30)
+        let slug = generateSlug(validatedData.businessName, existingProfile?.slug);
+
+        // ── ATOMIC TRANSACTION: All 6 tables or nothing ──
+        // Wraps gym profile, plans, staff, members, subscriptions, and products
+        // in a single transaction. If any step fails, everything rolls back.
+        gymProfile = await prisma.$transaction(async (tx) => {
+            // 1. Upsert GymProfile with slug conflict retry
+            let createdGym: GymProfile | undefined;
+            for (let attempt = 0; attempt <= MAX_SLUG_RETRIES; attempt++) {
+                try {
+                    createdGym = await tx.gymProfile.upsert({
+                        where: { userId: userId },
+                        update: {
+                            ...updateData,
+                            name: validatedData.businessName,
+                            slug,
+                            isVerified: true,
+                            onboardingStep: ONBOARDING_COMPLETE_STEP,
+                            saasPlan: 'TRIAL' as any,
+                            planTier: 'TRIAL' as any,
+                            futurePlanPreference: validatedData.futurePlanPreference as any,
+                            trialExpiresAt,
+                        },
+                        create: {
+                            userId: userId,
+                            ...updateData,
+                            name: validatedData.businessName,
+                            slug,
+                            isVerified: true,
+                            onboardingStep: ONBOARDING_COMPLETE_STEP,
+                            saasPlan: 'TRIAL' as any,
+                            planTier: 'TRIAL' as any,
+                            futurePlanPreference: validatedData.futurePlanPreference as any,
+                            trialExpiresAt,
+                        }
+                    })
+                    break;
+                } catch (upsertError) {
+                    const isSlugConflict =
+                        upsertError instanceof Prisma.PrismaClientKnownRequestError &&
+                        upsertError.code === 'P2002' &&
+                        (upsertError.meta?.target as string[] | undefined)?.includes('slug');
+                    if (isSlugConflict && attempt < MAX_SLUG_RETRIES) {
+                        slug = `${toSlug(validatedData.businessName) || 'gym'}-${randomSuffix()}`;
+                        continue;
+                    }
+                    throw upsertError;
+                }
+            }
+
+            if (!createdGym) {
+                throw new Error("Failed to create or update gym profile after slug retries.")
+            }
+
+            const gymId = createdGym.id;
+
+            // 2. Batch create membership plans
+            if (enabledPlans.length > 0) {
+                await tx.membershipPlan.createMany({
+                    data: enabledPlans.map(p => ({
+                        gymId,
+                        name: p.name,
+                        description: `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''} Membership`,
+                        duration: p.durationMonths,
+                        price: p.price,
+                        isActive: true
+                    })),
+                    skipDuplicates: true
+                })
+            }
+
+            // 3. Batch create staff members
+            if (validStaff.length > 0) {
+                await tx.staffMember.createMany({
+                    data: validStaff.map(s => ({
+                        gymId,
+                        name: s.name,
+                        email: s.email,
+                        phone: s.phone,
+                        role: s.role as any,
+                        isActive: true,
+                    })),
+                    skipDuplicates: true,
+                })
+            }
+
+            // 4. Create members and their subscriptions
+            if (validMembers.length > 0) {
+                // Fetch gym plans for subscription linking (within transaction)
+                const gymPlans = await tx.membershipPlan.findMany({
                     where: { gymId },
                     select: { id: true, name: true, duration: true, price: true },
                 })
@@ -327,13 +348,13 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                 for (const m of validMembers) {
                     const joinDate = m.joinDate ? new Date(m.joinDate) : new Date()
 
-                    const member = await prisma.member.create({
+                    const member = await tx.member.create({
                         data: {
                             gymId,
                             name: m.name,
                             phone: m.phone,
                             joiningDate: joinDate,
-                             dateOfBirth: null,
+                            dateOfBirth: null,
                             emergencyName: "Contact",
                             emergencyPhone: m.phone,
                             emergencyRelation: "Self",
@@ -349,7 +370,7 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                             const endDate = new Date(startDate)
                             endDate.setMonth(endDate.getMonth() + plan.duration)
 
-                            await prisma.memberSubscription.create({
+                            await tx.memberSubscription.create({
                                 data: {
                                     memberId: member.id,
                                     planId: plan.id,
@@ -364,56 +385,41 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
                         }
                     }
                 }
-            } catch (memberError) {
-                console.error("Failed to parse or create onboarding members:", memberError)
-                warnings.push("Some members could not be saved. You can add them later in Members section.")
             }
-        }
 
-        // Process Products
-        if (validatedData.products) {
-            try {
-                const productSchema = z.array(z.object({
-                    name: z.string().min(1),
-                    price: z.coerce.number().nonnegative(),
-                    stock: z.coerce.number().int().nonnegative(),
-                }))
-
-                const parsedProducts = JSON.parse(validatedData.products)
-                const validProducts = productSchema.parse(parsedProducts)
-
-                for (const p of validProducts) {
-                    await prisma.product.create({
-                        data: {
-                            gymId,
-                            name: p.name,
-                            price: p.price,
-                            stock: p.stock,
-                            category: 'OTHER' as any,
-                            isActive: true
-                        }
-                    })
-                }
-            } catch (productError) {
-                console.error("Failed to parse or create onboarding products:", productError)
-                warnings.push("Some products could not be saved. You can add them later in Inventory.")
+            // 5. Batch create products
+            if (validProducts.length > 0) {
+                await tx.product.createMany({
+                    data: validProducts.map(p => ({
+                        gymId,
+                        name: p.name,
+                        price: p.price,
+                        stock: p.stock,
+                        category: 'OTHER' as any,
+                        isActive: true
+                    })),
+                })
             }
-        }
+
+            return createdGym;
+        }, { timeout: 30000, maxWait: 10000 })
 
     } catch (error) {
         if (error instanceof z.ZodError) {
             console.error("Onboarding validation failed:", error.flatten())
             return { error: `Validation Error: ${error.issues[0].message}` }
         }
-        console.error("Onboarding logic failed:", error)
-        return { error: "An unexpected error occurred while saving your profile" }
+        console.error("Onboarding transaction failed:", error)
+        return { error: "An unexpected error occurred while saving your profile. No partial data was created — please try again." }
     }
+
+    // ── Post-transaction side effects (non-critical) ──
 
     revalidatePath("/dashboard")
     revalidatePath("/members")
     revalidatePath("/invoices")
 
-    // Set cookie for middleware optimization
+    // Set cookies for middleware optimization
     const cookieStore = await cookies()
     cookieStore.set('gym_onboarded', 'true', {
         maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -422,14 +428,26 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         sameSite: 'lax'
     })
 
-    // Audit Log
+    // Cache gym session data in cookie to avoid middleware DB queries
+    if (gymProfile) {
+        cookieStore.set('gym_session', JSON.stringify({
+            saasPlan: 'TRIAL',
+            trialExpiresAt: gymProfile.trialExpiresAt?.toISOString() ?? null,
+            isVerified: true,
+            onboardingStep: ONBOARDING_COMPLETE_STEP,
+        }), {
+            maxAge: 30 * 24 * 60 * 60,
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
+    }
+
+    // Audit Log (outside transaction — non-critical)
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || '127.0.0.1'
 
-    // We reuse the gymProfile we upserted
-        if (gymProfile) {
-
-
+    if (gymProfile) {
         await recordAuditLog({
             gymId: gymProfile.id,
             actorId: userId,
@@ -459,7 +477,6 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
     }
 
     // Return the redirect path — client will navigate via router.push()
-    // This avoids NEXT_REDIRECT errors and ensures email send completes
     return {
         redirectTo: redirectSlug ? `/${redirectSlug}/dashboard` : '/dashboard',
         ...(warnings.length > 0 && { warnings }),

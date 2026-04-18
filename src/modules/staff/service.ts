@@ -1,7 +1,6 @@
 import { StaffRepository } from "./repository"
 import { CreateStaffInput } from "./validator"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { encryptPassword } from "@/lib/crypto"
 import { randomBytes } from "crypto"
 import React from "react"
 import { StaffCredentialEmail } from "@/components/emails/StaffCredentialEmail"
@@ -21,7 +20,7 @@ export class StaffService {
      * 1. Validates uniqueness
      * 2. Creates identity in Supabase Auth
      * 3. Creates profile in DB
-     * 4. Sends credentials via Email
+     * 4. Sends magic link via Email (no plaintext passwords)
      */
     static async createStaff(
         gym: { id: string; name: string; logoUrl?: string | null; logo?: string | null },
@@ -33,8 +32,8 @@ export class StaffService {
             throw new Error('A staff member with this email already exists in your gym')
         }
 
-        // 2. Auth Identity Generation
-        const tempPwd = randomBytes(5).toString('hex')
+        // 2. Auth Identity Generation — random password for Supabase (never exposed to user)
+        const tempPwd = randomBytes(16).toString('hex') // Strong random, never shared
         const supabaseAdmin = createAdminClient()
         
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -52,7 +51,7 @@ export class StaffService {
 
         const supabaseUserId = authData.user.id
 
-        // 3. Database Persistence
+        // 3. Database Persistence — no temp password stored
         try {
             const staff = await StaffRepository.create({
                 ...input,
@@ -60,12 +59,11 @@ export class StaffService {
                 userId: supabaseUserId,
                 isActive: true,
                 isFirstLogin: true,
-                tempPassword: encryptPassword(tempPwd),
             })
 
-            // 4. Background: Send Credentials (non-blocking)
-            this.sendCredentialsEmail(gym, input, tempPwd).catch(err => {
-                console.error('[StaffService] Failed to send credentials email:', err)
+            // 4. Generate magic link + send email (non-blocking)
+            this.sendMagicLinkEmail(gym, input, supabaseAdmin).catch(err => {
+                console.error('[StaffService] Failed to send magic link email:', err)
             })
 
             return staff
@@ -76,24 +74,41 @@ export class StaffService {
         }
     }
 
-    private static async sendCredentialsEmail(
+    private static async sendMagicLinkEmail(
         gym: { name: string; logoUrl?: string | null; logo?: string | null },
         input: CreateStaffInput,
-        tempPwd: string
+        supabaseAdmin: ReturnType<typeof createAdminClient>
     ) {
+        const baseUrl = getBaseUrl()
+
+        // Generate a secure recovery link — staff clicks this to set their own password
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'recovery',
+            email: input.email,
+            options: { redirectTo: `${baseUrl}/auth/callback?next=/reset-password` }
+        })
+
+        if (linkError || !linkData?.properties?.action_link) {
+            console.error('[StaffService] Failed to generate magic link:', linkError)
+            throw new Error('Failed to generate password setup link')
+        }
+
+        const setPasswordUrl = linkData.properties.action_link
+
         await sendEmail({
             from: FROM_EMAIL,
             to: input.email,
-            subject: `Your login credentials for ${gym.name}`,
+            subject: `Set your password for ${gym.name}`,
             react: React.createElement(StaffCredentialEmail, {
                 gymName: gym.name,
                 gymLogo: gym.logoUrl || gym.logo,
                 staffName: input.name,
                 role: input.role,
                 email: input.email,
-                temporaryPassword: tempPwd,
-                loginUrl: `${getBaseUrl()}/login`,
+                setPasswordUrl,
+                loginUrl: `${baseUrl}/login`,
             }) as React.ReactElement
         })
     }
 }
+

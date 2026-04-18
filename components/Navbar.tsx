@@ -136,7 +136,7 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
 
     // Calculate trial days left
     const trialDaysLeft = trialExpiresAt 
-        ? Math.min(30, Math.max(0, Math.ceil((new Date(trialExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))))
+        ? Math.max(0, Math.ceil((new Date(trialExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
 
     return (

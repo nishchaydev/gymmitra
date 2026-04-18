@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, CheckCircle2, AlertCircle, KeyRound, ArrowRight } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 
 interface FirstLoginPageClientProps {
@@ -19,7 +19,7 @@ interface FirstLoginPageClientProps {
 
 export function FirstLoginPageClient({ slug, staffName, gymName }: FirstLoginPageClientProps) {
     const router = useRouter()
-    const [step, setStep] = useState<'choice' | 'form' | 'done'>('choice')
+    const [step, setStep] = useState<'form' | 'done'>('form')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -29,11 +29,6 @@ export function FirstLoginPageClient({ slug, staffName, gymName }: FirstLoginPag
         await fetch('/api/staff/first-login', { method: 'PATCH' })
     }
 
-    const handleSkip = async () => {
-        setLoading(true)
-        await clearFirstLogin()
-        router.push(`/${slug}/dashboard`)
-    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -84,20 +79,14 @@ export function FirstLoginPageClient({ slug, staffName, gymName }: FirstLoginPag
                         </div>
                     </div>
 
-                    {step === 'choice' && (
+                    {step === 'form' && (
                         <>
                             <CardTitle className="text-2xl font-bold">
                                 Welcome, {staffName}! 👋
                             </CardTitle>
                             <CardDescription className="text-base mt-1">
-                                You've joined <strong>{gymName}</strong> as a staff member.
+                                You've joined <strong>{gymName}</strong>. Please set your password to continue.
                             </CardDescription>
-                        </>
-                    )}
-                    {step === 'form' && (
-                        <>
-                            <CardTitle className="text-2xl font-bold">Set your password</CardTitle>
-                            <CardDescription>Choose a secure password for your account.</CardDescription>
                         </>
                     )}
                     {step === 'done' && (
@@ -109,31 +98,6 @@ export function FirstLoginPageClient({ slug, staffName, gymName }: FirstLoginPag
                 </CardHeader>
 
                 <CardContent className="pt-4">
-                    {step === 'choice' && (
-                        <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground text-center">
-                                Would you like to set a new password, or continue with your temporary one?
-                            </p>
-                            <Button
-                                className="w-full gap-2"
-                                onClick={() => setStep('form')}
-                                disabled={loading}
-                            >
-                                <KeyRound className="h-4 w-4" />
-                                Yes, set a new password
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full gap-2"
-                                onClick={handleSkip}
-                                disabled={loading}
-                            >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                                Skip for now, go to dashboard
-                            </Button>
-                        </div>
-                    )}
-
                     {step === 'form' && (
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {error && (
@@ -167,16 +131,7 @@ export function FirstLoginPageClient({ slug, staffName, gymName }: FirstLoginPag
                                 />
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="flex-1"
-                                    onClick={() => setStep('choice')}
-                                    disabled={loading}
-                                >
-                                    Back
-                                </Button>
-                                <Button type="submit" className="flex-1" disabled={loading}>
+                                <Button type="submit" className="w-full" disabled={loading}>
                                     {loading ? (
                                         <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
                                     ) : 'Update Password'}

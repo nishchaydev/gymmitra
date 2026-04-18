@@ -22,7 +22,7 @@ interface StaffCredentialEmailProps {
     staffName: string;
     role: string;
     email: string;
-    temporaryPassword: string;
+    setPasswordUrl: string;
     loginUrl: string;
 }
 
@@ -32,10 +32,10 @@ export const StaffCredentialEmail = ({
     staffName,
     role,
     email,
-    temporaryPassword,
+    setPasswordUrl,
     loginUrl,
 }: StaffCredentialEmailProps) => {
-    const previewText = `Your login credentials for ${gymName}`;
+    const previewText = `Set your password for ${gymName}`;
     const roleLabel = role === 'TRAINER' ? 'Personal Trainer'
         : role === 'MANAGER' ? 'Manager'
         : role === 'FRONT_DESK' ? 'Front Desk'
@@ -70,10 +70,20 @@ export const StaffCredentialEmail = ({
 
                         <Text className="text-black text-[14px] leading-[24px]">
                             You have been added as a <strong>{roleLabel}</strong> at <strong>{gymName}</strong>.
-                            Your account is ready. Use the credentials below to log in:
+                            To get started, please set your password by clicking the button below:
                         </Text>
 
-                        {/* Credentials Box */}
+                        {/* Set Password CTA */}
+                        <Section className="text-center mt-[24px] mb-[16px]">
+                            <Link
+                                href={setPasswordUrl}
+                                className="bg-[#0066FF] rounded text-white text-[13px] font-semibold no-underline text-center px-5 py-3 inline-block"
+                            >
+                                Set Your Password →
+                            </Link>
+                        </Section>
+
+                        {/* Account Info Box */}
                         <Section className="bg-slate-50 border border-solid border-[#e2e8f0] rounded-lg p-[16px] my-[24px]">
                             <Row>
                                 <Column className="w-[100px]">
@@ -91,27 +101,27 @@ export const StaffCredentialEmail = ({
                             <Row>
                                 <Column className="w-[100px]">
                                     <Text className="text-[#64748b] text-[12px] font-semibold uppercase tracking-wide m-0">
-                                        Password
+                                        Role
                                     </Text>
                                 </Column>
                                 <Column>
-                                    <Text className="text-black text-[14px] font-mono font-bold m-0">
-                                        {temporaryPassword}
+                                    <Text className="text-black text-[14px] m-0">
+                                        {roleLabel}
                                     </Text>
                                 </Column>
                             </Row>
                         </Section>
 
                         <Text className="text-[#64748b] text-[13px] leading-[22px]">
-                            ⚠️ This is a temporary password. After logging in, you will be asked if you'd like to set a new one.
+                            ⏰ This link expires in 24 hours. After setting your password, you can log in anytime at:
                         </Text>
 
-                        <Section className="text-center mt-[24px] mb-[32px]">
+                        <Section className="text-center mb-[32px]">
                             <Link
                                 href={loginUrl}
-                                className="bg-[#0066FF] rounded text-white text-[13px] font-semibold no-underline text-center px-5 py-3 inline-block"
+                                className="text-[#0066FF] text-[13px] font-semibold no-underline"
                             >
-                                Login to {gymName} →
+                                {loginUrl}
                             </Link>
                         </Section>
 
@@ -127,3 +137,4 @@ export const StaffCredentialEmail = ({
 };
 
 export default StaffCredentialEmail;
+

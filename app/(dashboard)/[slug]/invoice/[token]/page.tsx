@@ -84,7 +84,9 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
         },
         include: {
             gym: true,
-            member: true,
+            member: {
+                select: { name: true } // Only name — no phone/email/address on public links
+            },
             items: true
         }
     })
@@ -92,6 +94,18 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
     if (!dbInvoice) {
         notFound()
     }
+
+    // Strip sensitive gym fields before passing to client component
+    const safeGym = dbInvoice.gym ? {
+        businessName: dbInvoice.gym.businessName,
+        slug: dbInvoice.gym.slug,
+        logoUrl: dbInvoice.gym.logoUrl,
+        logo: dbInvoice.gym.logo,
+        address: dbInvoice.gym.address,
+        phone: dbInvoice.gym.phone,
+        email: dbInvoice.gym.email,
+        upiId: dbInvoice.gym.upiId,
+    } : null
 
     return (
         <div className="min-h-screen bg-slate-50 py-8">
@@ -103,7 +117,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                     </div>
                     <div>
                         <p className="font-semibold text-slate-900">
-                            Secure Invoice from {dbInvoice.gym?.businessName || 'Merchant'}
+                            Secure Invoice from {safeGym?.businessName || 'Merchant'}
                         </p>
                         <p className="text-xs text-slate-500">Verified by GymMitra</p>
                     </div>
@@ -113,6 +127,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                 <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
                     <InvoiceView invoice={{
                         ...dbInvoice,
+                        gym: safeGym,
                         subtotal: Number(dbInvoice.subtotal),
                         taxAmount: Number(dbInvoice.taxAmount),
                         discount: Number(dbInvoice.discount),

@@ -75,10 +75,10 @@ export function BillingSettings() {
     const expiryDate = gymData?.trialExpiresAt ? new Date(gymData.trialExpiresAt) : null
     const isExpired = expiryDate ? !isAfter(expiryDate, new Date()) : false
     
-    const totalTrialDays = 30
     const remainingDays = expiryDate 
-        ? Math.min(totalTrialDays, Math.max(0, Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))))
+        ? Math.max(0, Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
         : 0
+    const totalTrialDays = remainingDays > 30 ? 60 : 30
     const progressPercent = Math.min(100, Math.max(0, (remainingDays / totalTrialDays) * 100))
 
     return (
@@ -105,7 +105,7 @@ export function BillingSettings() {
                                     <CreditCard className="w-6 h-6 text-blue-600" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-slate-900 mb-1">Trial Version (30 Days)</h3>
+                                    <h3 className="font-bold text-slate-900 mb-1">Trial Version ({totalTrialDays} Days)</h3>
                                     <p className="text-slate-500 text-sm mb-4">
                                         You are currently using the full-featured trial of GymMitra ERP. 
                                         {isExpired ? (
