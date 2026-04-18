@@ -262,11 +262,11 @@
 
   /* Bottom dock glassmorphism */
   .dock-glass {
-    background: rgba(255, 255, 255, 0.92);
+    background: linear-gradient(to bottom, #2563eb, #1d4ed8);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-top: 1px solid rgba(226, 232, 240, 0.6);
-    box-shadow: 0 -1px 20px rgba(0, 0, 0, 0.04);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 -1px 20px rgba(0, 0, 0, 0.12);
   }
 
   /* Swipe card snap scrolling fallback */

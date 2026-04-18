@@ -78,8 +78,8 @@ function DashboardGreeting({ ownerName, urgentCount, birthdayCount, gymName, slu
 
     return (
         <div>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">{gymName}</h2>
-            <p className="text-slate-500 mt-1 font-medium flex flex-wrap items-center gap-1.5 text-sm md:text-base">
+            <h2 className="hidden md:block text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">{gymName}</h2>
+            <p className="hidden md:flex text-slate-500 mt-1 font-medium flex-wrap items-center gap-1.5 text-sm md:text-base">
                 <span>{greeting}, {ownerName}.</span>
                 {urgentCount > 0 && (
                     <Link href={`/${slug}/dashboard?tab=reports`} className="inline-flex items-center gap-1 cursor-pointer group">
@@ -523,14 +523,14 @@ export default async function DashboardPage({
                     birthdayCount={dashboardData.birthdayCount}
                     slug={slug}
                 />
-                <div className="flex items-center space-x-2">
+                <div className="hidden md:flex items-center space-x-2">
                     <Link href={`/${slug}/members/new`}>
-                        <Button className="bg-primary hover:bg-primary-600 shadow-md w-full md:w-auto">
+                        <Button className="bg-primary hover:bg-primary-600 shadow-md">
                             <UserPlus className="mr-2 h-4 w-4" /> Add Member
                         </Button>
                     </Link>
                     <Link href={`/${slug}/products/new`}>
-                        <Button variant="secondary" className="shadow-sm w-full md:w-auto">
+                        <Button variant="secondary" className="shadow-sm">
                             <ShoppingBag className="mr-2 h-4 w-4" /> New Product
                         </Button>
                     </Link>

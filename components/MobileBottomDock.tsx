@@ -222,7 +222,7 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
                     'relative -mt-6 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-shadow duration-200',
                     isFabOpen
                       ? 'bg-drift-800 shadow-drift-800/30'
-                      : 'bg-gradient-to-br from-primary-500 to-primary-600 shadow-primary/30',
+                      : 'bg-white shadow-white/30',
                   )}
                   aria-label={isFabOpen ? 'Close quick actions' : 'Open quick actions'}
                   whileTap={{ scale: 0.85 }}
@@ -231,11 +231,11 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
                     animate={{ rotate: isFabOpen ? 45 : 0 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                   >
-                    <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
+                    <Plus className={cn('h-7 w-7', isFabOpen ? 'text-white' : 'text-primary-600')} strokeWidth={2.5} />
                   </motion.div>
                   {/* Pulse ring — only when closed */}
                   {!isFabOpen && (
-                    <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" />
+                    <span className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-30" />
                   )}
                 </motion.button>
               )
@@ -252,16 +252,16 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
                 >
                   <div className={cn(
                     'flex items-center justify-center w-7 h-7 rounded-lg transition-colors duration-200',
-                    isMoreOpen ? 'bg-primary-50' : ''
+                    isMoreOpen ? 'bg-white/20' : ''
                   )}>
                     <item.icon className={cn(
                       'h-[22px] w-[22px] transition-colors duration-200',
-                      isMoreOpen ? 'text-primary-500' : 'text-drift-400'
+                      isMoreOpen ? 'text-white' : 'text-white/70'
                     )} />
                   </div>
                   <span className={cn(
                     'text-[10px] font-semibold tracking-tight transition-colors duration-200',
-                    isMoreOpen ? 'text-primary-500' : 'text-drift-400'
+                    isMoreOpen ? 'text-white' : 'text-white/70'
                   )}>
                     {item.label}
                   </span>
@@ -279,22 +279,22 @@ export function MobileBottomDock({ plan, trialExpiresAt, role, isExpired, userEm
               >
                 <div className={cn(
                   'flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200',
-                  active ? 'bg-primary-50' : ''
+                  active ? 'bg-white/20' : ''
                 )}>
                   <item.icon className={cn(
                     'h-[22px] w-[22px] transition-colors duration-200',
-                    active ? 'text-primary-500' : 'text-drift-400 group-hover:text-drift-600'
+                    active ? 'text-white' : 'text-white/70'
                   )} />
                 </div>
                 <span className={cn(
                   'text-[10px] font-semibold tracking-tight transition-colors duration-200',
-                  active ? 'text-primary-500' : 'text-drift-400'
+                  active ? 'text-white' : 'text-white/70'
                 )}>
                   {item.label}
                 </span>
                 {/* Active indicator dot */}
                 {active && (
-                  <span className="absolute bottom-1.5 w-1 h-1 rounded-full bg-primary-500" />
+                  <span className="absolute bottom-1.5 w-1 h-1 rounded-full bg-white" />
                 )}
               </button>
             )
