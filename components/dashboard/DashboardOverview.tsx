@@ -7,6 +7,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SwipeableMetricCards } from '@/components/dashboard/SwipeableMetricCards'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const AttendanceWidget = dynamic(() => import('@/components/dashboard/AttendanceWidget').then(mod => mod.AttendanceWidget), {
     loading: () => <Skeleton className="w-full h-[150px] rounded-xl" />,
@@ -161,10 +163,11 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
              {/* Dashboard Header */}
              <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
                  <div className="space-y-1">
-                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight sm:text-4xl">
+                     <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight sm:text-4xl">
+                         <span className="md:hidden">{(() => { const h = new Date().getHours(); return h < 12 ? '☀️' : h < 17 ? '🌤️' : '🌙' })()} </span>
                          Welcome back, <span className="text-primary">{gymName || 'Admin'}</span>
                      </h1>
-                     <p className="text-sm font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                     <p className="hidden md:flex text-sm font-medium text-slate-400 uppercase tracking-widest items-center gap-2">
                          <TrendingUp className="h-4 w-4 text-primary" />
                          Dashboard Overview • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                          <button
@@ -176,11 +179,38 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
                            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                          </button>
                      </p>
+                     {/* Mobile compact date + refresh */}
+                     <div className="flex md:hidden items-center gap-2 text-xs text-drift-400 font-medium">
+                         <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                         <span>•</span>
+                         <button
+                           onClick={handleRefresh}
+                           disabled={isRefreshing}
+                           className="text-drift-400 hover:text-primary transition-colors p-0.5 disabled:opacity-50"
+                         >
+                           <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                         </button>
+                     </div>
                  </div>
              </header>
 
-            {/* ━━━ ROW 1: Four Stat Cards ━━━ */}
-            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 relative z-[1]">
+            {/* ━━━ ROW 1: Metric Cards ━━━ */}
+            {/* Mobile: Swipeable carousel */}
+            <div className="md:hidden">
+                <SwipeableMetricCards
+                    slug={slug}
+                    revenue={d.revenue}
+                    activeMembers={d.activeMembers}
+                    totalMembers={d.totalMembers}
+                    netIncome={netIncome}
+                    expenseRatio={expenseRatio}
+                    dailyCheckins={d.dailyCheckins}
+                    isDemo={isDemo}
+                />
+            </div>
+
+            {/* Desktop: 4-column grid (unchanged) */}
+            <div className="hidden md:grid gap-4 grid-cols-2 lg:grid-cols-4 relative z-[1]">
                 <Link href={`/${slug}/invoices`} className="block">
                     <div className={statCardBase}>
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

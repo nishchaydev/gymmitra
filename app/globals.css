@@ -251,6 +251,30 @@
     box-shadow: 0 0 20px color-mix(in srgb, var(--ion-blue) 8%, transparent);
   }
 
+  /* Bottom dock glassmorphism */
+  .dock-glass {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(226, 232, 240, 0.6);
+    box-shadow: 0 -1px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Swipe card snap scrolling fallback */
+  .swipe-container {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .swipe-card {
+    scroll-snap-align: center;
+  }
+
+  /* Safe area offset for bottom dock */
+  .safe-bottom {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
   @media print {
     .no-print {
       display: none !important;

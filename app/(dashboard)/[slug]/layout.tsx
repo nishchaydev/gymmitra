@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link";
 import { TrialLockout } from "@/components/trial/TrialLockout";
 import { LazyMotionProvider } from "@/lib/lazy-motion";
+import { MobileBottomDock } from "@/components/MobileBottomDock";
 
 interface BrandedLayoutProps {
     children: ReactNode;
@@ -42,10 +43,11 @@ export default async function BrandedDashboardLayout({
     if (slug === 'demo' || isDemoMode) {
         return (
             <LazyMotionProvider>
-                <Navbar plan="TRIAL" role="OWNER" />
-                <div className="flex-1 overflow-y-auto pt-4">
+            <Navbar plan="TRIAL" role="OWNER" />
+                <div className="flex-1 overflow-y-auto pt-4 pb-20 md:pb-0">
                     {children}
                 </div>
+                <MobileBottomDock plan="TRIAL" role="OWNER" />
             </LazyMotionProvider>
         );
     }
@@ -99,11 +101,17 @@ export default async function BrandedDashboardLayout({
             />
             <main className="flex-1 relative">
                 <TrialLockout slug={slug} isLocked={!!isLocked}>
-                    <div className="flex-1 overflow-y-auto pt-4">
+                    <div className="flex-1 overflow-y-auto pt-4 pb-20 md:pb-0">
                         {children}
                     </div>
                 </TrialLockout>
             </main>
+            <MobileBottomDock 
+                plan={auth.gym.saasPlan}
+                trialExpiresAt={auth.gym.trialExpiresAt?.toISOString()}
+                role={auth.role}
+                isExpired={!!isExpired}
+            />
         </div>
         </LazyMotionProvider>
     );
