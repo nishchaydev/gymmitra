@@ -64,3 +64,6 @@ test_output*.txt
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Graphify
+graphify-out/

@@ -149,16 +149,39 @@ export async function updateSession(request: NextRequest, mergedHeaders?: Header
         const slugMatch = pathname.match(/^\/([^/]+)/)
         const currentSlug = slugMatch ? slugMatch[1] : null
 
-        // Read cached gym session from cookie — NO database queries
+        // Read and VERIFY cached gym session from HMAC-signed cookie — NO database queries
         const gymSessionRaw = request.cookies.get('gym_session')?.value
         let gym: { saasPlan: string; trialExpiresAt: string | null; onboardingStep: number; isVerified: boolean } | null = null
 
         if (gymSessionRaw) {
-            try {
-                gym = JSON.parse(gymSessionRaw)
-            } catch {
-                // Corrupted cookie — will be refreshed on next login
-                gym = null
+            // Edge-compatible HMAC verification (Web Crypto API)
+            const dotIdx = gymSessionRaw.lastIndexOf('.')
+            if (dotIdx !== -1) {
+                const encoded = gymSessionRaw.slice(0, dotIdx)
+                const providedHmac = gymSessionRaw.slice(dotIdx + 1)
+                const secret = process.env.GYM_SESSION_SECRET || process.env.NEXTAUTH_SECRET || 'dev-only-gym-session-secret-DO-NOT-USE-IN-PROD'
+
+                try {
+                    const encoder = new TextEncoder()
+                    const key = await crypto.subtle.importKey(
+                        'raw', encoder.encode(secret),
+                        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+                    )
+                    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(encoded))
+                    const expectedHmac = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('')
+
+                    if (expectedHmac === providedHmac) {
+                        const json = atob(encoded)
+                        gym = JSON.parse(json)
+                    } else {
+                        // Tampered cookie — treat as missing
+                        console.warn('[middleware] gym_session HMAC mismatch — possible tampering')
+                        gym = null
+                    }
+                } catch {
+                    // Malformed cookie — will be refreshed on next login
+                    gym = null
+                }
             }
         }
 

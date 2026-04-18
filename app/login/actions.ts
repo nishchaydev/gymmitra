@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { cookies, headers } from 'next/headers'
 import { recordAuditLog } from '@/lib/audit-logger'
 import { getBaseUrl } from '@/lib/utils'
+import { setGymSessionCookie, buildSessionPayload } from '@/lib/session-cookie'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -46,20 +47,10 @@ export async function login(formData: FormData) {
         })
     }
 
-    // Cache gym session data for middleware (avoids DB queries on every request)
+    // Cache HMAC-signed gym session for middleware (avoids DB queries on every request)
     const gymData = gym || isTrainerProfile?.gym
     if (gymData) {
-        cookieStore.set('gym_session', JSON.stringify({
-            saasPlan: gymData.saasPlan,
-            trialExpiresAt: gymData.trialExpiresAt?.toISOString() ?? null,
-            isVerified: gymData.isVerified,
-            onboardingStep: gymData.onboardingStep,
-        }), {
-            maxAge: 30 * 24 * 60 * 60,
-            path: '/',
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-        })
+        await setGymSessionCookie(buildSessionPayload(gymData))
     }
 
     if (gym && !gym.isVerified) {

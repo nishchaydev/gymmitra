@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getBaseUrl } from '@/lib/utils'
 import { sendWelcomeEmail } from '@/app/actions/trial'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp'
+import { createSignedSessionValue, buildSessionPayload, COOKIE_MAX_AGE } from '@/lib/session-cookie'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 
@@ -81,7 +82,7 @@ async function resolveProfile(userId: string): Promise<{ gym: GymProfile | null;
     return { gym, staffProfile }
 }
 
-/** Set session cookies (gym_onboarded + gym_session) for authenticated users. */
+/** Set session cookies (gym_onboarded + HMAC-signed gym_session) for authenticated users. */
 async function setSessionCookies(
     gym: GymProfile | null,
     staffProfile: StaffProfile | null,
@@ -101,18 +102,14 @@ async function setSessionCookies(
         sameSite: 'lax'
     })
 
-    // Cache gym session data for middleware (avoids DB queries on every request)
+    // Cache HMAC-signed gym session data for middleware (avoids DB queries on every request)
     if (gymData) {
-        cookieStore.set('gym_session', JSON.stringify({
-            saasPlan: gymData.saasPlan,
-            trialExpiresAt: gymData.trialExpiresAt?.toISOString?.() ?? gymData.trialExpiresAt ?? null,
-            isVerified: gymData.isVerified,
-            onboardingStep: gymData.onboardingStep,
-        }), {
-            maxAge: 30 * 24 * 60 * 60,
+        cookieStore.set('gym_session', createSignedSessionValue(buildSessionPayload(gymData)), {
+            maxAge: COOKIE_MAX_AGE,
             path: '/',
             secure: !isLocal,
-            sameSite: 'lax'
+            sameSite: 'lax',
+            httpOnly: true,
         })
     }
 }

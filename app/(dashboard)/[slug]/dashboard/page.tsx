@@ -46,6 +46,7 @@ import { exitDemo } from "./actions"
 import { getWhatsAppLink, templates } from "@/lib/whatsapp"
 import { isBirthdayToday, isBirthdayUpcoming } from "@/lib/utils"
 import { getOrFetch, cacheKey, CACHE_TTL } from "@/lib/redis-cache"
+import { getAuthGym } from '@/lib/auth'
 
 interface DashboardSummary {
     gym_id: string
@@ -113,7 +114,8 @@ export default async function DashboardPage({
     const allowedTabs = ["overview", "analytics", "insights", "reports"]
     const tab = allowedTabs.includes(rawTab) ? rawTab : "overview"
     const isDemo = await getIsDemo(slug)
-    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
+    // FIX: Use direct import (not dynamic) so React.cache() deduplicates with layout
+    const auth = await getAuthGym()
 
     if (!auth && !isDemo) {
         redirect("/login")

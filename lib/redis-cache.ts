@@ -26,6 +26,7 @@ export const CACHE_TTL = {
   PRODUCTS:          30 * 24 * 60 * 60,    // 30 DAYS — product catalog rarely changes
   SETTINGS:          30 * 24 * 60 * 60,    // 30 DAYS — gym settings rarely change
   DASHBOARD_SUMMARY:  1 * 60,              // 1 min
+  DASHBOARD_FULL:     1 * 60,              // 1 min — full tab payload
 } as const
 
 // ── Singleton Redis client ─────────────────────────────────────────────────
@@ -153,4 +154,5 @@ export const cacheKey = {
   products:         (gymId: string, params: string)  => `gym:${gymId}:products:${params}`,
   settings:         (gymId: string)                  => `gym:${gymId}:settings`,
   dashboardSummary: (gymId: string)                  => `gym:${gymId}:dashboard:summary`,
+  dashboardFull:    (gymId: string, tab: string)     => `gym:${gymId}:dashboard:full:${tab}`,
 }

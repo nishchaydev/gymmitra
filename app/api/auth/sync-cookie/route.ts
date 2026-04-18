@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { getBaseUrl } from '@/lib/utils'
+import { createSignedSessionValue, buildSessionPayload, COOKIE_MAX_AGE } from '@/lib/session-cookie'
 
 export async function GET(request: Request) {
     const supabase = await createClient()
@@ -30,18 +31,14 @@ export async function GET(request: Request) {
                 sameSite: 'lax'
             })
             
-            // Cache gym session data for middleware (avoids DB queries on every request)
+            // Cache HMAC-signed gym session data for middleware (avoids DB queries on every request)
             if (gymData) {
-                cookieStore.set('gym_session', JSON.stringify({
-                    saasPlan: gymData.saasPlan,
-                    trialExpiresAt: gymData.trialExpiresAt?.toISOString() ?? null,
-                    isVerified: gymData.isVerified,
-                    onboardingStep: gymData.onboardingStep,
-                }), {
-                    maxAge: 30 * 24 * 60 * 60,
+                cookieStore.set('gym_session', createSignedSessionValue(buildSessionPayload(gymData)), {
+                    maxAge: COOKIE_MAX_AGE,
                     path: '/',
                     secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax'
+                    sameSite: 'lax',
+                    httpOnly: true,
                 })
             }
             
@@ -52,4 +49,3 @@ export async function GET(request: Request) {
     
     return NextResponse.redirect(`${baseUrl}/login`)
 }
-

@@ -16,6 +16,7 @@ import type { GymProfile } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import cryptoLib from 'crypto'
 import { addDays } from 'date-fns'
+import { setGymSessionCookie, buildSessionPayload } from '@/lib/session-cookie'
 
 const onboardingSchema = z.object({
     businessName: z.string().min(2, "Business name is required"),
@@ -428,19 +429,14 @@ export async function completeOnboarding(formData: FormData): Promise<{ redirect
         sameSite: 'lax'
     })
 
-    // Cache gym session data in cookie to avoid middleware DB queries
+    // Cache HMAC-signed gym session data in cookie to avoid middleware DB queries
     if (gymProfile) {
-        cookieStore.set('gym_session', JSON.stringify({
+        await setGymSessionCookie(buildSessionPayload({
             saasPlan: 'TRIAL',
-            trialExpiresAt: gymProfile.trialExpiresAt?.toISOString() ?? null,
+            trialExpiresAt: gymProfile.trialExpiresAt,
             isVerified: true,
             onboardingStep: ONBOARDING_COMPLETE_STEP,
-        }), {
-            maxAge: 30 * 24 * 60 * 60,
-            path: '/',
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-        })
+        }))
     }
 
     // Audit Log (outside transaction — non-critical)
