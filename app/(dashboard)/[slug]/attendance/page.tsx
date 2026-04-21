@@ -1,4 +1,3 @@
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { getIsDemo } from "@/lib/demo"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,8 +6,8 @@ import { ArrowLeft, Clock, MonitorPlay, Users, Download } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { SHOWCASE_MEMBERS } from "@/lib/showcase-data"
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getAuthGym } from '@/lib/auth'
 
 export const metadata = { title: "Attendance" };
 
@@ -24,19 +23,18 @@ export default async function AttendancePage({
     const endOfDay = new Date()
     endOfDay.setHours(23, 59, 59, 999)
 
-    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
-    const cookieStore = await cookies()
-
     const isDemo = await getIsDemo(slug)
+    const auth = await getAuthGym()
 
     if (!auth && !isDemo) {
         redirect("/login")
     }
 
-    let gymId = 'demo'
-    if (auth && !isDemo) {
-        gymId = auth?.gym?.id
+    if (auth && !isDemo && auth.gym.slug !== slug) {
+        redirect(`/${auth.gym.slug}/attendance`)
     }
+
+    const gymId = isDemo ? 'demo' : auth!.gym.id
 
     // Stable timestamps for demo mode
     const now = new Date()
@@ -49,15 +47,18 @@ export default async function AttendancePage({
         { id: "att3", checkInTime: oneHourAgo, member: { name: SHOWCASE_MEMBERS[2].name, phone: SHOWCASE_MEMBERS[2].phone } },
     ] : await prisma.attendance.findMany({
         where: {
-            member: { gymId: gymId }, // Enforce data isolation
+            gymId,
             date: {
                 gte: today,
                 lte: endOfDay
             }
         },
-        include: {
-            member: true,
-            staff: true
+        select: {
+            id: true,
+            checkInTime: true,
+            staffId: true,
+            member: { select: { name: true, phone: true } },
+            staff: { select: { name: true, phone: true } },
         },
         orderBy: {
             checkInTime: 'desc'

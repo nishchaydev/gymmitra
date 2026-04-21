@@ -1,5 +1,4 @@
 import * as React from "react"
-import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getIsDemo } from '@/lib/demo'
@@ -9,11 +8,8 @@ import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { Plus, Search, AlertTriangle, Upload, Download } from 'lucide-react'
 import { ProductsList } from '@/components/products/ProductsList'
-
-export const dynamic = 'force-dynamic'
-
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getAuthGym } from '@/lib/auth'
 
 export const metadata = { title: "Products" };
 
@@ -31,17 +27,17 @@ export default async function ProductsPage({
     const showLowStock = sParams.lowStock === 'true'
 
     const isDemo = await getIsDemo(slug)
-
-    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
+    const auth = await getAuthGym()
 
     if (!auth && !isDemo) {
         redirect("/login")
     }
 
-    let gymId = 'demo'
-    if (auth && !isDemo) {
-        gymId = auth.gym.id
+    if (auth && !isDemo && auth.gym.slug !== slug) {
+        redirect(`/${auth.gym.slug}/products`)
     }
+
+    const gymId = isDemo ? 'demo' : auth!.gym.id
 
     const whereClause: Prisma.ProductWhereInput = {
         isActive: true,

@@ -107,11 +107,16 @@ export const GET = withGymAuth(async ({ gym, request }) => {
         const [invoices, totalCount] = await Promise.all([
             prisma.invoice.findMany({
                 where: whereClause,
-                include: {
+                select: {
+                    id: true,
+                    invoiceNumber: true,
+                    paymentStatus: true,
+                    issueDate: true,
+                    total: true,
+                    walkInName: true,
                     member: {
                         select: { name: true, phone: true }
-                    },
-                    items: true
+                    }
                 },
                 orderBy: { issueDate: 'desc' },
                 take,

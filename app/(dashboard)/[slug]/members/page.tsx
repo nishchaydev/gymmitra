@@ -1,22 +1,16 @@
-import { Prisma } from '@prisma/client'
-import { cookies } from 'next/headers'
 import { getIsDemo } from '@/lib/demo'
 import * as React from "react"
 import { Skeleton } from "@/src/components/SkeletonProvider"
-import { prisma } from '@/lib/prisma'
-import { SHOWCASE_MEMBERS } from '@/lib/showcase-data'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Plus, Download } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MemberSearch, MemberFilters } from '@/components/members/MemberFilters'
 import { MembersList } from '@/components/members/MembersList'
 import { Metadata } from 'next'
+import { getAuthGym } from '@/lib/auth'
 
 export const metadata: Metadata = { title: "Members" };
-
-export const dynamic = 'force-dynamic'
 
 export default async function MembersPage({
     searchParams,
@@ -35,67 +29,17 @@ export default async function MembersPage({
     const parsedPage = parseInt(resolvedSearchParams.page || '1', 10)
     const page = isNaN(parsedPage) ? 1 : Math.max(1, parsedPage)
     const take = 10
-    const skip = (page - 1) * take
 
     const isDemo = await getIsDemo(slug)
-
-    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
+    const auth = await getAuthGym()
 
     if (!auth && !isDemo) {
         redirect("/login")
     }
 
-    let gymId = 'demo'
-    const hasGymError = false
-    let hasNoGym = false
-
-    if (auth && !isDemo) {
-        if (!auth.gym) {
-            hasNoGym = true
-        } else {
-            gymId = auth.gym.id
-        }
+    if (auth && !isDemo && auth.gym.slug !== slug) {
+        redirect(`/${auth.gym.slug}/members`)
     }
-
-    if (hasNoGym) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 text-center p-8">
-                <div className="text-destructive font-bold text-xl">Gym Profile Not Found</div>
-                <p className="text-muted-foreground">Please complete your onboarding to access members.</p>
-                <Link href="/onboarding">
-                    <Button>Go to Onboarding</Button>
-                </Link>
-            </div>
-        )
-    }
-
-    if (hasGymError) {
-        return (
-            <div className="p-8 text-center text-destructive">
-                System error loading profile. Please try refreshing.
-            </div>
-        )
-    }
-
-    const whereClause: Prisma.MemberWhereInput = {
-        gymId: gymId
-    }
-
-    if (query) {
-        whereClause.OR = [
-            { name: { contains: query, mode: 'insensitive' } },
-            { phone: { contains: query, mode: 'insensitive' } },
-            { email: { contains: query, mode: 'insensitive' } },
-        ]
-    }
-
-    if (status && status !== 'ALL') {
-        whereClause.status = status as any
-    }
-
-    // We don't fetch members on the server for regular users anymore since it is a client-side fetched list, 
-    // saving db load natively.
-
 
     return (
         <Skeleton name="members" loading={false}>

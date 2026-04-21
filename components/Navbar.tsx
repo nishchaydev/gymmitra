@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 import { Button } from "./ui/button"
@@ -29,7 +29,7 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
     const [isDemo, setIsDemo] = useState(false)
 
     const hoverTimers = useRef<Record<string, NodeJS.Timeout>>({})
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
     useEffect(() => {
         const getUser = async () => {
@@ -53,7 +53,7 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
         })
 
         return () => subscription.unsubscribe()
-    }, [supabase])
+    }, [slug, supabase])
 
 
 
@@ -63,10 +63,15 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
 
             if (href.includes('/members')) {
               queryClient.prefetchQuery({
-                queryKey: ['members', { 
-                  q: '', status: '', dobMonth: '',
-                  birthday: '', page: 1, take: 10, 
-                  duration: '' 
+                queryKey: ['members', {
+                  q: undefined,
+                  status: undefined,
+                  dobMonth: undefined,
+                  birthday: undefined,
+                  duration: undefined,
+                  page: 1,
+                  take: 10,
+                  slug
                 }],
                 queryFn: () => fetch(`/api/members?page=1&take=10`)
                   .then(res => res.json()),
@@ -76,11 +81,17 @@ export function Navbar({ plan, trialExpiresAt, role, isExpired }: NavbarProps) {
 
             if (href.includes('/invoices')) {
               queryClient.prefetchQuery({
-                queryKey: ['invoices', { 
-                  q: '', status: '', page: 1, take: 50 
-                }],
+                queryKey: ['invoices', undefined, undefined, 1, 50, undefined, slug],
                 queryFn: () => fetch(`/api/invoices?page=1&take=50`)
                   .then(res => res.json()),
+                staleTime: 5 * 60 * 1000,
+              })
+            }
+
+            if (href.includes('/products')) {
+              queryClient.prefetchQuery({
+                queryKey: ['products', ''],
+                queryFn: () => fetch('/api/products').then(res => res.json()),
                 staleTime: 5 * 60 * 1000,
               })
             }

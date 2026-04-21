@@ -115,9 +115,14 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
         // Prefetch members data
         queryClient.prefetchQuery({
           queryKey: ['members', {
-            q: '', status: '', dobMonth: '',
-            birthday: '', page: 1, take: 10,
-            duration: '', slug: slug
+            q: undefined,
+            status: undefined,
+            dobMonth: undefined,
+            birthday: undefined,
+            duration: undefined,
+            page: 1,
+            take: 10,
+            slug,
           }],
           queryFn: () => fetch(`/api/members?page=1&take=10`)
             .then(r => r.json()),
@@ -134,8 +139,8 @@ export function DashboardOverview({ slug, gymName, isDemo, initialData }: Dashbo
 
         // Prefetch invoices
         queryClient.prefetchQuery({
-          queryKey: ['invoices', { q: '', status: '', page: 1, take: 10, slug: slug }],
-          queryFn: () => fetch(`/api/invoices?page=1&limit=10`)
+          queryKey: ['invoices', undefined, undefined, 1, 10, undefined, slug],
+          queryFn: () => fetch(`/api/invoices?page=1&take=10`)
             .then(r => r.json()),
           staleTime: 2 * 60 * 1000,
         })

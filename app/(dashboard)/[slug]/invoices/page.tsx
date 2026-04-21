@@ -1,5 +1,4 @@
 import * as React from "react"
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { SHOWCASE_INVOICES } from "@/lib/showcase-data"
 import { getIsDemo } from "@/lib/demo"
@@ -11,8 +10,8 @@ import { InvoiceSearch, InvoiceFilters } from "@/components/invoice/InvoiceFilte
 import { InvoicesList } from "@/components/invoice/InvoicesList"
 import { Prisma } from "@prisma/client"
 
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getAuthGym } from '@/lib/auth'
 
 export const revalidate = 60
 
@@ -29,19 +28,18 @@ export default async function InvoicesPage({
     const { slug } = resolvedParams
     const query = resolvedSearchParams.q || ''
     const status = resolvedSearchParams.status
-    const auth = await import('@/lib/auth').then(mod => mod.getAuthGym())
-    const cookieStore = await cookies()
-
     const isDemo = await getIsDemo(slug)
+    const auth = await getAuthGym()
 
     if (!auth && !isDemo) {
         redirect("/login")
     }
 
-    let gymId = 'demo'
-    if (auth && !isDemo) {
-        gymId = auth?.gym?.id
+    if (auth && !isDemo && auth.gym.slug !== slug) {
+        redirect(`/${auth.gym.slug}/invoices`)
     }
+
+    const gymId = isDemo ? 'demo' : auth!.gym.id
 
     const take = 50
 
